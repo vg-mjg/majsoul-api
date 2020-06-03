@@ -11,46 +11,42 @@ export class Spreadsheet {
   private static readonly TOKEN_PATH = path.join(path.dirname(__filename), 'token.json');
   private static readonly spreadsheetId = '1F8aIK0EnliSrV3ME_DNtTzfHi488THMx-m5vhO2lPSk';
 
-  private auth: OAuth2Client;
   private sheets: sheets_v4.Sheets;
   private spreadsheet: sheets_v4.Schema$Spreadsheet;
   private sheetId: number;
-  private resolve: () => void;
+  private recordedGameIds: string[];
 
-  public init(): Promise<void>{
-    return new Promise<void>((resolve) => {
-      this.resolve = resolve;
-      this.authorize(env.googleCreds);
-      fs.readFile( './src/credentials.json', (err, content) => {
-        if (err) return console.log('Error loading client secret file:', err);
+  public async init(): Promise<void>{
+    const auth = await new Promise<any>((resolve) => {
+      const {client_secret, client_id, redirect_uris} = env.googleCreds.installed;
+      const oAuth2Client = new google.auth.OAuth2(
+        client_id,
+        client_secret,
+        redirect_uris[0]
+      );
+
+      fs.readFile(Spreadsheet.TOKEN_PATH, (err, token) => {
+        if (err) {
+          return this.getNewToken(oAuth2Client, (auth: OAuth2Client) => resolve(auth));
+        }
+        oAuth2Client.setCredentials(JSON.parse(token as any));
+        resolve(oAuth2Client);
       });
     });
-  }
 
-  private authorize(credentials) {
-    const {client_secret, client_id, redirect_uris} = credentials.installed;
-    const oAuth2Client = new google.auth.OAuth2(
-      client_id,
-      client_secret,
-      redirect_uris[0]
-    );
-
-    // Check if we have previously stored a token.
-    fs.readFile(Spreadsheet.TOKEN_PATH, (err, token) => {
-      if (err) return this.getNewToken(oAuth2Client, (auth: OAuth2Client) => this.completeAuth(auth));
-      oAuth2Client.setCredentials(JSON.parse(token as any));
-      this.completeAuth(oAuth2Client);
-    });
-  }
-
-  private async completeAuth(auth: OAuth2Client) {
-    this.auth = auth;
-    this.sheets = google.sheets({version: 'v4', auth: this.auth});
+    this.sheets = google.sheets({version: 'v4', auth: auth});
     this.spreadsheet = (await (this.sheets.spreadsheets.get({
       spreadsheetId: Spreadsheet.spreadsheetId,
     }) as any as Promise<sheets_v4.Schema$Spreadsheet>) as any).data;
     this.sheetId = this.spreadsheet.sheets.find(s => s.properties.title === "Robots").properties.sheetId;
-    this.resolve();
+    const values = (await this.sheets.spreadsheets.values.get(
+      {
+        spreadsheetId: Spreadsheet.spreadsheetId,
+        range: "Robots!A:A",
+        valueRenderOption: 'UNFORMATTED_VALUE',
+      }
+    )).data;
+    this.recordedGameIds = values.values.slice(1).map(v => v[0]).filter(v => isNaN(v));
   }
 
   private getNewToken(oAuth2Client, callback) {
@@ -77,7 +73,18 @@ export class Spreadsheet {
     });
   }
 
+  public isGameRecorded(id: string): boolean {
+    return this.recordedGameIds.indexOf(id) >= 0;
+  }
+
   public async addGame(game: GameResult) {
+    if (this.isGameRecorded(game.id)) {
+      console.log(`Game ${game.id} already recorded`);
+      return;
+    }
+
+    this.recordedGameIds.push(game.id);
+
     const blackBorderStyle = {
       style: "SOLID",
       color: {

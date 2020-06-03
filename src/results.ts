@@ -10,6 +10,9 @@ async function main() {
     const spreadsheet = new Spreadsheet();
     await spreadsheet.init();
     for (const game of contest.games) {
+      if(spreadsheet.isGameRecorded(game.id)) {
+        continue;
+      }
       spreadsheet.addGame(await api.getGame(game.id));
     }
   } finally {
