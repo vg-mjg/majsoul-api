@@ -5,8 +5,8 @@ import * as uuidv4 from "uuid/v4";
 import fetch from "node-fetch";
 import { Subject } from 'rxjs';
 import { GameResult } from "./GameResult";
-
 import { majsoul } from "./env";
+import { IHandRecord, IAgariInfo, DrawStatus } from "./IHandRecord";
 
 interface IMessage {
   type: number,
@@ -27,16 +27,16 @@ class MajsoulProtoCodec {
   private static readonly REQUEST = 2;
   private static readonly RESPONSE = 3;
 
-  _pb: protobuf.Root;
+  root: protobuf.Root;
   _index: number;
-  _wrapper: any;
+  wrapper: any;
   version: string;
   rawDefinition: any;
 
   constructor (pbDef, version: string) {
-    this._pb = protobuf.Root.fromJSON(pbDef);
+    this.root = protobuf.Root.fromJSON(pbDef);
     this._index = 1;
-    this._wrapper = (this._pb.nested.lq as any).Wrapper;
+    this.wrapper = (this.root.nested.lq as any).Wrapper;
     this.version = version;
     this.rawDefinition = pbDef;
   }
@@ -48,7 +48,7 @@ class MajsoulProtoCodec {
     if (0 === path.length) {
       return null;
     }
-    const service = this._pb.lookupService(path.slice(0, -1));
+    const service = this.root.lookupService(path.slice(0, -1));
     if (!service) {
       return null;
     }
@@ -68,10 +68,16 @@ class MajsoulProtoCodec {
 
   }
 
-  public decodeBuffer(buf: Buffer, decoder?: IDecoder): IMessage {
+  public decode(buffer: Buffer): any {
+    const msg = this.wrapper.decode(buffer);
+    const typeObj = this.root.lookupType(msg.name);
+    return typeObj.decode(msg.data);
+  }
+
+  public decodeMessage(buf: Buffer, decoder?: IDecoder): IMessage {
     const type = this.getType(buf);
     const reqIndex = this.getIndex(buf);
-    const msg = this._wrapper.decode(buf.slice(3));
+    const msg = this.wrapper.decode(buf.slice(3));
 
     let typeObj, methodName;
     if (type === MajsoulProtoCodec.REQUEST) {
@@ -96,8 +102,8 @@ class MajsoulProtoCodec {
   }
 
   decodeDataMessage(buf, typeName) {
-    const msg = this._wrapper.decode(buf);
-    const typeObj = this._pb.lookupType(typeName || msg.name);
+    const msg = this.wrapper.decode(buf);
+    const typeObj = this.root.lookupType(typeName || msg.name);
     return {
       dataType: msg.name,
       payload: typeObj.decode(msg.data),
@@ -109,7 +115,7 @@ class MajsoulProtoCodec {
     const methodObj = this.lookupMethod(methodName);
     const requestType = methodObj.parent.parent.lookupType(methodObj.requestType);
     const responseType = methodObj.parent.parent.lookupType(methodObj.responseType);
-    const msg = this._wrapper.encode({
+    const msg = this.wrapper.encode({
       name: methodName,
       data: requestType.encode(payload).finish(),
     }).finish();
@@ -204,7 +210,7 @@ class MajsoulRPC {
         return;
       }
       delete this.transactionMap[index];
-      transaction.promiseResolution(this.codec.decodeBuffer(data, transaction.decoder));
+      transaction.promiseResolution(this.codec.decodeMessage(data, transaction.decoder));
     });
   }
 
@@ -230,6 +236,7 @@ class MajsoulRPC {
 
 export class MajsoulAPI {
   private rpc: MajsoulRPC;
+  codec: MajsoulProtoCodec;
 
   public async init(): Promise<void> {
     const URL_BASE = majsoul.urlBase || "https://mahjongsoul.game.yo-star.com/";
@@ -272,15 +279,14 @@ export class MajsoulAPI {
       return;
     }
 
-    const codec = new MajsoulProtoCodec(pbDef, pbVersion);
+    this.codec = new MajsoulProtoCodec(pbDef, pbVersion);
     // console.log(codec.decodeMessage(Buffer.from("", "hex")));
     const serverIndex = Math.floor(Math.random() * serverList.servers.length);
     const connection = new MajsoulConnection(
       `wss://${serverList.servers[serverIndex]}`
     );
-    this.rpc = new MajsoulRPC(connection, codec);
+    this.rpc = new MajsoulRPC(connection, this.codec);
     await connection.init();
-
 
     const type = 8;
     let resp = await this.rpc.rpcCall(".lq.Lobby.oauth2Auth", {
@@ -337,9 +343,84 @@ export class MajsoulAPI {
     }
   }
 
+  private getAgariRecord(hule: any): IAgariInfo {
+    return {
+      value: hule.point_zimo_qin + hule.point_zimo_xian * 2,
+      winner: hule.seat,
+      han: (hule.fans as any[]).map(f => {
+        return {
+          type: f.id,
+          ammount: f.val
+        }
+      }),
+    };
+  }
+
   public async getGame(id: string): Promise<GameResult> {
     console.log(id);
     const resp = (await this.rpc.rpcCall(".lq.Lobby.fetchGameRecord", { game_uuid: id })).payload;
+    const records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
+    const hands: IHandRecord[] = [];
+
+    let lastDiscardSeat: number;
+    let hand: IHandRecord;
+    for (const record of records) {
+      switch (record.constructor.name) {
+        case "RecordNewRound":
+          hand = {
+            round: record.chang,
+            dealership: record.ju,
+            repeats: record.ben
+          };
+          break;
+        case "RecordDiscardTile": {
+          lastDiscardSeat = record.seat;
+          break;
+        }
+        case "RecordNoTile": {
+          if (!hand) {
+            console.log("Missing hand for NoTile event");
+            continue;
+          }
+
+          hand.draw = {
+            playerDrawStatus: (record.players as any[]).map(p => p.tingpai ? DrawStatus.Tenpai : DrawStatus.Noten)
+          }
+
+          hands.push(hand);
+          hand = null;
+          break;
+        }
+        case "RecordHule": {
+          if (!hand) {
+            console.log("Missing hand for Hule event");
+            continue;
+          }
+
+          if (record.hules[0].zimo) {
+            const hule = record.hules[0];
+            hand.tsumo = {
+              ...this.getAgariRecord(hule),
+              dealerValue: hule.point_zimo_qin,
+            }
+            hands.push(hand);
+            hand = null;
+            break;
+          }
+
+          hand.rons = (record.hules as any[]).map(hule => {
+            return {
+              ...this.getAgariRecord(hule),
+              loser: lastDiscardSeat
+            }
+          });
+          lastDiscardSeat = null;
+          hands.push(hand);
+          hand = null;
+          break;
+        }
+      }
+    }
 
     if (!resp.data_url && !(resp.data && resp.data.length)) {
       console.log(`No data in response: ${id}`);
@@ -347,7 +428,7 @@ export class MajsoulAPI {
     }
 
     const result = resp.head.result.players;
-    console.log(resp);
+
     return {
       id,
       time: resp.head.end_time,
@@ -359,6 +440,7 @@ export class MajsoulAPI {
           uma: playerItem.total_point / 1000,
         }
       }),
+      hands: hands
     };
     //const recordData = resp.data_url ? await withRetry(() => rp({uri: resp.data_url, encoding: null, timeout: 5000})) : resp.data;
     //console.log(conn._codec.decodeMessage(recordData));

@@ -152,28 +152,28 @@ function buildRecordData ({ data, dataDefinition, game }) {
       });
       break;
     case ".lq.RecordHule":
-      itemPayload.hules.forEach((x) => {
-        curRound[x.seat].和 = [
-          itemPayload.delta_scores[x.seat] - (x.liqi ? 1000 : 0),
-          _.flatten(x.fans.map(x => Array(x.val).fill(x.id))),
+      itemPayload.hules.forEach((hule) => {
+        curRound[hule.seat].和 = [
+          itemPayload.delta_scores[hule.seat] - (hule.liqi ? 1000 : 0),
+          _.flatten(hule.fans.map(x => Array(x.val).fill(x.id))),
           numDiscarded / numPlayers + 1,
         ];
-        if (!x.zimo && curRound[x.seat].和[0] < Math.max(0, x.point_rong - 1500)) {
+        if (!hule.zimo && curRound[hule.seat].和[0] < Math.max(0, hule.point_rong - 1500)) {
           // 一炮多响 + 包牌
           console.log(itemPayload);
           assert(itemPayload.hules.length === 2);
-          const info = itemPayload.hules.filter(other => other.yiman && other.seat !== x.seat)[0];
+          const info = itemPayload.hules.filter(other => other.yiman && other.seat !== hule.seat)[0];
           assert(info);
-          curRound[x.seat].和[0] += info.point_rong / 2;
-          curRound[x.seat].包牌 = info.point_rong / 2;
+          curRound[hule.seat].和[0] += info.point_rong / 2;
+          curRound[hule.seat].包牌 = info.point_rong / 2;
         }
         const numLosingPlayers = itemPayload.delta_scores.filter(x => x < 0).length;
-        if (x.zimo) {
+        if (hule.zimo) {
           assert(itemPayload.hules.length === 1);
           assert(numLosingPlayers === (numPlayers - 1) || itemPayload.hules[0].yiman);
-          curRound[x.seat].自摸 = true;
-          if (振听[x.seat]) {
-            curRound[x.seat].振听自摸 = true;
+          curRound[hule.seat].自摸 = true;
+          if (振听[hule.seat]) {
+            curRound[hule.seat].振听自摸 = true;
           }
           if (numLosingPlayers === 1) {
             itemPayload.delta_scores.forEach((score, seat) => {
