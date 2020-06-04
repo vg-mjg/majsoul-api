@@ -357,7 +357,7 @@ export class MajsoulAPI {
       value,
       winner: hule.seat,
       han: (hule.fans as any[]).map(f => {
-        if ([Han.Dora, Han.Aka_Dora, Han.Ura_Dora].indexOf(f.id) >= 0) {
+        if ([Han.Dora, Han.Red_Five, Han.Ura_Dora].indexOf(f.id) >= 0) {
           return Array(f.val).fill(f.id);
         }
         return [f.id];

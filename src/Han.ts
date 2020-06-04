@@ -1,4 +1,5 @@
 export enum Han {
+  Mangan_at_Draw = 0,
   Fully_Concealed_Hand = 1,
   Riichi = 2,
   Robbing_a_Kan = 3,
