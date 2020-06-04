@@ -141,7 +141,7 @@ export class Spreadsheet {
         updateCells: {
           fields: "*",
           start: this.toGridCoord(0, 2),
-          rows: game.playerResults.map((player, i) => {
+          rows: game.finalScore.map((player, i) => {
             return {
               values: [
                 { userEnteredValue: {
@@ -149,7 +149,7 @@ export class Spreadsheet {
                   userEnteredFormat: { numberFormat: { type: "DATE_TIME" } },
                 },
                 { userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
-                { userEnteredValue: { stringValue: player.name } },
+                { userEnteredValue: { stringValue: game.players[i].name } },
                 { userEnteredValue: { numberValue: player.score } },
                 { userEnteredValue: { numberValue: player.uma } },
                 { userEnteredValue: { formulaValue: `=RANK(E${3 + i}; E3:E6)` } },

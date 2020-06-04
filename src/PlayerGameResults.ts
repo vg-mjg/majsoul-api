@@ -1,5 +1,4 @@
-export interface PlayerGameResults {
-  name: string;
+export interface FinalScore {
   uma: number;
   score: number;
 }

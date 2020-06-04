@@ -348,7 +348,7 @@ export class MajsoulAPI {
     return {
       value: hule.point_zimo_qin + hule.point_zimo_xian * 2,
       winner: hule.seat,
-      han: (hule.fans as any[]).map(f => f.id)
+      han: (hule.fans as any[]).map(f => Array(f.val).fill(f.id)).flat()
     };
   }
 
@@ -433,10 +433,14 @@ export class MajsoulAPI {
     return {
       id,
       time: resp.head.end_time,
-      playerResults: resp.head.accounts.map(a => {
-        const playerItem = result.find(b => b.seat === a.seat);
+      players: (resp.head.accounts as any[]).map(account => {
         return {
-          name: a.nickname,
+          name: account.nickname
+        }
+      }),
+      finalScore: (resp.head.accounts as any[]).map(account => {
+        const playerItem = result.find(b => b.seat === account.seat);
+        return {
           score: playerItem.part_point_1,
           uma: playerItem.total_point / 1000,
         }
