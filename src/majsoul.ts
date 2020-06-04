@@ -7,6 +7,7 @@ import { Subject } from 'rxjs';
 import { GameResult } from "./GameResult";
 import { majsoul } from "./env";
 import { IHandRecord, IAgariInfo, DrawStatus } from "./IHandRecord";
+import { Han } from "./Han";
 
 interface IMessage {
   type: number,
@@ -347,12 +348,7 @@ export class MajsoulAPI {
     return {
       value: hule.point_zimo_qin + hule.point_zimo_xian * 2,
       winner: hule.seat,
-      han: (hule.fans as any[]).map(f => {
-        return {
-          type: f.id,
-          ammount: f.val
-        }
-      }),
+      han: (hule.fans as any[]).map(f => f.id)
     };
   }
 
@@ -384,8 +380,13 @@ export class MajsoulAPI {
           }
 
           hand.draw = {
-            playerDrawStatus: (record.players as any[]).map(p => p.tingpai ? DrawStatus.Tenpai : DrawStatus.Noten)
-          }
+            playerDrawStatus: (record.players as any[]).map((player, index) => {
+              if (record.liujumanguan && (record.scores as any[]).find(score => score.seat === index)) {
+                return DrawStatus.Nagashi_Mangan;
+              }
+              return player.tingpai ? DrawStatus.Tenpai :  DrawStatus.Noten;
+            })
+          };
 
           hands.push(hand);
           hand = null;

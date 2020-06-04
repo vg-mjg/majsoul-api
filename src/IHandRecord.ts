@@ -1,9 +1,4 @@
-import { Han } from "./Yaku";
-
-interface IHanRecord {
-    type: Han;
-    ammount: number;
-}
+import { Han } from "./Han";
 
 export enum DrawStatus {
     Noten,
@@ -18,7 +13,7 @@ interface IDrawRecord {
 export interface IAgariInfo {
     winner: number;
     value: number;
-    han: IHanRecord[];
+    han: Han[];
 }
 
 interface ITsumoRecord extends IAgariInfo {
