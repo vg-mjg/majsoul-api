@@ -7,7 +7,7 @@ import { Subject } from 'rxjs';
 import { GameResult } from "./GameResult";
 import { majsoul } from "./env";
 import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
-import { Han } from "./Han";
+import * as util from 'util';
 
 interface IMessage {
   type: number,
@@ -344,9 +344,11 @@ export class MajsoulAPI {
     }
   }
 
-  private getAgariRecord(hule: any): IAgariInfo {
+  private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
+    const value = hule.zimo ? (hule.seat === round.dealership ? hule.point_sum : hule.point_zimo_qin + hule.point_zimo_xian * 2) : hule.point_rong;
     return {
-      value: hule.point_zimo_qin + hule.point_zimo_xian * 2,
+      extras: record.delta_scores[hule.seat] - value - (hule.riqi ? 1000 : 0),
+      value,
       winner: hule.seat,
       han: (hule.fans as any[]).map(f => Array(f.val).fill(f.id)).flat()
     };
@@ -404,7 +406,7 @@ export class MajsoulAPI {
             hands.push({
               round,
               tsumo: {
-              ...this.getAgariRecord(hule),
+              ...this.getAgariRecord(record, hule, round),
               dealerValue: hule.point_zimo_qin,
               }
             });
@@ -416,7 +418,7 @@ export class MajsoulAPI {
             round,
             rons: (record.hules as any[]).map(hule => {
               return {
-                ...this.getAgariRecord(hule),
+                ...this.getAgariRecord(record, hule, round),
                 loser: lastDiscardSeat
               }
             })
@@ -452,9 +454,6 @@ export class MajsoulAPI {
       }),
       rounds: hands
     };
-    //const recordData = resp.data_url ? await withRetry(() => rp({uri: resp.data_url, encoding: null, timeout: 5000})) : resp.data;
-    //console.log(conn._codec.decodeMessage(recordData));
-    //await new Promise(r => setTimeout(r, 1000));
   }
 
   public dispose() {

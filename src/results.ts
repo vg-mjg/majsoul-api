@@ -19,15 +19,16 @@ async function main() {
     const spreadsheet = new Spreadsheet();
     await spreadsheet.init();
 
-    const contest = await api.getContest(113331);
-    spreadsheet.addGameDetails(await api.getGame(contest.games[1].id));
     spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
+    const contest = await api.getContest(113331);
     for (const game of contest.games) {
-      if(spreadsheet.isGameRecorded(game.id)) {
+      if(spreadsheet.isGameRecorded(game.id) && spreadsheet.isGameDetailRecorded(game.id)) {
         continue;
       }
-      spreadsheet.addGame(await api.getGame(game.id));
+      const gameResult = await api.getGame(game.id);
+      spreadsheet.addGame(gameResult);
+      spreadsheet.addGameDetails(gameResult);
     }
   } finally {
     api.dispose();

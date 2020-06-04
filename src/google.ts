@@ -263,6 +263,7 @@ export class Spreadsheet {
             round: hand.round,
             agari: {
               value: hand.round.dealership === winner ? 12000 : 8000,
+              extras: 0,
               winner,
               han: [Han.Mangan_at_Draw]
             },
@@ -337,7 +338,7 @@ export class Spreadsheet {
               { userEnteredValue: { numberValue: hand.round.repeat } },
               { userEnteredValue: { stringValue: hand.result } },
               { userEnteredValue: { stringValue: game.players[hand.agari.winner].name } },
-              { userEnteredValue: { numberValue: hand.agari.value } },
+              { userEnteredValue: { numberValue: hand.agari.value + hand.agari.extras } },
               { userEnteredValue: { stringValue: hand.loser == null ? "" : game.players[hand.loser].name } },
               { userEnteredValue: {
                 stringValue: Object.entries(hand.agari.han.reduce((map, next) => {

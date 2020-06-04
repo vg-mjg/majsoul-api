@@ -18,6 +18,7 @@ interface IDrawRecord {
 }
 
 export interface IAgariInfo {
+  extras: number;
   winner: number;
   value: number;
   han: Han[];
