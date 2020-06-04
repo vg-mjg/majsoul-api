@@ -347,11 +347,15 @@ export class MajsoulAPI {
 
   private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
     const value = hule.zimo
-      ? (hule.seat === round.dealership
-        ? hule.point_sum
-        : hule.point_zimo_qin + hule.point_zimo_xian * 2)
+    ? (hule.seat === round.dealership
+      ? hule.point_zimo_xian * 3
+      : hule.point_zimo_qin + hule.point_zimo_xian * 2)
       : hule.point_rong - (hule.riqi ? 1000 : 0);
 
+    if (hule.seat === round.dealership && hule.zimo) {
+      console.log(util.inspect(record, false, null, true));
+      console.log(value);
+    }
     return {
       extras: record.delta_scores[hule.seat] - value - (hule.riqi ? 1000 : 0),
       value,

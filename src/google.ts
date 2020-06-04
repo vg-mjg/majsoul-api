@@ -273,6 +273,10 @@ export class Spreadsheet {
         }]
       }).flat();
 
+    hands.forEach(hand => {
+      //console.log(`${Wind[hand.round.round]}${hand.round.dealership+1}.${hand.round.repeat} ${isNaN(hand.agari.winner) ? "" : game.players[hand.agari.winner].name} ${hand.result} ${hand.agari.value} + ${hand.agari.extras}`);
+    })
+
     const requests: sheets_v4.Schema$Request[] = [
       {
         insertDimension: {
@@ -290,7 +294,7 @@ export class Spreadsheet {
           range: {
             sheetId: this.detailsSheetId,
             startColumnIndex: 1,
-            endColumnIndex: 7,
+            endColumnIndex: 8,
             startRowIndex: 1,
             endRowIndex: 2,
           }
@@ -327,7 +331,7 @@ export class Spreadsheet {
           fields: "*",
           start: {
             sheetId: this.detailsSheetId,
-            columnIndex: 7,
+            columnIndex: 8,
             rowIndex: 1,
           },
           rows: [{
@@ -360,6 +364,7 @@ export class Spreadsheet {
               { userEnteredValue: { stringValue: hand.result } },
               { userEnteredValue: { stringValue: game.players[hand.agari.winner].name } },
               { userEnteredValue: { numberValue: hand.agari.value + hand.agari.extras } },
+              { userEnteredValue: { numberValue: hand.agari.value + hand.round.repeat * 300 } },
               { userEnteredValue: { stringValue: hand.loser == null ? "" : game.players[hand.loser].name } },
               { userEnteredValue: {
                 stringValue: Object.entries(hand.agari.han.reduce((map, next) => {
@@ -380,7 +385,7 @@ export class Spreadsheet {
           range: {
             sheetId: this.detailsSheetId,
             startColumnIndex: 0,
-            endColumnIndex: 8,
+            endColumnIndex: 9,
             startRowIndex: 1,
             endRowIndex: 1 + 1 + hands.length,
           },
@@ -395,7 +400,7 @@ export class Spreadsheet {
           range: {
             sheetId: this.detailsSheetId,
             startColumnIndex: 0,
-            endColumnIndex: 8,
+            endColumnIndex: 9,
             startRowIndex: 1,
             endRowIndex: 2,
           },
