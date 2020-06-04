@@ -2,10 +2,7 @@
     "compileOnSave": false,
     "compilerOptions": {
         "allowSyntheticDefaultImports": true,
-        "lib": [
-            "es2019"
-        ],
-        "target": "es5",
+        "target": "es2019",
         "module": "commonjs",
         "noImplicitAny": false,
         "removeComments": true,
