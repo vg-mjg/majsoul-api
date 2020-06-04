@@ -6,7 +6,7 @@ import fetch from "node-fetch";
 import { Subject } from 'rxjs';
 import { GameResult } from "./GameResult";
 import { majsoul } from "./env";
-import { IHandRecord, IAgariInfo, DrawStatus } from "./IHandRecord";
+import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
 import { Han } from "./Han";
 
 interface IMessage {
@@ -356,17 +356,17 @@ export class MajsoulAPI {
     console.log(id);
     const resp = (await this.rpc.rpcCall(".lq.Lobby.fetchGameRecord", { game_uuid: id })).payload;
     const records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
-    const hands: IHandRecord[] = [];
+    const hands: IRoundResult[] = [];
 
     let lastDiscardSeat: number;
-    let hand: IHandRecord;
+    let round: IRoundInfo;
     for (const record of records) {
       switch (record.constructor.name) {
         case "RecordNewRound":
-          hand = {
+          round = {
             round: record.chang,
             dealership: record.ju,
-            repeats: record.ben
+            repeat: record.ben
           };
           break;
         case "RecordDiscardTile": {
@@ -374,50 +374,55 @@ export class MajsoulAPI {
           break;
         }
         case "RecordNoTile": {
-          if (!hand) {
+          if (!round) {
             console.log("Missing hand for NoTile event");
             continue;
           }
 
-          hand.draw = {
-            playerDrawStatus: (record.players as any[]).map((player, index) => {
-              if (record.liujumanguan && (record.scores as any[]).find(score => score.seat === index)) {
-                return DrawStatus.Nagashi_Mangan;
-              }
-              return player.tingpai ? DrawStatus.Tenpai :  DrawStatus.Noten;
-            })
-          };
-
-          hands.push(hand);
-          hand = null;
+          hands.push({
+            round,
+            draw: {
+              playerDrawStatus: (record.players as any[]).map((player, index) => {
+                if (record.liujumanguan && (record.scores as any[]).find(score => score.seat === index)) {
+                  return DrawStatus.Nagashi_Mangan;
+                }
+                return player.tingpai ? DrawStatus.Tenpai :  DrawStatus.Noten;
+              })
+            }
+          });
+          round = null;
           break;
         }
         case "RecordHule": {
-          if (!hand) {
+          if (!round) {
             console.log("Missing hand for Hule event");
             continue;
           }
 
           if (record.hules[0].zimo) {
             const hule = record.hules[0];
-            hand.tsumo = {
+            hands.push({
+              round,
+              tsumo: {
               ...this.getAgariRecord(hule),
               dealerValue: hule.point_zimo_qin,
-            }
-            hands.push(hand);
-            hand = null;
+              }
+            });
+            round = null;
             break;
           }
 
-          hand.rons = (record.hules as any[]).map(hule => {
-            return {
-              ...this.getAgariRecord(hule),
-              loser: lastDiscardSeat
-            }
+          hands.push( {
+            round,
+            rons: (record.hules as any[]).map(hule => {
+              return {
+                ...this.getAgariRecord(hule),
+                loser: lastDiscardSeat
+              }
+            })
           });
           lastDiscardSeat = null;
-          hands.push(hand);
-          hand = null;
+          round = null;
           break;
         }
       }
@@ -445,7 +450,7 @@ export class MajsoulAPI {
           uma: playerItem.total_point / 1000,
         }
       }),
-      hands: hands
+      rounds: hands
     };
     //const recordData = resp.data_url ? await withRetry(() => rp({uri: resp.data_url, encoding: null, timeout: 5000})) : resp.data;
     //console.log(conn._codec.decodeMessage(recordData));

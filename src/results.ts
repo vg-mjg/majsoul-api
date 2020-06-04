@@ -16,12 +16,13 @@ async function main() {
   const api = new MajsoulAPI();
   try {
     await api.init();
-    const contest = await api.getContest(113331);
-    console.log(util.inspect(await api.getGame(contest.games[1].id), false, null, true));
-    console.log(util.inspect(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]), false, null, true));
+    const spreadsheet = new Spreadsheet();
+    await spreadsheet.init();
 
-     const spreadsheet = new Spreadsheet();
-     await spreadsheet.init();
+    const contest = await api.getContest(113331);
+    spreadsheet.addGameDetails(await api.getGame(contest.games[1].id));
+    spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
+
     for (const game of contest.games) {
       if(spreadsheet.isGameRecorded(game.id)) {
         continue;

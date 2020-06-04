@@ -1,6 +1,6 @@
 export enum Han {
     Riichi = 1,
-    Menzen_Tsumo = 2,
+    Fully_Concealed_Hand = 2,
     Prevalent_Wind = 11,
     All_Simples = 12,
     Pinfu = 14,
@@ -38,7 +38,7 @@ export enum Han {
     // Half Flush
     // Pure Triple Chow
     // Full Flush
-    // Mangan at Draw
+    Mangan_at_Draw
     // Iipinmoyue
     // Chuupinraoyui
     // Blessing of Heaven
