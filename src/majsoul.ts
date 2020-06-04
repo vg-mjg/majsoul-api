@@ -1,5 +1,4 @@
 import {Root, Method, RPCImplCallback, Type, rpc, RPCImpl, Service} from "protobufjs";
-import * as assert from "assert";
 import * as WebSocket from "ws";
 import * as uuidv4 from "uuid/v4";
 import fetch from "node-fetch";
@@ -10,8 +9,91 @@ import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord"
 import * as util from 'util';
 import { Han } from "./Han";
 
-interface IVersion {
-  version: string;
+interface IContest {
+  games: {
+    id: string
+  }[];
+}
+
+class MajsoulCodec {
+  public static stripMessageType(data: Buffer): {type: MessageType, data: Buffer} {
+    return {
+      type: data[0],
+      data: data.slice(1),
+    };
+  }
+
+  public static addMessageType(type: MessageType, data: Uint8Array): Buffer {
+    return Buffer.concat([
+      Buffer.from([type]),
+      data
+    ])
+  }
+
+  public static stripIndex(data: Buffer): {index: number, data: Buffer} {
+    return {
+      index: data[0] | data[1] << 8,
+      data: data.slice(2)
+    }
+  }
+
+  public static addIndex(index: number, data: Uint8Array): Buffer {
+    return Buffer.concat([
+      Buffer.from([index & 0xff, index >> 8]),
+      data,
+    ]);
+  }
+
+  public static decode(root: Root, wrapper: Type, data: Buffer): any {
+    const message = wrapper.decode(data);
+    const type = root.lookupType(message["name"]);
+    return type.decode(message["data"]);
+  }
+
+  private readonly wrapper: Type;
+
+  constructor(private readonly protobufRoot: Root) {
+    this.wrapper = protobufRoot.lookupType('Wrapper');
+  }
+
+  public decode(data: Buffer): any {
+    return MajsoulCodec.decode(this.protobufRoot, this.wrapper, data);
+  }
+
+  public decodeMessage(message: Buffer, methodName?: string): {type: MessageType, index?: number, data: any} {
+    const {type, data: wrappedData} = MajsoulCodec.stripMessageType(message);
+    if (type === MessageType.Notification) {
+      return {
+        type,
+        data: this.decode(wrappedData)
+      };
+    }
+
+    if (type !== MessageType.Response && type !== MessageType.Request ) {
+      console.log(`Unknown Message Type ${type}`);
+      return;
+    }
+
+    const {index, data} = MajsoulCodec.stripIndex(wrappedData);
+    const unwrappedMessage = this.wrapper.decode(data);
+    const method = this.lookupMethod(methodName || unwrappedMessage["name"]);
+
+    return {
+      type,
+      index,
+      data: this.protobufRoot.lookupType(type === MessageType.Response
+        ? method.requestType
+        : method.requestType
+        ).decode(unwrappedMessage["data"])
+    }
+  }
+
+  private lookupMethod(path: string): Method {
+    const sections = path.split(".");
+    const service = this.protobufRoot.lookupService(sections.slice(0, -1));
+    const name = sections[sections.length - 1];
+    return service.methods[name];
+  }
 }
 
 async function getRes<T>(path: string): Promise<T> {
@@ -54,10 +136,7 @@ class MajsoulConnection {
 
     this.socket = new WebSocket(this.server, { agent });
     this.socket.on("message", (data) => {
-      this.messagesSubject.next({
-        type: data[0],
-        data: data.slice(1),
-      });
+      this.messagesSubject.next(MajsoulCodec.stripMessageType(data as Buffer));
     });
 
     return new Promise((resolve, reject) => {
@@ -74,13 +153,7 @@ class MajsoulConnection {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new Error("Connection is not opened");
     }
-
-    this.socket.send(
-      Buffer.concat([
-        Buffer.from([type]),
-        data
-      ])
-    );
+    this.socket.send(MajsoulCodec.addMessageType(type, data));
   }
 }
 
@@ -101,7 +174,7 @@ class MajsoulRpcImplementation {
         return;
       }
 
-      const index = message.data[0] | message.data[1] << 8;
+      const {index, data} = MajsoulCodec.stripIndex(message.data);
       const callback = this.transactionMap[index];
       delete this.transactionMap[index];
 
@@ -110,7 +183,7 @@ class MajsoulRpcImplementation {
       }
 
       try {
-        callback(null, this.wrapper.decode(message.data.slice(2))["data"]);
+        callback(null, this.wrapper.decode(data)["data"]);
       } catch (error){
         callback(error, null);
       }
@@ -126,13 +199,13 @@ class MajsoulRpcImplementation {
     this.transactionMap[index] = callback;
     this.connection.send(
       MessageType.Request,
-      Buffer.concat([
-        Buffer.from([index & 0xff, index >> 8]),
+      MajsoulCodec.addIndex(
+        index,
         this.wrapper.encode(this.wrapper.create({
           name: method.fullName,
           data: requestData
         })).finish()
-      ])
+      )
     );
   }
 }
@@ -172,10 +245,16 @@ export class MajsoulAPI {
   private rpc: MajsoulRpcImplementation;
   private protobufRoot: Root;
   private connection: MajsoulConnection;
+  private lobbyService: MajsoulService;
+  private codec: MajsoulCodec;
+
+  public get majsoulCodec(): MajsoulCodec {
+    return this.codec;
+  }
 
   public async init(): Promise<void> {
     const URL_BASE = majsoul.urlBase || "https://mahjongsoul.game.yo-star.com/";
-    const versionInfo = await getRes<IVersion>(URL_BASE + "version.json?randv=" + Math.random().toString().slice(2));
+    const versionInfo = await getRes<any>(URL_BASE + "version.json?randv=" + Math.random().toString().slice(2));
     const resInfo = await getRes<any>(URL_BASE + `resversion${versionInfo.version}.json`);
     const pbVersion = resInfo.res["res/proto/liqi.json"].prefix;
     const pbDef = await getRes<any>(URL_BASE + `${pbVersion}/res/proto/liqi.json`);
@@ -196,10 +275,11 @@ export class MajsoulAPI {
     const serverIndex = Math.floor(Math.random() * serverList.servers.length);
     this.connection = new MajsoulConnection(`wss://${serverList.servers[serverIndex]}`);
     this.protobufRoot = Root.fromJSON(pbDef);
+    this.codec = new MajsoulCodec(this.protobufRoot);
     this.rpc = new MajsoulRpcImplementation(this.connection, this.protobufRoot);
     await this.connection.init();
 
-    const lobbyService = this.rpc.getService("Lobby");
+    this.lobbyService = this.rpc.getService("Lobby");
 
     const passport = await (await fetch(
       "https://passport.mahjongsoul.com/user/login",
@@ -222,59 +302,58 @@ export class MajsoulAPI {
       return;
     }
 
-    let resp = await lobbyService.rpcCall("oauth2Auth", {
-      type: 8,
+    const type = 8;
+    let resp = await this.lobbyService.rpcCall("oauth2Auth", {
+      type,
       code: passport.accessToken,
       uid: passport.uid,
     });
     const accessToken = resp.access_token;
 
-    // resp = await this.rpc.rpcCall(".lq.Lobby.oauth2Check", {type, access_token: accessToken});
-    // console.log(resp);
-    // if (!resp.payload.has_account) {
-    //   await new Promise((res) => setTimeout(res, 2000));
-    //   resp = await this.rpc.rpcCall(".lq.Lobby.oauth2Check", {type, access_token: accessToken});
-    // }
-    // assert(resp.payload.has_account);
-    // resp = await this.rpc.rpcCall(".lq.Lobby.oauth2Login", {
-    //   type,
-    //   access_token: accessToken,
-    //   reconnect: false,
-    //   device: { device_type: "pc", browser: "safari" },
-    //   random_key: uuidv4(),
-    //   client_version: versionInfo.version,
-    // });
-    // assert(resp.payload.account_id);
-    // console.log("Connection ready");
+    resp = await this.lobbyService.rpcCall("oauth2Check", {type, access_token: accessToken});
+    if (!resp.has_account) {
+      await new Promise((res) => setTimeout(res, 2000));
+      resp = await this.lobbyService.rpcCall("oauth2Check", {type, access_token: accessToken});
+    }
+
+    resp = await this.lobbyService.rpcCall("oauth2Login", {
+      type,
+      access_token: accessToken,
+      reconnect: false,
+      device: { device_type: "pc", browser: "safari" },
+      random_key: uuidv4(),
+      client_version: versionInfo.version,
+    });
+    console.log("Connection ready");
   };
 
   public async getContest (contestId): Promise<IContest> {
-    return null;
-    // let resp = await this.rpc.rpcCall(".lq.Lobby.fetchCustomizedContestByContestId", {
-    //   contest_id: contestId,
-    // });
-    // const realId = resp.payload.contest_info.unique_id;
-    // let nextIndex = undefined;
-    // const idLog = {};
+    let resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
+      contest_id: contestId,
+    });
+    const realId = resp.contest_info.unique_id;
+    let nextIndex = undefined;
+    const idLog = {};
 
-    // while (true) {
-    //   resp = await this.rpc.rpcCall(".lq.Lobby.fetchCustomizedContestGameRecords", {
-    //     unique_id: realId,
-    //     last_index: nextIndex,
-    //   });
-    //   for (const game of resp.payload.record_list) {
-    //     idLog[game.uuid] = true;
-    //   }
+    while (true) {
+      resp = await this.lobbyService.rpcCall("fetchCustomizedContestGameRecords", {
+        unique_id: realId,
+        last_index: nextIndex,
+      });
 
-    //   if (!resp.payload.next_index || !resp.payload.record_list.length) {
-    //     break;
-    //   }
-    //   nextIndex = resp.payload.next_index;
-    // }
+      for (const game of resp.record_list) {
+        idLog[game.uuid] = true;
+      }
 
-    // return {
-    //   games: Object.keys(idLog).map(id => { return  {id} }).reverse()
-    // }
+      if (!resp.next_index || !resp.record_list.length) {
+        break;
+      }
+      nextIndex = resp.next_index;
+    }
+
+    return {
+      games: Object.keys(idLog).map(id => { return  {id} }).reverse()
+    }
   }
 
   private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
@@ -302,9 +381,8 @@ export class MajsoulAPI {
   }
 
   public async getGame(id: string): Promise<GameResult> {
-    console.log(id);
-    const resp = null// (await this.rpc.rpcCall(".lq.Lobby.fetchGameRecord", { game_uuid: id })).payload;
-    const records = null //this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
+    const resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
+    const records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
     const hands: IRoundResult[] = [];
 
     let lastDiscardSeat: number;
@@ -406,10 +484,4 @@ export class MajsoulAPI {
   public dispose() {
     this.connection.close();
   }
-}
-
-interface IContest {
-  games: {
-    id: string
-  }[];
 }
