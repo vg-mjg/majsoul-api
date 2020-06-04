@@ -8,6 +8,7 @@ import { GameResult } from "./GameResult";
 import { majsoul } from "./env";
 import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
 import * as util from 'util';
+import { Han } from "./Han";
 
 interface IMessage {
   type: number,
@@ -345,12 +346,22 @@ export class MajsoulAPI {
   }
 
   private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
-    const value = hule.zimo ? (hule.seat === round.dealership ? hule.point_sum : hule.point_zimo_qin + hule.point_zimo_xian * 2) : hule.point_rong;
+    const value = hule.zimo
+      ? (hule.seat === round.dealership
+        ? hule.point_sum
+        : hule.point_zimo_qin + hule.point_zimo_xian * 2)
+      : hule.point_rong - (hule.riqi ? 1000 : 0);
+
     return {
       extras: record.delta_scores[hule.seat] - value - (hule.riqi ? 1000 : 0),
       value,
       winner: hule.seat,
-      han: (hule.fans as any[]).map(f => Array(f.val).fill(f.id)).flat()
+      han: (hule.fans as any[]).map(f => {
+        if ([Han.Dora, Han.Aka_Dora, Han.Ura_Dora].indexOf(f.id) >= 0) {
+          return Array(f.val).fill(f.id);
+        }
+        return [f.id];
+      }).flat()
     };
   }
 

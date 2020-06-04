@@ -176,11 +176,7 @@ export class Spreadsheet {
             rowIndex: 2,
           },
           rows: game.finalScore.map((player, i) => ({
-            values: [
-              { userEnteredValue: {
-                numberValue: game.time / (60*60*24) + 25569 },
-                userEnteredFormat: { numberFormat: { type: "DATE_TIME" } },
-              },
+            values: [,
               { userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
               { userEnteredValue: { stringValue: game.players[i].name } },
               { userEnteredValue: { numberValue: player.score } },
@@ -293,8 +289,8 @@ export class Spreadsheet {
         mergeCells: {
           range: {
             sheetId: this.detailsSheetId,
-            startColumnIndex: 0,
-            endColumnIndex: 8,
+            startColumnIndex: 1,
+            endColumnIndex: 7,
             startRowIndex: 1,
             endRowIndex: 2,
           }
@@ -312,13 +308,38 @@ export class Spreadsheet {
             values: [
               {
                 userEnteredValue: { stringValue: game.id },
+              },
+              {
+                userEnteredValue: { stringValue: game.players.map(p => p.name).join(", ") },
                 userEnteredFormat: {
                   horizontalAlignment: "CENTER",
                   textFormat: {
                     bold: true
                   }
                 }
-              },
+              }
+            ]
+          }]
+        }
+      },
+      {
+        updateCells: {
+          fields: "*",
+          start: {
+            sheetId: this.detailsSheetId,
+            columnIndex: 7,
+            rowIndex: 1,
+          },
+          rows: [{
+            values: [
+              { userEnteredValue: {
+                numberValue: game.time / (60*60*24) + 25569 },
+                userEnteredFormat: {
+                  horizontalAlignment: "LEFT",
+                  textFormat: { bold: true },
+                  numberFormat: { type: "DATE_TIME" }
+                }
+              }
             ]
           }]
         }
@@ -334,7 +355,7 @@ export class Spreadsheet {
           rows: hands.map((hand) => ({
             values: [
               { userEnteredValue: { stringValue: Wind[hand.round.round] } },
-              { userEnteredValue: { stringValue: Wind[hand.round.dealership] } },
+              { userEnteredValue: { numberValue: hand.round.dealership + 1 } },
               { userEnteredValue: { numberValue: hand.round.repeat } },
               { userEnteredValue: { stringValue: hand.result } },
               { userEnteredValue: { stringValue: game.players[hand.agari.winner].name } },
@@ -345,7 +366,7 @@ export class Spreadsheet {
                     map[next] = (map[next] || 0) + 1;
                     return map;
                   }, {}))
-                    .map(kvp => `${kvp[1] > 1 ? kvp[1] + "x" : ""}${Han[kvp[0]] || kvp[0]}`)
+                    .map(kvp => `${Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
                     .map(h => h.replace(/_/g, " "))
                     .join(", ")
                 }
