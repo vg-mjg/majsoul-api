@@ -2,18 +2,13 @@ import {Root, Method, RPCImplCallback, Type, rpc, RPCImpl, Service} from "protob
 import * as WebSocket from "ws";
 import * as uuidv4 from "uuid/v4";
 import fetch from "node-fetch";
-import { Subject, Observable, Subscription } from 'rxjs';
+import { Subject, Observable, Subscription, merge } from 'rxjs';
+import { filter, map, multicast, share, tap } from 'rxjs/operators';
 import { GameResult } from "./GameResult";
 import { majsoul } from "./env";
 import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
 import * as util from 'util';
 import { Han } from "./Han";
-
-interface IContest {
-  games: {
-    id: string
-  }[];
-}
 
 class MajsoulCodec {
   public static stripMessageType(data: Buffer): {type: MessageType, data: Buffer} {
@@ -134,14 +129,18 @@ class MajsoulConnection {
       agent = new HttpsProxyAgent(url.parse(process.env.http_proxy));
     }
 
-    this.socket = new WebSocket(this.server, { agent });
-    this.socket.on("message", (data) => {
-      this.messagesSubject.next(MajsoulCodec.stripMessageType(data as Buffer));
-    });
+    return new Promise((resolve) => {
+      this.socket = new WebSocket(this.server, { agent });
+      this.socket.on("message", (data) => {
+        const message = MajsoulCodec.stripMessageType(data as Buffer);
+        this.messagesSubject.next(message);
+      });
 
-    return new Promise((resolve, reject) => {
+      this.socket.on("error", (e) => {
+        console.log(e);
+      });
+
       this.socket.on("open", () => resolve());
-      this.socket.on("error", (e) => reject(e));
     });
   }
 
@@ -183,7 +182,8 @@ class MajsoulRpcImplementation {
       }
 
       try {
-        callback(null, this.wrapper.decode(data)["data"]);
+        const message = this.wrapper.decode(data)["data"]
+        callback(null, message);
       } catch (error){
         callback(error, null);
       }
@@ -247,6 +247,8 @@ export class MajsoulAPI {
   private connection: MajsoulConnection;
   private lobbyService: MajsoulService;
   private codec: MajsoulCodec;
+  private notifications: Observable<any>;
+  private readonly contestObservables: Observable<any>[] = [];
 
   public get majsoulCodec(): MajsoulCodec {
     return this.codec;
@@ -277,6 +279,12 @@ export class MajsoulAPI {
     this.protobufRoot = Root.fromJSON(pbDef);
     this.codec = new MajsoulCodec(this.protobufRoot);
     this.rpc = new MajsoulRpcImplementation(this.connection, this.protobufRoot);
+
+    this.notifications = this.connection.messages.pipe(
+      filter(message => message.type === MessageType.Notification),
+      map(message => this.codec.decode(message.data)),
+    );
+
     await this.connection.init();
 
     this.lobbyService = this.rpc.getService("Lobby");
@@ -324,20 +332,24 @@ export class MajsoulAPI {
       random_key: uuidv4(),
       client_version: versionInfo.version,
     });
+
     console.log("Connection ready");
   };
 
-  public async getContest (contestId): Promise<IContest> {
-    let resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
-      contest_id: contestId,
+  public async findContestUniqueId(id: number): Promise<number> {
+    const resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
+      contest_id: id,
     });
-    const realId = resp.contest_info.unique_id;
+    return resp.contest_info.unique_id;
+  }
+
+  public async getContestGamesIds(id: number): Promise<{id: string}[]> {
     let nextIndex = undefined;
     const idLog = {};
 
     while (true) {
-      resp = await this.lobbyService.rpcCall("fetchCustomizedContestGameRecords", {
-        unique_id: realId,
+      const resp = await this.lobbyService.rpcCall("fetchCustomizedContestGameRecords", {
+        unique_id: id,
         last_index: nextIndex,
       });
 
@@ -350,10 +362,39 @@ export class MajsoulAPI {
       }
       nextIndex = resp.next_index;
     }
+    return Object.keys(idLog).map(id => { return  {id} }).reverse()
+  }
 
-    return {
-      games: Object.keys(idLog).map(id => { return  {id} }).reverse()
+  public subscribeToContest(id: number): Observable<string> {
+    const observable = this.contestObservables[id];
+    if (observable) {
+      return observable;
     }
+
+    return this.contestObservables[id] = merge(
+      this.notifications.pipe(
+        filter(message =>
+          message.constructor.name === "NotifyCustomContestSystemMsg"
+          && message.game_end
+          && message.game_end.constructor.name === "CustomizedContestGameEnd"
+          && message.unique_id === id
+        ),
+        map(message => message.uuid as string)
+      ),
+      new Observable<string>((subscriber) => {
+        console.log("subscribed");
+        this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: id });
+        return () => {
+          console.log("unsubscribed");
+          this.lobbyService.rpcCall("leaveCustomizedContestChatRoom", {}).then(() => {
+            delete this.contestObservables[id];
+            for (const contest of Object.keys(this.contestObservables)) {
+              this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: contest });
+            }
+          })
+        };
+      })
+    ).pipe(share());
   }
 
   private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
@@ -383,6 +424,7 @@ export class MajsoulAPI {
   public async getGame(id: string): Promise<GameResult> {
     const resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
     const records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
+
     const hands: IRoundResult[] = [];
 
     let lastDiscardSeat: number;
@@ -460,8 +502,6 @@ export class MajsoulAPI {
       return;
     }
 
-    const result = resp.head.result.players;
-
     return {
       id,
       time: resp.head.end_time,
@@ -471,7 +511,7 @@ export class MajsoulAPI {
         }
       }),
       finalScore: (resp.head.accounts as any[]).map(account => {
-        const playerItem = result.find(b => b.seat === account.seat);
+        const playerItem = resp.head.result.players.find(b => b.seat === account.seat);
         return {
           score: playerItem.part_point_1,
           uma: playerItem.total_point / 1000,

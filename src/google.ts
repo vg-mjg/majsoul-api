@@ -177,6 +177,10 @@ export class Spreadsheet {
           },
           rows: game.finalScore.map((player, i) => ({
             values: [,
+              { userEnteredValue: {
+                numberValue: game.time / (60*60*24) + 25569 },
+                userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
+              },
               { userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
               { userEnteredValue: { stringValue: game.players[i].name } },
               { userEnteredValue: { numberValue: player.score } },
