@@ -11,7 +11,8 @@ import { Han } from "./Han";
 
 class MajsoulCodec {
   public static decodePaipuId(paipu: string): string {
-    for (let e = "", i = "0".charCodeAt(0), n = "a".charCodeAt(0), a = 0; a < paipu.length; a++) {
+    let e = "";
+    for (let i = "0".charCodeAt(0), n = "a".charCodeAt(0), a = 0; a < paipu.length; a++) {
         let r = paipu.charAt(a),
             s = r.charCodeAt(0),
             o = -1;
