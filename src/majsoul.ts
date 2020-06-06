@@ -3,9 +3,8 @@ import * as WebSocket from "ws";
 import * as uuidv4 from "uuid/v4";
 import fetch from "node-fetch";
 import { Subject, Observable, Subscription, merge } from 'rxjs';
-import { filter, map, multicast, share, tap } from 'rxjs/operators';
+import { filter, map, share, tap } from 'rxjs/operators';
 import { GameResult } from "./GameResult";
-import { majsoul } from "./env";
 import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
 import * as util from 'util';
 import { Han } from "./Han";
@@ -136,6 +135,8 @@ class MajsoulConnection {
         this.messagesSubject.next(message);
       });
 
+      this.socket.on("close", (a,b) => console.log(a,b));
+
       this.socket.on("error", (e) => {
         console.log(e);
       });
@@ -241,26 +242,30 @@ class MajsoulService {
   }
 }
 
-export class MajsoulAPI {
-  private rpc: MajsoulRpcImplementation;
-  private protobufRoot: Root;
-  private connection: MajsoulConnection;
-  private lobbyService: MajsoulService;
-  private codec: MajsoulCodec;
-  private notifications: Observable<any>;
+export interface MajsoulApiResources {
+  version: string;
+  serverList: {
+    servers: string[]
+  };
+  protobufDefinition: any;
+}
+
+export class MajsoulApi {
   private readonly contestObservables: Observable<any>[] = [];
+  private readonly protobufRoot: Root;
+  private readonly connection: MajsoulConnection;
+  private readonly rpc: MajsoulRpcImplementation;
+  private readonly lobbyService: MajsoulService;
+  private readonly codec: MajsoulCodec;
+  private readonly notifications: Observable<any>;
 
-  public get majsoulCodec(): MajsoulCodec {
-    return this.codec;
-  }
-
-  public async init(): Promise<void> {
-    const URL_BASE = majsoul.urlBase || "https://mahjongsoul.game.yo-star.com/";
-    const versionInfo = await getRes<any>(URL_BASE + "version.json?randv=" + Math.random().toString().slice(2));
-    const resInfo = await getRes<any>(URL_BASE + `resversion${versionInfo.version}.json`);
+  public static async retrieveMahjsoulApiResources(): Promise<MajsoulApiResources> {
+    const majsoulUrl = "https://mahjongsoul.game.yo-star.com/";
+    const versionInfo = await getRes<any>(majsoulUrl + "version.json?randv=" + Math.random().toString().slice(2));
+    const resInfo = await getRes<any>(majsoulUrl + `resversion${versionInfo.version}.json`);
     const pbVersion = resInfo.res["res/proto/liqi.json"].prefix;
-    const pbDef = await getRes<any>(URL_BASE + `${pbVersion}/res/proto/liqi.json`);
-    const config = await getRes<any>(URL_BASE + `${resInfo.res["config.json"].prefix}/config.json`);
+    const pbDef = await getRes<any>(majsoulUrl + `${pbVersion}/res/proto/liqi.json`);
+    const config = await getRes<any>(majsoulUrl + `${resInfo.res["config.json"].prefix}/config.json`);
     const ipDef = config.ip.filter((x) => x.name === "player")[0];
 
     const serverListUrl = (
@@ -274,21 +279,39 @@ export class MajsoulAPI {
       return;
     }
 
-    const serverIndex = Math.floor(Math.random() * serverList.servers.length);
-    this.connection = new MajsoulConnection(`wss://${serverList.servers[serverIndex]}`);
-    this.protobufRoot = Root.fromJSON(pbDef);
-    this.codec = new MajsoulCodec(this.protobufRoot);
-    this.rpc = new MajsoulRpcImplementation(this.connection, this.protobufRoot);
+    return {
+      version: versionInfo.version,
+      serverList: serverList,
+      protobufDefinition: pbDef
+    }
+  }
 
+  constructor(
+    private readonly apiResources: MajsoulApiResources
+  ) {
+    this.protobufRoot = Root.fromJSON(this.apiResources.protobufDefinition);
+    this.codec = new MajsoulCodec(this.protobufRoot);
+
+    const serverIndex = Math.floor(Math.random() * this.apiResources.serverList.servers.length);
+    this.connection = new MajsoulConnection(`wss://${this.apiResources.serverList.servers[serverIndex]}`);
     this.notifications = this.connection.messages.pipe(
       filter(message => message.type === MessageType.Notification),
       map(message => this.codec.decode(message.data)),
     );
 
-    await this.connection.init();
-
+    this.rpc = new MajsoulRpcImplementation(this.connection, this.protobufRoot);
     this.lobbyService = this.rpc.getService("Lobby");
+  }
 
+  public get majsoulCodec(): MajsoulCodec {
+    return this.codec;
+  }
+
+  public async init(): Promise<void> {
+    await this.connection.init();
+  }
+
+  public async logIn(userId: string, accessToken: string): Promise<void> {
     const passport = await (await fetch(
       "https://passport.mahjongsoul.com/user/login",
       {
@@ -298,9 +321,9 @@ export class MajsoulAPI {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          "uid": majsoul.uid,
-          "token": majsoul.accessToken,
-          "deviceId": `web|${majsoul.uid}`
+          "uid": userId,
+          "token": accessToken,
+          "deviceId": `web|${userId}`
         })
       }
     )).json();
@@ -316,7 +339,8 @@ export class MajsoulAPI {
       code: passport.accessToken,
       uid: passport.uid,
     });
-    const accessToken = resp.access_token;
+
+    accessToken = resp.access_token;
 
     resp = await this.lobbyService.rpcCall("oauth2Check", {type, access_token: accessToken});
     if (!resp.has_account) {
@@ -330,7 +354,7 @@ export class MajsoulAPI {
       reconnect: false,
       device: { device_type: "pc", browser: "safari" },
       random_key: uuidv4(),
-      client_version: versionInfo.version,
+      client_version: this.apiResources.version,
     });
 
     console.log("Connection ready");
@@ -365,7 +389,7 @@ export class MajsoulAPI {
     return Object.keys(idLog).map(id => { return  {id} }).reverse()
   }
 
-  public subscribeToContest(id: number): Observable<string> {
+  public subscribeToContestChatSystemMessages(id: number): Observable<any> {
     const observable = this.contestObservables[id];
     if (observable) {
       return observable;
@@ -373,13 +397,11 @@ export class MajsoulAPI {
 
     return this.contestObservables[id] = merge(
       this.notifications.pipe(
+        tap(m => console.log(m)),
         filter(message =>
           message.constructor.name === "NotifyCustomContestSystemMsg"
-          && message.game_end
-          && message.game_end.constructor.name === "CustomizedContestGameEnd"
           && message.unique_id === id
-        ),
-        map(message => message.uuid as string)
+        )
       ),
       new Observable<string>((subscriber) => {
         console.log("subscribed");
@@ -397,33 +419,16 @@ export class MajsoulAPI {
     ).pipe(share());
   }
 
-  private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
-    const value = hule.zimo
-    ? (hule.seat === round.dealership
-      ? hule.point_zimo_xian * 3
-      : hule.point_zimo_qin + hule.point_zimo_xian * 2)
-      : hule.point_rong - (hule.riqi ? 1000 : 0);
-
-    if (hule.seat === round.dealership && hule.zimo) {
-      console.log(util.inspect(record, false, null, true));
-      console.log(value);
-    }
-    return {
-      extras: record.delta_scores[hule.seat] - value - (hule.riqi ? 1000 : 0),
-      value,
-      winner: hule.seat,
-      han: (hule.fans as any[]).map(f => {
-        if ([Han.Dora, Han.Red_Five, Han.Ura_Dora].indexOf(f.id) >= 0) {
-          return Array(f.val).fill(f.id);
-        }
-        return [f.id];
-      }).flat()
-    };
-  }
-
   public async getGame(id: string): Promise<GameResult> {
-    const resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
-    const records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
+    let resp, records;
+    try {
+      resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
+      records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
+    } catch (e) {
+      console.log(`Couldn't find game ${id}`);
+      console.log(resp);
+      return null;
+    }
 
     const hands: IRoundResult[] = [];
 
@@ -431,18 +436,17 @@ export class MajsoulAPI {
     let round: IRoundInfo;
     for (const record of records) {
       switch (record.constructor.name) {
-        case "RecordNewRound":
+        case "RecordNewRound": {
           round = {
             round: record.chang,
             dealership: record.ju,
             repeat: record.ben
           };
           break;
-        case "RecordDiscardTile": {
+        } case "RecordDiscardTile": {
           lastDiscardSeat = record.seat;
           break;
-        }
-        case "RecordNoTile": {
+        } case "RecordNoTile": {
           if (!round) {
             console.log("Missing hand for NoTile event");
             continue;
@@ -461,8 +465,7 @@ export class MajsoulAPI {
           });
           round = null;
           break;
-        }
-        case "RecordHule": {
+        } case "RecordHule": {
           if (!round) {
             console.log("Missing hand for Hule event");
             continue;
@@ -523,5 +526,25 @@ export class MajsoulAPI {
 
   public dispose() {
     this.connection.close();
+  }
+
+  private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
+    const value = hule.zimo
+    ? (hule.seat === round.dealership
+      ? hule.point_zimo_xian * 3
+      : hule.point_zimo_qin + hule.point_zimo_xian * 2)
+      : hule.point_rong - (hule.riqi ? 1000 : 0);
+
+    return {
+      extras: record.delta_scores[hule.seat] - value - (hule.riqi ? 1000 : 0),
+      value,
+      winner: hule.seat,
+      han: (hule.fans as any[]).map(f => {
+        if ([Han.Dora, Han.Red_Five, Han.Ura_Dora].indexOf(f.id) >= 0) {
+          return Array(f.val).fill(f.id);
+        }
+        return [f.id];
+      }).flat()
+    };
   }
 }

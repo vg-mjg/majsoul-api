@@ -110,6 +110,7 @@ export class Spreadsheet {
     }
 
     this.recordedGameIds.push(game.id);
+    console.log(`Recording game result for game ${game.id}`);
 
     const blackBorderStyle = {
       style: "SOLID",
@@ -234,6 +235,7 @@ export class Spreadsheet {
     }
 
     this.recordedGameDetailIds.push(game.id);
+    console.log(`Recording game details for game ${game.id}`);
 
     const blackBorderStyle = {
       style: "SOLID",
