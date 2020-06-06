@@ -84,10 +84,10 @@ async function main() {
   //console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 
   const contestId = await api.findContestUniqueId(113331);
-  // const contest2Id = await api.findContestUniqueId(917559);
+  // const contestId2 = await api.findContestUniqueId(917559);
   const sub = api.subscribeToContestChatSystemMessages(contestId).subscribe(notification => {
     if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
-      setTimeout(() => addToSpreadSheet(notification.uuid), 6000);
+      setTimeout(() => addToSpreadSheet(notification.uuid), 5000);
     }
   });
 
