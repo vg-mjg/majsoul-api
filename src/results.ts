@@ -4,16 +4,6 @@ import { Credentials } from 'google-auth-library';
 import * as fs from "fs";
 import * as path from "path";
 
-function decodePaipuId(paipu: string): string {
-  for (var e = "", i = "0".charCodeAt(0), n = "a".charCodeAt(0), a = 0; a < paipu.length; a++) {
-      var r = paipu.charAt(a),
-          s = r.charCodeAt(0),
-          o = -1;
-      s >= i && s < i + 10 ? o = s - i : s >= n && s < n + 26 && (o = s - n + 10), e += -1 != o ? (o = (o + 55 - a) % 36) < 10 ? String.fromCharCode(o + i) : String.fromCharCode(o + n - 10) : r;
-  }
-  return e;
-}
-
 interface ISecrets {
   majsoul: {
     uid: string;

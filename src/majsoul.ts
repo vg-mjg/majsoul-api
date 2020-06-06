@@ -10,6 +10,16 @@ import * as util from 'util';
 import { Han } from "./Han";
 
 class MajsoulCodec {
+  public static decodePaipuId(paipu: string): string {
+    for (let e = "", i = "0".charCodeAt(0), n = "a".charCodeAt(0), a = 0; a < paipu.length; a++) {
+        let r = paipu.charAt(a),
+            s = r.charCodeAt(0),
+            o = -1;
+        s >= i && s < i + 10 ? o = s - i : s >= n && s < n + 26 && (o = s - n + 10), e += -1 != o ? (o = (o + 55 - a) % 36) < 10 ? String.fromCharCode(o + i) : String.fromCharCode(o + n - 10) : r;
+    }
+    return e;
+  }
+
   public static stripMessageType(data: Buffer): {type: MessageType, data: Buffer} {
     return {
       type: data[0],
