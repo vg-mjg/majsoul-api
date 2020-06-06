@@ -1,11 +1,8 @@
-import * as fs from 'fs';
 import * as readline from 'readline';
-import * as path from 'path';
 import { google, sheets_v4 } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
 import { GameResult } from './GameResult';
+import { Credentials } from 'google-auth-library';
 
-import * as env from './env';
 import { DrawStatus, IRoundInfo, IAgariInfo, Wind } from './IHandRecord';
 import { Han } from './Han';
 
@@ -16,38 +13,66 @@ interface IHandDescription {
   loser?: number;
 }
 
+export interface IGoogleAppInformation {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  authToken: Credentials;
+}
+
 export class Spreadsheet {
-  private static readonly TOKEN_PATH = path.join(path.dirname(__filename), 'token.json');
   private static readonly spreadsheetId = '1F8aIK0EnliSrV3ME_DNtTzfHi488THMx-m5vhO2lPSk';
   private static readonly gameResultsSheetName = "Robots";
   private static readonly gameDetailsSheetName = "Details";
 
-  private sheets: sheets_v4.Sheets;
+  public static getAuthTokenInteractive(appInformation: IGoogleAppInformation): Promise<Credentials> {
+    return new Promise<Credentials>(resolve => {
+      const oAuth2Client = new google.auth.OAuth2(
+        appInformation.clientId,
+        appInformation.clientSecret,
+        appInformation.redirectUri
+      );
+
+      const authUrl = oAuth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/spreadsheets'],
+      });
+
+      console.log('Authorize this app by visiting this url:', authUrl);
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      rl.question('Enter the code from that page here: ', (code) => {
+        rl.close();
+        oAuth2Client.getToken(code, (err, token) => {
+          if (err) return console.error('Error while trying to retrieve access token', err);
+          resolve(token as any);
+        });
+      });
+    });
+  }
+
+  private readonly sheets: sheets_v4.Sheets;
   private spreadsheet: sheets_v4.Schema$Spreadsheet;
   private resultsSheetId: number;
   private detailsSheetId: number;
   private recordedGameIds: string[];
   private recordedGameDetailIds: string[];
 
+  constructor(appInformation: IGoogleAppInformation) {
+    const oAuth2Client = new google.auth.OAuth2(
+      appInformation.clientId,
+      appInformation.clientSecret,
+      appInformation.redirectUri
+    );
+
+    oAuth2Client.setCredentials(appInformation.authToken);
+    this.sheets = google.sheets({version: 'v4', auth: oAuth2Client});
+  }
+
   public async init(): Promise<void>{
-    const auth = await new Promise<any>((resolve) => {
-      const {client_secret, client_id, redirect_uris} = env.googleCreds.installed;
-      const oAuth2Client = new google.auth.OAuth2(
-        client_id,
-        client_secret,
-        redirect_uris[0]
-      );
-
-      fs.readFile(Spreadsheet.TOKEN_PATH, (err, token) => {
-        if (err) {
-          return this.getNewToken(oAuth2Client, (auth: OAuth2Client) => resolve(auth));
-        }
-        oAuth2Client.setCredentials(JSON.parse(token as any));
-        resolve(oAuth2Client);
-      });
-    });
-
-    this.sheets = google.sheets({version: 'v4', auth: auth});
     this.spreadsheet = (await (this.sheets.spreadsheets.get({
       spreadsheetId: Spreadsheet.spreadsheetId,
     }) as any as Promise<sheets_v4.Schema$Spreadsheet>) as any).data;
@@ -69,30 +94,6 @@ export class Spreadsheet {
       }
     )).data;
     this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(Wind).indexOf(v) < 0);
-  }
-
-  private getNewToken(oAuth2Client, callback) {
-    const authUrl = oAuth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    console.log('Authorize this app by visiting this url:', authUrl);
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    rl.question('Enter the code from that page here: ', (code) => {
-      rl.close();
-      oAuth2Client.getToken(code, (err, token) => {
-        if (err) return console.error('Error while trying to retrieve access token', err);
-        oAuth2Client.setCredentials(token);
-        fs.writeFile(Spreadsheet.TOKEN_PATH, JSON.stringify(token), (err) => {
-          if (err) return console.error(err);
-          console.log('Token stored to', Spreadsheet.TOKEN_PATH);
-        });
-        callback(oAuth2Client);
-      });
-    });
   }
 
   public isGameRecorded(id: string): boolean {
