@@ -5,7 +5,7 @@ export interface PlayerInfo {
 }
 
 export interface GameResult {
-  id: string;
+  majsoulId: string;
   time: number;
   players: PlayerInfo[];
   finalScore: FinalScore[];

@@ -4,6 +4,9 @@ import { Credentials } from 'google-auth-library';
 import * as fs from "fs";
 import * as path from "path";
 
+import { MongoClient, Collection } from 'mongodb';
+import { GameResult } from "./GameResult";
+
 interface ISecrets {
   majsoul: {
     uid: string;
@@ -81,11 +84,49 @@ async function main() {
     }
   });
 
-
   //spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
-
+  const gameCollection = await getMongoCollection();
+  const recordedGames = (await gameCollection.find().project({majsoulId: 1}).toArray()).map(game => game.majsoulId);
+  console.log(recordedGames);
   const games = await api.getContestGamesIds(contestId);
-  games.forEach((game) => addToSpreadSheet(game.id));
+  try {
+    for (const game of games) {
+      if (recordedGames.indexOf(game.id) >= 0){
+        console.log(`game id ${game.id} skipped`);
+        continue;
+      }
+
+      const gameResult = await api.getGame(game.id);
+      if (gameResult.players.length !== 4) {
+        continue;
+      }
+
+      console.log(`game id ${game.id} found`);
+
+      console.log(await gameCollection.insertOne(gameResult));
+    }
+  } catch (e){
+    console.log(e);
+  }
+}
+
+async function getMongoCollection(): Promise<Collection<GameResult>>{
+  const url = 'mongodb://root:example@localhost:27017/?authMechanism=SCRAM-SHA-256&authSource=admin';
+  const dbName = 'majsoul';
+  const client = new MongoClient(url);
+  try {
+    await client.connect();
+
+    console.log("Connected successfully to server");
+    const db = client.db(dbName);
+
+    return await db.createCollection("contests", {});
+
+
+  } catch (e) {
+    console.log(e);
+  }
+  client.close();
 }
 
 main();

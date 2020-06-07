@@ -368,6 +368,11 @@ export class MajsoulApi {
       client_version: this.apiResources.version,
     });
 
+    if (!resp.account) {
+      throw Error(`Couldn't log in to user id ${userId}`);
+    }
+
+    console.log(`Logged in as ${resp.account.nickname} account id ${resp.account_id}`);
     console.log("Connection ready");
   };
 
@@ -517,7 +522,7 @@ export class MajsoulApi {
     }
 
     return {
-      id,
+      majsoulId: id,
       time: resp.head.end_time,
       players: (resp.head.accounts as any[]).map(account => {
         return {

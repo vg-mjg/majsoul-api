@@ -105,13 +105,13 @@ export class Spreadsheet {
   }
 
   public async addGame(game: GameResult) {
-    if (this.isGameRecorded(game.id)) {
-      console.log(`Game ${game.id} already recorded`);
+    if (this.isGameRecorded(game.majsoulId)) {
+      console.log(`Game ${game.majsoulId} already recorded`);
       return;
     }
 
-    this.recordedGameIds.push(game.id);
-    console.log(`Recording game result for game ${game.id}`);
+    this.recordedGameIds.push(game.majsoulId);
+    console.log(`Recording game result for game ${game.majsoulId}`);
 
     const blackBorderStyle = {
       style: "SOLID",
@@ -157,7 +157,7 @@ export class Spreadsheet {
           rows: [{
             values: [
               {
-                userEnteredValue: { stringValue: game.id },
+                userEnteredValue: { stringValue: game.majsoulId },
                 userEnteredFormat: {
                   horizontalAlignment: "CENTER",
                   textFormat: {
@@ -230,13 +230,13 @@ export class Spreadsheet {
   }
 
   public async addGameDetails(game: GameResult) {
-    if (this.isGameDetailRecorded(game.id)) {
-      console.log(`Game ${game.id} already recorded`);
+    if (this.isGameDetailRecorded(game.majsoulId)) {
+      console.log(`Game ${game.majsoulId} already recorded`);
       return;
     }
 
-    this.recordedGameDetailIds.push(game.id);
-    console.log(`Recording game details for game ${game.id}`);
+    this.recordedGameDetailIds.push(game.majsoulId);
+    console.log(`Recording game details for game ${game.majsoulId}`);
 
     const blackBorderStyle = {
       style: "SOLID",
@@ -318,7 +318,7 @@ export class Spreadsheet {
           rows: [{
             values: [
               {
-                userEnteredValue: { stringValue: game.id },
+                userEnteredValue: { stringValue: game.majsoulId },
               },
               {
                 userEnteredValue: { stringValue: game.players.map(p => p.name).join(", ") },
