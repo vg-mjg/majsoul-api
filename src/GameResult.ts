@@ -1,6 +1,23 @@
 import { FinalScore } from './PlayerGameResults';
 import { IRoundResult } from './IHandRecord';
-import { ObjectID } from 'mongodb';
+
+export interface IContestTeam {
+  name: string;
+  players: IPlayer[];
+}
+
+export interface IPlayer {
+  majsoulId: number;
+  nickname: string;
+  displayName: string;
+}
+
+export interface IContest {
+  majsoulId: number;
+  contestId: number;
+  name: string;
+  teams: IContestTeam[];
+}
 
 export interface GameResult {
   contestId: string;

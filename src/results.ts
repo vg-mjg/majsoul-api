@@ -4,8 +4,8 @@ import { Credentials } from 'google-auth-library';
 import * as fs from "fs";
 import * as path from "path";
 
-import { MongoClient, Collection, ObjectID } from 'mongodb';
-import { GameResult as IGameResult } from "./GameResult";
+import { MongoClient, Collection } from 'mongodb';
+import { GameResult as IGameResult, IContest, IPlayer } from "./GameResult";
 import * as express from 'express';
 
 interface ISecrets {
@@ -21,27 +21,6 @@ interface ISecrets {
     }
   }
   googleAuthToken: Credentials;
-}
-
-interface IContestTeam {
-  name: string;
-  players: {
-    majsoulId: string;
-  }
-}
-
-interface IContest {
-  _id: ObjectID;
-  majsoulId: number;
-  name: string;
-  teams: IContestTeam[];
-}
-
-interface IPlayer {
-  _id: ObjectID;
-  majsoulId: number;
-  nickname: string;
-  displayName: string;
 }
 
 async function main() {
@@ -98,9 +77,9 @@ async function main() {
 
   //console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 
-  const contestId = await api.findContestUniqueId(113331);
+  const contest = await api.findContestByContestId(113331);
   // const contestId2 = await api.findContestUniqueId(917559);
-  const sub = api.subscribeToContestChatSystemMessages(contestId).subscribe(notification => {
+  const sub = api.subscribeToContestChatSystemMessages(contest.majsoulId).subscribe(notification => {
     if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
       setTimeout(() => addToSpreadSheet(notification.uuid), 5000);
     }
@@ -123,27 +102,41 @@ async function main() {
     contestCollection = await db.createCollection("contests", {});
     contestCollection.createIndex({majsoulId: 1});
     gamesCollection = await db.createCollection("games", {});
-    contestCollection.createIndex({majsoulId: 1});
+    gamesCollection.createIndex({majsoulId: 1});
     playersCollection = await db.createCollection("players", {});
-    contestCollection.createIndex({majsoulId: 1});
+    playersCollection.createIndex({majsoulId: 1});
   } catch (e) {
     console.log(e);
   }
 
-  const contest = (await contestCollection.findOneAndUpdate(
-    { majsoulId: contestId },
-    { $setOnInsert: { name: "/mjg/ league" } },
-    {
-      upsert: true,
-      returnOriginal: false
+  console.log(contest);
+
+  await contestCollection.findOneAndReplace(
+    { majsoulId: contest.majsoulId },
+    contest,
+    { upsert: true }
+  );
+
+  const teams = await spreadsheet.getTeamInformation();
+  for (const team of teams) {
+    for (const player of team.players) {
+      await playersCollection.findOneAndUpdate(
+        { nickname: player.nickname },
+        { $set: { displayName: player.displayName } },
+        { upsert: true }
+      );
     }
-  )).value;
+    await contestCollection.findOneAndUpdate(
+      { majsoulId: contest.majsoulId },
+      { $set: { teams: teams } }
+    );
+  }
 
   const recordedGames = (await gamesCollection.find({}, { projection: { majsoulId: true } }).toArray()).map(g => g.majsoulId);
   console.log(recordedGames);
 
   try {
-    const gameIds = await api.getContestGamesIds(contestId);
+    const gameIds = await api.getContestGamesIds(contest.majsoulId);
 
     for (const game of gameIds) {
       if (recordedGames.indexOf(game.id) !== -1) {
@@ -152,11 +145,10 @@ async function main() {
       }
 
       const gameResult = await api.getGame(game.id);
-
       for (const player of gameResult.players) {
         await playersCollection.findOneAndUpdate(
-          { majsoulId: player.majsoulId },
-          { $setOnInsert: { nickname: player.name } },
+          { nickname: player.name },
+          { $setOnInsert: { majsoulId: player.majsoulId } },
           { upsert: true }
         )
       }
@@ -179,8 +171,14 @@ async function main() {
 
   const app = express();
   app.listen(3000, () => console.log(`Express started`));
-  app.get('/contests/{id}', (req, res) => {
-    console.log(req.params.id);
+  app.get('/players/:nickname', (req, res) => {
+    playersCollection.findOne(
+      { nickname: req.params.nickname }
+    ).then(player => res.send(player))
+    .catch(error => {
+      console.log(error);
+      res.sendStatus(500);
+    });
   })
 }
 

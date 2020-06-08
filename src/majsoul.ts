@@ -4,7 +4,7 @@ import * as uuidv4 from "uuid/v4";
 import fetch from "node-fetch";
 import { Subject, Observable, Subscription, merge } from 'rxjs';
 import { filter, map, share, tap } from 'rxjs/operators';
-import { GameResult } from "./GameResult";
+import { GameResult, IContest } from "./GameResult";
 import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
 import * as util from 'util';
 import { Han } from "./Han";
@@ -376,11 +376,16 @@ export class MajsoulApi {
     console.log("Connection ready");
   };
 
-  public async findContestUniqueId(id: number): Promise<number> {
+  public async findContestByContestId(id: number): Promise<IContest> {
     const resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
       contest_id: id,
     });
-    return resp.contest_info.unique_id;
+    return {
+      majsoulId: resp.contest_info.unique_id,
+      contestId: resp.contest_info.contest_id,
+      name: resp.contest_info.contest_name,
+      teams: []
+    }
   }
 
   public async getContestGamesIds(id: number): Promise<{id: string}[]> {

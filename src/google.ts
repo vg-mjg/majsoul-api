@@ -1,6 +1,6 @@
 import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
-import { GameResult } from './GameResult';
+import { GameResult, IContestTeam } from './GameResult';
 import { Credentials } from 'google-auth-library';
 
 import { DrawStatus, IRoundInfo, IAgariInfo, Wind } from './IHandRecord';
@@ -94,6 +94,34 @@ export class Spreadsheet {
       }
     )).data;
     this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(Wind).indexOf(v) < 0);
+  }
+
+  public async getTeamInformation(): Promise<IContestTeam[]> {
+    const players = (await this.sheets.spreadsheets.values.get(
+      {
+        spreadsheetId: Spreadsheet.spreadsheetId,
+        range: `'Ind. Ranking'!A:C`
+      }
+    )).data;
+    const teams: IContestTeam[] = [];
+    for(const row of players.values.slice(1)) {
+      if (row[0] === "") {
+        if (row[2] !== "T#") {
+          continue;
+        }
+        teams.push({
+          name: row[2],
+          players: []
+        });
+        continue;
+      }
+      teams[teams.length - 1].players.push({
+        majsoulId: null,
+        displayName: row[1],
+        nickname: row[0],
+      });
+    }
+    return teams;
   }
 
   public isGameRecorded(id: string): boolean {
