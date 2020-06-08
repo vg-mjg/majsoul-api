@@ -4,8 +4,9 @@ import { Credentials } from 'google-auth-library';
 import * as fs from "fs";
 import * as path from "path";
 
-import { MongoClient, Collection } from 'mongodb';
-import { GameResult } from "./GameResult";
+import { MongoClient, Collection, ObjectID } from 'mongodb';
+import { GameResult as IGameResult } from "./GameResult";
+import * as express from 'express';
 
 interface ISecrets {
   majsoul: {
@@ -20,6 +21,27 @@ interface ISecrets {
     }
   }
   googleAuthToken: Credentials;
+}
+
+interface IContestTeam {
+  name: string;
+  players: {
+    majsoulId: string;
+  }
+}
+
+interface IContest {
+  _id: ObjectID;
+  majsoulId: number;
+  name: string;
+  teams: IContestTeam[];
+}
+
+interface IPlayer {
+  _id: ObjectID;
+  majsoulId: number;
+  nickname: string;
+  displayName: string;
 }
 
 async function main() {
@@ -48,7 +70,7 @@ async function main() {
 
     spreadsheet.addGame(gameResult);
     spreadsheet.addGameDetails(gameResult);
-  }
+  };
 
   const secretsPath = process.env.MAJSOUL_ENV === "prod"
     ? "/run/secrets/majsoul.json"
@@ -85,48 +107,81 @@ async function main() {
   });
 
   //spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
-  const gameCollection = await getMongoCollection();
-  const recordedGames = (await gameCollection.find().project({majsoulId: 1}).toArray()).map(game => game.majsoulId);
-  console.log(recordedGames);
-  const games = await api.getContestGamesIds(contestId);
-  try {
-    for (const game of games) {
-      if (recordedGames.indexOf(game.id) >= 0){
-        console.log(`game id ${game.id} skipped`);
-        continue;
-      }
 
-      const gameResult = await api.getGame(game.id);
-      if (gameResult.players.length !== 4) {
-        continue;
-      }
-
-      console.log(`game id ${game.id} found`);
-
-      console.log(await gameCollection.insertOne(gameResult));
-    }
-  } catch (e){
-    console.log(e);
-  }
-}
-
-async function getMongoCollection(): Promise<Collection<GameResult>>{
   const url = 'mongodb://root:example@localhost:27017/?authMechanism=SCRAM-SHA-256&authSource=admin';
   const dbName = 'majsoul';
   const client = new MongoClient(url);
+  let contestCollection: Collection<IContest>;
+  let gamesCollection: Collection<IGameResult>;
+  let playersCollection: Collection<IPlayer>;
   try {
     await client.connect();
 
     console.log("Connected successfully to server");
     const db = client.db(dbName);
 
-    return await db.createCollection("contests", {});
-
-
+    contestCollection = await db.createCollection("contests", {});
+    contestCollection.createIndex({majsoulId: 1});
+    gamesCollection = await db.createCollection("games", {});
+    contestCollection.createIndex({majsoulId: 1});
+    playersCollection = await db.createCollection("players", {});
+    contestCollection.createIndex({majsoulId: 1});
   } catch (e) {
     console.log(e);
   }
-  client.close();
+
+  const contest = (await contestCollection.findOneAndUpdate(
+    { majsoulId: contestId },
+    { $setOnInsert: { name: "/mjg/ league" } },
+    {
+      upsert: true,
+      returnOriginal: false
+    }
+  )).value;
+
+  const recordedGames = (await gamesCollection.find({}, { projection: { majsoulId: true } }).toArray()).map(g => g.majsoulId);
+  console.log(recordedGames);
+
+  try {
+    const gameIds = await api.getContestGamesIds(contestId);
+
+    for (const game of gameIds) {
+      if (recordedGames.indexOf(game.id) !== -1) {
+        console.log(`Game id ${game.id} already recorded`);
+        continue;
+      }
+
+      const gameResult = await api.getGame(game.id);
+
+      for (const player of gameResult.players) {
+        await playersCollection.findOneAndUpdate(
+          { majsoulId: player.majsoulId },
+          { $setOnInsert: { nickname: player.name } },
+          { upsert: true }
+        )
+      }
+
+      if (gameResult.players.length !== 4) {
+        console.log(`Game id ${game.id} doesn't have enough players, skipping`);
+        continue;
+      }
+
+      gameResult.contestId = contest.majsoulId.toString();
+
+      console.log(`Recording game id ${game.id}`);
+      await gamesCollection.insertOne(
+        gameResult
+      );
+    }
+  } catch (e){
+    console.log(e);
+  }
+
+  const app = express();
+  app.listen(3000, () => console.log(`Express started`));
+  app.get('/contests/{id}', (req, res) => {
+    console.log(req.params.id);
+  })
 }
 
 main();

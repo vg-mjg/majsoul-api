@@ -522,13 +522,14 @@ export class MajsoulApi {
     }
 
     return {
+      contestId: resp.head.config ? resp.head.config.meta ? resp.head.config.meta.contest_uid : null : null,
       majsoulId: id,
-      time: resp.head.end_time,
-      players: (resp.head.accounts as any[]).map(account => {
-        return {
-          name: account.nickname
-        }
-      }),
+      start_time: resp.head.start_time,
+      end_time: resp.head.end_time,
+      players: (resp.head.accounts as any[]).map(account => ({
+        name: account.nickname,
+        majsoulId: account.account_id,
+      })),
       finalScore: (resp.head.accounts as any[]).map(account => {
         const playerItem = resp.head.result.players.find(b => b.seat === account.seat);
         return {

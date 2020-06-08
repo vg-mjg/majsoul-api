@@ -1,13 +1,16 @@
 import { FinalScore } from './PlayerGameResults';
 import { IRoundResult } from './IHandRecord';
-export interface PlayerInfo {
-  name: string;
-}
+import { ObjectID } from 'mongodb';
 
 export interface GameResult {
+  contestId: string;
   majsoulId: string;
-  time: number;
-  players: PlayerInfo[];
+  start_time: number;
+  end_time: number;
+  players: {
+    name: string;
+    majsoulId: number;
+  }[];
   finalScore: FinalScore[];
   rounds: IRoundResult[];
 }

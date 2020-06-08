@@ -180,7 +180,7 @@ export class Spreadsheet {
           rows: game.finalScore.map((player, i) => ({
             values: [,
               { userEnteredValue: {
-                numberValue: game.time / (60*60*24) + 25569 },
+                numberValue: game.end_time / (60*60*24) + 25569 },
                 userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
               },
               { userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
@@ -344,7 +344,7 @@ export class Spreadsheet {
           rows: [{
             values: [
               { userEnteredValue: {
-                numberValue: game.time / (60*60*24) + 25569 },
+                numberValue: game.end_time / (60*60*24) + 25569 },
                 userEnteredFormat: {
                   horizontalAlignment: "LEFT",
                   textFormat: { bold: true },
