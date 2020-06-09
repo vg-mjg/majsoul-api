@@ -106,7 +106,7 @@ export class Spreadsheet {
     const teams: IContestTeam[] = [];
     for(const row of players.values.slice(1)) {
       if (row[0] === "") {
-        if (row[2] !== "T#") {
+        if (row[2] === "T#") {
           continue;
         }
         teams.push({

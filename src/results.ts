@@ -148,7 +148,7 @@ async function main() {
       for (const player of gameResult.players) {
         await playersCollection.findOneAndUpdate(
           { nickname: player.name },
-          { $setOnInsert: { majsoulId: player.majsoulId } },
+          { $set: { majsoulId: player.majsoulId } },
           { upsert: true }
         )
       }
@@ -171,14 +171,27 @@ async function main() {
 
   const app = express();
   app.listen(3000, () => console.log(`Express started`));
-  app.get('/players/:nickname', (req, res) => {
+  app.put('/players/:nickname', (req, res) => {
+    playersCollection.findOneAndReplace(
+      { nickname: req.params.nickname },
+      req.body,
+      { }
+    ).then(result => result.value ? (result.ok ? res.sendStatus(200) : res.status(500).send(result.lastErrorObject)) : res.sendStatus(404))
+    .catch(error => res.status(500).send(error));
+  });
+
+  app.get('/players', (req, res) => {
+    playersCollection.find({}, { projection: { _id: false } }).toArray()
+      .then(players => res.send(players))
+      .catch(error => res.status(500).send(error));
+  });
+
+  app.get('/players/:id', (req, res) => {
     playersCollection.findOne(
-      { nickname: req.params.nickname }
-    ).then(player => res.send(player))
-    .catch(error => {
-      console.log(error);
-      res.sendStatus(500);
-    });
+      { nickname: req.params.nickname },
+      { projection: { _id: false } }
+    ).then(player => player ? res.send(player) : res.sendStatus(404))
+    .catch(error => res.status(500).send(error));
   })
 }
 
