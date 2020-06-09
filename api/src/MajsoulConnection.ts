@@ -39,12 +39,13 @@ export class MajsoulConnection {
 			this.socket.on("message", (data) => {
 				const message = MajsoulCodec.stripMessageType(data as Buffer);
 				this.messagesSubject.next(message);
-				this.socket.onerror = (event) => console.log(`websocker onerror`, event);
-				this.socket.onclose = (event) => console.log(`websocker onclose`, event);
-				this.socket.on("close", (a, b) => console.log(`websocket closed`, a, b));
-				this.socket.on("error", (e) => console.log(`websocket error`, e));
-				this.socket.on("open", () => resolve());
 			});
+
+			this.socket.onerror = (event) => console.log(`websocker onerror`, event);
+			this.socket.onclose = (event) => console.log(`websocker onclose`, event);
+			this.socket.on("close", (a, b) => console.log(`websocket closed`, a, b));
+			this.socket.on("error", (e) => console.log(`websocket error`, e));
+			this.socket.on("open", () => resolve());
 		});
 	}
 
