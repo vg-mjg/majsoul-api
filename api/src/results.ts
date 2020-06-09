@@ -1,6 +1,7 @@
 import { Spreadsheet } from "./google";
 import { MajsoulApi } from "./MajsoulApi";
 import { Credentials } from 'google-auth-library';
+import * as cors from "cors";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -170,6 +171,7 @@ async function main() {
   }
 
   const app = express();
+  app.use(cors());
   app.listen(3000, () => console.log(`Express started`));
   app.put('/players/:nickname', (req, res) => {
     playersCollection.findOneAndReplace(

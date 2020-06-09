@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "googleapis": "^51.0.0",
     "install": "^0.13.0",
@@ -20,6 +21,7 @@
     "ws": "^7.1.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.6",
     "@types/express": "^4.17.6",
     "@types/mongodb": "^3.5.20",
     "@types/node-fetch": "^2.5.7",
