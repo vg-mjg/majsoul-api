@@ -1,5 +1,5 @@
 import { Spreadsheet } from "./google";
-import { MajsoulApi } from "./majsoul";
+import { MajsoulApi } from "./MajsoulApi";
 import { Credentials } from 'google-auth-library';
 import * as fs from "fs";
 import * as path from "path";
