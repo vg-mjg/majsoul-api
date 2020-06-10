@@ -118,14 +118,23 @@ async function main() {
 		team.players = (await Promise.all(team.players.map(player => playersCollection.findOneAndUpdate(
 			{ nickname: player.nickname },
 			{ $set: { displayName: player.displayName } },
-			{ upsert: true }
+			{
+				upsert: true,
+				returnOriginal: false,
+				projection: { majsoulId: false }
+			}
 		)))).map(r => r.value);
 		team.id = new ObjectId();
 	}
 
 	contest.teams = teams;
 
-	const recordedGames = (await gamesCollection.find({}, { projection: { majsoulId: true } }).toArray()).map(g => g.majsoulId);
+	const recordedGames = (await
+		contestCollection.findOne({contestId: contest.contestId}, { projection: { sessions: true } })
+	)?.sessions.map(s => s.games)
+		.flat()
+		.map(g => g.majsoulId) ?? [];
+
 	console.log(recordedGames);
 
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
@@ -141,7 +150,7 @@ async function main() {
 			playersCollection.findOneAndUpdate(
 				{ nickname: player.nickname },
 				{ $set: { majsoulId: player.majsoulId } },
-				{ upsert: true, returnOriginal: false }
+				{ upsert: true, returnOriginal: false, projection: { majsoulId: false } }
 			)
 		))).map(p => p.value);
 
@@ -161,7 +170,7 @@ async function main() {
 
 	for(let i = 1; games.length > 0;) {
 		const game = games.shift();
-		if (game.end_time >= sessions[i].scheduledTime) {
+		if (game.end_time * 1000 >= sessions[i].scheduledTime) {
 			i++;
 		}
 		sessions[i-1].games.push(game);
@@ -205,6 +214,66 @@ async function main() {
 			{ nickname: req.params.nickname },
 			{ projection: { _id: false } }
 		).then(player => player ? res.send(player) : res.sendStatus(404))
+		.catch(error => res.status(500).send(error));
+	})
+
+	app.get('/contests/:id/sessions', (req, res) => {
+		contestCollection.findOne(
+			{ contestId: parseInt(req.params.id) },
+			{ projection: { sessions: true } }
+		).then(contest => res.send(contest.sessions))
+		.catch(error => res.status(500).send(error));
+	})
+
+	app.get('/contests/:id/teams', (req, res) => {
+		contestCollection.findOne(
+			{ contestId: parseInt(req.params.id) },
+			{ projection: { teams: true } }
+		).then(contest => res.send(contest.teams))
+		.catch(error => res.status(500).send(error));
+	})
+
+	app.get('/contests/:id', (req, res) => {
+		contestCollection.findOne(
+			{ contestId: parseInt(req.params.id) }
+		).then(contest => res.send(contest))
+		.catch(error => res.status(500).send(error));
+	})
+
+	app.get('/contests/:id/summary', (req, res) => {
+		contestCollection.findOne(
+			{ contestId: parseInt(req.params.id) }
+		).then(contest => {
+			try {
+				function* sessionSummary(contest: IContest) {
+					const total = contest.teams.reduce((total, next) => { total[next.id.toHexString()] = 0; return total }, {});
+					for(const session of contest.sessions.filter(s => s.games.length)) {
+						for(const game of session.games) {
+							game.players.forEach((player, index) => {
+								const team = contest.teams.find(t => t.players.find(p => p._id.equals(player._id)));
+								total[team.id.toHexString()] += game.finalScore[index].uma
+							});
+						}
+						yield {
+							startTime: session.scheduledTime,
+							standings: { ...total }
+						};
+					}
+				}
+
+				res.send({
+					name: contest.name,
+					contestId: contest.contestId,
+					teams: contest.teams.map(team => ({
+						id: team.id,
+						name: team.name,
+					})),
+					sessions: [...sessionSummary(contest)]
+				});
+			} catch (e) {
+				console.log(e);
+			}
+		})
 		.catch(error => res.status(500).send(error));
 	})
 }

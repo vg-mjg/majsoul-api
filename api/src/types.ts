@@ -80,6 +80,7 @@ export interface IContestTeam {
 }
 
 export interface IPlayer {
+	_id: ObjectId;
 	majsoulId: number;
 	nickname: string;
 	displayName: string;

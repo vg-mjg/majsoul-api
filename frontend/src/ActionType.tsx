@@ -1,5 +1,4 @@
 export enum ActionType {
-	RequestPlayers,
 	PlayersUpdated,
-	PlayersRequestFailed
+	SummaryRetrieved,
 }

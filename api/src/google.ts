@@ -116,6 +116,7 @@ export class Spreadsheet {
 			}
 			teams[teams.length - 1].players.push({
 				majsoulId: null,
+				_id: undefined,
 				displayName: row[1],
 				nickname: row[0],
 			});

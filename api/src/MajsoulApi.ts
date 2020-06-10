@@ -256,6 +256,7 @@ export class MajsoulApi {
 			players: (resp.head.accounts as any[]).map(account => ({
 				nickname: account.nickname,
 				displayName: undefined,
+				_id: undefined,
 				majsoulId: account.account_id,
 			})),
 			finalScore: (resp.head.accounts as any[]).map(account => {
