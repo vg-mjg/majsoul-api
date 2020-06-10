@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export enum Han {
 	Mangan_at_Draw = 0,
 	Fully_Concealed_Hand = 1,
@@ -73,7 +75,7 @@ export interface IFinalScore {
 
 export interface IContestTeam {
 	name: string;
-	_id: string;
+	id: ObjectId;
 	players: IPlayer[];
 }
 
@@ -103,14 +105,12 @@ export interface IContest {
 }
 
 export interface IGameResult {
-	contestId: string;
+	id: ObjectId;
+	contestId: number;
 	majsoulId: string;
 	start_time: number;
 	end_time: number;
-	players: {
-		name: string;
-		majsoulId: number;
-	}[];
+	players: IPlayer[];
 	finalScore: IFinalScore[];
 	rounds: IRoundResult[];
 }

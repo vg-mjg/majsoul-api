@@ -6,7 +6,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as util from "util";
 
-import { MongoClient, Collection } from 'mongodb';
+import { MongoClient, Collection, ObjectId } from 'mongodb';
 import { IGameResult, IContest, IPlayer, ISession } from "./types";
 import * as express from 'express';
 
@@ -79,7 +79,7 @@ async function main() {
 
 	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 
-	const contest = await api.findContestByContestId(113331);
+	let contest = await api.findContestByContestId(113331);
 	// const contestId2 = await api.findContestUniqueId(917559);
 	const sub = api.subscribeToContestChatSystemMessages(contest.majsoulId).subscribe(notification => {
 		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
@@ -113,69 +113,74 @@ async function main() {
 
 	console.log(contest);
 
-	await contestCollection.findOneAndReplace(
-		{ majsoulId: contest.majsoulId },
-		contest,
-		{ upsert: true }
-	);
-
 	const teams = await spreadsheet.getTeamInformation();
 	for (const team of teams) {
-		for (const player of team.players) {
-			await playersCollection.findOneAndUpdate(
-				{ nickname: player.nickname },
-				{ $set: { displayName: player.displayName } },
-				{ upsert: true }
-			);
-		}
-		await contestCollection.findOneAndUpdate(
-			{ majsoulId: contest.majsoulId },
-			{ $set: { teams: teams } }
-		);
+		team.players = (await Promise.all(team.players.map(player => playersCollection.findOneAndUpdate(
+			{ nickname: player.nickname },
+			{ $set: { displayName: player.displayName } },
+			{ upsert: true }
+		)))).map(r => r.value);
+		team.id = new ObjectId();
 	}
+
+	contest.teams = teams;
 
 	const recordedGames = (await gamesCollection.find({}, { projection: { majsoulId: true } }).toArray()).map(g => g.majsoulId);
 	console.log(recordedGames);
 
-	try {
-		const gameIds = await api.getContestGamesIds(contest.majsoulId);
+	const gameIds = await api.getContestGamesIds(contest.majsoulId);
 
-		for (const game of gameIds) {
-			if (recordedGames.indexOf(game.id) !== -1) {
-				console.log(`Game id ${game.id} already recorded`);
-				continue;
-			}
-
-			const gameResult = await api.getGame(game.id);
-			for (const player of gameResult.players) {
-				await playersCollection.findOneAndUpdate(
-					{ nickname: player.name },
-					{ $set: { majsoulId: player.majsoulId } },
-					{ upsert: true }
-				)
-			}
-
-			if (gameResult.players.length !== 4) {
-				console.log(`Game id ${game.id} doesn't have enough players, skipping`);
-				continue;
-			}
-
-			gameResult.contestId = contest.majsoulId.toString();
-
-			console.log(`Recording game id ${game.id}`);
-			await gamesCollection.insertOne(
-				gameResult
-			);
+	const games = (await Promise.all(gameIds.map(async (game) => {
+		if (recordedGames.indexOf(game.id) !== -1) {
+			console.log(`Game id ${game.id} already recorded`);
+			return;
 		}
-	} catch (e){
-		console.log(e);
+
+		const gameResult = await api.getGame(game.id);
+		gameResult.players = (await Promise.all(gameResult.players.map(player =>
+			playersCollection.findOneAndUpdate(
+				{ nickname: player.nickname },
+				{ $set: { majsoulId: player.majsoulId } },
+				{ upsert: true, returnOriginal: false }
+			)
+		))).map(p => p.value);
+
+		if (gameResult.players.length !== 4) {
+			console.log(`Game id ${game.id} doesn't have enough players, skipping`);
+			return;
+		}
+
+		gameResult.contestId = contest.majsoulId;
+		gameResult.id = new ObjectId();
+
+		console.log(`Recording game id ${game.id}`);
+		return gameResult;
+	}))).filter(g => g != null);
+
+	const sessions = await spreadsheet.getMatchInformation(teams);
+
+	for(let i = 1; games.length > 0;) {
+		const game = games.shift();
+		if (game.end_time >= sessions[i].scheduledTime) {
+			i++;
+		}
+		sessions[i-1].games.push(game);
 	}
 
-	(await spreadsheet.getMatchInformation(teams)).forEach(session => {
-		console.log(new Date(session.scheduledTime).toLocaleString());
-		console.log(session.isCancelled);
-		console.log(session.plannedMatches.map(m => m.teams.map(t => t?.name)));
-	})
+	contest.sessions = sessions;
+
+	contest = (await contestCollection.findOneAndUpdate(
+		{ majsoulId: contest.majsoulId },
+		{ $setOnInsert: {
+			...contest
+		}},
+		{
+			upsert: true,
+			returnOriginal: false
+		},
+	)).value;
+
+	//TODO: add games after initial import
 
 	const app = express();
 	app.use(cors());

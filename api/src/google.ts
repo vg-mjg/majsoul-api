@@ -110,7 +110,7 @@ export class Spreadsheet {
 				teams.push({
 					name: row[2],
 					players: [],
-					_id: undefined
+					id: undefined
 				});
 				continue;
 			}
@@ -260,7 +260,7 @@ export class Spreadsheet {
 								userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
 							},
 							{ userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
-							{ userEnteredValue: { stringValue: game.players[i].name } },
+							{ userEnteredValue: { stringValue: game.players[i].nickname } },
 							{ userEnteredValue: { numberValue: player.score } },
 							{ userEnteredValue: { numberValue: player.uma } },
 							{ userEnteredValue: { formulaValue: `=RANK(E${3 + i}; E3:E6)` } },
@@ -397,7 +397,7 @@ export class Spreadsheet {
 								userEnteredValue: { stringValue: game.majsoulId },
 							},
 							{
-								userEnteredValue: { stringValue: game.players.map(p => p.name).join(", ") },
+								userEnteredValue: { stringValue: game.players.map(p => p.nickname).join(", ") },
 								userEnteredFormat: {
 									horizontalAlignment: "CENTER",
 									textFormat: {
@@ -445,10 +445,10 @@ export class Spreadsheet {
 							{ userEnteredValue: { numberValue: hand.round.dealership + 1 } },
 							{ userEnteredValue: { numberValue: hand.round.repeat } },
 							{ userEnteredValue: { stringValue: hand.result } },
-							{ userEnteredValue: { stringValue: game.players[hand.agari.winner].name } },
+							{ userEnteredValue: { stringValue: game.players[hand.agari.winner].nickname } },
 							{ userEnteredValue: { numberValue: hand.agari.value + hand.agari.extras } },
 							{ userEnteredValue: { numberValue: hand.agari.value + hand.round.repeat * 300 } },
-							{ userEnteredValue: { stringValue: hand.loser == null ? "" : game.players[hand.loser].name } },
+							{ userEnteredValue: { stringValue: hand.loser == null ? "" : game.players[hand.loser].nickname } },
 							{ userEnteredValue: {
 								stringValue: Object.entries(hand.agari.han.reduce((map, next) => {
 										map[next] = (map[next] || 0) + 1;

@@ -248,12 +248,14 @@ export class MajsoulApi {
 			return;
 		}
 		return {
+			id: undefined,
 			contestId: resp.head.config ? resp.head.config.meta ? resp.head.config.meta.contest_uid : null : null,
 			majsoulId: id,
 			start_time: resp.head.start_time,
 			end_time: resp.head.end_time,
 			players: (resp.head.accounts as any[]).map(account => ({
-				name: account.nickname,
+				nickname: account.nickname,
+				displayName: undefined,
 				majsoulId: account.account_id,
 			})),
 			finalScore: (resp.head.accounts as any[]).map(account => {
