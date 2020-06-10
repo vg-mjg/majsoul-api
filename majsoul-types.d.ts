@@ -4,15 +4,15 @@ export interface IFinalScore {
 }
 
 export interface IContestTeam {
-  name: string;
-  _id: string;
-  players: IPlayer[];
+	name: string;
+	_id: string;
+	players: IPlayer[];
 }
 
 export interface IPlayer {
-  majsoulId: number;
-  nickname: string;
-  displayName: string;
+	majsoulId: number;
+	nickname: string;
+	displayName: string;
 }
 
 export interface IMatch {
@@ -27,69 +27,69 @@ export interface ISession {
 }
 
 export interface IContest {
-  majsoulId: number;
-  contestId: number;
-  sessions: ISession[];
-  name: string;
-  teams: IContestTeam[];
+	majsoulId: number;
+	contestId: number;
+	sessions: ISession[];
+	name: string;
+	teams: IContestTeam[];
 }
 
 export interface IGameResult {
-  contestId: string;
-  majsoulId: string;
-  start_time: number;
-  end_time: number;
-  players: {
-    name: string;
-    majsoulId: number;
-  }[];
-  finalScore: IFinalScore[];
-  rounds: IRoundResult[];
+	contestId: string;
+	majsoulId: string;
+	start_time: number;
+	end_time: number;
+	players: {
+		name: string;
+		majsoulId: number;
+	}[];
+	finalScore: IFinalScore[];
+	rounds: IRoundResult[];
 }
 
 import { Han } from "./api/src/Han";
 
 export enum Wind {
-  East = 0,
-  South,
-  West,
-  North,
+	East = 0,
+	South,
+	West,
+	North,
 }
 
 export enum DrawStatus {
-  Noten,
-  Tenpai,
-  Nagashi_Mangan,
+	Noten,
+	Tenpai,
+	Nagashi_Mangan,
 }
 
 interface IDrawRecord {
-  playerDrawStatus: DrawStatus[];
+	playerDrawStatus: DrawStatus[];
 }
 
 export interface IAgariInfo {
-  extras: number;
-  winner: number;
-  value: number;
-  han: Han[];
+	extras: number;
+	winner: number;
+	value: number;
+	han: Han[];
 }
 
 interface ITsumoRecord extends IAgariInfo {
-  dealerValue: number;
+	dealerValue: number;
 }
 
 interface IRonRecord extends IAgariInfo {
-  loser: number;
+	loser: number;
 }
 
 export interface IRoundInfo {
-  round: Wind;
-  dealership: Wind;
-  repeat: number;
+	round: Wind;
+	dealership: Wind;
+	repeat: number;
 }
 
 export interface IRoundResult {
-  round: IRoundInfo;
-  draw?: IDrawRecord;
-  tsumo?: ITsumoRecord;
-  rons?: IRonRecord[];
+	round: IRoundInfo;
+	draw?: IDrawRecord;
+	tsumo?: ITsumoRecord;
+	rons?: IRonRecord[];
 }
