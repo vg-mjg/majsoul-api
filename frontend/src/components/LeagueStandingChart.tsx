@@ -27,47 +27,57 @@ export interface StandingsChartProps {
 	fetchSummary?: () => Promise<[]>;
 }
 
-export interface PlayerProps {
-	player: {
-		displayName: string
-	}
-}
-
-export class Player extends React.Component<PlayerProps> {
-	render(): ReactNode {
-		return <div>{this.props.player.displayName}</div>
-	}
-}
-
 // 'HelloProps' describes the shape of props.
 // State is never set so we use the '{}' type.
-export class Players extends React.Component<StandingsChartProps> {
-	componentDidMount(): void {
+export class LeagueStandingChart extends React.Component<StandingsChartProps> {
+	static readonly colors = [
+		"#980000",
+		"#ff0000",
+		"#ff9900",
+		"#ffff00",
+		"#00ff00",
+		"#00ffff",
+		"#9900ff",
+		"#ff00ff",
+		"#4a86e8",
+		"#d9d9d9",
+	]
+
+	private onClick(event?: MouseEvent, activeElements?: {}[]) {
+		console.log(event, activeElements);
+	}
+
+	private onElementsClick(e: any){
+		console.log(e);
+	}
+
+	public componentDidMount(): void {
 		this.props.fetchSummary().then(console.log).catch(console.log);
 	}
+
 
 	private createData(): ChartData<chartjs.ChartData> {
 		console.log(this.props);
 		return {
 			labels: this.props.sessionsTimes.map(time => new Date(time).toLocaleDateString()),
-			datasets: this.props.teams.map(team => ({
+			datasets: this.props.teams.map((team, index) => ({
 				label: team.name,
 				fill: false,
-				lineTension: 0.05,
-				backgroundColor: 'rgba(75,192,192,0.4)',
-				borderColor: 'rgba(75,192,192,1)',
+				lineTension: 0.1,
 				borderCapStyle: 'butt',
 				borderDash: [],
 				borderDashOffset: 0.0,
 				borderJoinStyle: 'miter',
-				pointBorderColor: 'rgba(75,192,192,1)',
-				pointBackgroundColor: '#fff',
+				pointBorderColor: LeagueStandingChart.colors[index],
+				pointBackgroundColor: LeagueStandingChart.colors[index],
+				backgroundColor: LeagueStandingChart.colors[index],
+				borderColor: LeagueStandingChart.colors[index],
+				pointHoverBackgroundColor: LeagueStandingChart.colors[index],
+				pointHoverBorderColor: LeagueStandingChart.colors[index],
 				pointBorderWidth: 1,
-				pointHoverRadius: 5,
-				pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-				pointHoverBorderColor: 'rgba(220,220,220,1)',
+				pointHoverRadius: 4,
 				pointHoverBorderWidth: 2,
-				pointRadius: 5,
+				pointRadius: 3,
 				pointHitRadius: 10,
 				data: team.scores
 			}))
@@ -75,13 +85,13 @@ export class Players extends React.Component<StandingsChartProps> {
 	}
 
 	render(): ReactNode {
-		return <Line data={this.createData()}></Line>
+		return <Line data={this.createData()} options={{onClick: this.onClick}} onElementsClick={this.onElementsClick}></Line>
 	}
 }
 
 function mapStateToProps(state: IState): StandingsChartProps {
 	return {
-		sessionsTimes: state.summary?.sessions.map(session => session.startTime) ?? [],
+		sessionsTimes: (state.summary?.sessions.map(session => session.startTime) ?? []),
 		teams: state.summary?.teams.map(team => ({
 			name: team.name,
 			scores: state.summary.sessions.map(session => session.standings[team.id])
@@ -94,4 +104,4 @@ export const ConnectedComponent = connect(
 	{
 		fetchSummary: fetchSummary
 	}
-)(Players);
+)(LeagueStandingChart);

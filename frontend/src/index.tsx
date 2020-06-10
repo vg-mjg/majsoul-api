@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import thunkMiddleware from 'redux-thunk';
-import { ConnectedComponent } from "./components/Players";
+import { ConnectedComponent } from "./components/LeagueStandingChart";
 import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route } from "react-router-dom";

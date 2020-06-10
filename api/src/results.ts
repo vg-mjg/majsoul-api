@@ -254,6 +254,9 @@ async function main() {
 								total[team.id.toHexString()] += game.finalScore[index].uma
 							});
 						}
+						for (const id in total) {
+							total[id] = Math.round(10 * total[id]) / 10;
+						}
 						yield {
 							startTime: session.scheduledTime,
 							standings: { ...total }
