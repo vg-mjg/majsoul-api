@@ -6,7 +6,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { MongoClient, Collection } from 'mongodb';
-import { IGameResult, IContest, IPlayer } from "../../majsoul-types";
+import { IGameResult, IContest, IPlayer, ISession } from "../../majsoul-types";
 import * as express from 'express';
 
 interface ISecrets {
@@ -170,8 +170,11 @@ async function main() {
 		console.log(e);
 	}
 
+	const sessions: ISession[] = [];
 	let date = new Date(2020, 5, 26, 18).getTime();
-
+	for (let weeks = 0; weeks < 5; weeks++) {
+		sessions.push({})
+	}
 
 	const app = express();
 	app.use(cors());

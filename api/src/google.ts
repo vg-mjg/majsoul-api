@@ -2,8 +2,7 @@ import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
 import { IGameResult, IContestTeam } from '../../majsoul-types';
 import { Credentials } from 'google-auth-library';
-import { DrawStatus, IRoundInfo, IAgariInfo, Wind } from '../../majsoul-types';
-import { Han } from './Han';
+import { DrawStatus, IRoundInfo, IAgariInfo, Wind, Han } from '../../majsoul-types';
 
 interface IHandDescription {
 	round: IRoundInfo;
