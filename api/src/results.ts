@@ -170,6 +170,9 @@ async function main() {
     console.log(e);
   }
 
+  let date = new Date(2020, 5, 26, 18).getTime();
+
+
   const app = express();
   app.use(cors());
   app.listen(3000, () => console.log(`Express started`));

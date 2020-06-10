@@ -1,5 +1,3 @@
-import { IRoundResult } from './IHandRecord';
-
 export interface IFinalScore {
 	uma: number;
 	score: number;
@@ -7,6 +5,7 @@ export interface IFinalScore {
 
 export interface IContestTeam {
   name: string;
+  _id: string;
   players: IPlayer[];
 }
 
@@ -16,9 +15,21 @@ export interface IPlayer {
   displayName: string;
 }
 
+export interface IMatch {
+	teams: IContestTeam[];
+}
+
+export interface ISession {
+	scheduledTime: number;
+	plannedMatches: IMatch[];
+	isCancelled: boolean;
+	games: IGameResult[];
+}
+
 export interface IContest {
   majsoulId: number;
   contestId: number;
+  sessions: ISession[];
   name: string;
   teams: IContestTeam[];
 }

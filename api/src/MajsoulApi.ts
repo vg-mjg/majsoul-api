@@ -118,6 +118,7 @@ export class MajsoulApi {
 			majsoulId: resp.contest_info.unique_id,
 			contestId: resp.contest_info.contest_id,
 			name: resp.contest_info.contest_name,
+			sessions: [],
 			teams: []
 		};
 	}
