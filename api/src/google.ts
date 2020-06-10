@@ -1,9 +1,8 @@
 import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
-import { GameResult, IContestTeam } from './GameResult';
+import { IGameResult, IContestTeam } from '../../majsoul-types';
 import { Credentials } from 'google-auth-library';
-
-import { DrawStatus, IRoundInfo, IAgariInfo, Wind } from './IHandRecord';
+import { DrawStatus, IRoundInfo, IAgariInfo, Wind } from '../../majsoul-types';
 import { Han } from './Han';
 
 interface IHandDescription {
@@ -132,7 +131,7 @@ export class Spreadsheet {
     return this.recordedGameDetailIds.indexOf(id) >= 0;
   }
 
-  public async addGame(game: GameResult) {
+  public async addGame(game: IGameResult) {
     if (this.isGameRecorded(game.majsoulId)) {
       console.log(`Game ${game.majsoulId} already recorded`);
       return;
@@ -257,7 +256,7 @@ export class Spreadsheet {
     });
   }
 
-  public async addGameDetails(game: GameResult) {
+  public async addGameDetails(game: IGameResult) {
     if (this.isGameDetailRecorded(game.majsoulId)) {
       console.log(`Game ${game.majsoulId} already recorded`);
       return;

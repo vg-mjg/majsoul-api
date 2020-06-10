@@ -3,8 +3,8 @@ import { Root } from "protobufjs";
 import fetch from "node-fetch";
 import { Observable, merge } from 'rxjs';
 import { filter, map, share, tap } from 'rxjs/operators';
-import { GameResult, IContest } from "./GameResult";
-import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./IHandRecord";
+import { IGameResult, IContest } from "../../majsoul-types";
+import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "../../majsoul-types";
 import { Han } from "./Han";
 import { MajsoulCodec } from "./MajsoulCodec";
 import { MessageType } from "./MessageType";
@@ -164,7 +164,7 @@ export class MajsoulApi {
 			})).pipe(share());
 	}
 
-	public async getGame(id: string): Promise<GameResult> {
+	public async getGame(id: string): Promise<IGameResult> {
 		let resp, records;
 		try {
 			resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));

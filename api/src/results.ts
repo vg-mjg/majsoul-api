@@ -6,7 +6,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { MongoClient, Collection } from 'mongodb';
-import { GameResult as IGameResult, IContest, IPlayer } from "./GameResult";
+import { IGameResult, IContest, IPlayer } from "../../majsoul-types";
 import * as express from 'express';
 
 interface ISecrets {
