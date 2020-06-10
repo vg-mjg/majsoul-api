@@ -1,4 +1,3 @@
-
 export enum Han {
 	Mangan_at_Draw = 0,
 	Fully_Concealed_Hand = 1,
@@ -115,8 +114,6 @@ export interface IGameResult {
 	finalScore: IFinalScore[];
 	rounds: IRoundResult[];
 }
-
-import { Han } from "./api/src/Han";
 
 export enum Wind {
 	East = 0,

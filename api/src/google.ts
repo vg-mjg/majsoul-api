@@ -1,8 +1,8 @@
 import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
-import { IGameResult, IContestTeam } from '../../majsoul-types';
+import { IGameResult, IContestTeam, IMatch, ISession, IContest } from './types';
 import { Credentials } from 'google-auth-library';
-import { DrawStatus, IRoundInfo, IAgariInfo, Wind, Han } from '../../majsoul-types';
+import { DrawStatus, IRoundInfo, IAgariInfo, Wind, Han } from './types';
 
 interface IHandDescription {
 	round: IRoundInfo;
@@ -121,6 +121,55 @@ export class Spreadsheet {
 			});
 		}
 		return teams;
+	}
+
+	public async getMatchInformation(teams: IContestTeam[]): Promise<ISession[]> {
+		const teamsArray = (await this.sheets.spreadsheets.values.get(
+			{
+				spreadsheetId: Spreadsheet.spreadsheetId,
+				majorDimension: "COLUMNS",
+				range: `'Team Score Graph'!C39:C48`
+			}
+		)).data.values[0].map(name => teams.find(team => team.name === name));
+
+		const schedule = (await this.sheets.spreadsheets.values.get(
+			{
+				spreadsheetId: Spreadsheet.spreadsheetId,
+				majorDimension: "COLUMNS",
+				range: `'Schedule'!B17:O76`
+			}
+		)).data.values;
+
+		let date = new Date(2020, 4, 26, 18).getTime();
+		const matches: ISession[] = [];
+		const day = 1000 * 60 * 60 * 24;
+		const sixHours = 1000 * 60 * 60 * 6;
+		const intervals = [day, day, day + sixHours, day - sixHours, sixHours, day - sixHours, day * 2]
+		for(let week = 0; week < 5; week++) {
+			for(let slot = 0; slot < 7; slot++) {
+				matches.push({
+					scheduledTime: date,
+					isCancelled: schedule[slot * 2][13 * week] === "Cancelled",
+					games: [],
+					plannedMatches: [
+						{
+							teams: schedule[slot * 2]
+								.slice(4 + 13 * week, 4 + 13 * week + 4)
+								.map(index => teamsArray[index - 1]),
+						},
+						{
+							teams: schedule[slot * 2 + 1]
+								.slice(4 + 13 * week, 4 + 13 * week + 4)
+								.map(index => teamsArray[index - 1]),
+						}
+					]
+				})
+				date += intervals[0];
+				intervals.push(intervals.shift());
+			}
+		}
+
+		return matches;
 	}
 
 	public isGameRecorded(id: string): boolean {

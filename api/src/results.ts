@@ -4,9 +4,10 @@ import { Credentials } from 'google-auth-library';
 import * as cors from "cors";
 import * as fs from "fs";
 import * as path from "path";
+import * as util from "util";
 
 import { MongoClient, Collection } from 'mongodb';
-import { IGameResult, IContest, IPlayer, ISession } from "../../majsoul-types";
+import { IGameResult, IContest, IPlayer, ISession } from "./types";
 import * as express from 'express';
 
 interface ISecrets {
@@ -170,11 +171,11 @@ async function main() {
 		console.log(e);
 	}
 
-	const sessions: ISession[] = [];
-	let date = new Date(2020, 5, 26, 18).getTime();
-	for (let weeks = 0; weeks < 5; weeks++) {
-		sessions.push({})
-	}
+	(await spreadsheet.getMatchInformation(teams)).forEach(session => {
+		console.log(new Date(session.scheduledTime).toLocaleString());
+		console.log(session.isCancelled);
+		console.log(session.plannedMatches.map(m => m.teams.map(t => t?.name)));
+	})
 
 	const app = express();
 	app.use(cors());
