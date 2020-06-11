@@ -267,11 +267,10 @@ async function main() {
 				res.send({
 					name: contest.name,
 					contestId: contest.contestId,
-					teams: contest.teams.map(team => ({
-						id: team.id,
-						name: team.name,
-					})),
-					sessions: [...sessionSummary(contest)]
+					teams: contest.teams.reduce((total, next) => { total[next.id.toHexString()] = {name: next.name}; return total }, {}),
+					results: [...sessionSummary(contest)],
+					nextSession: contest.sessions.find(s => s.games.length <= 0),
+					recentSession: contest.sessions.filter(s => s.games.length > 0).slice(-1)[0]
 				});
 			} catch (e) {
 				console.log(e);

@@ -31,11 +31,11 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	}
 
 	private createData(): ChartData<chartjs.ChartData> {
-		const sessionsTimes = this.props.summary?.sessions.map(session => session.startTime) ?? [];
-		const teams = this.props.summary?.teams.map(team => ({
+		const sessionsTimes = this.props.summary.results.map(result => result.startTime);
+		const teams = Object.entries(this.props.summary.teams).map(([id, team]) => ({
 			name: team.name,
-			scores: this.props.summary.sessions.map(session => session.standings[team.id])
-		})) ?? [];
+			scores: this.props.summary.results.map(result => result.standings[id])
+		}));
 
 		return {
 			labels: sessionsTimes.map(time => new Date(time).toLocaleDateString()),
@@ -64,6 +64,10 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	}
 
 	render(): ReactNode {
+		if (this.props.summary == null) {
+			return null;
+		}
+
 		return <Line data={this.createData()} options={{onClick: this.onClick}} onElementsClick={this.onElementsClick}></Line>
 	}
 }

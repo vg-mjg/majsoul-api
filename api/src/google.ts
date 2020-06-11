@@ -141,7 +141,7 @@ export class Spreadsheet {
 			}
 		)).data.values;
 
-		let date = new Date(2020, 4, 26, 18).getTime();
+		let date = Date.UTC(2020, 4, 26, 18);
 		const matches: ISession[] = [];
 		const day = 1000 * 60 * 60 * 24;
 		const sixHours = 1000 * 60 * 60 * 6;
