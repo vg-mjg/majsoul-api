@@ -1,35 +1,14 @@
 import * as React from "react";
-import { connect } from "react-redux";
-import { IState } from "../IState";
-import { ActionType } from "../ActionType";
-import { ISummaryRetrievedAction } from "../IAction";
 import { ReactNode } from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
+import { ISummary } from "../IState";
 
-function fetchSummary() {
-	return function (dispatch: React.Dispatch<ISummaryRetrievedAction>) {
-		return fetch("http://localhost:3000/contests/113331/summary")
-			.then(response => response.json())
-			.then(summary => dispatch({
-				type: ActionType.SummaryRetrieved,
-				summary
-			}));
-	}
+interface IStandingsChartProps {
+	summary: ISummary;
 }
 
-export interface StandingsChartProps {
-	sessionsTimes: number[];
-	teams: {
-		name: string;
-		scores: number[];
-	}[],
-	fetchSummary?: () => Promise<[]>;
-}
-
-// 'HelloProps' describes the shape of props.
-// State is never set so we use the '{}' type.
-export class LeagueStandingChart extends React.Component<StandingsChartProps> {
+export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	static readonly colors = [
 		"#980000",
 		"#ff0000",
@@ -51,16 +30,16 @@ export class LeagueStandingChart extends React.Component<StandingsChartProps> {
 		console.log(e);
 	}
 
-	public componentDidMount(): void {
-		this.props.fetchSummary().then(console.log).catch(console.log);
-	}
-
-
 	private createData(): ChartData<chartjs.ChartData> {
-		console.log(this.props);
+		const sessionsTimes = this.props.summary?.sessions.map(session => session.startTime) ?? [];
+		const teams = this.props.summary?.teams.map(team => ({
+			name: team.name,
+			scores: this.props.summary.sessions.map(session => session.standings[team.id])
+		})) ?? [];
+
 		return {
-			labels: this.props.sessionsTimes.map(time => new Date(time).toLocaleDateString()),
-			datasets: this.props.teams.map((team, index) => ({
+			labels: sessionsTimes.map(time => new Date(time).toLocaleDateString()),
+			datasets: teams.map((team, index) => ({
 				label: team.name,
 				fill: false,
 				lineTension: 0.1,
@@ -88,20 +67,3 @@ export class LeagueStandingChart extends React.Component<StandingsChartProps> {
 		return <Line data={this.createData()} options={{onClick: this.onClick}} onElementsClick={this.onElementsClick}></Line>
 	}
 }
-
-function mapStateToProps(state: IState): StandingsChartProps {
-	return {
-		sessionsTimes: (state.summary?.sessions.map(session => session.startTime) ?? []),
-		teams: state.summary?.teams.map(team => ({
-			name: team.name,
-			scores: state.summary.sessions.map(session => session.standings[team.id])
-		})) ?? []
-	}
-}
-
-export const ConnectedComponent = connect(
-	mapStateToProps,
-	{
-		fetchSummary: fetchSummary
-	}
-)(LeagueStandingChart);
