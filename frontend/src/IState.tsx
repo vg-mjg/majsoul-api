@@ -1,5 +1,12 @@
+export interface IPlayer {
+	_id: string[];
+	displayName: string[];
+}
+
 export interface ITeam {
+	id: string;
 	name: string;
+	players: IPlayer[]
 }
 
 export interface IPendingSession {
@@ -40,7 +47,12 @@ export interface ISummary {
 	nextSession: IPendingSession;
 }
 
+export interface IContest {
+	teams?: Record<string, ITeam>;
+}
+
 export interface IState {
 	players?: [];
+	contest?: IContest;
 	summary?: ISummary;
 }

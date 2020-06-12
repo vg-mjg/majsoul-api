@@ -1,18 +1,36 @@
 import React = require("react");
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { ISummaryRetrievedAction } from "../IAction";
+import { ISummaryRetrievedAction, ITeamsRetrievedAction } from "../IAction";
 import { ActionType } from "../ActionType";
 import { IState, ISummary, IPendingSession, ITeam } from "../IState";
 import { connect } from "react-redux";
+import { ThunkAction } from "redux-thunk";
+import { Action } from "redux";
 
-function fetchSummary() {
-	return function (dispatch: React.Dispatch<ISummaryRetrievedAction>) {
-		return fetch("http://localhost:3000/contests/113331/summary")
+type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
+
+const fetchTeams = (contestId: string): AppThunk<ITeamsRetrievedAction> => {
+	return function (dispatch) {
+		return fetch(`http://localhost:3000/contests/${contestId}/teams`)
 			.then(response => response.json())
-			.then(summary => dispatch({
-				type: ActionType.SummaryRetrieved,
-				summary
+			.then(teams => dispatch({
+				type: ActionType.TeamsRetrieved,
+				teams
 			}));
+	}
+}
+
+const fetchSummary = (contestId: string): AppThunk<ISummaryRetrievedAction> => {
+	return function (dispatch) {
+		return fetch(`http://localhost:3000/contests/${contestId}/summary`)
+			.then(response => response.json())
+			.then(summary => {
+				dispatch({
+					type: ActionType.SummaryRetrieved,
+					summary
+				});
+				return;
+			});
 	}
 }
 
@@ -35,14 +53,19 @@ class PendingSession extends React.Component<IPendingSessionProps> {
 	}
 }
 
-interface ContestSummaryComponentProps extends ContestSummaryProps {
-	summary: ISummary;
-	fetchSummary?: () => Promise<void>;
+interface ContestSummaryComponentDispatchProps {
+	fetchTeams: (contestId: string) => void;
+	fetchSummary: (contestId: string) => void;
 }
 
-class ContestSummaryComponent extends React.Component<ContestSummaryComponentProps> {
+interface ContestSummaryComponentStateProps extends ContestSummaryProps {
+	summary: ISummary;
+}
+
+class ContestSummaryComponent extends React.Component<ContestSummaryComponentStateProps & ContestSummaryComponentDispatchProps> {
 	public componentDidMount(): void {
-		this.props.fetchSummary();
+		this.props.fetchSummary(this.props.contestId);
+		this.props.fetchTeams(this.props.contestId);
 	}
 
 	render() {
@@ -62,7 +85,7 @@ interface ContestSummaryProps {
 	contestId: string;
 }
 
-function mapStateToProps(state: IState, props: ContestSummaryProps): ContestSummaryComponentProps {
+function mapStateToProps(state: IState, props: ContestSummaryProps): ContestSummaryComponentStateProps {
 	return {
 		summary: state.summary,
 		...props,
@@ -71,5 +94,8 @@ function mapStateToProps(state: IState, props: ContestSummaryProps): ContestSumm
 
 export const ContestSummary = connect(
 	mapStateToProps,
-	{ fetchSummary	}
+	{
+		fetchTeams,
+		fetchSummary,
+	}
 )(ContestSummaryComponent);

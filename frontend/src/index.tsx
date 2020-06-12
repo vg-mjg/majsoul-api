@@ -4,19 +4,38 @@ import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route } from "react-router-dom";
-import { IState } from "./IState";
-import { ISummaryRetrievedAction } from "./IAction";
+import { IState, ITeam } from "./IState";
+import { ISummaryRetrievedAction, ITeamsRetrievedAction } from "./IAction";
 import { ActionType } from "./ActionType";
 import { ContestSummary } from "./components/ContestSummaryComponentProps";
 
+
+function contestReducer(state: IState, action: Action<ActionType>): IState {
+	switch (action.type) {
+		case ActionType.SummaryRetrieved: {
+			return { ...state, ...{ summary: (action as ISummaryRetrievedAction).summary } }
+		} case ActionType.TeamsRetrieved: {
+			const teamsRetrievedAction = action as ITeamsRetrievedAction;
+			return {
+				...state,
+				...{
+					contest: {
+						teams: teamsRetrievedAction.teams.reduce((teams, team) => {
+							teams[team.id] = team;
+							return teams;
+						}, {} as Record<string, ITeam>)
+					}
+				}
+			};
+		}
+	}
+
+	return state;
+}
+
 const composeEnhancers = (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 const store = createStore(
-	(state: IState, action: Action<ActionType>) => {
-		if (action.type === ActionType.SummaryRetrieved) {
-			return { ...state, ...{ summary: (action as ISummaryRetrievedAction).summary } }
-		}
-		return state;
-	},
+	contestReducer,
 	{},
 	composeEnhancers(
 		applyMiddleware(

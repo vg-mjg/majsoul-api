@@ -215,7 +215,7 @@ async function main() {
 			{ projection: { _id: false } }
 		).then(player => player ? res.send(player) : res.sendStatus(404))
 		.catch(error => res.status(500).send(error));
-	})
+	});
 
 	app.get('/contests/:id/sessions', (req, res) => {
 		contestCollection.findOne(
@@ -223,7 +223,7 @@ async function main() {
 			{ projection: { sessions: true } }
 		).then(contest => res.send(contest.sessions))
 		.catch(error => res.status(500).send(error));
-	})
+	});
 
 	app.get('/contests/:id/teams', (req, res) => {
 		contestCollection.findOne(
@@ -231,14 +231,14 @@ async function main() {
 			{ projection: { teams: true } }
 		).then(contest => res.send(contest.teams))
 		.catch(error => res.status(500).send(error));
-	})
+	});
 
 	app.get('/contests/:id', (req, res) => {
 		contestCollection.findOne(
 			{ contestId: parseInt(req.params.id) }
 		).then(contest => res.send(contest))
 		.catch(error => res.status(500).send(error));
-	})
+	});
 
 	app.get('/contests/:id/summary', (req, res) => {
 		contestCollection.findOne(
@@ -277,7 +277,16 @@ async function main() {
 			}
 		})
 		.catch(error => res.status(500).send(error));
-	})
+	});
+
+	app.get('/games', (req, res) => {
+		// gamesCollection.find(
+		// 	{game}
+		// )
+		playersCollection.find({}, { projection: { _id: false } }).toArray()
+		.then(players => res.send(players))
+		.catch(error => res.status(500).send(error));
+	});
 }
 
 main();
