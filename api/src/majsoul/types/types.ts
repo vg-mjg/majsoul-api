@@ -1,89 +1,61 @@
-import { ObjectId } from "mongodb";
 import { Han } from "./Han";
 import { Wind } from "./Wind";
+import { DrawStatus } from "./DrawStatus";
 
-export interface IFinalScore {
+export interface FinalScore {
 	uma: number;
 	score: number;
 }
 
-export interface IContestTeam {
-	name: string;
-	id: ObjectId;
-	players: IPlayer[];
-}
-
-export interface IPlayer {
-	_id: ObjectId;
+export interface Player {
 	majsoulId: number;
 	nickname: string;
-	displayName: string;
 }
 
-export interface IMatch {
-	teams: IContestTeam[];
-}
-
-export interface ISession {
-	scheduledTime: number;
-	plannedMatches: IMatch[];
-	isCancelled: boolean;
-	games: IGameResult[];
-}
-
-export interface IContest {
+export interface Contest {
 	majsoulId: number;
-	contestId: number;
-	sessions: ISession[];
+	majsoulFriendlyId: number;
 	name: string;
-	teams: IContestTeam[];
 }
 
-export interface IGameResult {
-	id: ObjectId;
-	contestId: number;
+export interface GameResult {
+	contestMajsoulId: number;
 	majsoulId: string;
 	start_time: number;
 	end_time: number;
-	players: IPlayer[];
-	finalScore: IFinalScore[];
-	rounds: IRoundResult[];
+	players: Player[];
+	finalScore: FinalScore[];
+	rounds: RoundResult[];
 }
 
-export enum DrawStatus {
-	Noten,
-	Tenpai,
-	Nagashi_Mangan,
-}
-
-interface IDrawRecord {
+interface DrawRecord {
 	playerDrawStatus: DrawStatus[];
 }
 
-export interface IAgariInfo {
+export interface AgariInfo {
 	extras: number;
 	winner: number;
 	value: number;
 	han: Han[];
 }
 
-interface ITsumoRecord extends IAgariInfo {
+interface TsumoRecord extends AgariInfo {
 	dealerValue: number;
 }
 
-interface IRonRecord extends IAgariInfo {
+interface RonRecord extends AgariInfo {
 	loser: number;
 }
 
-export interface IRoundInfo {
+export interface RoundInfo {
 	round: Wind;
 	dealership: Wind;
 	repeat: number;
 }
 
-export interface IRoundResult {
-	round: IRoundInfo;
-	draw?: IDrawRecord;
-	tsumo?: ITsumoRecord;
-	rons?: IRonRecord[];
+export interface RoundResult {
+	round: RoundInfo;
+	draw?: DrawRecord;
+	tsumo?: TsumoRecord;
+	rons?: RonRecord[];
 }

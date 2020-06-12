@@ -1,14 +1,12 @@
 import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
-import { IGameResult, IContestTeam, IMatch, ISession, IContest } from './majsoul/types/types';
 import { Credentials } from 'google-auth-library';
-import { DrawStatus, IRoundInfo, IAgariInfo } from './majsoul/types/types';
-import { Wind } from "./majsoul/types/Wind";
-import { Han } from "./majsoul/types/Han";
+import * as majsoul from "./majsoul";
+import * as store from "./store";
 
 interface IHandDescription {
-	round: IRoundInfo;
-	agari: IAgariInfo;
+	round: majsoul.RoundInfo;
+	agari: majsoul.AgariInfo;
 	result: string;
 	loser?: number;
 }
@@ -93,17 +91,18 @@ export class Spreadsheet {
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
 		)).data;
-		this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(Wind).indexOf(v) < 0);
+		console.log(majsoul);
+		this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0);
 	}
 
-	public async getTeamInformation(): Promise<IContestTeam[]> {
+	public async getTeamInformation(): Promise<store.ContestTeam[]> {
 		const players = (await this.sheets.spreadsheets.values.get(
 			{
 				spreadsheetId: Spreadsheet.spreadsheetId,
 				range: `'Ind. Ranking'!A:C`
 			}
 		)).data;
-		const teams: IContestTeam[] = [];
+		const teams: store.ContestTeam[] = [];
 		for(const row of players.values.slice(1)) {
 			if (row[0] === "") {
 				if (row[2] === "T#") {
@@ -112,13 +111,13 @@ export class Spreadsheet {
 				teams.push({
 					name: row[2],
 					players: [],
-					id: undefined
+					_id: undefined,
 				});
 				continue;
 			}
 			teams[teams.length - 1].players.push({
-				majsoulId: null,
 				_id: undefined,
+				majsoulId: undefined,
 				displayName: row[1],
 				nickname: row[0],
 			});
@@ -126,7 +125,7 @@ export class Spreadsheet {
 		return teams;
 	}
 
-	public async getMatchInformation(teams: IContestTeam[]): Promise<ISession[]> {
+	public async getMatchInformation(teams: store.ContestTeam[]): Promise<store.Session[]> {
 		const teamsArray = (await this.sheets.spreadsheets.values.get(
 			{
 				spreadsheetId: Spreadsheet.spreadsheetId,
@@ -144,7 +143,7 @@ export class Spreadsheet {
 		)).data.values;
 
 		let date = Date.UTC(2020, 4, 26, 18);
-		const matches: ISession[] = [];
+		const matches: store.Session[] = [];
 		const day = 1000 * 60 * 60 * 24;
 		const sixHours = 1000 * 60 * 60 * 6;
 		const intervals = [day, day, day + sixHours, day - sixHours, sixHours, day - sixHours, day * 2]
@@ -183,7 +182,7 @@ export class Spreadsheet {
 		return this.recordedGameDetailIds.indexOf(id) >= 0;
 	}
 
-	public async addGame(game: IGameResult) {
+	public async addGame(game: majsoul.GameResult) {
 		if (this.isGameRecorded(game.majsoulId)) {
 			console.log(`Game ${game.majsoulId} already recorded`);
 			return;
@@ -259,13 +258,13 @@ export class Spreadsheet {
 					rows: game.finalScore.map((player, i) => ({
 						values: [,
 							{ userEnteredValue: {
-								numberValue: game.end_time / (60*60*24) + 25569 },
+								numberValue: game.end_time / (60*60*24*1000) + 25569 },
 								userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
 							},
 							{ userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
 							{ userEnteredValue: { stringValue: game.players[i].nickname } },
 							{ userEnteredValue: { numberValue: player.score } },
-							{ userEnteredValue: { numberValue: player.uma } },
+							{ userEnteredValue: { numberValue: player.uma / 1000} },
 							{ userEnteredValue: { formulaValue: `=RANK(E${3 + i}; E3:E6)` } },
 						]
 					}))
@@ -308,7 +307,7 @@ export class Spreadsheet {
 		});
 	}
 
-	public async addGameDetails(game: IGameResult) {
+	public async addGameDetails(game: majsoul.GameResult) {
 		if (this.isGameDetailRecorded(game.majsoulId)) {
 			console.log(`Game ${game.majsoulId} already recorded`);
 			return;
@@ -327,7 +326,7 @@ export class Spreadsheet {
 			}
 		}
 
-		const hands: IHandDescription[] = game.rounds.filter(g => !g.draw || g.draw.playerDrawStatus.indexOf(DrawStatus.Nagashi_Mangan) >= 0)
+		const hands: IHandDescription[] = game.rounds.filter(g => !g.draw || g.draw.playerDrawStatus.indexOf(majsoul.DrawStatus.Nagashi_Mangan) >= 0)
 			.map(hand => {
 				if (hand.rons) {
 					return hand.rons.map(r => (
@@ -340,14 +339,14 @@ export class Spreadsheet {
 					));
 				}
 				if (hand.draw) {
-					const winner = hand.draw.playerDrawStatus.indexOf(DrawStatus.Nagashi_Mangan);
+					const winner = hand.draw.playerDrawStatus.indexOf(majsoul.DrawStatus.Nagashi_Mangan);
 					return [{
 						round: hand.round,
 						agari: {
 							value: hand.round.dealership === winner ? 12000 : 8000,
 							extras: 0,
 							winner,
-							han: [Han.Mangan_at_Draw]
+							han: [majsoul.Han.Mangan_at_Draw]
 						},
 						result: "Draw"
 					}]
@@ -423,7 +422,7 @@ export class Spreadsheet {
 					rows: [{
 						values: [
 							{ userEnteredValue: {
-								numberValue: game.end_time / (60*60*24) + 25569 },
+								numberValue: game.end_time / (60*60*24*1000) + 25569 },
 								userEnteredFormat: {
 									horizontalAlignment: "LEFT",
 									textFormat: { bold: true },
@@ -444,7 +443,7 @@ export class Spreadsheet {
 					},
 					rows: hands.map((hand) => ({
 						values: [
-							{ userEnteredValue: { stringValue: Wind[hand.round.round] } },
+							{ userEnteredValue: { stringValue: majsoul.Wind[hand.round.round] } },
 							{ userEnteredValue: { numberValue: hand.round.dealership + 1 } },
 							{ userEnteredValue: { numberValue: hand.round.repeat } },
 							{ userEnteredValue: { stringValue: hand.result } },
@@ -457,7 +456,7 @@ export class Spreadsheet {
 										map[next] = (map[next] || 0) + 1;
 										return map;
 									}, {}))
-										.map(kvp => `${Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
+										.map(kvp => `${majsoul.Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
 										.map(h => h.replace(/_/g, " "))
 										.join(", ")
 								}

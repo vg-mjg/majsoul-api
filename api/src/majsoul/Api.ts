@@ -3,8 +3,9 @@ import { Root } from "protobufjs";
 import fetch from "node-fetch";
 import { Observable, merge } from 'rxjs';
 import { filter, map, share, tap } from 'rxjs/operators';
-import { IGameResult, IContest } from "./types/types";
-import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./types/types";
+import { GameResult, Contest } from "./types/types";
+import { RoundResult, AgariInfo, RoundInfo } from "./types/types";
+import { DrawStatus } from "./types/DrawStatus";
 import { Han } from "./types/Han";
 import { Codec } from "./Codec";
 import { MessageType } from "./types/MessageType";
@@ -18,7 +19,7 @@ export class Api {
 		return (await fetch(path)).json();
 	}
 
-	public static async retrieveMahjsoulApiResources(): Promise<ApiResources> {
+	public static async retrieveApiResources(): Promise<ApiResources> {
 		const majsoulUrl = "https://mahjongsoul.game.yo-star.com/";
 		const versionInfo = await Api.getRes<any>(majsoulUrl + "version.json?randv=" + Math.random().toString().slice(2));
 		const resInfo = await Api.getRes<any>(majsoulUrl + `resversion${versionInfo.version}.json`);
@@ -110,21 +111,19 @@ export class Api {
 		console.log("Connection ready");
 	}
 
-	public async findContestByContestId(id: number): Promise<IContest> {
+	public async findContestByContestId(id: number): Promise<Contest> {
 		const resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
 			contest_id: id,
 		});
 		return {
 			majsoulId: resp.contest_info.unique_id,
-			contestId: resp.contest_info.contest_id,
+			majsoulFriendlyId: resp.contest_info.contest_id,
 			name: resp.contest_info.contest_name,
-			sessions: [],
-			teams: []
 		};
 	}
 
 	public async getContestGamesIds(id: number): Promise<{
-		id: string;
+		majsoulId: string;
 	}[]> {
 		let nextIndex = undefined;
 		const idLog = {};
@@ -141,7 +140,7 @@ export class Api {
 			}
 			nextIndex = resp.next_index;
 		}
-		return Object.keys(idLog).map(id => { return { id }; }).reverse();
+		return Object.keys(idLog).map(id => { return { majsoulId: id }; }).reverse();
 	}
 
 	public subscribeToContestChatSystemMessages(id: number): Observable<any> {
@@ -165,7 +164,7 @@ export class Api {
 			})).pipe(share());
 	}
 
-	public async getGame(id: string): Promise<IGameResult> {
+	public async getGame(id: string): Promise<GameResult> {
 		let resp, records;
 		try {
 			resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
@@ -176,9 +175,9 @@ export class Api {
 			console.log(resp);
 			return null;
 		}
-		const hands: IRoundResult[] = [];
+		const hands: RoundResult[] = [];
 		let lastDiscardSeat: number;
-		let round: IRoundInfo;
+		let round: RoundInfo;
 		for (const record of records) {
 			switch (record.constructor.name) {
 				case "RecordNewRound": {
@@ -249,22 +248,19 @@ export class Api {
 			return;
 		}
 		return {
-			id: undefined,
-			contestId: resp.head.config ? resp.head.config.meta ? resp.head.config.meta.contest_uid : null : null,
+			contestMajsoulId: resp.head.config ? resp.head.config.meta ? resp.head.config.meta.contest_uid : null : null,
 			majsoulId: id,
-			start_time: resp.head.start_time,
-			end_time: resp.head.end_time,
+			start_time: resp.head.start_time * 1000,
+			end_time: resp.head.end_time * 1000,
 			players: (resp.head.accounts as any[]).map(account => ({
 				nickname: account.nickname,
-				displayName: undefined,
-				_id: undefined,
 				majsoulId: account.account_id,
 			})),
 			finalScore: (resp.head.accounts as any[]).map(account => {
 				const playerItem = resp.head.result.players.find(b => b.seat === account.seat);
 				return {
 					score: playerItem.part_point_1,
-					uma: playerItem.total_point / 1000,
+					uma: playerItem.total_point,
 				};
 			}),
 			rounds: hands
@@ -275,7 +271,7 @@ export class Api {
 		this.connection.close();
 	}
 
-	private getAgariRecord(record: any, hule: any, round: IRoundInfo): IAgariInfo {
+	private getAgariRecord(record: any, hule: any, round: RoundInfo): AgariInfo {
 		const value = hule.zimo
 			? (hule.seat === round.dealership
 				? hule.point_zimo_xian * 3
