@@ -3,31 +3,32 @@ import { Root } from "protobufjs";
 import fetch from "node-fetch";
 import { Observable, merge } from 'rxjs';
 import { filter, map, share, tap } from 'rxjs/operators';
-import { IGameResult, IContest } from "./types";
-import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo, Han } from "./types";
-import { MajsoulCodec } from "./MajsoulCodec";
-import { MessageType } from "./MessageType";
-import { MajsoulConnection } from "./MajsoulConnection";
-import { MajsoulRpcImplementation } from "./MajsoulRpcImplementation";
-import { MajsoulService } from "./MajsoulService";
-import { MajsoulApiResources } from "./MajsoulApiResources";
+import { IGameResult, IContest } from "./types/types";
+import { IRoundResult, IAgariInfo, DrawStatus, IRoundInfo } from "./types/types";
+import { Han } from "./types/Han";
+import { Codec } from "./Codec";
+import { MessageType } from "./types/MessageType";
+import { Connection } from "./Connection";
+import { RpcImplementation } from "./RpcImplementation";
+import { RpcService } from "./Service";
+import { ApiResources } from "./ApiResources";
 
-export class MajsoulApi {
+export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
 		return (await fetch(path)).json();
 	}
 
-	public static async retrieveMahjsoulApiResources(): Promise<MajsoulApiResources> {
+	public static async retrieveMahjsoulApiResources(): Promise<ApiResources> {
 		const majsoulUrl = "https://mahjongsoul.game.yo-star.com/";
-		const versionInfo = await MajsoulApi.getRes<any>(majsoulUrl + "version.json?randv=" + Math.random().toString().slice(2));
-		const resInfo = await MajsoulApi.getRes<any>(majsoulUrl + `resversion${versionInfo.version}.json`);
+		const versionInfo = await Api.getRes<any>(majsoulUrl + "version.json?randv=" + Math.random().toString().slice(2));
+		const resInfo = await Api.getRes<any>(majsoulUrl + `resversion${versionInfo.version}.json`);
 		const pbVersion = resInfo.res["res/proto/liqi.json"].prefix;
-		const pbDef = await MajsoulApi.getRes<any>(majsoulUrl + `${pbVersion}/res/proto/liqi.json`);
-		const config = await MajsoulApi.getRes<any>(majsoulUrl + `${resInfo.res["config.json"].prefix}/config.json`);
+		const pbDef = await Api.getRes<any>(majsoulUrl + `${pbVersion}/res/proto/liqi.json`);
+		const config = await Api.getRes<any>(majsoulUrl + `${resInfo.res["config.json"].prefix}/config.json`);
 		const ipDef = config.ip.filter((x) => x.name === "player")[0];
 		const serverListUrl = (ipDef.region_urls.mainland
 			|| ipDef.region_urls[Object.keys(ipDef.region_urls)[0]]) + "?service=ws-gateway&protocol=ws&ssl=true";
-		const serverList = await MajsoulApi.getRes<any>(serverListUrl);
+		const serverList = await Api.getRes<any>(serverListUrl);
 		if (serverList.maintenance) {
 			console.log("Maintenance in progress");
 			return;
@@ -41,23 +42,23 @@ export class MajsoulApi {
 
 	private readonly contestObservables: Observable<any>[] = [];
 	private readonly protobufRoot: Root;
-	private readonly connection: MajsoulConnection;
-	private readonly rpc: MajsoulRpcImplementation;
-	private readonly lobbyService: MajsoulService;
-	private readonly codec: MajsoulCodec;
+	private readonly connection: Connection;
+	private readonly rpc: RpcImplementation;
+	private readonly lobbyService: RpcService;
+	private readonly codec: Codec;
 	private readonly notifications: Observable<any>;
 
-	constructor(private readonly apiResources: MajsoulApiResources) {
+	constructor(private readonly apiResources: ApiResources) {
 		this.protobufRoot = Root.fromJSON(this.apiResources.protobufDefinition);
-		this.codec = new MajsoulCodec(this.protobufRoot);
+		this.codec = new Codec(this.protobufRoot);
 		const serverIndex = Math.floor(Math.random() * this.apiResources.serverList.servers.length);
-		this.connection = new MajsoulConnection(`wss://${this.apiResources.serverList.servers[serverIndex]}`);
+		this.connection = new Connection(`wss://${this.apiResources.serverList.servers[serverIndex]}`);
 		this.notifications = this.connection.messages.pipe(filter(message => message.type === MessageType.Notification), map(message => this.codec.decode(message.data)));
-		this.rpc = new MajsoulRpcImplementation(this.connection, this.protobufRoot);
+		this.rpc = new RpcImplementation(this.connection, this.protobufRoot);
 		this.lobbyService = this.rpc.getService("Lobby");
 	}
 
-	public get majsoulCodec(): MajsoulCodec {
+	public get majsoulCodec(): Codec {
 		return this.codec;
 	}
 

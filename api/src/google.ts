@@ -1,8 +1,10 @@
 import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
-import { IGameResult, IContestTeam, IMatch, ISession, IContest } from './types';
+import { IGameResult, IContestTeam, IMatch, ISession, IContest } from './majsoul/types/types';
 import { Credentials } from 'google-auth-library';
-import { DrawStatus, IRoundInfo, IAgariInfo, Wind, Han } from './types';
+import { DrawStatus, IRoundInfo, IAgariInfo } from './majsoul/types/types';
+import { Wind } from "./majsoul/types/Wind";
+import { Han } from "./majsoul/types/Han";
 
 interface IHandDescription {
 	round: IRoundInfo;

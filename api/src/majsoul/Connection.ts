@@ -1,9 +1,9 @@
 import * as WebSocket from "ws";
 import { Subject, Observable } from 'rxjs';
-import { MajsoulCodec } from "./MajsoulCodec";
-import { MessageType } from "./MessageType";
+import { Codec } from "./Codec";
+import { MessageType } from "./types/MessageType";
 
-export class MajsoulConnection {
+export class Connection {
 	private readonly messagesSubject = new Subject<any>();
 	private socket: WebSocket;
 	constructor(private readonly server) { }
@@ -37,7 +37,7 @@ export class MajsoulConnection {
 		return new Promise((resolve) => {
 			this.socket = new WebSocket(this.server, { agent });
 			this.socket.on("message", (data) => {
-				const message = MajsoulCodec.stripMessageType(data as Buffer);
+				const message = Codec.stripMessageType(data as Buffer);
 				this.messagesSubject.next(message);
 			});
 
@@ -54,7 +54,7 @@ export class MajsoulConnection {
 			throw new Error("Connection is not opened");
 		}
 
-		this.socket.send(MajsoulCodec.addMessageType(type, data));
+		this.socket.send(Codec.addMessageType(type, data));
 	}
 
 	public close() {

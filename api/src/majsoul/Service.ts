@@ -1,6 +1,6 @@
 import { Root, rpc, RPCImpl, Service } from "protobufjs";
 
-export class MajsoulService {
+export class RpcService {
 	private readonly service: Service;
 
 	private readonly rpcService: rpc.Service;

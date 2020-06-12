@@ -1,5 +1,5 @@
 import { Spreadsheet } from "./google";
-import { MajsoulApi } from "./MajsoulApi";
+import { Api } from "./majsoul/Api";
 import { Credentials } from 'google-auth-library';
 import * as cors from "cors";
 import * as fs from "fs";
@@ -7,7 +7,7 @@ import * as path from "path";
 import * as util from "util";
 
 import { MongoClient, Collection, ObjectId } from 'mongodb';
-import { IGameResult, IContest, IPlayer, ISession } from "./types";
+import { IGameResult, IContest, IPlayer, ISession } from "./majsoul/types/types";
 import * as express from 'express';
 
 interface ISecrets {
@@ -73,7 +73,7 @@ async function main() {
 	const spreadsheet = new Spreadsheet(googleAppInfo);
 	await spreadsheet.init();
 
-	const api = new MajsoulApi(await MajsoulApi.retrieveMahjsoulApiResources());
+	const api = new Api(await Api.retrieveMahjsoulApiResources());
 	await api.init();
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
 

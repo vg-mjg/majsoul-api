@@ -1,4 +1,4 @@
-export interface MajsoulApiResources {
+export interface ApiResources {
 	version: string;
 	serverList: {
 		servers: string[];

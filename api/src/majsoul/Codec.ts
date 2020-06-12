@@ -1,6 +1,6 @@
 import { Root, Method, Type } from "protobufjs";
-import { MessageType } from "./MessageType";
-export class MajsoulCodec {
+import { MessageType } from "./types/MessageType";
+export class Codec {
 	public static decodePaipuId(paipu: string): string {
 		let e = "";
 		for (let i = "0".charCodeAt(0), n = "a".charCodeAt(0), a = 0; a < paipu.length; a++) {
@@ -57,7 +57,7 @@ export class MajsoulCodec {
 	}
 
 	public decode(data: Buffer): any {
-		return MajsoulCodec.decode(this.protobufRoot, this.wrapper, data);
+		return Codec.decode(this.protobufRoot, this.wrapper, data);
 	}
 
 	public decodeMessage(message: Buffer, methodName?: string): {
@@ -65,7 +65,7 @@ export class MajsoulCodec {
 		index?: number;
 		data: any;
 	} {
-		const { type, data: wrappedData } = MajsoulCodec.stripMessageType(message);
+		const { type, data: wrappedData } = Codec.stripMessageType(message);
 		if (type === MessageType.Notification) {
 			return {
 				type,
@@ -76,7 +76,7 @@ export class MajsoulCodec {
 			console.log(`Unknown Message Type ${type}`);
 			return;
 		}
-		const { index, data } = MajsoulCodec.stripIndex(wrappedData);
+		const { index, data } = Codec.stripIndex(wrappedData);
 		const unwrappedMessage = this.wrapper.decode(data);
 		const method = this.lookupMethod(methodName || unwrappedMessage["name"]);
 		return {
