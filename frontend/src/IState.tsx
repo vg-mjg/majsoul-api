@@ -3,13 +3,13 @@ export interface IPlayer {
 	displayName: string[];
 }
 
-export interface ITeam {
-	id: string;
+export interface Team {
+	_id: string;
 	name: string;
 	players: IPlayer[]
 }
 
-export interface IPendingSession {
+export interface PendingSession {
 	scheduledTime: number;
 	plannedMatches: {
 		teams: {
@@ -18,41 +18,27 @@ export interface IPendingSession {
 	}[];
 }
 
-export interface ISummary {
+export interface Contest {
+	_id: string;
+	teams?: Record<string, Team>;
+	majsoulFriendlyId: number;
 	name: string;
-	contestId: number;
-
-	teams: Record<string, ITeam>;
-
-	results: {
-		startTime: number;
-		standings: {
-			[key:string]: number
-		}
-	}[];
-
-	recentSession: {
-		scheduledTime: number;
-		games: {
-			players: {
-				displayName: string;
-			}[];
-			finalScore: {
-				score: number;
-				uma: number;
-			}[]
-		}[];
-	}
-
-	nextSession: IPendingSession;
+	sessions: Session[];
 }
 
-export interface IContest {
-	teams?: Record<string, ITeam>;
+export interface Session {
+	_id: string;
+	scheduledTime: number;
+	plannedMatches: {
+		teams: {
+			_id: string;
+		}[];
+	}[];
+	isCancelled: boolean;
+	totals: Record<string, number>;
+	aggregateTotals: Record<string, number>;
 }
 
 export interface IState {
-	players?: [];
-	contest?: IContest;
-	summary?: ISummary;
+	contest?: Contest;
 }

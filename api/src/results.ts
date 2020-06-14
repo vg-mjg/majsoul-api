@@ -5,7 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as util from "util";
 
-import { MongoClient, Collection, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as express from 'express';
 import * as store from "./store";
@@ -95,7 +95,7 @@ async function main() {
 	let contest = (await mongoStore.contestCollection.findOneAndUpdate(
 		{ majsoulId: majsoulContest.majsoulId },
 		{ $setOnInsert: { ...majsoulContest } },
-		{ upsert: true }
+		{ upsert: true, returnOriginal: false }
 	)).value;
 
 	if (!contest.teams) {
@@ -122,57 +122,53 @@ async function main() {
 		)).value;
 	}
 
-	const recordedGames = await mongoStore.gamesCollection.find({contestMajsoulId: contest.majsoulFriendlyId}).toArray();
+	if (!contest.sessions) {
+		console.log(`Generating contest sessions`);
+		const sessions = (await spreadsheet.getMatchInformation(contest.teams)).map(s => {s._id = new ObjectId(); return s}).reverse();
+		contest = (await mongoStore.contestCollection.findOneAndUpdate(
+			{ _id: contest._id },
+			{ $set: { sessions } },
+			{ returnOriginal: false }
+		)).value;
+	}
 
-	console.log(recordedGames);
+	const recordedGames = await mongoStore.gamesCollection.find({contestMajsoulId: contest.majsoulId}).toArray();
 
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
 
 	for (const game of gameIds) {
-		if (recordedGames.every(g => g.majsoulId !== game.majsoulId)) {
+		if (!recordedGames.every(g => g.majsoulId !== game.majsoulId)) {
 			console.log(`Game id ${game.majsoulId} already recorded`);
-			return;
+			continue;
 		}
 
 		const gameResult = await api.getGame(game.majsoulId);
 
 		if (gameResult.players.length !== 4) {
 			console.log(`Game id ${game.majsoulId} doesn't have enough players, skipping`);
-			return;
+			continue;
 		}
+
+		const session = (await mongoStore.contestCollection.findOne(
+			{ _id: contest._id, 'sessions.scheduledTime': { $lte: gameResult.end_time } },
+			{ projection: { "sessions.$.games": true, total: true } }
+		));
 
 		console.log(`Recording game id ${game.majsoulId}`);
-		return (await mongoStore.gamesCollection.insert(
-			{
-				...gameResult,
-				players: (await Promise.all(gameResult.players.map(player =>
-					mongoStore.playersCollection.findOneAndUpdate(
-						{ nickname: player.nickname },
-						{ $set: { majsoulId: player.majsoulId } },
-						{ upsert: true, returnOriginal: false, projection: { _id: true } }
-					)
-				))).map(p => p.value),
-			}
-		)).result;
-	}
+		const gameRecord: store.GameResult = {
+			_id: undefined,
+			sessionId: session.sessions[0]?._id,
+			...gameResult,
+			players: (await Promise.all(gameResult.players.map(player =>
+				mongoStore.playersCollection.findOneAndUpdate(
+					{ nickname: player.nickname },
+					{ $set: { majsoulId: player.majsoulId } },
+					{ upsert: true, returnOriginal: false, projection: { _id: true } }
+				)
+			))).map(p => p.value),
+		};
 
-	if (!contest.sessions) {
-		console.log(`Generating contest sessions`);
-		const sessions = await spreadsheet.getMatchInformation(contest.teams);
-		const games = await mongoStore.gamesCollection.find({contestMajsoulId: contest.majsoulId}).toArray();
-		for(let i = 1; games.length > 0;) {
-			const game = games.shift();
-			if (game.end_time * 1000 >= sessions[i].scheduledTime) {
-				i++;
-			}
-			sessions[i-1].games.push(game);
-		}
-
-		contest = (await mongoStore.contestCollection.findOneAndUpdate(
-			{ _id: contest._id },
-			{ $set: { sessions } },
-			{ returnOriginal: false }
-		)).value;
+		await mongoStore.gamesCollection.insertOne(gameRecord);
 	}
 
 	const app = express();
@@ -217,48 +213,27 @@ async function main() {
 		.catch(error => res.status(500).send(error));
 	});
 
+	async function getSessionSummary(contest: store.Contest, session: store.Session): Promise<Record<string, number>> {
+		const games = await mongoStore.gamesCollection.find({
+			sessionId: session._id
+		}).toArray();
+		return games.reduce<Record<string, number>>((total, game) => {
+			game.finalScore.forEach((score, index) => {
+				const winningTeam = contest.teams.find(t => t.players.find(p => p._id.equals(game.players[index]._id)));
+				total[winningTeam._id.toHexString()] = (total[winningTeam._id.toHexString()] ?? 0) + score.uma;
+			});
+			return total;
+		}, {});
+	}
+
 	app.get('/contests/:id', (req, res) => {
 		mongoStore.contestCollection.findOne(
-			{ contestId: parseInt(req.params.id) }
-		).then(contest => res.send(contest))
-		.catch(error => res.status(500).send(error));
-	});
-
-	app.get('/contests/:id/summary', (req, res) => {
-		mongoStore.contestCollection.findOne(
-			{ contestId: parseInt(req.params.id) }
-		).then(contest => {
-			try {
-				function* sessionSummary(contest: store.Contest) {
-					const total = contest.teams.reduce((total, next) => { total[next._id.toHexString()] = 0; return total }, {});
-					for(const session of contest.sessions.filter(s => s.games.length)) {
-						for(const game of session.games) {
-							game.players.forEach((player, index) => {
-								const team = contest.teams.find(t => t.players.find(p => p._id.equals(player._id)));
-								total[team._id.toHexString()] += game.finalScore[index].uma
-							});
-						}
-						for (const id in total) {
-							total[id] = Math.round(10 * total[id]) / 10;
-						}
-						yield {
-							startTime: session.scheduledTime,
-							standings: { ...total }
-						};
-					}
-				}
-
-				res.send({
-					name: contest.name,
-					contestId: contest.majsoulFriendlyId,
-					teams: contest.teams.reduce((total, next) => { total[next._id.toHexString()] = {name: next.name}; return total }, {}),
-					results: [...sessionSummary(contest)],
-					nextSession: contest.sessions.find(s => s.games.length <= 0),
-					recentSession: contest.sessions.filter(s => s.games.length > 0).slice(-1)[0]
-				});
-			} catch (e) {
-				console.log(e);
+			{ majsoulFriendlyId: parseInt(req.params.id) }
+		).then(async (contest) => {
+			for (const session of contest.sessions) {
+				session.totals = Object.entries(await getSessionSummary(contest, session)).map(([teamId, uma]) => ({ teamId, uma }))
 			}
+			res.send(contest);
 		})
 		.catch(error => res.status(500).send(error));
 	});

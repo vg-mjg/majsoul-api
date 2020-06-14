@@ -3,14 +3,19 @@ import { ObjectId } from "mongodb";
 
 export interface GameResult extends majsoul.GameResult {
 	_id: ObjectId;
+	sessionId: ObjectId;
 	players: Player[]
 }
 
 export interface Session {
+	_id: ObjectId;
 	scheduledTime: number;
 	plannedMatches: Match[];
 	isCancelled: boolean;
-	games: GameResult[];
+	totals: {
+		teamId: string;
+		uma: number;
+	}[];
 }
 
 export interface Player extends majsoul.Player {
@@ -31,5 +36,7 @@ export interface ContestTeam {
 }
 
 interface Match {
-	teams: ContestTeam[];
+	teams: {
+		_id: ObjectId;
+	}[];
 }

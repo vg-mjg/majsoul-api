@@ -2,10 +2,10 @@ import * as React from "react";
 import { ReactNode } from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { ISummary } from "../IState";
+import { Contest, Session } from "../IState";
 
 interface IStandingsChartProps {
-	summary: ISummary;
+	contest: Contest;
 }
 
 export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
@@ -31,14 +31,14 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	}
 
 	private createData(): ChartData<chartjs.ChartData> {
-		const sessionsTimes = this.props.summary.results.map(result => result.startTime);
-		const teams = Object.entries(this.props.summary.teams).map(([id, team]) => ({
+		const sessions = this.props.contest.sessions.filter(session => session.scheduledTime < Date.now())
+		const teams = Object.entries(this.props.contest.teams).map(([id, team]) => ({
 			name: team.name,
-			scores: this.props.summary.results.map(result => result.standings[id])
+			scores: sessions.map(session => session.aggregateTotals[team._id])
 		}));
 
 		return {
-			labels: sessionsTimes.map(time => new Date(time).toLocaleDateString()),
+			labels: sessions.map(session => new Date(session.scheduledTime).toLocaleDateString()),
 			datasets: teams.map((team, index) => ({
 				label: team.name,
 				fill: false,
@@ -64,7 +64,7 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	}
 
 	render(): ReactNode {
-		if (this.props.summary == null) {
+		if (this.props.contest == null) {
 			return null;
 		}
 

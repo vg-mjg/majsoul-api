@@ -91,7 +91,6 @@ export class Spreadsheet {
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
 		)).data;
-		console.log(majsoul);
 		this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0);
 	}
 
@@ -132,7 +131,9 @@ export class Spreadsheet {
 				majorDimension: "COLUMNS",
 				range: `'Team Score Graph'!C39:C48`
 			}
-		)).data.values[0].map(name => teams.find(team => team.name === name));
+		)).data.values[0].map(name => ({
+			_id: teams.find(team => team.name === name)._id,
+		}));
 
 		const schedule = (await this.sheets.spreadsheets.values.get(
 			{
@@ -150,9 +151,10 @@ export class Spreadsheet {
 		for(let week = 0; week < 5; week++) {
 			for(let slot = 0; slot < 7; slot++) {
 				matches.push({
+					_id: undefined,
+					totals: [],
 					scheduledTime: date,
 					isCancelled: schedule[slot * 2][13 * week] === "Cancelled",
-					games: [],
 					plannedMatches: [
 						{
 							teams: schedule[slot * 2]

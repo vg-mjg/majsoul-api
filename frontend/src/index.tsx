@@ -4,8 +4,8 @@ import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route } from "react-router-dom";
-import { IState, ITeam } from "./IState";
-import { ISummaryRetrievedAction, ITeamsRetrievedAction } from "./IAction";
+import { IState } from "./IState";
+import { ISummaryRetrievedAction as ContestSummaryRetrievedAction } from "./IAction";
 import { ActionType } from "./ActionType";
 import { ContestSummary } from "./components/ContestSummaryComponentProps";
 
@@ -13,18 +13,28 @@ import { ContestSummary } from "./components/ContestSummaryComponentProps";
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
 		case ActionType.SummaryRetrieved: {
-			return { ...state, ...{ summary: (action as ISummaryRetrievedAction).summary } }
-		} case ActionType.TeamsRetrieved: {
-			const teamsRetrievedAction = action as ITeamsRetrievedAction;
+			const contestSummaryRetrievedAction = action as ContestSummaryRetrievedAction;
+			const contest = {...state.contest, ...contestSummaryRetrievedAction.contest};
+
+			contest.teams = contestSummaryRetrievedAction.contest.teams.reduce((hash: any, next: any) => {
+				hash[next._id] = next;
+				return hash;
+			}, {});
+
+			const aggregateTotals: Record<string, number> = {};
+			contest.sessions = contest.sessions.reverse();
+
+			for (const session of contest.sessions) {
+				for (const value of session.totals) {
+					aggregateTotals[value.teamId] = (aggregateTotals[value.teamId] ?? 0) + value.uma;
+				}
+				session.aggregateTotals = {...aggregateTotals};
+			}
+
 			return {
 				...state,
 				...{
-					contest: {
-						teams: teamsRetrievedAction.teams.reduce((teams, team) => {
-							teams[team.id] = team;
-							return teams;
-						}, {} as Record<string, ITeam>)
-					}
+					contest
 				}
 			};
 		}
