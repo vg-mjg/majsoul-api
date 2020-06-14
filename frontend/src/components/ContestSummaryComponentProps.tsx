@@ -2,7 +2,7 @@ import React = require("react");
 import { LeagueStandingChart } from "./LeagueStandingChart";
 import { ISummaryRetrievedAction } from "../IAction";
 import { ActionType } from "../ActionType";
-import { IState, Contest } from "../IState";
+import { IState, Contest, Team, Session } from "../IState";
 import { connect } from "react-redux";
 import { ThunkAction } from "redux-thunk";
 import { Action } from "redux";
@@ -20,24 +20,24 @@ const fetchContestSummary = (contestId: string): AppThunk<ISummaryRetrievedActio
 	}
 }
 
-// interface IPendingSessionProps {
-// 	teams: Record<string, Team>;
-// 	session: PendingSession;
-// }
+interface IPendingSessionProps {
+	teams: Record<string, Team>;
+	session: Session;
+}
 
-// class PendingSession extends React.Component<IPendingSessionProps> {
-// 	render() {
-// 		const date = new Date(this.props.session?.scheduledTime);
-// 		return <>
-// 			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
-// 			<div>Local Time{date.toLocaleString()}</div>
-// 			{this.props.session.plannedMatches.map((match, index) => <>
-// 				<div>{index}</div>
-// 				{match.teams.map(team => <div key={team.id}>{this.props.teams[team.id].name}</div>)}
-// 			</>)}
-// 		</>
-// 	}
-// }
+class PendingSession extends React.Component<IPendingSessionProps> {
+	render() {
+		const date = new Date(this.props.session?.scheduledTime);
+		return <>
+			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
+			<div>Local Time{date.toLocaleString()}</div>
+			{this.props.session.plannedMatches.map((match, index) => <>
+				<div>{index}</div>
+				{match.teams.map(team => <div key={team._id}>{this.props.teams[team._id].name}</div>)}
+			</>)}
+		</>
+	}
+}
 
 interface ContestSummaryComponentDispatchProps {
 	fetchContestSummary: (contestId: string) => void;
@@ -60,7 +60,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 		return <>
 			<h1>{this.props.contest.name}</h1>
 			<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
-			{/* <PendingSession session={this.props.contest.nextSession} teams={this.props.contest.teams}></PendingSession> */}
+			<PendingSession session={this.props.contest.sessions.find(session => session.scheduledTime > Date.now())} teams={this.props.contest.teams}></PendingSession>
 		</>
 	}
 }
