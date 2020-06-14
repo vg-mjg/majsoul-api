@@ -1,10 +1,10 @@
-import { Collection, MongoClient } from "mongodb";
+import { Collection, MongoClient, ObjectId } from "mongodb";
 import { Contest, GameResult, Player } from "./types/types";
 
 export class Store {
-	public contestCollection: Collection<Contest>;
-	public gamesCollection: Collection<GameResult>;
-	public playersCollection: Collection<Player>;
+	public contestCollection: Collection<Contest<ObjectId>>;
+	public gamesCollection: Collection<GameResult<ObjectId>>;
+	public playersCollection: Collection<Player<ObjectId>>;
 
 	public async init(): Promise<void> {
 		const url = 'mongodb://root:example@localhost:27017/?authMechanism=SCRAM-SHA-256&authSource=admin';

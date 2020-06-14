@@ -1,14 +1,13 @@
 import { Spreadsheet } from "./google";
 import { Credentials } from 'google-auth-library';
-import * as cors from "cors";
 import * as fs from "fs";
 import * as path from "path";
 import * as util from "util";
 
 import { ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
-import * as express from 'express';
 import * as store from "./store";
+import { RestApi } from "./rest/RestApi";
 
 interface ISecrets {
 	majsoul: {
@@ -155,7 +154,7 @@ async function main() {
 		));
 
 		console.log(`Recording game id ${game.majsoulId}`);
-		const gameRecord: store.GameResult = {
+		const gameRecord: store.GameResult<ObjectId> = {
 			_id: undefined,
 			sessionId: session.sessions[0]?._id,
 			...gameResult,
@@ -171,81 +170,8 @@ async function main() {
 		await mongoStore.gamesCollection.insertOne(gameRecord);
 	}
 
-	const app = express();
-	app.use(cors());
-	app.listen(3000, () => console.log(`Express started`));
-	app.put('/players/:nickname', (req, res) => {
-		mongoStore.playersCollection.findOneAndReplace(
-			{ nickname: req.params.nickname },
-			req.body,
-			{ }
-		).then(result => result.value ? (result.ok ? res.sendStatus(200) : res.status(500).send(result.lastErrorObject)) : res.sendStatus(404))
-		.catch(error => res.status(500).send(error));
-	});
-
-	app.get('/players', (req, res) => {
-		mongoStore.playersCollection.find({}, { projection: { _id: false } }).toArray()
-		.then(players => res.send(players))
-		.catch(error => res.status(500).send(error));
-	});
-
-	app.get('/players/:id', (req, res) => {
-		mongoStore.playersCollection.findOne(
-			{ nickname: req.params.nickname },
-			{ projection: { _id: false } }
-		).then(player => player ? res.send(player) : res.sendStatus(404))
-		.catch(error => res.status(500).send(error));
-	});
-
-	app.get('/contests/:id/sessions', (req, res) => {
-		mongoStore.contestCollection.findOne(
-			{ contestId: parseInt(req.params.id) },
-			{ projection: { sessions: true } }
-		).then(contest => res.send(contest.sessions))
-		.catch(error => res.status(500).send(error));
-	});
-
-	app.get('/contests/:id/teams', (req, res) => {
-		mongoStore.contestCollection.findOne(
-			{ contestId: parseInt(req.params.id) },
-			{ projection: { teams: true } }
-		).then(contest => res.send(contest.teams))
-		.catch(error => res.status(500).send(error));
-	});
-
-	async function getSessionSummary(contest: store.Contest, session: store.Session): Promise<Record<string, number>> {
-		const games = await mongoStore.gamesCollection.find({
-			sessionId: session._id
-		}).toArray();
-		return games.reduce<Record<string, number>>((total, game) => {
-			game.finalScore.forEach((score, index) => {
-				const winningTeam = contest.teams.find(t => t.players.find(p => p._id.equals(game.players[index]._id)));
-				total[winningTeam._id.toHexString()] = (total[winningTeam._id.toHexString()] ?? 0) + score.uma;
-			});
-			return total;
-		}, {});
-	}
-
-	app.get('/contests/:id', (req, res) => {
-		mongoStore.contestCollection.findOne(
-			{ majsoulFriendlyId: parseInt(req.params.id) }
-		).then(async (contest) => {
-			for (const session of contest.sessions) {
-				session.totals = Object.entries(await getSessionSummary(contest, session)).map(([teamId, uma]) => ({ teamId, uma }))
-			}
-			res.send(contest);
-		})
-		.catch(error => res.status(500).send(error));
-	});
-
-	app.get('/games', (req, res) => {
-		// gamesCollection.find(
-		// 	{game}
-		// )
-		mongoStore.playersCollection.find({}, { projection: { _id: false } }).toArray()
-		.then(players => res.send(players))
-		.catch(error => res.status(500).send(error));
-	});
+	const restApi = new RestApi(mongoStore);
+	restApi.init();
 }
 
 main();

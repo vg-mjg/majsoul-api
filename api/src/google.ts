@@ -3,6 +3,7 @@ import { google, sheets_v4 } from 'googleapis';
 import { Credentials } from 'google-auth-library';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
+import { ObjectId } from 'mongodb';
 
 interface IHandDescription {
 	round: majsoul.RoundInfo;
@@ -94,14 +95,14 @@ export class Spreadsheet {
 		this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0);
 	}
 
-	public async getTeamInformation(): Promise<store.ContestTeam[]> {
+	public async getTeamInformation(): Promise<store.ContestTeam<ObjectId>[]> {
 		const players = (await this.sheets.spreadsheets.values.get(
 			{
 				spreadsheetId: Spreadsheet.spreadsheetId,
 				range: `'Ind. Ranking'!A:C`
 			}
 		)).data;
-		const teams: store.ContestTeam[] = [];
+		const teams: store.ContestTeam<ObjectId>[] = [];
 		for(const row of players.values.slice(1)) {
 			if (row[0] === "") {
 				if (row[2] === "T#") {
@@ -124,7 +125,7 @@ export class Spreadsheet {
 		return teams;
 	}
 
-	public async getMatchInformation(teams: store.ContestTeam[]): Promise<store.Session[]> {
+	public async getMatchInformation(teams: store.ContestTeam<ObjectId>[]): Promise<store.Session<ObjectId>[]> {
 		const teamsArray = (await this.sheets.spreadsheets.values.get(
 			{
 				spreadsheetId: Spreadsheet.spreadsheetId,
@@ -144,7 +145,7 @@ export class Spreadsheet {
 		)).data.values;
 
 		let date = Date.UTC(2020, 4, 26, 18);
-		const matches: store.Session[] = [];
+		const matches: store.Session<ObjectId>[] = [];
 		const day = 1000 * 60 * 60 * 24;
 		const sixHours = 1000 * 60 * 60 * 6;
 		const intervals = [day, day, day + sixHours, day - sixHours, sixHours, day - sixHours, day * 2]
@@ -152,7 +153,6 @@ export class Spreadsheet {
 			for(let slot = 0; slot < 7; slot++) {
 				matches.push({
 					_id: undefined,
-					totals: [],
 					scheduledTime: date,
 					isCancelled: schedule[slot * 2][13 * week] === "Cancelled",
 					plannedMatches: [

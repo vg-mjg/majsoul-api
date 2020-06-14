@@ -1,42 +1,38 @@
 import * as majsoul from "../../majsoul";
 import { ObjectId } from "mongodb";
 
-export interface GameResult extends majsoul.GameResult {
-	_id: ObjectId;
-	sessionId: ObjectId;
-	players: Player[]
+export interface GameResult<Id = any> extends majsoul.GameResult {
+	_id: Id;
+	sessionId: Id;
+	players: Player<Id>[]
 }
 
-export interface Session {
-	_id: ObjectId;
+export interface Session<Id = any> {
+	_id: Id;
 	scheduledTime: number;
-	plannedMatches: Match[];
+	plannedMatches: Match<Id>[];
 	isCancelled: boolean;
-	totals: {
-		teamId: string;
-		uma: number;
-	}[];
 }
 
-export interface Player extends majsoul.Player {
-	_id: ObjectId;
+export interface Player<Id = any> extends majsoul.Player {
+	_id: Id;
 	displayName: string;
 }
 
-export interface Contest extends majsoul.Contest {
-	_id: ObjectId;
-	sessions: Session[];
-	teams: ContestTeam[];
+export interface Contest<Id = any> extends majsoul.Contest {
+	_id: Id;
+	sessions: Session<Id>[];
+	teams: ContestTeam<Id>[];
 }
 
-export interface ContestTeam {
-	_id: ObjectId;
+export interface ContestTeam<Id = any> {
+	_id: Id;
 	name: string;
-	players: Player[];
+	players: Player<Id>[];
 }
 
-interface Match {
+interface Match<Id = any> {
 	teams: {
-		_id: ObjectId;
+		_id: Id;
 	}[];
 }

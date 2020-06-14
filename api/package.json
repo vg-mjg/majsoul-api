@@ -2,7 +2,8 @@
   "name": "majsoul-api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "typings": "dist/index.d.ts",
+  "module": "dist/index.js",
   "scripts": {
     "start": "node -r source-map-support/register ./dist/results.js"
   },
