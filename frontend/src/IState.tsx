@@ -1,21 +1,12 @@
-export interface IPlayer {
-	_id: string[];
+export interface Player {
+	_id: string;
 	displayName: string[];
 }
 
 export interface Team {
 	_id: string;
 	name: string;
-	players: IPlayer[]
-}
-
-export interface PendingSession {
-	scheduledTime: number;
-	plannedMatches: {
-		teams: {
-			id: string;
-		}[];
-	}[];
+	players: Player[]
 }
 
 export interface Contest {
@@ -26,6 +17,11 @@ export interface Contest {
 	sessions: Session[];
 }
 
+export interface FinalScore {
+	uma: number;
+	score: number;
+}
+
 export interface Session {
 	_id: string;
 	scheduledTime: number;
@@ -34,6 +30,7 @@ export interface Session {
 			_id: string;
 		}[];
 	}[];
+	games: any[];
 	isCancelled: boolean;
 	totals: Record<string, number>;
 	aggregateTotals: Record<string, number>;

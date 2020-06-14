@@ -12,7 +12,7 @@ import { ContestSummary } from "./components/ContestSummaryComponentProps";
 
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
-		case ActionType.SummaryRetrieved: {
+		case ActionType.ContestSummaryRetrieved: {
 			const contestSummaryRetrievedAction = action as ContestSummaryRetrievedAction;
 			const contest = {...state.contest, ...contestSummaryRetrievedAction.contest};
 

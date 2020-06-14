@@ -1,3 +1,4 @@
 export enum ActionType {
-	SummaryRetrieved,
+	ContestSummaryRetrieved,
+	SessionGamesRetrieved
 }
