@@ -27,11 +27,11 @@ export class RestApi {
 		});
 
 		this.app.get('/games', (req, res) => {
-			// gamesCollection.find(
-			// 	{game}
-			// )
-			this.mongoStore.playersCollection.find({}, { projection: { _id: false } }).toArray()
-				.then(players => res.send(players))
+			const sessionIds = (req.query.sessions as string).split('+');
+			this.mongoStore.gamesCollection.find(
+				{ sessionId: { $in: sessionIds.map(id => new ObjectId(id)) }}
+			).toArray()
+				.then(games => res.send(games))
 				.catch(error => res.status(500).send(error));
 		});
 	}

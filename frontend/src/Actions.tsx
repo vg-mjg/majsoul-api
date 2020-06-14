@@ -10,11 +10,11 @@ export enum ActionType {
 	SessionGamesRetrieved
 }
 
-export interface ISummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved>{
+export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved>{
 	contest: Rest.Contest<string>;
 }
 
-export interface ISessionGamesRetrieved extends Action<ActionType.SessionGamesRetrieved>{
+export interface SessionGamesRetrieved extends Action<ActionType.SessionGamesRetrieved>{
 	sessionId: string;
 	games: Store.GameResult[];
 }

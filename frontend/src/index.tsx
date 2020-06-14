@@ -5,14 +5,14 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route } from "react-router-dom";
 import { IState, Contest } from "./IState";
-import { ISummaryRetrievedAction as ContestSummaryRetrievedAction, ActionType } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved } from "./Actions";
 import { ContestSummary } from "./components/ContestSummaryComponentProps";
 import { Store } from "majsoul-api";
 
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
-			const contestSummaryRetrievedAction = action as ContestSummaryRetrievedAction;
+			const contestSummaryRetrievedAction = action as SummaryRetrievedAction;
 			const contest = {
 				...state.contest,
 				...contestSummaryRetrievedAction.contest,
@@ -23,13 +23,12 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				sessions: contestSummaryRetrievedAction.contest.sessions.map(session => ({
 					...session,
 					aggregateTotals: {}
-				})).slice(0).reverse()
+				})).reverse()
 			} as Contest;
 
 			const aggregateTotals: Record<string, number> = {};
 
 			for (const session of contest.sessions) {
-				console.log(new Date(session.scheduledTime).toString());
 				for (const key in session.totals) {
 					aggregateTotals[key] = (aggregateTotals[key] ?? 0) + session.totals[key];
 				}
@@ -40,6 +39,24 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				...state,
 				...{ contest }
 			};
+		} case ActionType.SessionGamesRetrieved: {
+			const sessionGamesRetrievedAction = action as SessionGamesRetrieved;
+			sessionGamesRetrievedAction.sessionId
+			return {
+				...state,
+				contest: {
+					...state.contest,
+					sessions: state.contest.sessions.map(session => {
+						if (session._id === sessionGamesRetrievedAction.sessionId) {
+							return {
+								...session,
+								games: sessionGamesRetrievedAction.games
+							}
+						}
+						return session;
+					})
+				}
+			}
 		}
 	}
 

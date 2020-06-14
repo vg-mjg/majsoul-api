@@ -1,11 +1,11 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { ISummaryRetrievedAction, ActionType, AppThunk } from "../Actions";
+import { SummaryRetrievedAction, ActionType, AppThunk, SessionGamesRetrieved } from "../Actions";
 import { IState, Contest, Session } from "../IState";
 import { connect } from "react-redux";
 import { Store } from "majsoul-api";
 
-const fetchContestSummary = (contestId: string): AppThunk<ISummaryRetrievedAction> => {
+const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
 		return fetch(`http://localhost:3000/contests/${contestId}`)
 			.then(response => response.json())
@@ -16,7 +16,7 @@ const fetchContestSummary = (contestId: string): AppThunk<ISummaryRetrievedActio
 	}
 }
 
-const fetchSessionGamesSummary = (sessionId: string): AppThunk<ISummaryRetrievedAction> => {
+const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetrieved> => {
 	return function (dispatch) {
 		const url = new URL(`http://localhost:3000/games?sessions={${sessionId}`)
 		url.search = new URLSearchParams({
@@ -26,9 +26,10 @@ const fetchSessionGamesSummary = (sessionId: string): AppThunk<ISummaryRetrieved
 
 		return fetch(url.toString())
 			.then(response => response.json())
-			.then(contest => dispatch({
-				type: ActionType.ContestSummaryRetrieved,
-				contest
+			.then(games => dispatch({
+				type: ActionType.SessionGamesRetrieved,
+				sessionId,
+				games
 			}));
 	}
 }
@@ -56,18 +57,31 @@ class PendingSession extends React.Component<IPendingSessionProps> {
 	}
 }
 
-// interface GameResultSummaryProps {
-// 	teams: Record<string, Team>;
-// 	game: GameResult;
-// }
+interface GameResultSummaryProps {
+	teams: Record<string, Store.ContestTeam>;
+	game: Store.GameResult;
+}
 
-// class GameResultSummary extends React.Component<GameResultSummaryProps> {
-// 	render() {
-// 		return <>
-// 			{this.props.game.players.map(player => )}
-// 		</>
-// 	}
-// }
+class GameResultSummary extends React.Component<GameResultSummaryProps> {
+	render() {
+		return <>
+			{this.props.game.players.map(player => <div>{this.findPlayerInformation(player._id).player.displayName}</div>)}
+		</>
+	}
+
+	private findPlayerInformation(playerId: string) {
+		for (const teamId in this.props.teams){
+			const player = this.props.teams[teamId].players.find(player => player._id === playerId);
+			if (player) {
+				return {
+					player,
+					team: this.props.teams[teamId]
+				}
+			}
+		}
+		return null;
+	}
+}
 
 interface HistoricalSessionProps {
 	teams: Record<string, Store.ContestTeam>;
@@ -76,19 +90,15 @@ interface HistoricalSessionProps {
 
 class HistoricalSession extends React.Component<HistoricalSessionProps> {
 	render() {
-		const date = new Date(this.props.session?.scheduledTime);
+		if(this.props?.session?.games == null){
+			return null;
+		}
+
+		const date = new Date(this.props.session.scheduledTime);
 		return <>
-			{this.props.session.games.map(game => <>
-				<div>{game.players}</div>
-				<div></div>
-				<div></div>
-			</>)}
+			{this.props.session.games.map(game => <GameResultSummary game={game} teams={this.props.teams}></GameResultSummary>)}
 			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
 			<div>Local Time{date.toLocaleString()}</div>
-			{this.props.session.plannedMatches.map((match, index) => <>
-				<div>{index}</div>
-				{match.teams.map(team => <div key={team._id}>{this.props.teams[team._id].name}</div>)}
-			</>)}
 		</>
 	}
 }
@@ -114,7 +124,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 
 		const nextSession = this.props.contest.sessions.find(session => session.scheduledTime > Date.now());
 		const currentSession = this.props.contest.sessions.slice(0).reverse().find(session => session.scheduledTime <= Date.now());
-		if (currentSession?.games != null) {
+		if (currentSession?.games == null) {
 			this.props.fetchSessionGamesSummary(currentSession._id);
 		}
 
@@ -122,6 +132,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 			<h1>{this.props.contest.name}</h1>
 			<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
 			<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
+			<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
 		</>
 	}
 }
