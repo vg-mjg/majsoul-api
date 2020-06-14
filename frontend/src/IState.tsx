@@ -1,38 +1,12 @@
-export interface Player {
-	_id: string;
-	displayName: string[];
-}
+import { Rest, Store } from "majsoul-api";
 
-export interface Team {
-	_id: string;
-	name: string;
-	players: Player[]
-}
-
-export interface Contest {
-	_id: string;
-	teams?: Record<string, Team>;
-	majsoulFriendlyId: number;
-	name: string;
+export interface Contest extends Omit<Rest.Contest<string>, "teams" | "sessions" > {
+	teams?: Record<string, Store.ContestTeam<string>>;
 	sessions: Session[];
 }
 
-export interface FinalScore {
-	uma: number;
-	score: number;
-}
-
-export interface Session {
-	_id: string;
-	scheduledTime: number;
-	plannedMatches: {
-		teams: {
-			_id: string;
-		}[];
-	}[];
-	games: any[];
-	isCancelled: boolean;
-	totals: Record<string, number>;
+export interface Session extends Rest.Session<string> {
+	games: Store.GameResult<string>[];
 	aggregateTotals: Record<string, number>;
 }
 

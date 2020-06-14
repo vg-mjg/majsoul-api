@@ -31,7 +31,8 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	}
 
 	private createData(): ChartData<chartjs.ChartData> {
-		const sessions = this.props.contest.sessions.filter(session => session.scheduledTime < Date.now())
+		console.log(this.props.contest.sessions);
+		const sessions = this.props.contest.sessions.filter(session => session.scheduledTime < Date.now());
 		const teams = Object.entries(this.props.contest.teams).map(([id, team]) => ({
 			name: team.name,
 			scores: sessions.map(session => session.aggregateTotals[team._id])

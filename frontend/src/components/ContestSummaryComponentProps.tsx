@@ -1,13 +1,9 @@
-import React = require("react");
+import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { ISummaryRetrievedAction } from "../IAction";
-import { ActionType } from "../ActionType";
-import { IState, Contest, Team, Session } from "../IState";
+import { ISummaryRetrievedAction, ActionType, AppThunk } from "../Actions";
+import { IState, Contest, Session } from "../IState";
 import { connect } from "react-redux";
-import { ThunkAction } from "redux-thunk";
-import { Action } from "redux";
-
-type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
+import { Store } from "majsoul-api";
 
 const fetchContestSummary = (contestId: string): AppThunk<ISummaryRetrievedAction> => {
 	return function (dispatch) {
@@ -38,12 +34,16 @@ const fetchSessionGamesSummary = (sessionId: string): AppThunk<ISummaryRetrieved
 }
 
 interface IPendingSessionProps {
-	teams: Record<string, Team>;
+	teams: Record<string, Store.ContestTeam>;
 	session: Session;
 }
 
 class PendingSession extends React.Component<IPendingSessionProps> {
 	render() {
+		if (this.props.session == null) {
+			return null;
+		}
+
 		const date = new Date(this.props.session?.scheduledTime);
 		return <>
 			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
@@ -70,7 +70,7 @@ class PendingSession extends React.Component<IPendingSessionProps> {
 // }
 
 interface HistoricalSessionProps {
-	teams: Record<string, Team>;
+	teams: Record<string, Store.ContestTeam>;
 	session: Session;
 }
 
@@ -113,9 +113,8 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 		}
 
 		const nextSession = this.props.contest.sessions.find(session => session.scheduledTime > Date.now());
-		const currentSession = this.props.contest.sessions.reverse().find(session => session.scheduledTime <= Date.now());
-
-		if (!currentSession.games) {
+		const currentSession = this.props.contest.sessions.slice(0).reverse().find(session => session.scheduledTime <= Date.now());
+		if (currentSession?.games != null) {
 			this.props.fetchSessionGamesSummary(currentSession._id);
 		}
 
