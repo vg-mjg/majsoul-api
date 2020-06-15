@@ -8,6 +8,7 @@ import { IState, Contest } from "./IState";
 import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved } from "./Actions";
 import { ContestSummary } from "./components/ContestSummaryComponentProps";
 import { Store } from "majsoul-api";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {

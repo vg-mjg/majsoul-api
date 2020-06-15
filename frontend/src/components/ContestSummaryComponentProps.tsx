@@ -4,6 +4,7 @@ import { SummaryRetrievedAction, ActionType, AppThunk, SessionGamesRetrieved } f
 import { IState, Contest, Session } from "../IState";
 import { connect } from "react-redux";
 import { Store } from "majsoul-api";
+import Alert from 'react-bootstrap/Alert';
 
 const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
@@ -51,7 +52,11 @@ class PendingSession extends React.Component<IPendingSessionProps> {
 			<div>Local Time{date.toLocaleString()}</div>
 			{this.props.session.plannedMatches.map((match, index) => <>
 				<div>{index}</div>
-				{match.teams.map(team => <div key={team._id}>{this.props.teams[team._id].name}</div>)}
+				{match.teams.map(team =>
+					<Alert key={team._id} variant={"primary"}>
+						{this.props.teams[team._id].name}
+					</Alert>
+				)}
 			</>)}
 		</>
 	}
@@ -65,7 +70,11 @@ interface GameResultSummaryProps {
 class GameResultSummary extends React.Component<GameResultSummaryProps> {
 	render() {
 		return <>
-			{this.props.game.players.map(player => <div>{this.findPlayerInformation(player._id).player.displayName}</div>)}
+			{this.props.game.players.map(player =>
+				<Alert key={player._id} variant={"primary"}>
+					{this.findPlayerInformation(player._id).player.displayName}
+				</Alert>
+			)}
 		</>
 	}
 
@@ -96,7 +105,7 @@ class HistoricalSession extends React.Component<HistoricalSessionProps> {
 
 		const date = new Date(this.props.session.scheduledTime);
 		return <>
-			{this.props.session.games.map(game => <GameResultSummary game={game} teams={this.props.teams}></GameResultSummary>)}
+			{this.props.session.games.map(game => <GameResultSummary key={game._id} game={game} teams={this.props.teams}></GameResultSummary>)}
 			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
 			<div>Local Time{date.toLocaleString()}</div>
 		</>

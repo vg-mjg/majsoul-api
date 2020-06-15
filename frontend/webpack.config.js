@@ -25,7 +25,18 @@ module.exports = env => {
 					enforce: "pre",
 					test: /\.js$/,
 					loader: "source-map-loader"
-				}
+				},
+				{
+					test: /\.css$/,
+					use: [
+						{
+							loader: 'style-loader', // inject CSS to page
+						},
+						{
+							loader: 'css-loader', // translates CSS into CommonJS modules
+						}
+					]
+				},
 			]
 		},
 		optimization: {
