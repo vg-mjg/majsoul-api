@@ -4,15 +4,54 @@ import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route } from "react-router-dom";
-import { IState, Contest } from "./IState";
+import { IState, Contest, ContestTeam } from "./IState";
 import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
-import { Store } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
+import { teamColors } from "./components/LeagueStandingChart";
+
+function hexToRgb(hex: string) {
+	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	return result ? {
+		r: parseInt(result[1], 16),
+		g: parseInt(result[2], 16),
+		b: parseInt(result[3], 16)
+	} : null;
+}
+
+
+function rgbToHsl(color: string) {
+	let {r, g, b} = hexToRgb(color);
+	r /= 255, g /= 255, b /= 255;
+
+	const max = Math.max(r, g, b), min = Math.min(r, g, b);
+	let h, s;
+	const l = (max + min) / 2;
+
+	if (max == min) {
+		h = s = 0; // achromatic
+	} else {
+		const d = max - min;
+		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+		switch (max) {
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+			case g: h = (b - r) / d + 2; break;
+			case b: h = (r - g) / d + 4; break;
+		}
+
+		h /= 6;
+	}
+
+	return {h, s, l};
+}
+
+
+function hslStyle(hsl: {h: number, s: number, l: number}) {
+	return `hsl(${Math.round(hsl.h * 360)}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`;
+}
 
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
@@ -21,8 +60,8 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			const contest = {
 				...state.contest,
 				...contestSummaryRetrievedAction.contest,
-				teams: contestSummaryRetrievedAction.contest.teams.reduce<Record<string, Store.ContestTeam<string>>>((hash, next) => {
-					hash[next._id] = next;
+				teams: contestSummaryRetrievedAction.contest.teams.reduce<Record<string, ContestTeam>>((hash, next, index) => {
+					hash[next._id] = {...next, ...{color: teamColors[index], index: index}};
 					return hash;
 				}, {}),
 				sessions: contestSummaryRetrievedAction.contest.sessions.map(session => ({
@@ -32,6 +71,20 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			} as Contest;
 
 			const aggregateTotals: Record<string, number> = {};
+
+			const hoverChange = 0.1;
+			for (const team of Object.values(contest.teams)) {
+				const hslColor = rgbToHsl(team.color);
+				document.documentElement.style.setProperty(`--team-${team.index}-bgBase`, team.color);
+				document.documentElement.style.setProperty(`--team-${team.index}-color`, hslColor?.l >= .4 ?  "black" : "white");
+
+				if (hslColor.l >= .5) {
+					hslColor.l = Math.max(hslColor.l - hoverChange, 0);
+				} else {
+					hslColor.l = Math.min(hslColor.l + hoverChange, 1);
+				}
+				document.documentElement.style.setProperty(`--team-${team.index}-hover`, hslStyle(hslColor));
+			}
 
 			for (const session of contest.sessions) {
 				for (const key in session.totals) {

@@ -10,21 +10,22 @@ interface IStandingsChartProps {
 	contest: Contest;
 }
 
+export const teamColors = [
+	"#980000",
+	"#ff0000",
+	"#ff9900",
+	"#ffff00",
+	"#00ff00",
+	"#00ffff",
+	"#9900ff",
+	"#ff00ff",
+	"#4a86e8",
+	"#d9d9d9",
+]
+
 chartjs.defaults.global.defaultFontColor = "white";
 
 export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
-	static readonly colors = [
-		"#980000",
-		"#ff0000",
-		"#ff9900",
-		"#ffff00",
-		"#00ff00",
-		"#00ffff",
-		"#9900ff",
-		"#ff00ff",
-		"#4a86e8",
-		"#d9d9d9",
-	]
 
 	private onClick(event?: MouseEvent, activeElements?: {}[]) {
 		console.log(event, activeElements);
@@ -54,12 +55,12 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 				borderDash: [],
 				borderDashOffset: 0.0,
 				borderJoinStyle: 'miter',
-				pointBorderColor: LeagueStandingChart.colors[index],
-				pointBackgroundColor: LeagueStandingChart.colors[index],
-				backgroundColor: LeagueStandingChart.colors[index],
-				borderColor: LeagueStandingChart.colors[index],
-				pointHoverBackgroundColor: LeagueStandingChart.colors[index],
-				pointHoverBorderColor: LeagueStandingChart.colors[index],
+				pointBorderColor: teamColors[index],
+				pointBackgroundColor: teamColors[index],
+				backgroundColor: teamColors[index],
+				borderColor: teamColors[index],
+				pointHoverBackgroundColor: teamColors[index],
+				pointHoverBorderColor: teamColors[index],
 				pointBorderWidth: 1,
 				pointHoverRadius: 4,
 				pointHoverBorderWidth: 2,
@@ -77,7 +78,7 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 			return null;
 		}
 
-		return <Container className="bg-dark p-3 rounded">
+		return <Container className="bg-dark px-2 py-3 rounded">
 			<Line
 				data={this.createData()}
 				options={{

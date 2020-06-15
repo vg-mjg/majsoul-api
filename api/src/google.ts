@@ -112,6 +112,7 @@ export class Spreadsheet {
 					name: row[2],
 					players: [],
 					_id: undefined,
+					color: undefined
 				});
 				continue;
 			}

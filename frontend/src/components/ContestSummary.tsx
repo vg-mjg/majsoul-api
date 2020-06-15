@@ -1,7 +1,7 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
 import { SummaryRetrievedAction, ActionType, AppThunk, SessionGamesRetrieved } from "../Actions";
-import { IState, Contest, Session } from "../IState";
+import { IState, Contest, Session, ContestTeam } from "../IState";
 import { connect } from "react-redux";
 import { Store } from "majsoul-api";
 import Alert from 'react-bootstrap/Alert';
@@ -10,6 +10,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import * as moment from "moment-timezone";
+import * as styles from "./styles.sass"
 
 const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
@@ -41,13 +42,13 @@ const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetri
 }
 
 interface IMatchProps {
-	teams: Record<string, Store.ContestTeam>;
+	teams: Record<string, ContestTeam>;
 	match: Store.Match;
 }
 
 class Match extends React.Component<IMatchProps> {
-	private createButton(team: Store.ContestTeam) {
-		return <Button block>{team.name}</Button>
+	private createButton(team: ContestTeam) {
+		return <Button block className={(styles as any)[`team${team.index}`]}>{team.name}</Button>
 	}
 
 	render() {
@@ -73,11 +74,6 @@ class Match extends React.Component<IMatchProps> {
 			</Row>
 		</Container>
 	}
-}
-
-interface IPendingSessionProps {
-	teams: Record<string, Store.ContestTeam>;
-	session: Session;
 }
 
 interface TimerProps {
@@ -117,7 +113,12 @@ class CountdownTimer extends React.Component<TimerProps, TimerState> {
 	}
 }
 
-class PendingSession extends React.Component<IPendingSessionProps> {
+interface PendingSessionProps {
+	teams: Record<string, ContestTeam>;
+	session: Session;
+}
+
+class PendingSession extends React.Component<PendingSessionProps> {
 	render() {
 		if (this.props.session == null) {
 			return null;

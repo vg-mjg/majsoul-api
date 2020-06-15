@@ -1,2 +1,17 @@
 .feed
 	min-height: 100vh
+
+@for $i from 0 through 9
+	:root
+		--team-#{$i}-bgBase: black
+		--team-#{$i}-hover: black
+		--team-#{$i}-color: black
+
+	.team#{$i}
+		background-color: var(--team-#{$i}-bgBase)
+		border-color: var(--team-#{$i}-bgBase)
+		color: var(--team-#{$i}-color)
+		&:hover
+			background-color: var(--team-#{$i}-hover)
+			border-color: var(--team-#{$i}-hover)
+			color: var(--team-#{$i}-color)
