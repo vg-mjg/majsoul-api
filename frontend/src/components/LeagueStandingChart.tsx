@@ -34,11 +34,11 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 		const sessions = this.props.contest.sessions.filter(session => session.scheduledTime < Date.now());
 		const teams = Object.entries(this.props.contest.teams).map(([id, team]) => ({
 			name: team.name,
-			scores: sessions.map(session => session.aggregateTotals[team._id])
+			scores: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000))
 		}));
 
 		return {
-			labels: sessions.map(session => new Date(session.scheduledTime).toLocaleDateString()),
+			labels: ["Start"].concat(sessions.map(session => new Date(session.scheduledTime).toLocaleDateString())),
 			datasets: teams.map((team, index) => ({
 				label: team.name,
 				fill: false,

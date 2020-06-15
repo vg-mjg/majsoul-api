@@ -82,14 +82,16 @@ const store = createStore(
 ReactDOM.render(
 	<Provider store={store}>
 		<BrowserRouter>
-			<Container className={styles.feed}>
-				<Row>
-					<Col>
-						<Route exact path="/">
-							<ContestSummary contestId="113331"/>
-						</Route>
-					</Col>
-				</Row>
+			<Container className={`${styles.feed} bg-dark px-5`}>
+				<Container className={`${styles.feed} bg-secondary px-5`}>
+					<Row>
+						<Col>
+							<Route exact path="/">
+								<ContestSummary contestId="113331"/>
+							</Route>
+						</Col>
+					</Row>
+				</Container>
 			</Container>
 		</BrowserRouter>
 	</Provider>,
