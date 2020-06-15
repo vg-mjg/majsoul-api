@@ -59,8 +59,9 @@ interface IMatchProps {
 }
 
 class Match extends React.Component<IMatchProps> {
-	private createButton(team: ContestTeam) {
-		return <Button block className={`${(styles as any)[`team${team.index}`]} font-weight-bold`}>{team.name}</Button>
+	private createButton(teamIndex: number) {
+		const team = this.props.teams[this.props.match.teams[teamIndex]._id];
+		return <Button block className={`${(styles as any)[`team${team.index}`]} font-weight-bold text-uppercase`}>{team.name}</Button>
 	}
 
 	render() {
@@ -70,18 +71,18 @@ class Match extends React.Component<IMatchProps> {
 		return <Container className="bg-secondary pt-1 rounded">
 			<Row className={rowStyle}>
 				<Col className={cellStyle}>
-					{this.createButton(teams[0])}
+					{this.createButton(0)}
 				</Col>
 				<Col className={cellStyle}>
-					{this.createButton(teams[1])}
+					{this.createButton(1)}
 				</Col>
 			</Row>
 			<Row className={rowStyle}>
 				<Col className={cellStyle}>
-					{this.createButton(teams[2])}
+					{this.createButton(2)}
 				</Col>
 				<Col className={cellStyle}>
-					{this.createButton(teams[3])}
+					{this.createButton(3)}
 				</Col>
 			</Row>
 		</Container>
@@ -121,7 +122,7 @@ class CountdownTimer extends React.Component<TimerProps, TimerState> {
 		}
 
 		const difference = moment.duration(moment(this.props.targetTime).diff(moment(this.state.time)));
-		return <h2>{difference.days()}d {difference.hours()}:{difference.minutes()}:{difference.seconds()}</h2>
+		return <h3 className="mb-0">Next Session in {difference.days() > 0 && `${difference.days()}d`} {difference.hours()}:{difference.minutes()}:{difference.seconds()}</h3>
 	}
 }
 
@@ -239,8 +240,9 @@ class HistoricalSession extends React.Component<HistoricalSessionProps> {
 
 		const date = new Date(this.props.session.scheduledTime);
 		return <Container className="bg-dark text-white rounded">
-			<Row className="p-3">
-				<h2>Recent Games</h2>
+			<Row className="px-4 pt-3 pb-2">
+				<Col></Col>
+				<Col md="auto" className="h3">Recent Games</Col>
 			</Row>
 			<Row className="px-2">
 				{this.props.session.games.map(game =>

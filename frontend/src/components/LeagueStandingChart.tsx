@@ -5,6 +5,7 @@ import * as chartjs from "chart.js";
 import { Contest } from "../IState";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import * as moment from "moment";
 
 interface IStandingsChartProps {
@@ -81,7 +82,8 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 
 		return <Container className="bg-dark rounded text-white">
 			<Row className="px-4 pt-3">
-				<h3>Standings</h3>
+				<Col></Col>
+				<Col md="auto" className="h3">Standings</Col>
 			</Row>
 			<Row className="px-2 py-3">
 				<Line
