@@ -6,9 +6,13 @@ import { Provider } from "react-redux";
 import { BrowserRouter, Route } from "react-router-dom";
 import { IState, Contest } from "./IState";
 import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved } from "./Actions";
-import { ContestSummary } from "./components/ContestSummaryComponentProps";
+import { ContestSummary } from "./components/ContestSummary";
 import { Store } from "majsoul-api";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import * as styles from "./components/styles.sass";
+import "./bootstrap.sass";
 
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
@@ -78,9 +82,15 @@ const store = createStore(
 ReactDOM.render(
 	<Provider store={store}>
 		<BrowserRouter>
-			<Route exact path="/">
-				<ContestSummary contestId="113331"/>
-			</Route>
+			<Container className={styles.feed}>
+				<Row>
+					<Col>
+						<Route exact path="/">
+							<ContestSummary contestId="113331"/>
+						</Route>
+					</Col>
+				</Row>
+			</Container>
 		</BrowserRouter>
 	</Provider>,
 	document.getElementsByTagName("body")[0]

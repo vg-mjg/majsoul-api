@@ -138,7 +138,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 		}
 
 		return <>
-			<h1>{this.props.contest.name}</h1>
+			<h1 className="ml-5 my-4">{this.props.contest.name}</h1>
 			<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
 			<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
 			<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
