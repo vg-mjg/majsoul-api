@@ -4,6 +4,7 @@ import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
 import { Contest } from "../IState";
 import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
 import * as moment from "moment";
 
 interface IStandingsChartProps {
@@ -78,37 +79,42 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 			return null;
 		}
 
-		return <Container className="bg-dark px-2 py-3 rounded">
-			<Line
-				data={this.createData()}
-				options={{
-					onClick: this.onClick,
-					scales: {
-						yAxes: [
-							{
-								id: "uma",
-								position: "right",
-								gridLines: {
-									color: "#666666",
-									zeroLineColor: "#666666"
-								}
-							},
-						],
-						xAxes: [
-							{
-								id: "sessions",
-								gridLines: {
-									display: false
-								}
-							},
-						]
-					},
-					legend: {
-						display: false
-					}
-				}}
-				onElementsClick={this.onElementsClick}
-			></Line>
+		return <Container className="bg-dark rounded text-white">
+			<Row className="px-4 pt-3">
+				<h3>Standings</h3>
+			</Row>
+			<Row className="px-2 py-3">
+				<Line
+					data={this.createData()}
+					options={{
+						onClick: this.onClick,
+						scales: {
+							yAxes: [
+								{
+									id: "uma",
+									position: "right",
+									gridLines: {
+										color: "#666666",
+										zeroLineColor: "#666666"
+									}
+								},
+							],
+							xAxes: [
+								{
+									id: "sessions",
+									gridLines: {
+										display: false
+									}
+								},
+							]
+						},
+						legend: {
+							display: false
+						}
+					}}
+					onElementsClick={this.onElementsClick}
+				></Line>
+			</Row>
 		</Container>
 	}
 }

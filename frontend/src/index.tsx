@@ -48,9 +48,12 @@ function rgbToHsl(color: string) {
 	return {h, s, l};
 }
 
-
 function hslStyle(hsl: {h: number, s: number, l: number}) {
 	return `hsl(${Math.round(hsl.h * 360)}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`;
+}
+
+function invertHex(hex: string): string {
+	return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
 }
 
 function contestReducer(state: IState, action: Action<ActionType>): IState {
@@ -75,14 +78,19 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			const hoverChange = 0.1;
 			for (const team of Object.values(contest.teams)) {
 				const hslColor = rgbToHsl(team.color);
-				document.documentElement.style.setProperty(`--team-${team.index}-bgBase`, team.color);
+				document.documentElement.style.setProperty(`--team-${team.index}-base`, team.color);
+
+				//hslStyle(rgbToHsl(invertHex(team.color.slice(1)))));
 				document.documentElement.style.setProperty(`--team-${team.index}-color`, hslColor?.l >= .4 ?  "black" : "white");
+
+				document.documentElement.style.setProperty(`--team-${team.index}-border`, hslStyle({...hslColor, l: 0.35}));
 
 				if (hslColor.l >= .5) {
 					hslColor.l = Math.max(hslColor.l - hoverChange, 0);
 				} else {
 					hslColor.l = Math.min(hslColor.l + hoverChange, 1);
 				}
+
 				document.documentElement.style.setProperty(`--team-${team.index}-hover`, hslStyle(hslColor));
 			}
 
@@ -136,7 +144,7 @@ ReactDOM.render(
 	<Provider store={store}>
 		<BrowserRouter>
 			<Container className={`${styles.feed} bg-dark px-5`}>
-				<Container className={`${styles.feed} bg-secondary px-3`}>
+				<Container className={`${styles.feed} bg-secondary px-3 pb-3`}>
 					<Route exact path="/">
 						<ContestSummary contestId="113331"/>
 					</Route>

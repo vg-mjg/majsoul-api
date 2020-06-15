@@ -4,7 +4,6 @@ import { SummaryRetrievedAction, ActionType, AppThunk, SessionGamesRetrieved } f
 import { IState, Contest, Session, ContestTeam } from "../IState";
 import { connect } from "react-redux";
 import { Store } from "majsoul-api";
-import Alert from 'react-bootstrap/Alert';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -41,6 +40,19 @@ const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetri
 	}
 }
 
+function findPlayerInformation(playerId: string, teams: Record<string, ContestTeam>): {team: ContestTeam, player: Store.Player} {
+	for (const teamId in teams){
+		const player = teams[teamId].players.find(player => player._id === playerId);
+		if (player) {
+			return {
+				player,
+				team: teams[teamId]
+			}
+		}
+	}
+	return null;
+}
+
 interface IMatchProps {
 	teams: Record<string, ContestTeam>;
 	match: Store.Match;
@@ -48,14 +60,14 @@ interface IMatchProps {
 
 class Match extends React.Component<IMatchProps> {
 	private createButton(team: ContestTeam) {
-		return <Button block className={(styles as any)[`team${team.index}`]}>{team.name}</Button>
+		return <Button block className={`${(styles as any)[`team${team.index}`]} font-weight-bold`}>{team.name}</Button>
 	}
 
 	render() {
 		const teams = Object.values(this.props.teams);
 		const cellStyle = "mb-1 pl-0 pr-1";
 		const rowStyle = "pl-1";
-		return <Container className="bg-danger pt-1 rounded">
+		return <Container className="bg-secondary pt-1 rounded">
 			<Row className={rowStyle}>
 				<Col className={cellStyle}>
 					{this.createButton(teams[0])}
@@ -145,42 +157,77 @@ class PendingSession extends React.Component<PendingSessionProps> {
 					<Container className="mx-2 mb-2 px-0" key={index}><Match match={match} teams={this.props.teams}></Match></Container>
 				)}
 			</Row>
-		</Container>;
+		</Container>
 	}
 }
 
 interface GameResultSummaryProps {
-	teams: Record<string, Store.ContestTeam>;
+	teams: Record<string, ContestTeam>;
 	game: Store.GameResult;
 }
 
+//todo: use wind enum from types package
 class GameResultSummary extends React.Component<GameResultSummaryProps> {
-	render() {
-		return <>
-			{this.props.game.players.map(player =>
-				<Alert key={player._id} variant={"primary"}>
-					{this.findPlayerInformation(player._id).player.displayName}
-				</Alert>
-			)}
-		</>
-	}
-
-	private findPlayerInformation(playerId: string) {
-		for (const teamId in this.props.teams){
-			const player = this.props.teams[teamId].players.find(player => player._id === playerId);
-			if (player) {
-				return {
-					player,
-					team: this.props.teams[teamId]
-				}
-			}
+	private static getSeatCharacter(seat: number): string {
+		switch(seat) {
+			case 0:
+				return "東";
+			case 1:
+				return "南";
+			case 2:
+				return "西";
+			case 3:
+				return "北";
 		}
 		return null;
+	}
+
+	private createButton(seat: number) {
+		const player = this.props.game.players[seat];
+		const playerInfo = findPlayerInformation(player._id, this.props.teams);
+		return <Button block className={`${(styles as any)[`team${playerInfo.team.index}`]} font-weight-bold`}>
+			<Container>
+				<Row>
+					<Col md="auto">
+						{GameResultSummary.getSeatCharacter(seat)}
+					</Col>
+					<Col>
+						{playerInfo.player.displayName}
+					</Col>
+					<Col md="auto">
+						{this.props.game.finalScore[seat].score}({this.props.game.finalScore[seat].uma / 1000})
+					</Col>
+				</Row>
+			</Container>
+		</Button>
+	}
+
+	render() {
+		const cellStyle = "mb-1 pl-0 pr-1";
+		const rowStyle = "pl-1";
+		return <Container className="bg-secondary pt-1 rounded">
+			<Row className={rowStyle}>
+				<Col className={cellStyle}>
+					{this.createButton(0)}
+				</Col>
+				<Col className={cellStyle}>
+					{this.createButton(1)}
+				</Col>
+			</Row>
+			<Row className={rowStyle}>
+				<Col className={cellStyle}>
+					{this.createButton(3)}
+				</Col>
+				<Col className={cellStyle}>
+					{this.createButton(2)}
+				</Col>
+			</Row>
+		</Container>
 	}
 }
 
 interface HistoricalSessionProps {
-	teams: Record<string, Store.ContestTeam>;
+	teams: Record<string, ContestTeam>;
 	session: Session;
 }
 
@@ -191,11 +238,18 @@ class HistoricalSession extends React.Component<HistoricalSessionProps> {
 		}
 
 		const date = new Date(this.props.session.scheduledTime);
-		return <>
-			{this.props.session.games.map(game => <GameResultSummary key={game._id} game={game} teams={this.props.teams}></GameResultSummary>)}
-			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
-			<div>Local Time{date.toLocaleString()}</div>
-		</>
+		return <Container className="bg-dark text-white rounded">
+			<Row className="p-3">
+				<h2>Recent Games</h2>
+			</Row>
+			<Row className="px-2">
+				{this.props.session.games.map(game =>
+					<Container key={game._id} className="mb-2 px-0">
+						<GameResultSummary game={game} teams={this.props.teams}></GameResultSummary>
+					</Container>
+				)}
+			</Row>
+		</Container>
 	}
 }
 
@@ -228,13 +282,13 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 			<Row>
 				<h1 className="ml-5 my-4">{this.props.contest.name}</h1>
 			</Row>
-			<Row className="mt-5">
+			<Row className="mt-3">
 				<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
 			</Row>
-			<Row className="mt-5">
+			<Row className="mt-3">
 				<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
 			</Row>
-			<Row className="mt-5">
+			<Row className="mt-3">
 				<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
 			</Row>
 		</Container>
