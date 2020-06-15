@@ -31,7 +31,7 @@ export interface ContestTeam<Id = any> {
 	players: Player<Id>[];
 }
 
-interface Match<Id = any> {
+export interface Match<Id = any> {
 	teams: {
 		_id: Id;
 	}[];

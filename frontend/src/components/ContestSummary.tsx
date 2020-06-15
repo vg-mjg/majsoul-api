@@ -5,6 +5,11 @@ import { IState, Contest, Session } from "../IState";
 import { connect } from "react-redux";
 import { Store } from "majsoul-api";
 import Alert from 'react-bootstrap/Alert';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Button from 'react-bootstrap/Button';
+import * as moment from "moment-timezone";
 
 const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
@@ -35,9 +40,81 @@ const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetri
 	}
 }
 
+interface IMatchProps {
+	teams: Record<string, Store.ContestTeam>;
+	match: Store.Match;
+}
+
+class Match extends React.Component<IMatchProps> {
+	private createButton(team: Store.ContestTeam) {
+		return <Button block>{team.name}</Button>
+	}
+
+	render() {
+		const teams = Object.values(this.props.teams);
+		const cellStyle = "mb-1 pl-0 pr-1";
+		const rowStyle = "pl-1";
+		return <Container className="bg-danger pt-1 rounded">
+			<Row className={rowStyle}>
+				<Col className={cellStyle}>
+					{this.createButton(teams[0])}
+				</Col>
+				<Col className={cellStyle}>
+					{this.createButton(teams[1])}
+				</Col>
+			</Row>
+			<Row className={rowStyle}>
+				<Col className={cellStyle}>
+					{this.createButton(teams[2])}
+				</Col>
+				<Col className={cellStyle}>
+					{this.createButton(teams[3])}
+				</Col>
+			</Row>
+		</Container>
+	}
+}
+
 interface IPendingSessionProps {
 	teams: Record<string, Store.ContestTeam>;
 	session: Session;
+}
+
+interface TimerProps {
+	targetTime: number;
+}
+
+interface TimerState {
+	time: number;
+}
+
+class CountdownTimer extends React.Component<TimerProps, TimerState> {
+	private interval: any;
+	componentDidMount() {
+		this.interval = setInterval(() => {
+			this.setState(
+				{
+					...this.state,
+					...{
+						time: Date.now()
+					}
+				}
+			)
+		}, 1000);
+	}
+
+	componentWillUnmount(){
+		clearInterval(this.interval);
+	}
+
+	render() {
+		if (this.state?.time == null) {
+			return null;
+		}
+
+		const difference = moment.duration(moment(this.props.targetTime).diff(moment(this.state.time)));
+		return <h2>{difference.days()}d {difference.hours()}:{difference.minutes()}:{difference.seconds()}</h2>
+	}
 }
 
 class PendingSession extends React.Component<IPendingSessionProps> {
@@ -46,19 +123,28 @@ class PendingSession extends React.Component<IPendingSessionProps> {
 			return null;
 		}
 
-		const date = new Date(this.props.session?.scheduledTime);
-		return <>
-			<div>UTC time: {date.toLocaleString(undefined, {timeZone: "UTC"})}</div>
-			<div>Local Time{date.toLocaleString()}</div>
-			{this.props.session.plannedMatches.map((match, index) => <>
-				<div>{index}</div>
-				{match.teams.map(team =>
-					<Alert key={team._id} variant={"primary"}>
-						{this.props.teams[team._id].name}
-					</Alert>
+		return <Container fluid className="bg-dark rounded text-light">
+			<Row className="py-3 px-2">
+				<Col md="auto">
+					<Container>
+						<Row>
+							{moment(this.props.session.scheduledTime).tz("UTC").format("LT l")} UTC
+						</Row>
+						<Row>
+							{moment(this.props.session.scheduledTime).calendar()} in {moment.tz.guess()}
+						</Row>
+					</Container>
+				</Col>
+				<Col className="text-right align-self-center">
+					<CountdownTimer targetTime={this.props.session.scheduledTime}></CountdownTimer>
+				</Col>
+			</Row>
+			<Row>
+				{this.props.session.plannedMatches.map((match, index) =>
+					<Container className="mx-2 mb-2 px-0" key={index}><Match match={match} teams={this.props.teams}></Match></Container>
 				)}
-			</>)}
-		</>
+			</Row>
+		</Container>;
 	}
 }
 
@@ -137,12 +223,20 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 			this.props.fetchSessionGamesSummary(currentSession._id);
 		}
 
-		return <>
-			<h1 className="ml-5 my-4">{this.props.contest.name}</h1>
-			<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
-			<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
-			<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
-		</>
+		return <Container>
+			<Row>
+				<h1 className="ml-5 my-4">{this.props.contest.name}</h1>
+			</Row>
+			<Row className="mt-5">
+				<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
+			</Row>
+			<Row className="mt-5">
+				<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
+			</Row>
+			<Row className="mt-5">
+				<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
+			</Row>
+		</Container>
 	}
 }
 

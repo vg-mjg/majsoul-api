@@ -2,11 +2,15 @@ import * as React from "react";
 import { ReactNode } from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { Contest, Session } from "../IState";
+import { Contest } from "../IState";
+import Container from 'react-bootstrap/Container';
+import * as moment from "moment";
 
 interface IStandingsChartProps {
 	contest: Contest;
 }
+
+chartjs.defaults.global.defaultFontColor = "white";
 
 export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 	static readonly colors = [
@@ -38,7 +42,10 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 		}));
 
 		return {
-			labels: ["Start"].concat(sessions.map(session => new Date(session.scheduledTime).toLocaleDateString())),
+			labels: ["Start"].concat(sessions.map(session => {
+				const time =  moment(session.scheduledTime).tz('UTC');
+				return `${time.hours() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
+			})),
 			datasets: teams.map((team, index) => ({
 				label: team.name,
 				fill: false,
@@ -58,7 +65,9 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 				pointHoverBorderWidth: 2,
 				pointRadius: 3,
 				pointHitRadius: 10,
-				data: team.scores
+				data: team.scores,
+				yAxisID: "uma",
+				xAxisID: "sessions",
 			}))
 		}
 	}
@@ -68,6 +77,37 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 			return null;
 		}
 
-		return <Line data={this.createData()} options={{onClick: this.onClick}} onElementsClick={this.onElementsClick}></Line>
+		return <Container className="bg-dark p-3 rounded">
+			<Line
+				data={this.createData()}
+				options={{
+					onClick: this.onClick,
+					scales: {
+						yAxes: [
+							{
+								id: "uma",
+								position: "right",
+								gridLines: {
+									color: "#666666",
+									zeroLineColor: "#666666"
+								}
+							},
+						],
+						xAxes: [
+							{
+								id: "sessions",
+								gridLines: {
+									display: false
+								}
+							},
+						]
+					},
+					legend: {
+						display: false
+					}
+				}}
+				onElementsClick={this.onElementsClick}
+			></Line>
+		</Container>
 	}
 }
