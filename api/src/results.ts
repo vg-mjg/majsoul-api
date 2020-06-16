@@ -30,7 +30,13 @@ interface ISecrets {
 
 async function main() {
 	async function addToSpreadSheet(gameId): Promise<void> {
+		if (process.env.NODE_ENV !== "prod") {
+			console.log("skipping spreadsheet write in dev");
+			return;
+		}
+
 		if(spreadsheet.isGameRecorded(gameId) && spreadsheet.isGameDetailRecorded(gameId)) {
+			console.log(`Already written game ${gameId} to spreadsheet`);
 			return;
 		}
 
@@ -57,8 +63,8 @@ async function main() {
 	};
 
 	const secretsPath = process.env.MAJSOUL_ENV === "prod"
-	? "/run/secrets/majsoul.json"
-	: path.join(path.dirname(__filename), 'secrets.json');
+		? "/run/secrets/majsoul.json"
+		: path.join(path.dirname(__filename), 'secrets.json');
 
 	const secrets: ISecrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
 	const googleAppInfo = {
@@ -89,6 +95,8 @@ async function main() {
 			setTimeout(() => addToSpreadSheet(notification.uuid), 5000);
 		}
 	});
+
+
 
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
@@ -136,6 +144,10 @@ async function main() {
 	}
 
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
+
+	for (const game of gameIds) {
+		await addToSpreadSheet(game);
+	}
 
 	for (const game of gameIds) {
 		if (await mongoStore.isGameRecorded(game)){
