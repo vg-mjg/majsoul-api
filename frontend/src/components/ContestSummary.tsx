@@ -30,18 +30,29 @@ const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction
 	}
 }
 
-const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetrieved> => {
+interface FetchGamesOptions {
+	sessionIds?: string[];
+	last?: number;
+}
+
+const fetchGames = (params: FetchGamesOptions): AppThunk<SessionGamesRetrieved> => {
 	return function (dispatch) {
 		const url = buildApiUrl(`games`);
-		url.search = new URLSearchParams({
-			sessions: sessionId
-		}).toString();
+		const queryParameters: Record<string, string> = {};
+		if (params.sessionIds != null) {
+			queryParameters.sessions = params.sessionIds?.join('+');
+		}
+
+		if (params.last != null) {
+			queryParameters.last = params.last?.toString();
+		}
+
+		url.search = new URLSearchParams(queryParameters).toString();
 
 		return fetch(url.toString())
 			.then(response => response.json())
 			.then(games => dispatch({
-				type: ActionType.SessionGamesRetrieved,
-				sessionId,
+				type: ActionType.GamesRetrieved,
 				games
 			}));
 	}
@@ -250,23 +261,22 @@ class GameResultSummary extends React.Component<GameResultSummaryProps> {
 
 interface HistoricalSessionProps {
 	teams: Record<string, ContestTeam>;
-	session: Session;
+	games: Store.GameResult[];
 }
 
 class HistoricalSession extends React.Component<HistoricalSessionProps> {
 	render() {
-		if(this.props?.session?.games == null){
+		if(this.props?.games == null){
 			return null;
 		}
 
-		const date = new Date(this.props.session.scheduledTime);
 		return <Container className="bg-dark text-white rounded">
 			<Row className="px-4 pt-3 pb-2">
 				<Col></Col>
 				<Col md="auto" className="h3">Recent Games</Col>
 			</Row>
 			<Row>
-				{this.props.session.games.map(game =>
+				{this.props.games.map(game =>
 					<Container key={game._id} className="px-0 border-top">
 						<GameResultSummary game={game} teams={this.props.teams}></GameResultSummary>
 					</Container>
@@ -278,11 +288,12 @@ class HistoricalSession extends React.Component<HistoricalSessionProps> {
 
 interface ContestSummaryComponentDispatchProps {
 	fetchContestSummary: (contestId: string) => void;
-	fetchSessionGamesSummary: (sessionId: string) => void;
+	fetchGames: (params: FetchGamesOptions) => void;
 }
 
 interface ContestSummaryComponentStateProps extends ContestSummaryProps {
 	contest: Contest;
+	games: Store.GameResult[];
 }
 
 interface ContestSummaryComponentState {
@@ -300,9 +311,10 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 		}
 
 		const nextSession = this.props.contest.sessions.find(session => session.scheduledTime > Date.now());
-		const currentSession = this.props.contest.sessions.slice(0).reverse().find(session => session.scheduledTime <= Date.now());
-		if (currentSession?.games == null) {
-			this.props.fetchSessionGamesSummary(currentSession._id);
+		if (!(this.props?.games?.length > 0)) {
+			this.props.fetchGames({
+				last: 8
+			});
 		}
 
 		return <Container>
@@ -325,7 +337,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 				<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
 			</Row>
 			<Row className="mt-3">
-				<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
+				<HistoricalSession games={this.props.games?.slice(0, 8) ?? []} teams={this.props.contest.teams}></HistoricalSession>
 			</Row>
 		</Container>
 	}
@@ -344,6 +356,7 @@ interface ContestSummaryProps {
 function mapStateToProps(state: IState, props: ContestSummaryProps): ContestSummaryComponentStateProps {
 	return {
 		contest: state.contest,
+		games: Object.values(state.games ?? [])?.sort((a, b) => b.end_time - a.end_time),
 		...props,
 	}
 }
@@ -352,6 +365,6 @@ export const ContestSummary = connect(
 	mapStateToProps,
 	{
 		fetchContestSummary,
-		fetchSessionGamesSummary,
+		fetchGames,
 	}
 )(ContestSummaryComponent);

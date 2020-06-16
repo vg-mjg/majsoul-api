@@ -11,6 +11,7 @@ import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
 import { teamColors } from "./components/LeagueStandingChart";
+import { Store } from "majsoul-api";
 
 interface RGBColor {
 	r: number;
@@ -123,18 +124,24 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				...state,
 				...{ contest }
 			};
-		} case ActionType.SessionGamesRetrieved: {
-			const sessionGamesRetrievedAction = action as SessionGamesRetrieved;
-			sessionGamesRetrievedAction.sessionId
+		} case ActionType.GamesRetrieved: {
+			const gamesRetrievedAction = action as SessionGamesRetrieved;
 			return {
 				...state,
+				games: {
+					...(state.games ?? {}),
+					...gamesRetrievedAction.games.reduce<Record<string, Store.GameResult<string>>>(
+						(record, next) => { record[next._id] = next; return record; }, {}
+					)
+				},
 				contest: {
 					...state.contest,
 					sessions: state.contest.sessions.map(session => {
-						if (session._id === sessionGamesRetrievedAction.sessionId) {
+						const games = gamesRetrievedAction.games.filter(g => g.sessionId === session._id);
+						if (games.length > 0) {
 							return {
 								...session,
-								games: sessionGamesRetrievedAction.games
+								games: Array.from(new Set(games.concat(gamesRetrievedAction.games ?? [])))
 							}
 						}
 						return session;

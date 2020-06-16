@@ -7,14 +7,13 @@ export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkA
 
 export enum ActionType {
 	ContestSummaryRetrieved,
-	SessionGamesRetrieved
+	GamesRetrieved
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved>{
 	contest: Rest.Contest<string>;
 }
 
-export interface SessionGamesRetrieved extends Action<ActionType.SessionGamesRetrieved>{
-	sessionId: string;
+export interface SessionGamesRetrieved extends Action<ActionType.GamesRetrieved>{
 	games: Store.GameResult[];
 }

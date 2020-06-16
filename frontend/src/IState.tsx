@@ -12,6 +12,7 @@ export interface Session extends Rest.Session<string> {
 
 export interface IState {
 	contest?: Contest;
+	games?: Record<string, Store.GameResult<string>>;
 }
 
 export interface ContestTeam extends Store.ContestTeam<string> {

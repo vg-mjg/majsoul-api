@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
 import { Contest } from './types/types';
-import { ObjectId } from 'mongodb';
+import { ObjectId, FilterQuery } from 'mongodb';
 
 export class RestApi {
 	private app: express.Express;
@@ -30,10 +30,25 @@ export class RestApi {
 		});
 
 		this.app.get('/games', (req, res) => {
-			const sessionIds = (req.query.sessions as string).split('+');
-			this.mongoStore.gamesCollection.find(
-				{ sessionId: { $in: sessionIds.map(id => new ObjectId(id)) }}
-			).toArray()
+			const filter: FilterQuery<store.GameResult<ObjectId>> = {};
+
+			const sessionIds = (req.query?.sessions as string)?.split(' ');
+			if (sessionIds) {
+				console.log(sessionIds);
+				filter.sessionId = { $in: sessionIds.map(id => new ObjectId(id)) };
+			}
+
+			const cursor = this.mongoStore.gamesCollection.find(filter);
+
+			if (req.query?.last) {
+				const last = parseInt(req.query.last as string);
+				if (last) {
+					cursor.sort({end_time: -1})
+					.limit(last);
+				}
+			}
+
+			cursor.toArray()
 				.then(games => res.send(games))
 				.catch(error => {
 					console.log(error);
