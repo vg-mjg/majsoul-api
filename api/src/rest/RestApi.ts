@@ -23,7 +23,10 @@ export class RestApi {
 					})))
 				});
 			})
-			.catch(error => res.status(500).send(error));
+			.catch(error => {
+				console.log(error);
+				res.status(500).send(error)
+			});
 		});
 
 		this.app.get('/games', (req, res) => {
@@ -32,7 +35,10 @@ export class RestApi {
 				{ sessionId: { $in: sessionIds.map(id => new ObjectId(id)) }}
 			).toArray()
 				.then(games => res.send(games))
-				.catch(error => res.status(500).send(error));
+				.catch(error => {
+					console.log(error);
+					res.status(500).send(error)
+				});
 		});
 	}
 
@@ -43,6 +49,10 @@ export class RestApi {
 		return games.reduce<Record<string, number>>((total, game) => {
 			game.finalScore.forEach((score, index) => {
 				const winningTeam = contest.teams.find(t => t.players.find(p => p._id.equals(game.players[index]._id)));
+				if(!winningTeam) {
+					console.log(session._id);
+					console.log(game);
+				}
 				total[winningTeam._id.toHexString()] = (total[winningTeam._id.toHexString()] ?? 0) + score.uma;
 			});
 			return total;

@@ -123,7 +123,7 @@ async function main() {
 
 	if (!contest.sessions) {
 		console.log(`Generating contest sessions`);
-		const sessions = (await spreadsheet.getMatchInformation(contest.teams)).map(s => {s._id = new ObjectId(); return s}).reverse();
+		const sessions = (await spreadsheet.getMatchInformation(contest.teams)).map(s => {s._id = new ObjectId(); return s});
 		contest = (await mongoStore.contestCollection.findOneAndUpdate(
 			{ _id: contest._id },
 			{ $set: { sessions } },

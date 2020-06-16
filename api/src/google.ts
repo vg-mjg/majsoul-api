@@ -154,7 +154,7 @@ export class Spreadsheet {
 			for(let slot = 0; slot < 7; slot++) {
 				matches.push({
 					_id: undefined,
-					scheduledTime: date,
+					scheduledTime: matches.length === 14 ? date + day * 6 : date,
 					isCancelled: schedule[slot * 2][13 * week] === "Cancelled",
 					plannedMatches: [
 						{
@@ -174,7 +174,7 @@ export class Spreadsheet {
 			}
 		}
 
-		return matches;
+		return matches.sort((a, b) => b.scheduledTime - a.scheduledTime);
 	}
 
 	public isGameRecorded(id: string): boolean {

@@ -66,7 +66,6 @@ class Match extends React.Component<IMatchProps> {
 	}
 
 	render() {
-		const teams = Object.values(this.props.teams);
 		const cellStyle = "mb-1 pl-0 pr-1";
 		const rowStyle = "pl-1";
 		return <Container className="bg-primary pt-1 rounded">
@@ -189,9 +188,9 @@ class GameResultSummary extends React.Component<GameResultSummaryProps> {
 		const player = this.props.game.players[seat];
 		const playerInfo = findPlayerInformation(player._id, this.props.teams);
 		const scoreColor = pickColorGradient(
-			"ffd966",
 			this.props.game.finalScore[seat].uma > 0 ? "93c47d" : "e06666",
-			Math.min(this.props.game.finalScore[seat].uma / 1000 / 50, 1)
+			"ffd966",
+			Math.min(Math.abs(this.props.game.finalScore[seat].uma / 1000 / 50) , 1)
 		);
 		return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark`}>
 			<Row className="no-gutters">
