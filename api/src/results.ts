@@ -146,7 +146,7 @@ async function main() {
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
 
 	for (const game of gameIds) {
-		await addToSpreadSheet(game);
+		await addToSpreadSheet(game.majsoulId);
 	}
 
 	for (const game of gameIds) {
