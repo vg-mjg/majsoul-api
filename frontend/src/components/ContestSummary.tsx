@@ -12,9 +12,16 @@ import * as moment from "moment-timezone";
 import * as styles from "./styles.sass"
 import { pickColorGradient } from "..";
 
+function buildApiUrl(path: string): URL {
+	if (process.env.NODE_ENV === "production") {
+		return new URL(`${location.protocol}//${location.host}/api/${path}`);
+	}
+	return new URL(`${location.protocol}//${location.hostname}:9515/${path}`);
+}
+
 const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
-		return fetch(`${location.protocol}//${location.host}/api/contests/${contestId}`)
+		return fetch(buildApiUrl(`contests/${contestId}`).toString())
 			.then(response => response.json())
 			.then(contest => dispatch({
 				type: ActionType.ContestSummaryRetrieved,
@@ -25,11 +32,10 @@ const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction
 
 const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetrieved> => {
 	return function (dispatch) {
-		const url = new URL(`${location.protocol}//${location.host}/api/games?sessions={${sessionId}`)
+		const url = buildApiUrl(`games`);
 		url.search = new URLSearchParams({
 			sessions: sessionId
 		}).toString();
-
 
 		return fetch(url.toString())
 			.then(response => response.json())

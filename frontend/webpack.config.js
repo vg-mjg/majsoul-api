@@ -77,7 +77,7 @@ module.exports = env => {
 		},
 		plugins: [
 			new HtmlWebpackPlugin({
-				title: "Majsoul API Frontend"
+				title: "/mjg/ league"
 			})
 		]
 	};
