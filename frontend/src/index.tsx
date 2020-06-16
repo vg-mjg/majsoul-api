@@ -12,7 +12,13 @@ import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
 import { teamColors } from "./components/LeagueStandingChart";
 
-function hexToRgb(hex: string) {
+interface RGBColor {
+	r: number;
+	g: number;
+	b: number;
+}
+
+function hexToRgb(hex: string): RGBColor {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	return result ? {
 		r: parseInt(result[1], 16),
@@ -20,7 +26,6 @@ function hexToRgb(hex: string) {
 		b: parseInt(result[3], 16)
 	} : null;
 }
-
 
 function rgbToHsl(color: string) {
 	let {r, g, b} = hexToRgb(color);
@@ -46,6 +51,19 @@ function rgbToHsl(color: string) {
 	}
 
 	return {h, s, l};
+}
+
+export function pickColorGradient(color1: string, color2: string, weight: number) {
+	const c1 = hexToRgb(color1);
+	const c2 = hexToRgb(color2);
+	const w = weight * 2 - 1;
+	const w1 = (w/1+1) / 2;
+	const w2 = 1 - w1;
+	return {
+		r: Math.round(c1.r * w1 + c2.r * w2),
+		g: Math.round(c1.g * w1 + c2.g * w2),
+		b: Math.round(c1.b * w1 + c2.b * w2)
+	};
 }
 
 function hslStyle(hsl: {h: number, s: number, l: number}) {
@@ -144,7 +162,7 @@ ReactDOM.render(
 	<Provider store={store}>
 		<BrowserRouter>
 			<Container className={`${styles.feed} bg-dark px-5`}>
-				<Container className={`${styles.feed} bg-secondary px-3 pb-3`}>
+				<Container className={`${styles.feed} bg-primary px-3 pb-3`}>
 					<Route exact path="/">
 						<ContestSummary contestId="113331"/>
 					</Route>

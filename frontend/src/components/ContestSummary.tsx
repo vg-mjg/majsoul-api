@@ -10,6 +10,7 @@ import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import * as moment from "moment-timezone";
 import * as styles from "./styles.sass"
+import { pickColorGradient } from "..";
 
 const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
@@ -61,14 +62,14 @@ interface IMatchProps {
 class Match extends React.Component<IMatchProps> {
 	private createButton(teamIndex: number) {
 		const team = this.props.teams[this.props.match.teams[teamIndex]._id];
-		return <Button block className={`${(styles as any)[`team${team.index}`]} font-weight-bold text-uppercase`}>{team.name}</Button>
+		return <Button block disabled className={`${(styles as any)[`team${team.index}`]} font-weight-bold text-uppercase p-0`}>{team.name}</Button>
 	}
 
 	render() {
 		const teams = Object.values(this.props.teams);
 		const cellStyle = "mb-1 pl-0 pr-1";
 		const rowStyle = "pl-1";
-		return <Container className="bg-secondary pt-1 rounded">
+		return <Container className="bg-primary pt-1 rounded">
 			<Row className={rowStyle}>
 				<Col className={cellStyle}>
 					{this.createButton(0)}
@@ -167,6 +168,7 @@ interface GameResultSummaryProps {
 	game: Store.GameResult;
 }
 
+
 //todo: use wind enum from types package
 class GameResultSummary extends React.Component<GameResultSummaryProps> {
 	private static getSeatCharacter(seat: number): string {
@@ -186,38 +188,53 @@ class GameResultSummary extends React.Component<GameResultSummaryProps> {
 	private createButton(seat: number) {
 		const player = this.props.game.players[seat];
 		const playerInfo = findPlayerInformation(player._id, this.props.teams);
-		return <Button block className={`${(styles as any)[`team${playerInfo.team.index}`]} font-weight-bold`}>
-			<Container>
-				<Row>
-					<Col md="auto">
-						{GameResultSummary.getSeatCharacter(seat)}
-					</Col>
-					<Col>
-						{playerInfo.player.displayName}
-					</Col>
-					<Col md="auto">
-						{this.props.game.finalScore[seat].score}({this.props.game.finalScore[seat].uma / 1000})
-					</Col>
-				</Row>
-			</Container>
-		</Button>
+		const scoreColor = pickColorGradient(
+			"ffd966",
+			this.props.game.finalScore[seat].uma > 0 ? "93c47d" : "e06666",
+			Math.min(this.props.game.finalScore[seat].uma / 1000 / 50, 1)
+		);
+		console.log(scoreColor);
+		return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark`}>
+			<Row className="no-gutters">
+				<Col md="auto" className={`${(styles as any)[`team${playerInfo.team.index}`]} rounded-left px-2`}>
+					{GameResultSummary.getSeatCharacter(seat)}
+				</Col>
+				<Col md="auto" className="border-right border-top border-bottom px-2">
+					{this.props.game.finalScore.map((score, index) => ({score, index})).sort((a, b) => b.score.uma - a.score.uma).findIndex(s => s.index === seat) + 1}
+				</Col>
+				<Col className="border-right border-top border-bottom text-center">
+					{playerInfo.player.displayName}
+				</Col>
+				<Col md="auto" style={{minWidth: "112px", backgroundColor: `rgb(${scoreColor.r}, ${scoreColor.g}, ${scoreColor.b})`} } className="text-center border-right border-top border-bottom rounded-right">
+					{this.props.game.finalScore[seat].score}({this.props.game.finalScore[seat].uma / 1000})
+				</Col>
+			</Row>
+		</Container>
 	}
 
 	render() {
 		const cellStyle = "mb-1 pl-0 pr-1";
-		const rowStyle = "pl-1";
-		return <Container className="bg-secondary pt-1 rounded">
+		const rowStyle = "pl-1 no-gutters";
+		return <Container className="px-1 py-2">
+			<Row className={`${rowStyle} px-2 pb-2`}>
+				<Col className="">
+					{moment(this.props.game.end_time).calendar()}
+				</Col>
+				<Col md="auto" className="">
+					<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${this.props.game.majsoulId}`} rel="noreferrer" target="_blank">View on Majsoul</a>
+				</Col>
+			</Row>
 			<Row className={rowStyle}>
 				<Col className={cellStyle}>
 					{this.createButton(0)}
 				</Col>
 				<Col className={cellStyle}>
-					{this.createButton(1)}
+					{this.createButton(3)}
 				</Col>
 			</Row>
 			<Row className={rowStyle}>
 				<Col className={cellStyle}>
-					{this.createButton(3)}
+					{this.createButton(1)}
 				</Col>
 				<Col className={cellStyle}>
 					{this.createButton(2)}
@@ -244,9 +261,9 @@ class HistoricalSession extends React.Component<HistoricalSessionProps> {
 				<Col></Col>
 				<Col md="auto" className="h3">Recent Games</Col>
 			</Row>
-			<Row className="px-2">
+			<Row>
 				{this.props.session.games.map(game =>
-					<Container key={game._id} className="mb-2 px-0">
+					<Container key={game._id} className="px-0 border-top">
 						<GameResultSummary game={game} teams={this.props.teams}></GameResultSummary>
 					</Container>
 				)}
@@ -282,7 +299,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 
 		return <Container>
 			<Row>
-				<h1 className="ml-5 my-4">{this.props.contest.name}</h1>
+				<h1 className="ml-5 my-4 text-"><u>{this.props.contest.name}</u></h1>
 			</Row>
 			<Row className="mt-3">
 				<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>

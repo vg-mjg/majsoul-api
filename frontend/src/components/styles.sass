@@ -12,7 +12,12 @@
 		background-color: var(--team-#{$i}-base)
 		border-color: var(--team-#{$i}-border)
 		color: var(--team-#{$i}-color)
-		&:hover
-			background-color: var(--team-#{$i}-hover)
+		&:disabled
+			background-color: var(--team-#{$i}-base)
 			border-color: var(--team-#{$i}-border)
 			color: var(--team-#{$i}-color)
+			opacity: 1
+		&:hover
+			// background-color: var(--team-#{$i}-hover)
+			// border-color: var(--team-#{$i}-border)
+			// color: var(--team-#{$i}-color)
