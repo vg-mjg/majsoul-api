@@ -4,9 +4,8 @@ import { Majsoul } from "..";
 
 export class Store {
 
-	public async isGameRecorded(game: { majsoulId: string; contestMajsoulId: number}): Promise<boolean> {
-		const recordedGames = await this.gamesCollection.find({contestMajsoulId: game.contestMajsoulId}).toArray();
-		return recordedGames.findIndex(g => g.majsoulId === game.majsoulId) >= 0;
+	public async isGameRecorded(game: { majsoulId: string }): Promise<boolean> {
+		return await this.gamesCollection.countDocuments({majsoulId: game.majsoulId}, { limit: 1 }) === 1;
 	}
 
 	public async recordGame(contest: Contest, gameResult: Majsoul.GameResult): Promise<void> {

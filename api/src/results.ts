@@ -138,10 +138,7 @@ async function main() {
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
 
 	for (const game of gameIds) {
-		if (mongoStore.isGameRecorded({
-			majsoulId: game.majsoulId,
-			contestMajsoulId: contest.majsoulId,
-		})){
+		if (await mongoStore.isGameRecorded(game)){
 			console.log(`Game id ${game.majsoulId} already recorded`);
 			continue;
 		}
