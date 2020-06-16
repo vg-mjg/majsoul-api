@@ -30,7 +30,7 @@ interface ISecrets {
 
 async function main() {
 	async function addToSpreadSheet(gameId): Promise<void> {
-		if (process.env.NODE_ENV !== "prod") {
+		if (process.env.MAJSOUL_ENV !== "prod") {
 			console.log("skipping spreadsheet write in dev");
 			return;
 		}
