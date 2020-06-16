@@ -60,6 +60,6 @@ export class RestApi {
 	}
 
 	public init() {
-		this.app.listen(3000, () => console.log(`Express started`));
+		this.app.listen(9515, () => console.log(`Express started`));
 	}
 }

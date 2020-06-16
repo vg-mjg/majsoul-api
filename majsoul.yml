@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: majsoul-nginx
+    ports:
+      - 80:80
+    # secrets:
+    #   - majsoul.json
+
+  majsoul:
+    image: majsoul-api
+    secrets:
+      - majsoul.json
+
+  mongo:
+    restart: always
+    image: mongo
+    volumes:
+      - mongo-db-data:/data/db
+    secrets:
+      - mongo-creds
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-creds
+
+secrets:
+  mongo-creds:
+    file: ./mongo-creds
+  majsoul.json:
+    file: ./secrets.json
+
+volumes:
+  mongo-db-data:

@@ -2,9 +2,10 @@ FROM node:12.18 AS base
 
 FROM base AS build
 
-COPY . /build
 WORKDIR /build
+COPY ./package.json ./yarn.lock ./
 RUN yarn
+COPY . ./
 RUN yarn run tsc
 
 FROM base

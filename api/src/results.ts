@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as util from "util";
 
-import { ObjectId } from 'mongodb';
+import { ObjectId, MongoClient } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { RestApi } from "./rest/RestApi";
@@ -22,6 +22,10 @@ interface ISecrets {
 		}
 	}
 	googleAuthToken: Credentials;
+	mongo: {
+		username: string;
+		password: string;
+	}
 }
 
 async function main() {
@@ -89,7 +93,7 @@ async function main() {
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
 	const mongoStore = new store.Store();
-	await mongoStore.init();
+	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
 	let contest = (await mongoStore.contestCollection.findOneAndUpdate(
 		{ majsoulId: majsoulContest.majsoulId },
@@ -131,47 +135,32 @@ async function main() {
 		)).value;
 	}
 
-	const recordedGames = await mongoStore.gamesCollection.find({contestMajsoulId: contest.majsoulId}).toArray();
-
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
 
 	for (const game of gameIds) {
-		if (!recordedGames.every(g => g.majsoulId !== game.majsoulId)) {
+		if (mongoStore.isGameRecorded({
+			majsoulId: game.majsoulId,
+			contestMajsoulId: contest.majsoulId,
+		})){
 			console.log(`Game id ${game.majsoulId} already recorded`);
 			continue;
 		}
 
 		const gameResult = await api.getGame(game.majsoulId);
 
-		if (gameResult.players.length !== 4) {
-			console.log(`Game id ${game.majsoulId} doesn't have enough players, skipping`);
-			continue;
-		}
-
-		const session = (await mongoStore.contestCollection.findOne(
-			{ _id: contest._id, 'sessions.scheduledTime': { $lte: gameResult.end_time } },
-			{ projection: { "sessions.$.games": true, total: true } }
-		));
-
-		console.log(`Recording game id ${game.majsoulId}`);
-		const gameRecord: store.GameResult<ObjectId> = {
-			_id: undefined,
-			sessionId: session.sessions[0]?._id,
-			...gameResult,
-			players: (await Promise.all(gameResult.players.map(player =>
-				mongoStore.playersCollection.findOneAndUpdate(
-					{ nickname: player.nickname },
-					{ $set: { majsoulId: player.majsoulId } },
-					{ upsert: true, returnOriginal: false, projection: { _id: true } }
-				)
-			))).map(p => p.value),
-		};
-
-		await mongoStore.gamesCollection.insertOne(gameRecord);
+		await mongoStore.recordGame(contest, gameResult);
 	}
+
+	const mongoSub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
+		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
+			setTimeout(() => {
+				api.getGame(notification.uuid).then(gameResult => mongoStore.recordGame(contest, gameResult));
+			}, 5000);
+		}
+	});
 
 	const restApi = new RestApi(mongoStore);
 	restApi.init();
 }
 
-main();
+ main();

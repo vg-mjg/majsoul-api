@@ -12,3 +12,4 @@ token.json
 *.map
 secrets.json
 
+mongo-creds

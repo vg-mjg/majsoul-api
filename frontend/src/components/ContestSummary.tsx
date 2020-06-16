@@ -14,7 +14,7 @@ import { pickColorGradient } from "..";
 
 const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
 	return function (dispatch) {
-		return fetch(`http://localhost:3000/contests/${contestId}`)
+		return fetch(`${location.protocol}//${location.host}/api/contests/${contestId}`)
 			.then(response => response.json())
 			.then(contest => dispatch({
 				type: ActionType.ContestSummaryRetrieved,
@@ -25,7 +25,7 @@ const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction
 
 const fetchSessionGamesSummary = (sessionId: string): AppThunk<SessionGamesRetrieved> => {
 	return function (dispatch) {
-		const url = new URL(`http://localhost:3000/games?sessions={${sessionId}`)
+		const url = new URL(`${location.protocol}//${location.host}/api/games?sessions={${sessionId}`)
 		url.search = new URLSearchParams({
 			sessions: sessionId
 		}).toString();
