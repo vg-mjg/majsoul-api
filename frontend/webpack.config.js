@@ -60,6 +60,14 @@ module.exports = env => {
 						loader: 'sass-loader' // compiles Sass to CSS
 					}]
 				},
+				{
+					test: /\.(mp3)$/i,
+					use: [
+						{
+							loader: 'file-loader',
+						},
+					],
+				},
 			]
 		},
 		optimization: {

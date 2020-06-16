@@ -193,7 +193,6 @@ class GameResultSummary extends React.Component<GameResultSummaryProps> {
 			this.props.game.finalScore[seat].uma > 0 ? "93c47d" : "e06666",
 			Math.min(this.props.game.finalScore[seat].uma / 1000 / 50, 1)
 		);
-		console.log(scoreColor);
 		return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark`}>
 			<Row className="no-gutters">
 				<Col md="auto" className={`${(styles as any)[`team${playerInfo.team.index}`]} rounded-left px-2`}>
@@ -281,7 +280,11 @@ interface ContestSummaryComponentStateProps extends ContestSummaryProps {
 	contest: Contest;
 }
 
-class ContestSummaryComponent extends React.Component<ContestSummaryComponentStateProps & ContestSummaryComponentDispatchProps> {
+interface ContestSummaryComponentState {
+	secret: boolean;
+}
+
+class ContestSummaryComponent extends React.Component<ContestSummaryComponentStateProps & ContestSummaryComponentDispatchProps, ContestSummaryComponentState> {
 	public componentDidMount(): void {
 		this.props.fetchContestSummary(this.props.contestId);
 	}
@@ -298,8 +301,17 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 		}
 
 		return <Container>
-			<Row>
-				<h1 className="ml-5 my-4 text-"><u>{this.props.contest.name}</u></h1>
+			<Row className="px-4 pt-4 pb-3">
+				<Col>
+					<h1 className="align-self-center" onClick={() => this.showSecret()}><u style={{cursor: "pointer"}}>{this.props.contest.name}</u></h1>
+				</Col>
+				<Col md="auto" className="align-self-center">
+					<i>
+						{this.state?.secret
+							? "This is a Shamikoposter world you're just living in it."
+							: "Winning is for Losers."}
+						</i>
+					</Col>
 			</Row>
 			<Row className="mt-3">
 				<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
@@ -311,6 +323,12 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 				<HistoricalSession session={currentSession} teams={this.props.contest.teams}></HistoricalSession>
 			</Row>
 		</Container>
+	}
+
+	private showSecret() {
+		this.setState({secret: true});
+		new Audio(require("../../assets/tuturu.mp3").default).play();
+		setTimeout(() => this.setState({secret: false}), 5000);
 	}
 }
 
