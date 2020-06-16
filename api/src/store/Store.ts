@@ -45,16 +45,12 @@ export class Store {
 		const url = `mongodb://${username}:${password}@${process.env.MAJSOUL_ENV === "prod" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
 		const dbName = 'majsoul';
 		const client = new MongoClient(url);
-		try {
-			await client.connect();
-			console.log("Connected successfully to server");
-			const db = client.db(dbName);
+		await client.connect();
+		console.log("Connected successfully to server");
+		const db = client.db(dbName);
 
-			this.contestCollection = await db.createCollection("contests", {});
-			this.gamesCollection = await db.createCollection("games", {});
-			this.playersCollection = await db.createCollection("players", {});
-		} catch (e) {
-			console.log(e);
-		}
+		this.contestCollection = await db.createCollection("contests", {});
+		this.gamesCollection = await db.createCollection("games", {});
+		this.playersCollection = await db.createCollection("players", {});
 	}
 }
