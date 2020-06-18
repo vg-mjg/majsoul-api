@@ -5,8 +5,6 @@ services:
     image: majsoul-nginx
     ports:
       - 80:80
-    # secrets:
-    #   - majsoul.json
 
   majsoul:
     image: majsoul-api

@@ -30,7 +30,7 @@ interface ISecrets {
 
 async function main() {
 	async function addToSpreadSheet(gameId): Promise<void> {
-		if (process.env.MAJSOUL_ENV !== "prod") {
+		if (process.env.NODE_ENV !== "production") {
 			console.log("skipping spreadsheet write in dev");
 			return;
 		}
@@ -40,21 +40,14 @@ async function main() {
 			return;
 		}
 
-		let gameResult;
-		for(let retries = 0; retries < 3; retries++) {
-			gameResult = await api.getGame(gameId);
-			if (gameResult != null) {
-				break;
-			}
-			await new Promise(resolve => setTimeout(resolve, 1000));
-		}
+		const gameResult = await api.getGame(gameId);
 
 		if (gameResult == null){
 			console.log(`Unable to retrieve game ${gameId}, skipping spreadsheet add`);
 			return;
 		}
 
-		if (gameResult.players.length < 4 || !gameResult.players.every(p => p.name)) {
+		if (gameResult.players.length < 4 || !gameResult.players.every(p => p.nickname)) {
 			return;
 		}
 
@@ -62,7 +55,7 @@ async function main() {
 		spreadsheet.addGameDetails(gameResult);
 	};
 
-	const secretsPath = process.env.MAJSOUL_ENV === "prod"
+	const secretsPath = process.env.NODE_ENV === "production"
 		? "/run/secrets/majsoul.json"
 		: path.join(path.dirname(__filename), 'secrets.json');
 
@@ -74,7 +67,7 @@ async function main() {
 		authToken: secrets.googleAuthToken
 	}
 
-	if (!googleAppInfo.authToken && process.env.MAJSOUL_ENV !== "prod") {
+	if (!googleAppInfo.authToken && process.env.NODE_ENV !== "production") {
 		googleAppInfo.authToken = secrets.googleAuthToken = await Spreadsheet.getAuthTokenInteractive(googleAppInfo);
 		fs.writeFileSync(secretsPath, JSON.stringify(secrets));
 	}

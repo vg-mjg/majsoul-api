@@ -42,7 +42,7 @@ export class Store {
 	public playersCollection: Collection<Player<ObjectId>>;
 
 	public async init(username: string, password: string): Promise<void> {
-		const url = `mongodb://${username}:${password}@${process.env.MAJSOUL_ENV === "prod" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
+		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
 		const dbName = 'majsoul';
 		const client = new MongoClient(url);
 		await client.connect();

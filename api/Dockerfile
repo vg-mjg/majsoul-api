@@ -9,7 +9,7 @@ COPY . ./
 RUN yarn run tsc
 
 FROM base
-ENV MAJSOUL_ENV prod
+ENV NODE_ENV production
 COPY --from=build /build/dist /dist
 WORKDIR /dist
 COPY --from=build /build/package.json /build/yarn.lock ./
