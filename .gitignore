@@ -13,3 +13,4 @@ token.json
 secrets.json
 
 mongo-creds
+majsoul.env
