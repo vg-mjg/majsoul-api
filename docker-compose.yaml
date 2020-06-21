@@ -2,11 +2,15 @@ version: '3.8'
 
 services:
   nginx:
+    build:
+      context: .
     image: majsoul-nginx
     ports:
       - 80:80
 
   majsoul:
+    build:
+      context: ./api
     image: majsoul-api
     secrets:
       - majsoul.json
