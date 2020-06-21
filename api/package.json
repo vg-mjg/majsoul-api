@@ -5,7 +5,8 @@
   "typings": "dist/index.d.ts",
   "module": "dist/index.js",
   "scripts": {
-    "start": "node -r source-map-support/register ./dist/results.js"
+    "connect": "node -r source-map-support/register ./dist/connector.js",
+    "rest": "node -r source-map-support/register ./dist/rest-api.js"
   },
   "author": "",
   "license": "MIT",

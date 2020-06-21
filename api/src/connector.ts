@@ -1,32 +1,11 @@
 import { Spreadsheet } from "./google";
-import { Credentials } from 'google-auth-library';
 import * as fs from "fs";
-import * as path from "path";
 import * as util from "util";
 
-import { ObjectId, MongoClient } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
-import { RestApi } from "./rest/RestApi";
-
-interface ISecrets {
-	majsoul: {
-		uid: string;
-		accessToken: string;
-	};
-	googleCreds: {
-		installed: {
-			client_id: string;
-			client_secret: string;
-			redirect_uris: string[];
-		}
-	}
-	googleAuthToken: Credentials;
-	mongo: {
-		username: string;
-		password: string;
-	}
-}
+import { getSecrets, getSecretsFilePath } from "./secrets";
 
 async function main() {
 	async function addToSpreadSheet(gameId): Promise<void> {
@@ -55,11 +34,8 @@ async function main() {
 		spreadsheet.addGameDetails(gameResult);
 	};
 
-	const secretsPath = process.env.NODE_ENV === "production"
-		? "/run/secrets/majsoul.json"
-		: path.join(path.dirname(__filename), 'secrets.json');
+	const secrets = getSecrets();
 
-	const secrets: ISecrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
 	const googleAppInfo = {
 		clientId: secrets.googleCreds.installed.client_id,
 		clientSecret: secrets.googleCreds.installed.client_secret,
@@ -69,7 +45,7 @@ async function main() {
 
 	if (!googleAppInfo.authToken && process.env.NODE_ENV !== "production") {
 		googleAppInfo.authToken = secrets.googleAuthToken = await Spreadsheet.getAuthTokenInteractive(googleAppInfo);
-		fs.writeFileSync(secretsPath, JSON.stringify(secrets));
+		fs.writeFileSync(getSecretsFilePath(), JSON.stringify(secrets));
 	}
 
 	const spreadsheet = new Spreadsheet(googleAppInfo);
@@ -160,9 +136,6 @@ async function main() {
 			}, 5000);
 		}
 	});
-
-	const restApi = new RestApi(mongoStore);
-	restApi.init();
 }
 
- main();
+main();

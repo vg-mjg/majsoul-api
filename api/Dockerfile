@@ -14,4 +14,3 @@ COPY --from=build /build/dist /dist
 WORKDIR /dist
 COPY --from=build /build/package.json /build/yarn.lock ./
 RUN yarn install --production
-ENTRYPOINT node /dist/results.js
