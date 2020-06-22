@@ -2,7 +2,7 @@ import * as React from "react";
 import { ReactNode } from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { Contest } from "../IState";
+import { Contest } from "../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
