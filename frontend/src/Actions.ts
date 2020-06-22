@@ -7,17 +7,21 @@ export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkA
 
 export enum ActionType {
 	ContestSummaryRetrieved,
-	GamesRetrieved
+	GamesRetrieved,
+	RiggingTokenGet,
 }
 
-export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved>{
+export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
 	contest: Rest.Contest<string>;
 }
 
-export interface SessionGamesRetrieved extends Action<ActionType.GamesRetrieved>{
+export interface SessionGamesRetrieved extends Action<ActionType.GamesRetrieved> {
 	games: Store.GameResult[];
 }
 
+export interface RiggingTokenAquired extends Action<ActionType.RiggingTokenGet> {
+	token: string;
+}
 
 function buildApiUrl(path: string): URL {
 	if (process.env.NODE_ENV === "production") {
@@ -62,5 +66,31 @@ export const fetchGames = (params: FetchGamesOptions): AppThunk<SessionGamesRetr
 				type: ActionType.GamesRetrieved,
 				games
 			}));
+	}
+}
+
+export interface GetRiggingTokenOptions {
+	username: string;
+	password: string;
+}
+
+export const getRiggingToken = (params: GetRiggingTokenOptions): AppThunk<RiggingTokenAquired, Promise<boolean>> => {
+	return function (dispatch) {
+		const url = buildApiUrl(`rigging/token`);
+		return fetch(
+			url.toString(),
+			{
+				headers: {
+					"Username": params.username,
+					"Password": params.password
+				}
+			}
+		).then(response => {
+			if (response.status !== 200) {
+				return false;
+			}
+			response.text().then(token => dispatch({type: ActionType.RiggingTokenGet, token}));
+			return true;
+		});
 	}
 }

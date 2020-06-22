@@ -3,7 +3,7 @@ import * as ReactDOM from "react-dom";
 import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
-import { BrowserRouter, Route } from "react-router-dom";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
 import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
@@ -12,6 +12,7 @@ import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
 import { teamColors } from "./components/LeagueStandingChart";
 import { Store } from "majsoul-api";
+import { Rigging } from "./components/Rigging";
 
 interface RGBColor {
 	r: number;
@@ -170,9 +171,14 @@ ReactDOM.render(
 		<BrowserRouter>
 			<Container className={`${styles.feed} bg-dark px-5`}>
 				<Container className={`${styles.feed} bg-primary px-3 pb-3`}>
-					<Route path="/">
-						<ContestSummary contestId="113331"/>
-					</Route>
+					<Switch>
+						<Route path="/rigging">
+							<Rigging/>
+						</Route>
+						<Route path="/">
+							<ContestSummary contestId="113331"/>
+						</Route>
+					</Switch>
 				</Container>
 			</Container>
 		</BrowserRouter>
