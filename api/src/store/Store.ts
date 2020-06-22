@@ -1,8 +1,28 @@
 import { Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player } from "./types/types";
+import { Contest, GameResult, Player, User } from "./types/types";
 import { Majsoul } from "..";
 
 export class Store {
+	public contestCollection: Collection<Contest<ObjectId>>;
+	public gamesCollection: Collection<GameResult<ObjectId>>;
+	public playersCollection: Collection<Player<ObjectId>>;
+	public userCollection: Collection<User<ObjectId>>;
+
+	public async init(username: string, password: string): Promise<void> {
+		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
+		const client = new MongoClient(url);
+		await client.connect();
+
+		console.log("Connected successfully to server");
+
+		const majsoulDb = client.db('majsoul');
+		this.contestCollection = await majsoulDb.createCollection("contests", {});
+		this.gamesCollection = await majsoulDb.createCollection("games", {});
+		this.playersCollection = await majsoulDb.createCollection("players", {});
+
+		const oauthDb = client.db('oauth');
+		this.userCollection = await oauthDb.createCollection("users", {});
+	}
 
 	public async isGameRecorded(game: { majsoulId: string }): Promise<boolean> {
 		return await this.gamesCollection.countDocuments({majsoulId: game.majsoulId}, { limit: 1 }) === 1;
@@ -34,23 +54,5 @@ export class Store {
 		};
 
 		await this.gamesCollection.insertOne(gameRecord);
-	}
-
-
-	public contestCollection: Collection<Contest<ObjectId>>;
-	public gamesCollection: Collection<GameResult<ObjectId>>;
-	public playersCollection: Collection<Player<ObjectId>>;
-
-	public async init(username: string, password: string): Promise<void> {
-		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
-		const dbName = 'majsoul';
-		const client = new MongoClient(url);
-		await client.connect();
-		console.log("Connected successfully to server");
-		const db = client.db(dbName);
-
-		this.contestCollection = await db.createCollection("contests", {});
-		this.gamesCollection = await db.createCollection("games", {});
-		this.playersCollection = await db.createCollection("players", {});
 	}
 }

@@ -1,5 +1,4 @@
 import * as majsoul from "../../majsoul";
-import { ObjectId } from "mongodb";
 
 export interface GameResult<Id = any> extends majsoul.GameResult {
 	_id: Id;
@@ -36,4 +35,14 @@ export interface Match<Id = any> {
 	teams: {
 		_id: Id;
 	}[];
+}
+
+export interface User<Id = any> {
+	_id: Id;
+	nickname: string;
+	password: {
+		salt: string;
+		hash: string;
+	};
+	scopes: string[];
 }
