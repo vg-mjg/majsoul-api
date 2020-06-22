@@ -6,6 +6,11 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 
+type FormControlElement =
+  | HTMLInputElement
+  | HTMLSelectElement
+  | HTMLTextAreaElement;
+
 interface RiggingComponentDispatchProps {
 	getRiggingToken(params: GetRiggingTokenOptions): Promise<boolean>;
 }
@@ -22,7 +27,11 @@ interface RiggingComponentState {
 class RiggingComponent extends React.Component<RiggingComponentStateProps & RiggingComponentDispatchProps, RiggingComponentState> {
 	constructor(props: Readonly<RiggingComponentStateProps & RiggingComponentDispatchProps>) {
 		super(props);
-		this.state = {} as RiggingComponentState;
+		this.state = {
+			username: "",
+			password: "",
+			failed: false
+		};
 	}
 
 	render() {
@@ -32,10 +41,19 @@ class RiggingComponent extends React.Component<RiggingComponentStateProps & Rigg
 			onSubmit={(event: React.FormEvent<HTMLFormElement>) => this.onFormSubmit(event)}
 		>
 			<Form.Group as={Form.Row}>
-				<Form.Control placeholder="Username" onInput={(event: React.FormEvent<HTMLInputElement>) => this.onUserNameChanged(event)} />
+				<Form.Control
+					placeholder="Username"
+					value={this.state.username}
+					onChange={(event) => this.onUserNameChanged(event)}
+				/>
 			</Form.Group>
 			<Form.Group as={Form.Row}>
-				<Form.Control type="password" placeholder="Password" onInput={(event: React.FormEvent<HTMLInputElement>) => this.onPasswordChanged(event)} />
+				<Form.Control
+					type="password"
+					placeholder="Password"
+					value={this.state.password}
+					onChange={(event) => this.onPasswordChanged(event)}
+				/>
 			</Form.Group>
 			<Form.Row className="align-items-center">
 				<Col>
@@ -50,14 +68,14 @@ class RiggingComponent extends React.Component<RiggingComponentStateProps & Rigg
 		</Form>
 	}
 
-	onPasswordChanged(event: React.FormEvent<HTMLInputElement>): void {
+	onPasswordChanged(event: React.FormEvent<FormControlElement>): void {
 		this.setState({
 			...this.state,
 			password: (event.target as HTMLInputElement).value,
 		});
 	}
 
-	private onUserNameChanged(event: React.FormEvent<HTMLInputElement>): void {
+	private onUserNameChanged(event: React.FormEvent<FormControlElement>): void {
 		this.setState({
 			...this.state,
 			username: (event.target as HTMLInputElement).value
