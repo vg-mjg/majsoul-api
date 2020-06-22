@@ -23,7 +23,7 @@ export interface RiggingTokenAquired extends Action<ActionType.RiggingTokenGet> 
 	token: string;
 }
 
-function buildApiUrl(path: string): URL {
+export function buildApiUrl(path: string): URL {
 	if (process.env.NODE_ENV === "production") {
 		return new URL(`${location.protocol}//${location.host}/api/${path}`);
 	}

@@ -7,7 +7,7 @@ import { Store } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { PendingSession } from "./PendingSession";
+import { Session } from "./Session";
 import { HistoricalSession } from "./HistoricalSession";
 
 interface ContestSummaryComponentDispatchProps {
@@ -58,7 +58,7 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 				<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
 			</Row>
 			<Row className="mt-3">
-				<PendingSession session={nextSession} teams={this.props.contest.teams}></PendingSession>
+				<Session session={nextSession}></Session>
 			</Row>
 			<Row className="mt-3">
 				<HistoricalSession games={this.props.games?.slice(0, 8) ?? []} teams={this.props.contest.teams}></HistoricalSession>

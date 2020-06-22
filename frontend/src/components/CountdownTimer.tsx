@@ -33,7 +33,20 @@ export class CountdownTimer extends React.Component<TimerProps, TimerState> {
 			return null;
 		}
 
-		const difference = moment.duration(moment(this.props.targetTime).diff(moment(this.state.time)));
-		return <h3 className="mb-0">Next Session in {difference.days() > 0 && `${difference.days()}d`} {difference.hours()}:{difference.minutes()}:{difference.seconds()}</h3>;
+		const targetMoment = moment(this.props.targetTime);
+		const nowMoment = moment(this.state.time);
+		let difference: moment.Duration;
+		const future = nowMoment.isBefore(targetMoment);
+		if (future){
+			difference = moment.duration(targetMoment.diff(nowMoment));
+		} else {
+			difference = moment.duration(nowMoment.diff(targetMoment));
+		}
+
+		return <h3 className="mb-0">
+			{future && "In "}
+			{difference.days() != 0 && `${difference.days()}d`} {difference.hours()}:{difference.minutes()}:{difference.seconds()}
+			{!future && " ago"}
+		</h3>;
 	}
 }
