@@ -153,7 +153,9 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			const riggingTokenGetAction = action as RiggingTokenAquired;
 			return {
 				...state,
-
+				user: {
+					token: riggingTokenGetAction.token,
+				}
 			}
 		}
 	}
