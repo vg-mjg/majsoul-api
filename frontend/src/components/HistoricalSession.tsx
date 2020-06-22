@@ -22,7 +22,7 @@ export class HistoricalSession extends React.Component<HistoricalSessionProps> {
 			</Row>
 			<Row>
 				{this.props.games.map(game => <Container key={game._id} className="px-0 border-top">
-					<GameResultSummary game={game} teams={this.props.teams}></GameResultSummary>
+					<GameResultSummary game={game}></GameResultSummary>
 				</Container>
 				)}
 			</Row>

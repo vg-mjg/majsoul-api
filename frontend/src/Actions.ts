@@ -1,4 +1,4 @@
-import { Action } from "redux";
+import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
 import { IState } from "./State";
@@ -67,6 +67,27 @@ export const fetchGames = (params: FetchGamesOptions): AppThunk<SessionGamesRetr
 				games
 			}));
 	}
+}
+
+export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): void {
+	const url = buildApiUrl(`games`);
+	const queryParameters: Record<string, string> = {};
+	if (params.sessionIds != null) {
+		queryParameters.sessions = params.sessionIds?.join('+');
+	}
+
+	if (params.last != null) {
+		queryParameters.last = params.last?.toString();
+	}
+
+	url.search = new URLSearchParams(queryParameters).toString();
+
+	fetch(url.toString())
+		.then(response => response.json())
+		.then(games => dispatch({
+			type: ActionType.GamesRetrieved,
+			games
+		}));
 }
 
 export interface GetRiggingTokenOptions {
