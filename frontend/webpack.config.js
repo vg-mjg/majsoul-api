@@ -9,13 +9,16 @@ module.exports = env => {
 		entry: ["./src/bootstrap.sass", "./src/index.tsx"],
 		mode: env.production ? 'production' : 'development',
 		devtool: "source-map",
+		devServer: {
+			historyApiFallback: true
+		},
 		resolve: {
 			extensions: [".ts", ".tsx", ".js", ".json"]
 		},
 		module: {
 			rules: [
 				{
-					test: /\.ts(x?)$/,
+					test: /\.tsx?$/,
 					exclude: /node_modules/,
 					use: [
 						{
@@ -77,6 +80,7 @@ module.exports = env => {
 		},
 		plugins: [
 			new HtmlWebpackPlugin({
+				base: "/",
 				title: "/mjg/ league"
 			})
 		]

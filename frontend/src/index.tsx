@@ -170,7 +170,7 @@ ReactDOM.render(
 		<BrowserRouter>
 			<Container className={`${styles.feed} bg-dark px-5`}>
 				<Container className={`${styles.feed} bg-primary px-3 pb-3`}>
-					<Route exact path="/">
+					<Route path="/">
 						<ContestSummary contestId="113331"/>
 					</Route>
 				</Container>
