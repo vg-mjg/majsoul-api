@@ -7,6 +7,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
+import * as expressJwt from 'express-jwt';
+
 
 export class RestApi {
 	private app: express.Express;
@@ -59,24 +61,17 @@ export class RestApi {
 					res.status(500).send(error)
 				});
 		});
-
-		const privateKeyPath = process.env.NODE_ENV === "production"
-			? "/run/secrets/riichi.key.pem"
-			: path.join(path.dirname(process.argv[1]), "riichi.key.pem");
-
-		fs.readFile(privateKeyPath, (err, key) => {
-			if (err) {
-				console.log("couldn't load private key for auth tokens, disabling rigging");
-				console.log(err);
-				return;
-			}
-			this.setupRigging(key);
-		});
-
 	}
 
-	public init() {
+	public async init() {
 		this.app.listen(9515, () => console.log(`Express started`));
+
+		const riggingRouter = await this.createRiggingRouter();
+		if (!riggingRouter) {
+			return;
+		}
+
+		this.app.use("/rigging", riggingRouter);
 
 		const salt = crypto.randomBytes(24).toString("hex");
 		const sha = crypto.createHash("sha256");
@@ -95,47 +90,93 @@ export class RestApi {
 			},
 			{ upsert: true }
 		);
+
 	}
 
-	private async setupRigging(key: Buffer) {
-		this.app.get("/rigging/token", async (req, res) => {
-			const user = await this.mongoStore.userCollection.findOne({
-				nickname: req.header("Username") as string,
-			});
+	private async createRiggingRouter(): Promise<express.Router> {
+		const keyLocation = process.env.NODE_ENV === "production" ? "/run/secrets/" : path.dirname(process.argv[1]);
+		let privateKey: Buffer, publicKey: Buffer;
 
-			if (!user) {
-				res.sendStatus(401);
-				return;
-			}
-
-			const sha = crypto.createHash("sha256");
-			if (user.password.hash !== sha.update(`${req.header("Password") as string}:${user.password.salt}`).digest("hex")) {
-				res.sendStatus(401);
-				return;
-			}
-
-			jwt.sign(
-				{
-					name: user.nickname,
-					roles: user.scopes
-				},
-				key,
-				{
-					algorithm: 'RS256',
-					issuer: "riichi.moe",
-					audience: "riichi.moe",
-					expiresIn: "1d",
-					notBefore: 0,
-				},
-				(err, token) => {
+		try {
+			privateKey = await new Promise<Buffer>((res, rej) => fs.readFile(path.join(keyLocation, "riichi.key.pem"), (err, key) => {
 				if (err) {
+					console.log("couldn't load private key for auth tokens, disabling rigging");
 					console.log(err);
-					res.status(500).send(err);
 					return;
 				}
-				res.send(token);
+				res(key);
+			}));
+
+			publicKey = await new Promise<Buffer>((res, rej) => fs.readFile(path.join(keyLocation, "riichi.crt.pem"), (err, key) => {
+				if (err) {
+					rej(err);
+					return;
+				}
+				res(key);
+			}));
+		} catch (err) {
+			console.log("Couldn't load keys for auth tokens, disabling rigging");
+			console.log(err);
+		}
+
+		const router = express.Router();
+		router.use(
+				expressJwt({
+					secret: publicKey,
+					credentialsRequired: true
+				}).unless({
+					path: ["/token"],
+					useOriginalUrl: false
+				})
+			).use(function (err, req, res, next) {
+				if (err.name === 'UnauthorizedError') {
+				  res.status(401).send('token invalid');
+				  return;
+				}
+				next();
+			})
+			.get("/token", async (req, res) => {
+				const user = await this.mongoStore.userCollection.findOne({
+					nickname: req.header("Username") as string,
+				});
+
+				if (!user) {
+					res.sendStatus(401);
+					return;
+				}
+
+				const sha = crypto.createHash("sha256");
+				if (user.password.hash !== sha.update(`${req.header("Password") as string}:${user.password.salt}`).digest("hex")) {
+					res.sendStatus(401);
+					return;
+				}
+
+				jwt.sign(
+					{
+						name: user.nickname,
+						roles: user.scopes
+					},
+					privateKey,
+					{
+						algorithm: 'RS256',
+						issuer: "riichi.moe",
+						audience: "riichi.moe",
+						expiresIn: "1d",
+						notBefore: 0,
+					},
+					(err, token) => {
+					if (err) {
+						console.log(err);
+						res.status(500).send(err);
+						return;
+					}
+					res.send(token);
+				});
+			})
+			.get("/users", (req, res) => {
+				res.send("test");
 			});
-		});
+		return router;
 	}
 
 	private async getSessionSummary(contest: store.Contest, session: store.Session): Promise<Record<string, number>> {
