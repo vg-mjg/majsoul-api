@@ -1,8 +1,8 @@
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { Contest } from './types/types';
-import { ObjectId, FilterQuery } from 'mongodb';
+import { Contest, GameResult, Session } from './types/types';
+import { ObjectId, FilterQuery, Condition } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
@@ -21,12 +21,16 @@ export class RestApi {
 			this.mongoStore.contestCollection.findOne(
 				{ majsoulFriendlyId: parseInt(req.params.id) }
 			).then(async (contest) => {
+				const sessions = await mongoStore.sessionsCollection.find({
+					contestId: contest._id
+				}).toArray();
+
 				res.send({
 					...contest,
-					sessions: await Promise.all(contest.sessions.map(async (session) => ({
+					sessions: (await Promise.all(sessions.sort((a, b) => a.scheduledTime - b.scheduledTime).map(async (session, index) => ({
 						...session,
-						totals: await this.getSessionSummary(contest, session)
-					})))
+						totals: await this.getSessionSummary(contest, session, sessions[index + 1])
+					})))).reverse()
 				});
 			})
 			.catch(error => {
@@ -35,13 +39,38 @@ export class RestApi {
 			});
 		});
 
-		this.app.get('/games', (req, res) => {
+		this.app.get<any, GameResult<ObjectId>[]>('/games', async (req, res) => {
 			const filter: FilterQuery<store.GameResult<ObjectId>> = {};
 
 			const sessionIds = (req.query?.sessions as string)?.split(' ');
+			let sessionMap: {
+				startSession: store.Session,
+				endSession: store.Session
+			}[] = [];
 			if (sessionIds) {
-				console.log(sessionIds);
-				filter.sessionId = { $in: sessionIds.map(id => new ObjectId(id)) };
+				const sessions = await this.mongoStore.sessionsCollection.find({
+					_id: { $in: sessionIds.map(id => new ObjectId(id)) }
+				}).toArray();
+
+				filter.$or = [];
+
+				for(const session of sessions) {
+					let [startSession, endSession] = await this.mongoStore.sessionsCollection.find(
+						{scheduledTime: {$gte: session.scheduledTime}}
+					).sort({scheduledTime: 1}).limit(2).toArray();
+
+					sessionMap.push({
+						startSession,
+						endSession
+					});
+
+					filter.$or.push({
+						end_time: {
+							$gte: startSession.scheduledTime,
+							$lt: endSession?.scheduledTime
+						}
+					});
+				}
 			}
 
 			const cursor = this.mongoStore.gamesCollection.find(filter);
@@ -55,7 +84,12 @@ export class RestApi {
 			}
 
 			cursor.toArray()
-				.then(games => res.send(games))
+				.then(games => res.send(games.map(game => ({
+					...game,
+					sessionId: sessionMap.find((session) =>
+						game.end_time >= session.startSession.scheduledTime
+							&& game.end_time < session.endSession.scheduledTime)?.startSession?._id
+				}))))
 				.catch(error => {
 					console.log(error);
 					res.status(500).send(error)
@@ -179,17 +213,23 @@ export class RestApi {
 		return router;
 	}
 
-	private async getSessionSummary(contest: store.Contest, session: store.Session): Promise<Record<string, number>> {
+	private async getSessionSummary(contest: store.Contest, startSession: store.Session, endSession?: store.Session): Promise<Record<string, number>> {
+		const timeWindow: Condition<number> = {
+			$gte: startSession.scheduledTime
+		};
+
+		if (endSession) {
+			timeWindow.$lt = endSession.scheduledTime
+		}
+
+		console.log(timeWindow);
 		const games = await this.mongoStore.gamesCollection.find({
-			sessionId: session._id
+			end_time: timeWindow
 		}).toArray();
+
 		return games.reduce<Record<string, number>>((total, game) => {
 			game.finalScore.forEach((score, index) => {
 				const winningTeam = contest.teams.find(t => t.players.find(p => p._id.equals(game.players[index]._id)));
-				if(!winningTeam) {
-					console.log(session._id);
-					console.log(game);
-				}
 				total[winningTeam._id.toHexString()] = (total[winningTeam._id.toHexString()] ?? 0) + score.uma;
 			});
 			return total;

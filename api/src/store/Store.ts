@@ -1,10 +1,11 @@
 import { Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User } from "./types/types";
+import { Contest, GameResult, Player, User, Session } from "./types/types";
 import { Majsoul } from "..";
 
 export class Store {
 	public contestCollection: Collection<Contest<ObjectId>>;
 	public gamesCollection: Collection<GameResult<ObjectId>>;
+	public sessionsCollection: Collection<Session<ObjectId>>;
 	public playersCollection: Collection<Player<ObjectId>>;
 	public userCollection: Collection<User<ObjectId>>;
 
@@ -18,7 +19,10 @@ export class Store {
 		const majsoulDb = client.db('majsoul');
 		this.contestCollection = await majsoulDb.createCollection("contests", {});
 		this.gamesCollection = await majsoulDb.createCollection("games", {});
+		this.sessionsCollection = await majsoulDb.createCollection("sessions", {});
+		this.sessionsCollection.createIndex({scheduledTime: -1});
 		this.playersCollection = await majsoulDb.createCollection("players", {});
+
 
 		const oauthDb = client.db('oauth');
 		this.userCollection = await oauthDb.createCollection("users", {});
@@ -42,7 +46,6 @@ export class Store {
 		console.log(`Recording game id ${gameResult.majsoulId}`);
 		const gameRecord: GameResult<ObjectId> = {
 			_id: undefined,
-			sessionId: session.sessions[0]?._id,
 			...gameResult,
 			players: (await Promise.all(gameResult.players.map(player =>
 				this.playersCollection.findOneAndUpdate(

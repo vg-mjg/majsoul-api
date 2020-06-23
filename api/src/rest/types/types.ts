@@ -1,4 +1,8 @@
-import { Contest as StoreContest, Session as StoreSession, ContestTeam } from "../../store/types/types";
+import { Contest as StoreContest, Session as StoreSession, GameResult as StoreGameResult } from "../../store/types/types";
+
+export interface GameResult<Id = any> extends StoreGameResult<Id> {
+	sessionId: Id;
+}
 
 export interface Contest<Id = any> extends StoreContest<Id> {
 	sessions: Session<Id>[];

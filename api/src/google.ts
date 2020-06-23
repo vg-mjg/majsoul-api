@@ -154,6 +154,7 @@ export class Spreadsheet {
 			for(let slot = 0; slot < 7; slot++) {
 				matches.push({
 					_id: undefined,
+					contestId: undefined,
 					scheduledTime: matches.length === 14 ? date + day * 6 : date,
 					isCancelled: schedule[slot * 2][13 * week] === "Cancelled",
 					plannedMatches: [

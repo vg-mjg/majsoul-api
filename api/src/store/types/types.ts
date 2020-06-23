@@ -2,12 +2,12 @@ import * as majsoul from "../../majsoul";
 
 export interface GameResult<Id = any> extends majsoul.GameResult {
 	_id: Id;
-	sessionId: Id;
 	players: Player<Id>[]
 }
 
 export interface Session<Id = any> {
 	_id: Id;
+	contestId: Id;
 	scheduledTime: number;
 	plannedMatches: Match<Id>[];
 	isCancelled: boolean;
@@ -20,7 +20,6 @@ export interface Player<Id = any> extends majsoul.Player {
 
 export interface Contest<Id = any> extends majsoul.Contest {
 	_id: Id;
-	sessions: Session<Id>[];
 	teams: ContestTeam<Id>[];
 }
 

@@ -65,8 +65,6 @@ async function main() {
 		}
 	});
 
-
-
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
 	const mongoStore = new store.Store();
@@ -102,14 +100,11 @@ async function main() {
 		)).value;
 	}
 
-	if (!contest.sessions) {
+	if (!(await mongoStore.sessionsCollection.findOne({contestId: contest._id}))) {
 		console.log(`Generating contest sessions`);
-		const sessions = (await spreadsheet.getMatchInformation(contest.teams)).map(s => {s._id = new ObjectId(); return s});
-		contest = (await mongoStore.contestCollection.findOneAndUpdate(
-			{ _id: contest._id },
-			{ $set: { sessions } },
-			{ returnOriginal: false }
-		)).value;
+		const sessions = (await spreadsheet.getMatchInformation(contest.teams))
+			.map(s => {s.contestId = contest._id; return s});
+		await mongoStore.sessionsCollection.insertMany(sessions);
 	}
 
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);
