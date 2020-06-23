@@ -113,24 +113,26 @@ export class RestApi {
 		});
 	}
 
-	public async init() {
-		const salt = crypto.randomBytes(24).toString("hex");
-		const sha = crypto.createHash("sha256");
-		await this.mongoStore.userCollection.findOneAndUpdate(
-			{
-				nickname: "test",
-			},
-			{
-				$setOnInsert: {
-					password : {
-						salt,
-						hash: sha.update("asdf:"+salt).digest("hex")
-					},
-					scopes: ["root"]
-				}
-			},
-			{ upsert: true }
-		);
+	public async init(root: {username: string, password: string}) {
+		if (root?.username != null && root?.password != null) {
+			const salt = crypto.randomBytes(24).toString("hex");
+			const sha = crypto.createHash("sha256");
+			await this.mongoStore.userCollection.findOneAndUpdate(
+				{
+					nickname: root.username,
+				},
+				{
+					$setOnInsert: {
+						password : {
+							salt,
+							hash: sha.update(`${root.password}:${salt}`).digest("hex")
+						},
+						scopes: ["root"]
+					}
+				},
+				{ upsert: true }
+			);
+		}
 
 		this.app.listen(9515, () => console.log(`Express started`));
 

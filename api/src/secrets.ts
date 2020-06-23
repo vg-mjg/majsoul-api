@@ -19,6 +19,10 @@ export interface ISecrets {
 		username: string;
 		password: string;
 	}
+	riichiRoot: {
+		username: string;
+		password: string;
+	}
 }
 
 export function getSecretsFilePath(): string {

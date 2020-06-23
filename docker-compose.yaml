@@ -42,6 +42,11 @@ secrets:
     file: ./mongo-creds
   majsoul.json:
     file: ./secrets.json
+  riichi.key.pem:
+    file: ./riichi.key.pem
+  riichi.crt.pem:
+    file: ./riichi.crt.pem
+
 
 volumes:
   mongo-db-data:

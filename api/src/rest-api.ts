@@ -8,7 +8,7 @@ async function main () {
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
 	const restApi = new RestApi(mongoStore);
-	restApi.init();
+	restApi.init(secrets.riichiRoot);
 }
 
 main();

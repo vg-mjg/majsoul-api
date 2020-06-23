@@ -14,3 +14,6 @@ secrets.json
 
 mongo-creds
 majsoul.env
+
+riichi.key.pem
+riichi.crt.pem
