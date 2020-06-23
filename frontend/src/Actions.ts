@@ -1,7 +1,7 @@
 import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
-import { IState } from "./State";
+import { IState, Session } from "./State";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
@@ -9,6 +9,7 @@ export enum ActionType {
 	ContestSummaryRetrieved,
 	GamesRetrieved,
 	RiggingTokenGet,
+	SessionPatched
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -16,11 +17,15 @@ export interface SummaryRetrievedAction extends Action<ActionType.ContestSummary
 }
 
 export interface SessionGamesRetrieved extends Action<ActionType.GamesRetrieved> {
-	games: Store.GameResult[];
+	games: Rest.GameResult[];
 }
 
 export interface RiggingTokenAquired extends Action<ActionType.RiggingTokenGet> {
 	token: string;
+}
+
+export interface SessionPatched extends Action<ActionType.SessionPatched> {
+	session: Store.Session;
 }
 
 export function buildApiUrl(path: string): URL {
@@ -89,6 +94,26 @@ export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): v
 			games
 		}));
 }
+
+export function patchSession(dispatch: Dispatch, session: Session): Promise<unknown> {
+	const url = buildApiUrl(`sessions/${session._id}`);
+	return fetch(
+		url.toString(),
+		{
+			method: "PATCH",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ scheduledTime: session.scheduledTime })
+		})
+		.then(response => response.json())
+		.then(session => dispatch({
+			type: ActionType.SessionPatched,
+			session
+		}));
+}
+
 
 export interface GetRiggingTokenOptions {
 	username: string;

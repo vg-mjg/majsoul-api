@@ -8,7 +8,7 @@ import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
 import { useSelector, useDispatch, shallowEqual } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
-import { fetchGamesHook } from "../Actions";
+import { fetchGamesHook, patchSession } from "../Actions";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
@@ -76,7 +76,16 @@ export function Session(props: {
 		</Row>
 		{ (token && !timeIsInvalid && !utcStartMoment.isSame(moment(utcMoment))) &&
 			<Row className="pb-3 px-3 justify-content-end">
-				<Button variant="secondary" onClick={(event: any) => {}} >Save</Button>
+				<Button
+					variant="secondary"
+					onClick={(event: any) => patchSession(
+						dispatch,
+						{
+							_id: props.session._id,
+							scheduledTime: moment(utcMoment).valueOf()
+						} as Session
+					)}
+				>Save</Button>
 			</Row>
 		}
 	</Container>;

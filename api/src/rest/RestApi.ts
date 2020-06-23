@@ -16,6 +16,7 @@ export class RestApi {
 	constructor(private readonly mongoStore: store.Store) {
 		this.app = express();
 		this.app.use(cors());
+		this.app.use(express.json());
 
 		this.app.get<any, Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.mongoStore.contestCollection.findOne(
@@ -94,6 +95,28 @@ export class RestApi {
 					console.log(error);
 					res.status(500).send(error)
 				});
+		});
+
+		this.app.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
+			const patch = req.body as Session<string>;
+			if (patch?.scheduledTime == undefined) {
+				res.sendStatus(304);
+				return;
+			}
+
+			this.mongoStore.sessionsCollection.findOneAndUpdate(
+				{ _id: new ObjectId(req.params.id) },
+				{ $set: { scheduledTime: patch.scheduledTime } },
+				{ returnOriginal: false }
+			).then((session) => {
+				res.send({
+					_id: session.value._id,
+					scheduledTime: session.value.scheduledTime
+				} as Session);
+			}).catch((err) => {
+				console.log(err);
+				res.status(500).send(err);
+			})
 		});
 	}
 
@@ -222,7 +245,6 @@ export class RestApi {
 			timeWindow.$lt = endSession.scheduledTime
 		}
 
-		console.log(timeWindow);
 		const games = await this.mongoStore.gamesCollection.find({
 			end_time: timeWindow
 		}).toArray();
