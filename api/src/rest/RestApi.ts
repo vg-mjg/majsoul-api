@@ -11,6 +11,21 @@ import * as expressJwt from 'express-jwt';
 
 
 export class RestApi {
+	private static getKey(keyName: string): Promise<Buffer> {
+		return new Promise<Buffer>((res, rej) => fs.readFile(path.join(RestApi.keyLocation, keyName), (err, key) => {
+			if (err) {
+				console.log("couldn't load private key for auth tokens, disabling rigging");
+				console.log(err);
+				return;
+			}
+			res(key);
+		}));
+	}
+
+	private static get keyLocation(): string {
+		return process.env.NODE_ENV === "production" ? "/run/secrets/" : path.dirname(process.argv[1]);
+	}
+
 	private app: express.Express;
 
 	constructor(private readonly mongoStore: store.Store) {
@@ -96,8 +111,57 @@ export class RestApi {
 					res.status(500).send(error)
 				});
 		});
+	}
 
-		this.app.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
+	public async init() {
+		const salt = crypto.randomBytes(24).toString("hex");
+		const sha = crypto.createHash("sha256");
+		await this.mongoStore.userCollection.findOneAndUpdate(
+			{
+				nickname: "test",
+			},
+			{
+				$setOnInsert: {
+					password : {
+						salt,
+						hash: sha.update("asdf:"+salt).digest("hex")
+					},
+					scopes: ["root"]
+				}
+			},
+			{ upsert: true }
+		);
+
+		this.app.listen(9515, () => console.log(`Express started`));
+
+		let privateKey: Buffer, publicKey: Buffer;
+		try {
+			privateKey = await RestApi.getKey("riichi.key.pem");
+			publicKey = await RestApi.getKey("riichi.crt.pem");
+		} catch (err) {
+			console.log("Couldn't load keys for auth tokens, disabling rigging");
+			console.log(err);
+			return;
+		}
+
+		this.app.use(
+			expressJwt({
+				secret: publicKey,
+				audience: "riichi.moe",
+				issuer: "riichi.moe",
+				credentialsRequired: true,
+			}).unless({
+				method: "GET"
+			})
+		).use(function (err, req, res, next) {
+			if (err.name === 'UnauthorizedError') {
+			  res.status(401).send('token invalid');
+			  return;
+			}
+			next();
+		})
+
+		.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
 			const patch = req.body as Session<string>;
 			if (patch?.scheduledTime == undefined) {
 				res.sendStatus(304);
@@ -117,123 +181,49 @@ export class RestApi {
 				console.log(err);
 				res.status(500).send(err);
 			})
-		});
-	}
+		})
 
-	public async init() {
-		this.app.listen(9515, () => console.log(`Express started`));
-
-		const riggingRouter = await this.createRiggingRouter();
-		if (!riggingRouter) {
-			return;
-		}
-
-		this.app.use("/rigging", riggingRouter);
-
-		const salt = crypto.randomBytes(24).toString("hex");
-		const sha = crypto.createHash("sha256");
-		this.mongoStore.userCollection.findOneAndUpdate(
-			{
-				nickname: "test",
-			},
-			{
-				$setOnInsert: {
-					password : {
-						salt,
-						hash: sha.update("asdf:"+salt).digest("hex")
-					},
-					scopes: ["root"]
-				}
-			},
-			{ upsert: true }
-		);
-
-	}
-
-	private async createRiggingRouter(): Promise<express.Router> {
-		const keyLocation = process.env.NODE_ENV === "production" ? "/run/secrets/" : path.dirname(process.argv[1]);
-		let privateKey: Buffer, publicKey: Buffer;
-
-		try {
-			privateKey = await new Promise<Buffer>((res, rej) => fs.readFile(path.join(keyLocation, "riichi.key.pem"), (err, key) => {
-				if (err) {
-					console.log("couldn't load private key for auth tokens, disabling rigging");
-					console.log(err);
-					return;
-				}
-				res(key);
-			}));
-
-			publicKey = await new Promise<Buffer>((res, rej) => fs.readFile(path.join(keyLocation, "riichi.crt.pem"), (err, key) => {
-				if (err) {
-					rej(err);
-					return;
-				}
-				res(key);
-			}));
-		} catch (err) {
-			console.log("Couldn't load keys for auth tokens, disabling rigging");
-			console.log(err);
-		}
-
-		const router = express.Router();
-		router.use(
-				expressJwt({
-					secret: publicKey,
-					credentialsRequired: true
-				}).unless({
-					path: ["/token"],
-					useOriginalUrl: false
-				})
-			).use(function (err, req, res, next) {
-				if (err.name === 'UnauthorizedError') {
-				  res.status(401).send('token invalid');
-				  return;
-				}
-				next();
-			})
-			.get("/token", async (req, res) => {
-				const user = await this.mongoStore.userCollection.findOne({
-					nickname: req.header("Username") as string,
-				});
-
-				if (!user) {
-					res.sendStatus(401);
-					return;
-				}
-
-				const sha = crypto.createHash("sha256");
-				if (user.password.hash !== sha.update(`${req.header("Password") as string}:${user.password.salt}`).digest("hex")) {
-					res.sendStatus(401);
-					return;
-				}
-
-				jwt.sign(
-					{
-						name: user.nickname,
-						roles: user.scopes
-					},
-					privateKey,
-					{
-						algorithm: 'RS256',
-						issuer: "riichi.moe",
-						audience: "riichi.moe",
-						expiresIn: "1d",
-						notBefore: 0,
-					},
-					(err, token) => {
-					if (err) {
-						console.log(err);
-						res.status(500).send(err);
-						return;
-					}
-					res.send(token);
-				});
-			})
-			.get("/users", (req, res) => {
-				res.send("test");
+		.get("/rigging/token", async (req, res) => {
+			const user = await this.mongoStore.userCollection.findOne({
+				nickname: req.header("Username") as string,
 			});
-		return router;
+
+			if (!user) {
+				res.sendStatus(401);
+				return;
+			}
+
+			const sha = crypto.createHash("sha256");
+			if (user.password.hash !== sha.update(`${req.header("Password") as string}:${user.password.salt}`).digest("hex")) {
+				res.sendStatus(401);
+				return;
+			}
+
+			jwt.sign(
+				{
+					name: user.nickname,
+					roles: user.scopes
+				},
+				privateKey,
+				{
+					algorithm: 'RS256',
+					issuer: "riichi.moe",
+					audience: "riichi.moe",
+					expiresIn: "1d",
+					notBefore: 0,
+				},
+				(err, token) => {
+				if (err) {
+					console.log(err);
+					res.status(500).send(err);
+					return;
+				}
+				res.send(token);
+			});
+		})
+		.get("/users", (req, res) => {
+			res.send("test");
+		});
 	}
 
 	private async getSessionSummary(contest: store.Contest, startSession: store.Session, endSession?: store.Session): Promise<Record<string, number>> {

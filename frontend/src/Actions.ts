@@ -95,7 +95,7 @@ export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): v
 		}));
 }
 
-export function patchSession(dispatch: Dispatch, session: Session): Promise<unknown> {
+export function patchSession(dispatch: Dispatch, token: string, session: Session): Promise<unknown> {
 	const url = buildApiUrl(`sessions/${session._id}`);
 	return fetch(
 		url.toString(),
@@ -103,7 +103,8 @@ export function patchSession(dispatch: Dispatch, session: Session): Promise<unkn
 			method: "PATCH",
 			headers: {
 				'Accept': 'application/json',
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
 			},
 			body: JSON.stringify({ scheduledTime: session.scheduledTime })
 		})

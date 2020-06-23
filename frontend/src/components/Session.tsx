@@ -80,6 +80,7 @@ export function Session(props: {
 					variant="secondary"
 					onClick={(event: any) => patchSession(
 						dispatch,
+						token,
 						{
 							_id: props.session._id,
 							scheduledTime: moment(utcMoment).valueOf()
