@@ -24,6 +24,8 @@ services:
     image: majsoul-api
     secrets:
       - majsoul.json
+      - riichi.key.pem
+      - riichi.crt.pem
     entrypoint: ["node", "/dist/rest-api.js"]
 
   mongo:
