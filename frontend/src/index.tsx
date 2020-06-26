@@ -13,6 +13,9 @@ import "./bootstrap.sass";
 import { teamColors } from "./components/LeagueStandingChart";
 import { Store } from "majsoul-api";
 import { Rigging } from "./components/Rigging";
+import { persistStore, persistReducer } from 'redux-persist'
+import storage from 'redux-persist/lib/storage';
+import { PersistGate } from 'redux-persist/integration/react'
 
 interface RGBColor {
 	r: number;
@@ -76,6 +79,7 @@ function invertHex(hex: string): string {
 	return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
 }
 
+//todo: splatting some of these states is probably not correct and triggers changes.
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
@@ -169,6 +173,11 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				...state,
 				contest
 			}
+		} case ActionType.LogOut: {
+			if (state.user) {
+				return {...state, user: undefined};
+			}
+			break;
 		}
 	}
 
@@ -176,32 +185,43 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 }
 
 const composeEnhancers = (window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
 const store = createStore(
-	contestReducer,
-	{},
+	persistReducer(
+		{
+			key: "root",
+			storage,
+			whitelist: ["user"]
+		},
+		contestReducer
+	),
 	composeEnhancers(
 		applyMiddleware(
 			thunkMiddleware
 		)
 	),
-);
+)
+
+const persistor = persistStore(store);
 
 ReactDOM.render(
 	<Provider store={store}>
-		<BrowserRouter>
-			<Container className={`${styles.feed} bg-dark px-5`}>
-				<Container className={`${styles.feed} bg-primary px-3 pb-3`}>
-					<Switch>
-						<Route path="/rigging">
-							<Rigging/>
-						</Route>
-						<Route path="/">
-							<ContestSummary contestId="113331"/>
-						</Route>
-					</Switch>
+		<PersistGate loading={null} persistor={persistor}>
+			<BrowserRouter>
+				<Container className={`${styles.feed} bg-dark px-5`}>
+					<Container className={`${styles.feed} bg-primary px-3 pb-3`}>
+						<Switch>
+							<Route path="/rigging">
+								<Rigging/>
+							</Route>
+							<Route path="/">
+								<ContestSummary contestId="113331"/>
+							</Route>
+						</Switch>
+					</Container>
 				</Container>
-			</Container>
-		</BrowserRouter>
+			</BrowserRouter>
+		</PersistGate>
 	</Provider>,
 	document.getElementsByTagName("body")[0]
 );

@@ -9,7 +9,8 @@ export enum ActionType {
 	ContestSummaryRetrieved,
 	GamesRetrieved,
 	RiggingTokenGet,
-	SessionPatched
+	SessionPatched,
+	LogOut,
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -140,4 +141,8 @@ export const getRiggingToken = (params: GetRiggingTokenOptions): AppThunk<Riggin
 			return true;
 		});
 	}
+}
+
+export function logout(dispatch: Dispatch) {
+	dispatch({type: ActionType.LogOut});
 }
