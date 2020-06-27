@@ -8,6 +8,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
 import { Teams } from "./Teams";
+import { Link } from "react-router-dom";
 
 export function ContestSummary(this: void, props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contest);
@@ -66,6 +67,11 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		</Row>
 		<Row>
 			<Session session={currentSession}></Session>
+		</Row>
+		<Row className="mt-3 justify-content-center">
+			<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>
+			<Col md="auto"><a className="text-dark" href="https://mjg-repo.neocities.org/">Repo</a></Col>
+			<Col md="auto"><a className="text-dark" href="https://github.com/riichinomics/majsoul-api">Source Code/Report Issue</a></Col>
 		</Row>
 	</Container>
 }
