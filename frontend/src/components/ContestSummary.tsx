@@ -53,12 +53,6 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		<Row className="mt-3">
 			<LeagueStandingChart contest={contest} />
 		</Row>
-		<Row className="px-4 py-3 justify-content-end" >
-			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
-		</Row>
-		<Row>
-			<Session session={currentSession}></Session>
-		</Row>
 		{ nextSession != null && <>
 			<Row className="px-4 py-3 justify-content-end" >
 				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
@@ -67,5 +61,11 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 				<Session session={nextSession}></Session>
 			</Row>
 		</>}
+		<Row className="px-4 py-3 justify-content-end" >
+			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
+		</Row>
+		<Row>
+			<Session session={currentSession}></Session>
+		</Row>
 	</Container>
 }
