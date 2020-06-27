@@ -65,9 +65,9 @@ export function Session(props: {
 			</Col>
 		</Row>
 		<Row>
-			{props.session.plannedMatches.map((match, index) => <Container className="mx-2 mb-2 px-0" key={index}>
-				<Match match={match} teams={teams}/>
-			</Container>)}
+			{props.session.plannedMatches.map((match, index) => <Col className={`mr-2 mb-2 px-0 ${index > 0 ? "" : "ml-2"}`} key={index}>
+				<Match match={match}/>
+			</Col>)}
 		</Row>
 		<Row>
 			{props.session.games?.map((game) => <Container className="mx-2 mb-2 px-0" key={game._id}>

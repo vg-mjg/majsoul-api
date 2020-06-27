@@ -32,13 +32,13 @@ function jpNumeral(value: number): string {
 	return rep;
 }
 
-function Team(props: {team: ContestTeam, score?: number, placing?: number}): JSX.Element {
+export function Team(props: {team: ContestTeam, score?: number, placing?: number}): JSX.Element {
 	const user = useSelector((state: IState) => state.user);
 	const [image, setImage] = React.useState(props.team.image ?? defaultImage);
 	const dispatch = useDispatch();
 	return <Container className="p-0">
-		<Row className="no-gutters align-items-center">
-			<Col md="auto" className="mr-3"> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>
+		<Row className="no-gutters align-items-center flex-nowrap">
+			{props.placing != null && <Col md="auto" className="mr-3"> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
 				<label
 					className="rounded"
@@ -65,15 +65,17 @@ function Team(props: {team: ContestTeam, score?: number, placing?: number}): JSX
 					}}/>
 				</label>
 			</Col>
-			<Col md="auto">
-				<h5 style={{borderBottom: `3px solid ${props.team.color}`}}>
-					<b className="text-capitalize">
-						{props.team.name.toLocaleLowerCase()}
-					</b>
-				</h5>
+			<Col md="auto" className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
+				<Container className="p-0">
+					<Row className="no-gutters">
+						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid ${props.team.color}`}}>
+							{props.team.name.toLocaleLowerCase()}
+						</Col>
+					</Row>
+				</Container>
 			</Col>
 			<Col></Col>
-			<Col md="auto"> <h5><b>{props.score / 1000}</b></h5></Col>
+			<Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col>
 			{ (props.team.image !== image && image !== defaultImage) &&
 				<Col md="auto">
 					<Button
