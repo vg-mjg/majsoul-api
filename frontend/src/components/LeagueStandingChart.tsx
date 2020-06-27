@@ -81,10 +81,7 @@ export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
 		}
 
 		return <Container className="bg-dark rounded text-white">
-			<Row className="px-4 pt-3">
-				<Col md="auto" className="h3">Standings</Col>
-			</Row>
-			<Row className="px-2 py-3">
+			<Row className="px-2 pb-3 pt-4">
 				<Line
 					data={this.createData()}
 					options={{

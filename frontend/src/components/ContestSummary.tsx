@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchGames, fetchContestSummary } from "../Actions";
+import { fetchContestSummary } from "../Actions";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -26,17 +26,13 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		fetchContestSummary(dispatch, props.contestId);
 	}, [props.contestId]);
 
-	// React.useEffect(() => {
-	// 	fetchContestSummary(dispatch, props.contestId);
-	// }, [props.contestId]);
-
 	if (contest == null) {
 		return null;
 	}
 
 	const nextSessionIndex = contest.sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = contest.sessions[nextSessionIndex];
-	const currentSession = contest.sessions[nextSessionIndex - 1];
+	const currentSession = contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
 
 	return <Container>
 		<Row className="px-4 pt-4 pb-3">
@@ -46,8 +42,8 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 			<Col md="auto" className="align-self-center">
 				<i>
 					{secret
-						? "This is a Shamikoposter world you're just living in it."
-						: "Winning is for Losers."}
+						? "They said I could be anything, so I became yakitori."
+						: "We're going down, and sugar we're going down swinging."}
 					</i>
 				</Col>
 		</Row>
@@ -57,14 +53,19 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		<Row className="mt-3">
 			<LeagueStandingChart contest={contest} />
 		</Row>
-		<Row className="mt-3">
+		<Row className="px-4 py-3 justify-content-end" >
+			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
+		</Row>
+		<Row>
 			<Session session={currentSession}></Session>
 		</Row>
-		<Row className="mt-3">
-			<Session session={nextSession}></Session>
-		</Row>
-		{/* <Row className="mt-3">
-			<HistoricalSession games={this.props.games?.slice(0, 8) ?? []} teams={contest.teams}></HistoricalSession>
-		</Row> */}
+		{ nextSession != null && <>
+			<Row className="px-4 py-3 justify-content-end" >
+				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
+			</Row>
+			<Row>
+				<Session session={nextSession}></Session>
+			</Row>
+		</>}
 	</Container>
 }

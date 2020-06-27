@@ -55,29 +55,6 @@ export interface FetchGamesOptions {
 	last?: number;
 }
 
-export const fetchGames = (params: FetchGamesOptions): AppThunk<SessionGamesRetrieved> => {
-	return function (dispatch) {
-		const url = buildApiUrl(`games`);
-		const queryParameters: Record<string, string> = {};
-		if (params.sessionIds != null) {
-			queryParameters.sessions = params.sessionIds?.join('+');
-		}
-
-		if (params.last != null) {
-			queryParameters.last = params.last?.toString();
-		}
-
-		url.search = new URLSearchParams(queryParameters).toString();
-
-		return fetch(url.toString())
-			.then(response => response.json())
-			.then(games => dispatch({
-				type: ActionType.GamesRetrieved,
-				games
-			}));
-	}
-}
-
 export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): void {
 	const url = buildApiUrl(`games`);
 	const queryParameters: Record<string, string> = {};
