@@ -1,7 +1,7 @@
 import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
-import { IState, Session } from "./State";
+import { IState, Session, ContestTeam } from "./State";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
@@ -11,6 +11,7 @@ export enum ActionType {
 	RiggingTokenGet,
 	SessionPatched,
 	LogOut,
+	PatchTeam
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -27,6 +28,10 @@ export interface RiggingTokenAquired extends Action<ActionType.RiggingTokenGet> 
 
 export interface SessionPatched extends Action<ActionType.SessionPatched> {
 	session: Store.Session;
+}
+
+export interface PatchTeam extends Action<ActionType.PatchTeam> {
+	team: ContestTeam;
 }
 
 export function buildApiUrl(path: string): URL {
@@ -116,7 +121,6 @@ export function patchSession(dispatch: Dispatch, token: string, session: Session
 		}));
 }
 
-
 export interface GetRiggingTokenOptions {
 	username: string;
 	password: string;
@@ -145,4 +149,24 @@ export const getRiggingToken = (params: GetRiggingTokenOptions): AppThunk<Riggin
 
 export function logout(dispatch: Dispatch) {
 	dispatch({type: ActionType.LogOut});
+}
+
+export function patchTeam(dispatch: Dispatch, token: string, team: ContestTeam): Promise<unknown> {
+	const url = buildApiUrl(`teams/${team._id}`);
+	return fetch(
+		url.toString(),
+		{
+			method: "PATCH",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ image: team.image })
+		})
+		.then(response => response.json())
+		.then(team => dispatch({
+			type: ActionType.PatchTeam,
+			team
+		}));
 }

@@ -109,6 +109,7 @@ export class Spreadsheet {
 					continue;
 				}
 				teams.push({
+					image: undefined,
 					name: row[2],
 					players: [],
 					_id: undefined,

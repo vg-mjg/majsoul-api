@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
@@ -178,6 +178,17 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				return {...state, user: undefined};
 			}
 			break;
+		} case ActionType.PatchTeam: {
+			const patchAction = action as PatchTeam;
+			const teams = {...state.contest.teams};
+			teams[patchAction.team._id] = patchAction.team;
+			return {
+				...state,
+				contest: {
+					...state.contest,
+					teams
+				}
+			}
 		}
 	}
 

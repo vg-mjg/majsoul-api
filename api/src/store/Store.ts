@@ -49,8 +49,8 @@ export class Store {
 			...gameResult,
 			players: (await Promise.all(gameResult.players.map(player =>
 				this.playersCollection.findOneAndUpdate(
-					{ nickname: player.nickname },
-					{ $set: { majsoulId: player.majsoulId } },
+					{ $or: [ { majsoulId: player.majsoulId }, { nickname: player.nickname } ] },
+					{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
 					{ upsert: true, returnOriginal: false, projection: { _id: true } }
 				)
 			))).map(p => p.value),

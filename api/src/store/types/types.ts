@@ -26,6 +26,7 @@ export interface Contest<Id = any> extends majsoul.Contest {
 export interface ContestTeam<Id = any> {
 	_id: Id;
 	name: string;
+	image: string;
 	players: Player<Id>[];
 	color: string;
 }

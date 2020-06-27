@@ -9,7 +9,6 @@ import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 
-
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
 		return new Promise<Buffer>((res, rej) => fs.readFile(path.join(RestApi.keyLocation, keyName), (err, key) => {
@@ -31,7 +30,7 @@ export class RestApi {
 	constructor(private readonly mongoStore: store.Store) {
 		this.app = express();
 		this.app.use(cors());
-		this.app.use(express.json());
+		this.app.use(express.json({limit: "1MB"}));
 
 		this.app.get<any, Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.mongoStore.contestCollection.findOne(
@@ -179,6 +178,33 @@ export class RestApi {
 					_id: session.value._id,
 					scheduledTime: session.value.scheduledTime
 				} as Session);
+			}).catch((err) => {
+				console.log(err);
+				res.status(500).send(err);
+			})
+		})
+
+		.patch<any, store.ContestTeam<ObjectId>>('/teams/:id', (req, res) => {
+			const body = req.body as store.ContestTeam<string>;
+			const patch = {
+				image: body.image
+			};
+
+			if (patch.image == undefined) {
+				res.sendStatus(304);
+				return;
+			}
+
+			const teamId = new ObjectId(req.params.id);
+
+			this.mongoStore.contestCollection.findOneAndUpdate(
+				{ teams: { $elemMatch: { _id: teamId } } },
+				{ $set: {
+					"teams.$.image": patch.image
+				} },
+				{ returnOriginal: false, projection: { teams: true } }
+			).then((contest) => {
+				res.send(contest.value.teams.find(team => team._id.equals(teamId) ));
 			}).catch((err) => {
 				console.log(err);
 				res.status(500).send(err);
