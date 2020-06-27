@@ -41,15 +41,13 @@ export function buildApiUrl(path: string): URL {
 	return new URL(`${location.protocol}//${location.hostname}:9515/${path}`);
 }
 
-export const fetchContestSummary = (contestId: string): AppThunk<SummaryRetrievedAction> => {
-	return function (dispatch) {
-		return fetch(buildApiUrl(`contests/${contestId}`).toString())
-			.then(response => response.json())
-			.then(contest => dispatch({
-				type: ActionType.ContestSummaryRetrieved,
-				contest
-			}));
-	}
+export function fetchContestSummary(dispatch: Dispatch, contestId: string): void {
+	fetch(buildApiUrl(`contests/${contestId}`).toString())
+		.then(response => response.json())
+		.then(contest => dispatch({
+			type: ActionType.ContestSummaryRetrieved,
+			contest
+		}));
 }
 
 export interface FetchGamesOptions {
