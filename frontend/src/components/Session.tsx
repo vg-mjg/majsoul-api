@@ -72,12 +72,12 @@ export function Session(props: {
 		<Row>
 			<Container className="p-0">
 				<Row className="no-gutters">
-					{props.session.games?.map((game, index) => <>
-						<Col key={game._id} style={{minWidth: "auto"}}>
+					{props.session.games?.map((game, index) => <React.Fragment key={game._id}>
+						<Col style={{minWidth: "auto"}}>
 							<GameResultSummary game={game}/>
 						</Col>
 						{(index % 2 == 1) && <div className="w-100"/>}
-					</>)}
+					</React.Fragment>)}
 				</Row>
 			</Container>
 		</Row>

@@ -75,7 +75,7 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 				</Container>
 			</Col>
 			<Col></Col>
-			<Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col>
+			{ isNaN(props.score) || <Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col> }
 			{ (props.team.image !== image && image !== defaultImage) &&
 				<Col md="auto">
 					<Button
