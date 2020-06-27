@@ -66,13 +66,20 @@ export function Session(props: {
 		</Row>
 		<Row>
 			{props.session.plannedMatches.map((match, index) => <Col className={`mr-2 mb-2 px-0 ${index > 0 ? "" : "ml-2"}`} key={index}>
-				<Match match={match}/>
+				<Match match={match} totals={props.session.totals}/>
 			</Col>)}
 		</Row>
 		<Row>
-			{props.session.games?.map((game) => <Container className="mx-2 mb-2 px-0" key={game._id}>
-				<GameResultSummary game={game}/>
-			</Container>)}
+			<Container className="p-0">
+				<Row className="no-gutters">
+					{props.session.games?.map((game, index) => <>
+						<Col key={game._id} style={{minWidth: "auto"}}>
+							<GameResultSummary game={game}/>
+						</Col>
+						{(index % 2 == 1) && <div className="w-100"/>}
+					</>)}
+				</Row>
+			</Container>
 		</Row>
 		{ (token && !timeIsInvalid && !utcStartMoment.isSame(moment(utcMoment))) &&
 			<Row className="pb-3 px-3 justify-content-end">

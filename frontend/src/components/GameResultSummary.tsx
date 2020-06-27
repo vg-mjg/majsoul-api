@@ -68,21 +68,14 @@ export function GameResultSummary(props: {game: Store.GameResult}): JSX.Element 
 				<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${props.game.majsoulId}`} rel="noreferrer" target="_blank">View on Majsoul</a>
 			</Col>
 		</Row>
-		<Row className={rowStyle}>
-			<Col className={cellStyle}>
-				<GameSeat seat={0} game={props.game}/>
-			</Col>
-			<Col className={cellStyle}>
-				<GameSeat seat={3} game={props.game}/>
-			</Col>
-		</Row>
-		<Row className={rowStyle}>
-			<Col className={cellStyle}>
-				<GameSeat seat={1} game={props.game}/>
-			</Col>
-			<Col className={cellStyle}>
-				<GameSeat seat={2} game={props.game}/>
-			</Col>
-		</Row>
+		{ props.game.players
+			.map((_, seat) => seat)
+			.sort((a, b) => props.game.finalScore[b].uma - props.game.finalScore[a].uma)
+			.map(seat => <Row key={seat} className={rowStyle}>
+				<Col className={cellStyle}>
+					<GameSeat seat={seat} game={props.game} />
+				</Col>
+			</Row>
+		)}
 	</Container>;
 }
