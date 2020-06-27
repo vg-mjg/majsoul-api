@@ -9,6 +9,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
 import { HistoricalSession } from "./HistoricalSession";
+import { Teams } from "./Teams";
 
 interface ContestSummaryComponentDispatchProps {
 	fetchContestSummary: (contestId: string) => void;
@@ -55,7 +56,10 @@ class ContestSummaryComponent extends React.Component<ContestSummaryComponentSta
 					</Col>
 			</Row>
 			<Row className="mt-3">
-				<LeagueStandingChart contest={this.props.contest} ></LeagueStandingChart>
+				<Teams session={nextSession} />
+			</Row>
+			<Row className="mt-3">
+				<LeagueStandingChart contest={this.props.contest} />
 			</Row>
 			<Row className="mt-3">
 				<Session session={nextSession}></Session>
