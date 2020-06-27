@@ -5,3 +5,5 @@ declare module '*.sass' {
 	const classNames: IClassNames;
 	export = classNames;
 }
+
+declare module "*.png";
