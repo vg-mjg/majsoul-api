@@ -20,14 +20,22 @@ export function Session(props: {
 
 	const dispatch = useDispatch();
 	React.useEffect(() => {
-		fetchGamesHook(dispatch, {sessionIds: [props.session._id]});
-	}, [props.session._id]);
+		if (props.session?._id == null) {
+			return;
+		}
 
-	const utcStartMoment = moment(props.session.scheduledTime).tz("UTC");
+		fetchGamesHook(dispatch, {sessionIds: [props.session._id]});
+	}, [props.session?._id]);
+
+	const utcStartMoment = (props.session == null ? moment() : moment(props.session.scheduledTime)).tz("UTC");
 
 	const [utcMoment, setUtcMoment] = React.useState(utcStartMoment.format("LT l") + " UTC");
 	const [timeIsInvalid, setTimeIsValid] = React.useState(!utcStartMoment.isValid());
 	const [editTime, setEditTime] = React.useState(false);
+
+	if (props.session == null) {
+		return null;
+	}
 
 	return <Container fluid className="bg-dark rounded text-light">
 		<Row className="py-3 px-2">

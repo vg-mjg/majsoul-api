@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType } from "../Actions";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -9,6 +9,8 @@ import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
 import { Teams } from "./Teams";
 import YouTube from 'react-youtube';
+import ronImage from '../../assets/ron.png';
+import skipImage from '../../assets/skip.png';
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -19,7 +21,14 @@ function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 		player.playVideo();
 		return () => player.stopVideo();
 	}, [player, props.play, props.videoId]);
-	return <div style={{display:"none"}}><YouTube videoId={props.videoId} onReady={(event) => setPlayer(event.target)}></YouTube></div>
+	return <div style={{display:"none"}}>
+		<YouTube
+			videoId={props.videoId}
+			onReady={(event) => setPlayer(event.target)}
+			onStateChange={(event) => event.data === 0 && event.target.playVideo()}
+		>
+		</YouTube>
+	</div>
 }
 
 export function ContestSummary(this: void, props: {contestId: string}): JSX.Element {
@@ -41,21 +50,51 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		fetchContestSessions(dispatch, props.contestId);
 	}, [props.contestId]);
 
-	if (contest?.sessions == null) {
+	const nextSessionIndex = contest?.sessions?.findIndex(session => session.scheduledTime > Date.now()) ?? -1;
+	const nextSession = contest?.sessions == null ? null : contest.sessions[nextSessionIndex];
+	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
+
+	React.useEffect(() => {
+		if (currentSession == null || musicPlayer.playing) {
+			return;
+		}
+
+		if (games.filter(g => g.start_time > currentSession.scheduledTime).length < 4) {
+			return;
+		}
+
+		const firstPlace = Object.entries(currentSession.aggregateTotals).map(([teamId, score]) => ({teamId, score})).sort((a, b) => b.score - a.score)[0];
+
+		dispatch({
+			type: navigator.userAgent.indexOf('Firefox') != -1 ? ActionType.SetMusic : ActionType.PlayMusic,
+			videoId: contest.teams[firstPlace.teamId].anthem
+		});
+	}, [nextSession, currentSession]);
+
+	if (contest == null) {
 		return null;
 	}
 
-	const nextSessionIndex = contest.sessions.findIndex(session => session.scheduledTime > Date.now());
-	const nextSession = contest.sessions[nextSessionIndex];
-	const currentSession = contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
-
 	return <Container>
 		<SongPlayer videoId={musicPlayer.videoId} play={musicPlayer.playing}/>
-		<Row className="px-4 pt-4 pb-3">
-			<Col>
-				<h1 className="align-self-center" onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest.name}</u></h1>
+		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
+			<Col md="auto">
+				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest.name}</u></h1>
 			</Col>
-			<Col md="auto" className="align-self-center">
+			<Col>
+				{ (musicPlayer.videoId != null) && <img
+					style={{
+						maxWidth: 100,
+						height: "auto",
+						margin: "auto",
+						display: "block",
+						cursor: "pointer"
+					}}
+					src={musicPlayer.playing ? skipImage : ronImage}
+					onClick={() => dispatch({type: musicPlayer.playing ? ActionType.StopMusic : ActionType.PlayMusic})}
+				/>}
+			</Col>
+			<Col md="auto">
 				<i>
 					{secret
 						? "They said I could be anything, so I became yakitori."

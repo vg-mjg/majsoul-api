@@ -14,6 +14,7 @@ export enum ActionType {
 	PatchTeam,
 	GetContestSessions,
 	PlayMusic,
+	SetMusic,
 	StopMusic,
 }
 
@@ -39,6 +40,10 @@ export interface PatchTeam extends Action<ActionType.PatchTeam> {
 
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
 	sessions: Session[];
+}
+
+export interface SetMusic extends Action<ActionType.PlayMusic> {
+	videoId: string;
 }
 
 export interface PlayMusic extends Action<ActionType.PlayMusic> {

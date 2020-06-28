@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
@@ -209,6 +209,15 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 					videoId: playMusic.videoId ?? state.musicPlayer.videoId
 				}
 			}
+		} case ActionType.SetMusic: {
+			const setMusic = action as SetMusic;
+			return {
+				...state,
+				musicPlayer: {
+					...state.musicPlayer,
+					videoId: setMusic.videoId
+				}
+			}
 		} case ActionType.StopMusic: {
 			return {
 				...state,
@@ -237,7 +246,7 @@ const store = createStore(
 	{
 		musicPlayer: {
 			playing: false,
-			videoId: ""
+			videoId: null
 		},
 	} as IState as any,
 	composeEnhancers(
