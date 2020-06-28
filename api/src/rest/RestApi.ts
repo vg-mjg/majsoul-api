@@ -36,7 +36,12 @@ export class RestApi {
 
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.mongoStore.contestCollection.findOne(
-				{ majsoulFriendlyId: parseInt(req.params.id) }
+				{ majsoulFriendlyId: parseInt(req.params.id) },
+				{
+					projection: {
+						sessions: 0
+					}
+				}
 			).then((contest) => {
 				res.send(contest);
 			})
