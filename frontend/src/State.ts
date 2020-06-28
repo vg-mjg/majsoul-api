@@ -7,7 +7,6 @@ export interface Contest extends Omit<Rest.Contest<string>, "teams" | "sessions"
 
 export interface Session extends Rest.Session<string> {
 	games: Store.GameResult<string>[];
-	aggregateTotals: Record<string, number>;
 }
 
 export interface IState {

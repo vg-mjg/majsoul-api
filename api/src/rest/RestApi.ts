@@ -8,6 +8,8 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
+import { Observable } from 'rxjs';
+import { toArray } from 'rxjs/operators';
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -36,7 +38,7 @@ export class RestApi {
 			this.mongoStore.contestCollection.findOne(
 				{ majsoulFriendlyId: parseInt(req.params.id) }
 			).then(async (contest) => {
-				const sessions = await mongoStore.sessionsCollection.find({
+				const sessions = await this.mongoStore.sessionsCollection.find({
 					contestId: contest._id
 				}).toArray();
 
@@ -44,9 +46,34 @@ export class RestApi {
 					...contest,
 					sessions: (await Promise.all(sessions.sort((a, b) => a.scheduledTime - b.scheduledTime).map(async (session, index) => ({
 						...session,
-						totals: await this.getSessionSummary(contest, session, sessions[index + 1])
+						totals: await this.getSessionSummary(contest, session, sessions[index + 1]),
+						aggregateTotals: {}
 					})))).reverse()
 				});
+			})
+			.catch(error => {
+				console.log(error);
+				res.status(500).send(error)
+			});
+		});
+
+		this.app.get<any, Session<ObjectId>[]>('/contests/:id/sessions', (req, res) => {
+			this.mongoStore.contestCollection.findOne(
+				{ majsoulFriendlyId: parseInt(req.params.id) }
+			).then((contest) => {
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				this.getSessions(contest).pipe(toArray())
+					.subscribe(
+						sessions => res.send(sessions.reverse()),
+						error => {
+							console.log(error);
+							res.status(500).send(error)
+						}
+					);
 			})
 			.catch(error => {
 				console.log(error);
@@ -274,5 +301,41 @@ export class RestApi {
 			});
 			return total;
 		}, {});
+	}
+
+	private getSessions(contest: store.Contest<ObjectId>): Observable<Session> {
+		return new Observable((subscriber) => {
+			setTimeout(async () => {
+				try {
+					const sessions = await this.mongoStore.sessionsCollection.find(
+						{ contestId: contest._id },
+						{ sort: { scheduledTime: 1 } }
+					).toArray();
+
+					let aggregateTotals: Record<string, number> = {};
+					for (let i = 0; i < sessions.length; i++) {
+						aggregateTotals = {...aggregateTotals};
+						const totals = await this.getSessionSummary(contest, sessions[i], sessions[i + 1]);
+
+						for (const team in totals) {
+							if (aggregateTotals[team] == null) {
+								aggregateTotals[team] = 0;
+							}
+							aggregateTotals[team] += totals[team];
+						}
+
+						subscriber.next({
+							...sessions[i],
+							totals,
+							aggregateTotals
+						});
+					}
+
+					subscriber.complete();
+				} catch (error) {
+					subscriber.error(error);
+				}
+			});
+		});
 	}
 }

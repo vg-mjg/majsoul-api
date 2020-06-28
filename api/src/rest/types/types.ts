@@ -10,4 +10,5 @@ export interface Contest<Id = any> extends StoreContest<Id> {
 
 export interface Session<Id = any> extends StoreSession<Id> {
 	totals: Record<string, number>;
+	aggregateTotals: Record<string, number>;
 }
