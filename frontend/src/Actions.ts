@@ -151,7 +151,7 @@ export function patchTeam(dispatch: Dispatch, token: string, team: ContestTeam):
 				'Content-Type': 'application/json',
 				'Authorization': `Bearer ${token}`
 			},
-			body: JSON.stringify({ image: team.image })
+			body: JSON.stringify(team)
 		})
 		.then(response => response.json())
 		.then(team => dispatch({

@@ -29,6 +29,7 @@ export interface ContestTeam<Id = any> {
 	image: string;
 	players: Player<Id>[];
 	color: string;
+	anthem: string;
 }
 
 export interface Match<Id = any> {

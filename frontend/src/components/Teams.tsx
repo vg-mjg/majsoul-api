@@ -6,6 +6,8 @@ import Row from "react-bootstrap/Row";
 import defaultImage from "../../assets/hatsu.png";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
+import Accordion from "react-bootstrap/Accordion";
+import Form from "react-bootstrap/Form";
 import { patchTeam } from "../Actions";
 
 function jpNumeral(value: number): string {
@@ -33,11 +35,12 @@ function jpNumeral(value: number): string {
 }
 
 export function Team(props: {team: ContestTeam, score?: number, placing?: number}): JSX.Element {
-	const user = useSelector((state: IState) => state.user);
+	const token = useSelector((state: IState) => state.user?.token);
 	const [image, setImage] = React.useState(props.team.image ?? defaultImage);
+	const [anthem, setAnthem] = React.useState(props.team?.anthem);
 	const dispatch = useDispatch();
-	return <Container className="p-0">
-		<Row className="no-gutters align-items-center flex-nowrap">
+	return <Accordion as={Container} className="p-0">
+		<Accordion.Toggle disabled as={Row} eventKey={(token == null ? -1 : 0).toString()} className="no-gutters align-items-center flex-nowrap">
 			{props.placing != null && <Col md="auto" className="mr-3"> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
 				<label
@@ -53,7 +56,7 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 						backgroundSize: "contain"
 					}}
 				>
-					<input disabled={user?.token == null} style={{display: "none"}} type="file" onChange={function (event){
+					<input disabled={token == null} style={{display: "none"}} type="file" onChange={function (event){
 						const reader = new FileReader();
 						const input = event.target as HTMLInputElement;
 						if (input.files && input.files[0]) {
@@ -76,16 +79,29 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 			</Col>
 			<Col></Col>
 			{ isNaN(props.score) || <Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col> }
-			{ (props.team.image !== image && image !== defaultImage) &&
+			{ ((props.team.image !== image && image !== defaultImage) || anthem != props.team.anthem) &&
 				<Col md="auto">
 					<Button
 						variant="secondary"
-						onClick={(event: any) => {patchTeam(dispatch, user.token, {image: image, _id: props.team._id} as ContestTeam)}}
+						onClick={(event: any) => {patchTeam(dispatch, token, {image: image, _id: props.team._id, anthem: anthem } as ContestTeam)}}
 					>Save</Button>
 				</Col>
 			}
-		</Row>
-	</Container>
+		</Accordion.Toggle>
+		<Accordion.Collapse as={Row} eventKey="0">
+			<Form.Control
+				// plaintext={!token || !editTime}
+				// readOnly={!token || !editTime}
+				// isInvalid={timeIsInvalid}
+				// className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
+				value={anthem}
+				onChange={event => {
+					setAnthem(event.target.value);
+				}}
+			/>
+		</Accordion.Collapse>
+	</Accordion>;
+
 }
 
 export function Teams(props: { session?: Session; }): JSX.Element {

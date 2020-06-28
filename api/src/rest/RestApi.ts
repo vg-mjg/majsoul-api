@@ -207,11 +207,8 @@ export class RestApi {
 
 		.patch<any, store.ContestTeam<ObjectId>>('/teams/:id', (req, res) => {
 			const body = req.body as store.ContestTeam<string>;
-			const patch = {
-				image: body.image
-			};
 
-			if (patch.image == undefined) {
+			if (body.image == undefined && body.anthem == undefined) {
 				res.sendStatus(304);
 				return;
 			}
@@ -221,7 +218,8 @@ export class RestApi {
 			this.mongoStore.contestCollection.findOneAndUpdate(
 				{ teams: { $elemMatch: { _id: teamId } } },
 				{ $set: {
-					"teams.$.image": patch.image
+					"teams.$.image": body.image,
+					"teams.$.anthem": body.anthem
 				} },
 				{ returnOriginal: false, projection: { teams: true } }
 			).then((contest) => {
