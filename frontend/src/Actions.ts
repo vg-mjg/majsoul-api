@@ -11,11 +11,12 @@ export enum ActionType {
 	RiggingTokenGet,
 	SessionPatched,
 	LogOut,
-	PatchTeam
+	PatchTeam,
+	GetContestSessions,
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
-	contest: Rest.Contest<string>;
+	contest: Store.Contest<string>;
 }
 
 export interface SessionGamesRetrieved extends Action<ActionType.GamesRetrieved> {
@@ -34,6 +35,10 @@ export interface PatchTeam extends Action<ActionType.PatchTeam> {
 	team: ContestTeam;
 }
 
+export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
+	sessions: Session[];
+}
+
 export function buildApiUrl(path: string): URL {
 	if (process.env.NODE_ENV === "production") {
 		return new URL(`${location.protocol}//${location.host}/api/${path}`);
@@ -49,6 +54,17 @@ export function fetchContestSummary(dispatch: Dispatch, contestId: string): void
 			contest
 		}));
 }
+
+
+export function fetchContestSessions(dispatch: Dispatch, contestId: string): void {
+	fetch(buildApiUrl(`contests/${contestId}/sessions`).toString())
+		.then(response => response.json())
+		.then(sessions => dispatch({
+			type: ActionType.GetContestSessions,
+			sessions
+		}));
+}
+
 
 export interface FetchGamesOptions {
 	sessionIds?: string[];

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary } from "../Actions";
+import { fetchContestSummary, fetchContestSessions } from "../Actions";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -25,6 +25,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 
 	React.useEffect(() => {
 		fetchContestSummary(dispatch, props.contestId);
+		fetchContestSessions(dispatch, props.contestId);
 	}, [props.contestId]);
 
 	if (contest == null) {

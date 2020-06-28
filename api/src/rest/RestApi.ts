@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { Contest, GameResult, Session } from './types/types';
+import { GameResult, Session } from './types/types';
 import { ObjectId, FilterQuery, Condition } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -34,22 +34,11 @@ export class RestApi {
 		this.app.use(cors());
 		this.app.use(express.json({limit: "1MB"}));
 
-		this.app.get<any, Contest<ObjectId>>('/contests/:id', (req, res) => {
+		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.mongoStore.contestCollection.findOne(
 				{ majsoulFriendlyId: parseInt(req.params.id) }
-			).then(async (contest) => {
-				const sessions = await this.mongoStore.sessionsCollection.find({
-					contestId: contest._id
-				}).toArray();
-
-				res.send({
-					...contest,
-					sessions: (await Promise.all(sessions.sort((a, b) => a.scheduledTime - b.scheduledTime).map(async (session, index) => ({
-						...session,
-						totals: await this.getSessionSummary(contest, session, sessions[index + 1]),
-						aggregateTotals: {}
-					})))).reverse()
-				});
+			).then((contest) => {
+				res.send(contest);
 			})
 			.catch(error => {
 				console.log(error);
@@ -68,7 +57,7 @@ export class RestApi {
 
 				this.getSessions(contest).pipe(toArray())
 					.subscribe(
-						sessions => res.send(sessions.reverse()),
+						sessions => res.send(sessions),
 						error => {
 							console.log(error);
 							res.status(500).send(error)

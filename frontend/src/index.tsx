@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
@@ -90,14 +90,8 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				teams: contestSummaryRetrievedAction.contest.teams.reduce<Record<string, ContestTeam>>((hash, next, index) => {
 					hash[next._id] = {...next, ...{color: teamColors[index], index: index}};
 					return hash;
-				}, {}),
-				sessions: contestSummaryRetrievedAction.contest.sessions.map(session => ({
-					...session,
-					aggregateTotals: {}
-				})).reverse()
+				}, {})
 			} as Contest;
-
-			const aggregateTotals: Record<string, number> = {};
 
 			const hoverChange = 0.1;
 			for (const team of Object.values(contest.teams)) {
@@ -116,13 +110,6 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				}
 
 				document.documentElement.style.setProperty(`--team-${team.index}-hover`, hslStyle(hslColor));
-			}
-
-			for (const session of contest.sessions) {
-				for (const key in session.totals) {
-					aggregateTotals[key] = (aggregateTotals[key] ?? 0) + session.totals[key];
-				}
-				session.aggregateTotals = {...aggregateTotals};
 			}
 
 			return {
@@ -187,6 +174,15 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				contest: {
 					...state.contest,
 					teams
+				}
+			}
+		} case ActionType.GetContestSessions: {
+			const getContestSessions = action as GetContestSessions;
+			return {
+				...state,
+				contest: {
+					...(state.contest ?? {} as Contest),
+					sessions: getContestSessions.sessions
 				}
 			}
 		}
