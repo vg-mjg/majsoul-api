@@ -8,11 +8,24 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
 import { Teams } from "./Teams";
-import { Link } from "react-router-dom";
+import YouTube from 'react-youtube';
+
+function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
+	const [player, setPlayer] = React.useState<YT.Player>(null);
+	React.useEffect(() => {
+		if (player == null || !props.play) {
+			return;
+		}
+		player.playVideo();
+		return () => player.stopVideo();
+	}, [player, props.play, props.videoId]);
+	return <div style={{display:"none"}}><YouTube videoId={props.videoId} onReady={(event) => setPlayer(event.target)}></YouTube></div>
+}
 
 export function ContestSummary(this: void, props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contest);
 	const games = useSelector((state: IState) => Object.values(state.games ?? [])?.sort((a, b) => b.end_time - a.end_time));
+	const musicPlayer = useSelector((state: IState) => state.musicPlayer);
 	const dispatch = useDispatch();
 	const [secret, setSecret] = React.useState(false);
 	React.useEffect(() => {
@@ -37,6 +50,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 	const currentSession = contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
 
 	return <Container>
+		<SongPlayer videoId={musicPlayer.videoId} play={musicPlayer.playing}/>
 		<Row className="px-4 pt-4 pb-3">
 			<Col>
 				<h1 className="align-self-center" onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest.name}</u></h1>

@@ -14,6 +14,10 @@ export interface IState {
 	games?: Record<string, Store.GameResult<string>>;
 	user?: {
 		token: string;
+	};
+	musicPlayer: {
+		playing: boolean;
+		videoId: string;
 	}
 }
 

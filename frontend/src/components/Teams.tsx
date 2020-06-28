@@ -8,7 +8,7 @@ import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
-import { patchTeam } from "../Actions";
+import { patchTeam, ActionType } from "../Actions";
 
 function jpNumeral(value: number): string {
 	let rep = "";
@@ -36,8 +36,10 @@ function jpNumeral(value: number): string {
 
 export function Team(props: {team: ContestTeam, score?: number, placing?: number}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
+	const musicPlayer = useSelector((state: IState) => state.musicPlayer);
 	const [image, setImage] = React.useState(props.team.image ?? defaultImage);
 	const [anthem, setAnthem] = React.useState(props.team?.anthem);
+
 	const dispatch = useDispatch();
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle disabled as={Row} eventKey={(token == null ? -1 : 0).toString()} className="no-gutters align-items-center flex-nowrap">
@@ -89,16 +91,28 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 			}
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
-			<Form.Control
-				// plaintext={!token || !editTime}
-				// readOnly={!token || !editTime}
-				// isInvalid={timeIsInvalid}
-				// className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
-				value={anthem}
-				onChange={event => {
-					setAnthem(event.target.value);
-				}}
-			/>
+			<Container>
+				<Row>
+					<Col>
+						<Form.Control
+							// plaintext={!token || !editTime}
+							// readOnly={!token || !editTime}
+							// isInvalid={timeIsInvalid}
+							// className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
+							value={anthem}
+							onChange={event => {
+								setAnthem(event.target.value);
+							}}
+							/>
+					</Col>
+					<Col md="auto">
+						<Button onClick={() => dispatch({
+							type: (musicPlayer.playing && musicPlayer.videoId === anthem) ? ActionType.StopMusic : ActionType.PlayMusic,
+							videoId: anthem
+						}) }>Play</Button>
+					</Col>
+				</Row>
+			</Container>
 		</Accordion.Collapse>
 	</Accordion>;
 

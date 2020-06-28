@@ -13,6 +13,8 @@ export enum ActionType {
 	LogOut,
 	PatchTeam,
 	GetContestSessions,
+	PlayMusic,
+	StopMusic,
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -37,6 +39,10 @@ export interface PatchTeam extends Action<ActionType.PatchTeam> {
 
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
 	sessions: Session[];
+}
+
+export interface PlayMusic extends Action<ActionType.PlayMusic> {
+	videoId: string;
 }
 
 export function buildApiUrl(path: string): URL {

@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
@@ -15,6 +15,9 @@ import { Rigging } from "./components/Rigging";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
+
+import YouTube from 'react-youtube';
+
 
 const teamColors = [
 	"#980000",
@@ -197,6 +200,23 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 					sessions: getContestSessions.sessions
 				}
 			}
+		} case ActionType.PlayMusic: {
+			const playMusic = action as PlayMusic;
+			return {
+				...state,
+				musicPlayer: {
+					playing: true,
+					videoId: playMusic.videoId ?? state.musicPlayer.videoId
+				}
+			}
+		} case ActionType.StopMusic: {
+			return {
+				...state,
+				musicPlayer: {
+					...state.musicPlayer,
+					playing: false
+				}
+			}
 		}
 	}
 
@@ -214,6 +234,12 @@ const store = createStore(
 		},
 		contestReducer
 	),
+	{
+		musicPlayer: {
+			playing: false,
+			videoId: ""
+		},
+	} as IState as any,
 	composeEnhancers(
 		applyMiddleware(
 			thunkMiddleware
@@ -232,6 +258,9 @@ ReactDOM.render(
 						<Switch>
 							<Route path="/rigging">
 								<Rigging/>
+							</Route>
+							<Route path="/youtube">
+								<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
 							</Route>
 							<Route path="/">
 								<ContestSummary contestId="113331"/>
