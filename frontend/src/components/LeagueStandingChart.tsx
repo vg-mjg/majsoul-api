@@ -1,118 +1,98 @@
 import * as React from "react";
-import { ReactNode } from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { Contest } from "../State";
+import { IState, ContestTeam, Session } from "../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import * as moment from "moment";
-
-interface IStandingsChartProps {
-	contest: Contest;
-}
-
-export const teamColors = [
-	"#980000",
-	"#ff0000",
-	"#ff9900",
-	"#ffff00",
-	"#00ff00",
-	"#00ffff",
-	"#9900ff",
-	"#ff00ff",
-	"#4a86e8",
-	"#d9d9d9",
-]
+import { useSelector } from "react-redux";
 
 chartjs.defaults.global.defaultFontColor = "white";
 
-export class LeagueStandingChart extends React.Component<IStandingsChartProps> {
+function createData(sessions: Session[], teams: Record<string, ContestTeam>): ChartData<chartjs.ChartData> {
+	return {
+		labels: ["Start"].concat(sessions.map(session => {
+			const time =  moment(session.scheduledTime).tz('UTC');
+			return `${time.hours() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
+		})),
 
-	private onClick(event?: MouseEvent, activeElements?: {}[]) {
-		console.log(event, activeElements);
+		datasets: Object.values(teams ?? {}).map(team => ({
+			label: team.name,
+			fill: false,
+			lineTension: 0.1,
+			borderCapStyle: 'butt',
+			borderDash: [],
+			borderDashOffset: 0.0,
+			borderJoinStyle: 'miter',
+			pointBorderColor: team.color,
+			pointBackgroundColor: team.color,
+			backgroundColor: team.color,
+			borderColor: team.color,
+			pointHoverBackgroundColor: team.color,
+			pointHoverBorderColor: team.color,
+			pointBorderWidth: 1,
+			pointHoverRadius: 4,
+			pointHoverBorderWidth: 2,
+			pointRadius: 3,
+			pointHitRadius: 10,
+			data: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
+			yAxisID: "uma",
+			xAxisID: "sessions",
+		}))
 	}
+}
 
-	private onElementsClick(e: any){
-		console.log(e);
-	}
+// private onClick(event?: MouseEvent, activeElements?: {}[]) {
+// 	console.log(event, activeElements);
+// }
 
-	private createData(): ChartData<chartjs.ChartData> {
-		const sessions = this.props.contest.sessions.filter(session => session.scheduledTime < Date.now());
-		const teams = Object.entries(this.props.contest.teams).map(([id, team]) => ({
-			name: team.name,
-			scores: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000))
-		}));
+// private onElementsClick(e: any){
+// 	console.log(e);
+// }
 
-		return {
-			labels: ["Start"].concat(sessions.map(session => {
-				const time =  moment(session.scheduledTime).tz('UTC');
-				return `${time.hours() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
-			})),
-			datasets: teams.map((team, index) => ({
-				label: team.name,
-				fill: false,
-				lineTension: 0.1,
-				borderCapStyle: 'butt',
-				borderDash: [],
-				borderDashOffset: 0.0,
-				borderJoinStyle: 'miter',
-				pointBorderColor: teamColors[index],
-				pointBackgroundColor: teamColors[index],
-				backgroundColor: teamColors[index],
-				borderColor: teamColors[index],
-				pointHoverBackgroundColor: teamColors[index],
-				pointHoverBorderColor: teamColors[index],
-				pointBorderWidth: 1,
-				pointHoverRadius: 4,
-				pointHoverBorderWidth: 2,
-				pointRadius: 3,
-				pointHitRadius: 10,
-				data: team.scores,
-				yAxisID: "uma",
-				xAxisID: "sessions",
-			}))
+export function LeagueStandingChart(): JSX.Element {
+	const sessions = useSelector((state: IState) => {
+		const now = Date.now();
+		if (state.contest.sessions == null) {
+			return [];
 		}
-	}
+		return state.contest.sessions.filter(session => session.scheduledTime < now);
+	});
 
-	render(): ReactNode {
-		if (this.props.contest == null) {
-			return null;
-		}
+	const teams = useSelector((state: IState) => state.contest?.teams);
 
-		return <Container className="bg-dark rounded text-white">
-			<Row className="px-2 pb-3 pt-4">
-				<Line
-					data={this.createData()}
-					options={{
-						onClick: this.onClick,
-						scales: {
-							yAxes: [
-								{
-									id: "uma",
-									position: "right",
-									gridLines: {
-										color: "#666666",
-										zeroLineColor: "#666666"
-									}
-								},
-							],
-							xAxes: [
-								{
-									id: "sessions",
-									gridLines: {
-										display: false
-									}
-								},
-							]
-						},
-						legend: {
-							display: false
-						}
-					}}
-					onElementsClick={this.onElementsClick}
-				></Line>
-			</Row>
-		</Container>
-	}
+	return <Container className="bg-dark rounded text-white">
+		<Row className="px-2 pb-3 pt-4">
+			<Line
+				data={createData(sessions, teams)}
+				options={{
+					// onClick: this.onClick,
+					scales: {
+						yAxes: [
+							{
+								id: "uma",
+								position: "right",
+								gridLines: {
+									color: "#666666",
+									zeroLineColor: "#666666"
+								}
+							},
+						],
+						xAxes: [
+							{
+								id: "sessions",
+								gridLines: {
+									display: false
+								}
+							},
+						]
+					},
+					legend: {
+						display: false
+					}
+				}}
+				// onElementsClick={this.onElementsClick}
+			></Line>
+		</Row>
+	</Container>
 }

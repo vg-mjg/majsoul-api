@@ -28,7 +28,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		fetchContestSessions(dispatch, props.contestId);
 	}, [props.contestId]);
 
-	if (contest == null) {
+	if (contest?.sessions == null) {
 		return null;
 	}
 
@@ -53,7 +53,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 			<Teams session={currentSession} />
 		</Row>
 		<Row className="mt-3">
-			<LeagueStandingChart contest={contest} />
+			<LeagueStandingChart/>
 		</Row>
 		{ nextSession != null && <>
 			<Row className="px-4 py-3 justify-content-end" >

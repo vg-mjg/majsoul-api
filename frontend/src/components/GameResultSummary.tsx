@@ -14,6 +14,9 @@ function GameSeat(props: {
 	game: Store.GameResult
 }): JSX.Element {
 	const teams = useSelector((state: IState) => state.contest.teams);
+	if (teams == null) {
+		return null;
+	}
 
 	const player = props.game.players[props.seat];
 	const playerInfo = findPlayerInformation(player._id, teams);

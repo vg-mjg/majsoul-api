@@ -55,7 +55,6 @@ export function fetchContestSummary(dispatch: Dispatch, contestId: string): void
 		}));
 }
 
-
 export function fetchContestSessions(dispatch: Dispatch, contestId: string): void {
 	fetch(buildApiUrl(`contests/${contestId}/sessions`).toString())
 		.then(response => response.json())
@@ -64,7 +63,6 @@ export function fetchContestSessions(dispatch: Dispatch, contestId: string): voi
 			sessions
 		}));
 }
-
 
 export interface FetchGamesOptions {
 	sessionIds?: string[];

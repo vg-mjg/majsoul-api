@@ -11,8 +11,9 @@ import { useSelector } from "react-redux";
 export function Match(props: {match: Store.Match, totals: Record<string, number>}): JSX.Element {
 	const teams = useSelector((state: IState) => state.contest.teams);
 	if (teams == null) {
-		return;
+		return null;
 	}
+
 	const teamsArray = props.match.teams.map(team => teams[team._id]).sort((a, b) => props.totals[b._id] - props.totals[a._id]);
 	return <Container className="bg-primary pt-2 rounded text-dark">
 		{teamsArray.map(team =>

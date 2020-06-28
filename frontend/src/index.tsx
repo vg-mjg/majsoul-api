@@ -10,12 +10,24 @@ import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
-import { teamColors } from "./components/LeagueStandingChart";
 import { Store } from "majsoul-api";
 import { Rigging } from "./components/Rigging";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
+
+const teamColors = [
+	"#980000",
+	"#ff0000",
+	"#ff9900",
+	"#ffff00",
+	"#00ff00",
+	"#00ffff",
+	"#9900ff",
+	"#ff00ff",
+	"#4a86e8",
+	"#d9d9d9",
+];
 
 interface RGBColor {
 	r: number;
