@@ -55,7 +55,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
 
 	React.useEffect(() => {
-		if (currentSession == null || musicPlayer.playing) {
+		if (nextSession != null || currentSession == null || musicPlayer.playing) {
 			return;
 		}
 
