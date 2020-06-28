@@ -100,12 +100,15 @@ export class RestApi {
 						endSession
 					});
 
-					filter.$or.push({
-						end_time: {
-							$gte: startSession.scheduledTime,
-							$lt: endSession?.scheduledTime
-						}
-					});
+					const end_time: Condition<number> = {
+						$gte: startSession.scheduledTime
+					}
+
+					if(endSession != null) {
+						end_time.$lt = endSession.scheduledTime;
+					}
+
+					filter.$or.push({end_time});
 				}
 			}
 
@@ -124,7 +127,7 @@ export class RestApi {
 					...game,
 					sessionId: sessionMap.find((session) =>
 						game.end_time >= session.startSession.scheduledTime
-							&& game.end_time < session.endSession.scheduledTime)?.startSession?._id
+							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime))?.startSession?._id
 				}))))
 				.catch(error => {
 					console.log(error);
