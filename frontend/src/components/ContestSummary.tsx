@@ -55,7 +55,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
 
 	React.useEffect(() => {
-		if (nextSession != null || currentSession == null || musicPlayer.playing) {
+		if (nextSession != null || currentSession == null || musicPlayer.playing || contest?.teams == null) {
 			return;
 		}
 
@@ -64,12 +64,16 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		}
 
 		const firstPlace = Object.entries(currentSession.aggregateTotals).map(([teamId, score]) => ({teamId, score})).sort((a, b) => b.score - a.score)[0];
+		const anthem = contest.teams[firstPlace.teamId]?.anthem;
+		if (anthem == null) {
+			return;
+		}
 
 		dispatch({
 			type: navigator.userAgent.indexOf('Firefox') != -1 ? ActionType.SetMusic : ActionType.PlayMusic,
-			videoId: contest.teams[firstPlace.teamId].anthem
+			videoId: anthem
 		});
-	}, [nextSession, currentSession]);
+	}, [nextSession, currentSession, contest?.teams]);
 
 	if (contest == null) {
 		return null;
@@ -124,7 +128,7 @@ export function ContestSummary(this: void, props: {contestId: string}): JSX.Elem
 		</Row>
 		<Row className="mt-3 justify-content-center">
 			<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>
-			<Col md="auto"><a className="text-dark" href="https://mjg-repo.neocities.org/">Repo</a></Col>
+			<Col md="auto"><a className="text-dark" href="https://repo.riichi.moe/">Repo</a></Col>
 			<Col md="auto"><a className="text-dark" href="https://github.com/riichinomics/majsoul-api">Source Code/Report Issue</a></Col>
 		</Row>
 	</Container>

@@ -37,6 +37,9 @@ export function Session(props: {
 		return null;
 	}
 
+	console.log(utcStartMoment);
+	console.log(utcMoment);
+
 	return <Container fluid className="bg-dark rounded text-light">
 		<Row className="py-3 px-2">
 			<Col md="auto">
