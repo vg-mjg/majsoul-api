@@ -10,7 +10,7 @@ import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
 import { patchTeam, ActionType } from "../Actions";
 
-function jpNumeral(value: number): string {
+export function jpNumeral(value: number): string {
 	let rep = "";
 	if (value < 0){
 		value *= -1;

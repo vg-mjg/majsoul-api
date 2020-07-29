@@ -7,8 +7,10 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
-import { Teams } from "./Teams";
+import { Teams, jpNumeral } from "./Teams";
 import YouTube from 'react-youtube';
+import { Rest } from "majsoul-api";
+import Accordion from "react-bootstrap/Accordion";
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -71,6 +73,27 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	</Container>
 }
 
+export function ContestPlayerDisplay(props: {contestPlayer: Rest.ContestPlayer}): JSX.Element {
+	return <Accordion as={Container} className="p-0">
+		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap">
+			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank}位</b></h5></Col>
+			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
+				<Container className="p-0">
+					<Row className="no-gutters">
+						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid grey`}}>
+							{props.contestPlayer.displayName}
+						</Col>
+					</Row>
+				</Container>
+			</Col>
+			<Col md="auto" className="mr-3"> <h5><b>{props.contestPlayer.tourneyScore / 1000}</b></h5></Col>
+		</Accordion.Toggle>
+		<Accordion.Collapse as={Row} eventKey="0">
+			<Container>Hello</Container>
+		</Accordion.Collapse>
+	</Accordion>
+}
+
 export function PlayerStandings(props: {contestId: string}): JSX.Element {
 	const contestPlayers = useSelector((state: IState) => state?.contest?.players);
 	const dispatch = useDispatch();
@@ -83,8 +106,12 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 		return null;
 	}
 
-	return <Container>
-		{contestPlayers.map(player => <Row>{player.displayName}</Row>)}
+	return <Container className="rounded bg-dark text-light px-3 py-4">
+		{contestPlayers.map((player, placing) =>
+			<Row key={player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
+				<ContestPlayerDisplay contestPlayer={player}/>
+			</Row>
+		)}
 	</Container>
 }
 

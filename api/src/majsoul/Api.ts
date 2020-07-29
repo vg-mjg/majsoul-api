@@ -247,6 +247,7 @@ export class Api {
 			console.log(`No data in response: ${id}`);
 			return;
 		}
+
 		return {
 			contestMajsoulId: resp.head.config ? resp.head.config.meta ? resp.head.config.meta.contest_uid : null : null,
 			majsoulId: id,
