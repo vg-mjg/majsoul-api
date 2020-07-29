@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -11,7 +11,8 @@ import { Teams, jpNumeral } from "./Teams";
 import YouTube from 'react-youtube';
 import { Rest } from "majsoul-api";
 import Accordion from "react-bootstrap/Accordion";
-import { GameResultSummary } from "./GameResultSummary";
+import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
+import moment = require("moment");
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -74,9 +75,29 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	</Container>
 }
 
-export function ContestPlayerDisplay(props: {contestPlayer: Rest.ContestPlayer}): JSX.Element {
+export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: Rest.ContestPlayer}): JSX.Element {
+	const games = useSelector((state: IState) => {
+		if (state.games == null) {
+			return [];
+		}
+
+		return Object.values(state.games)
+			.filter(game => game.contestId === props.contestId
+				&& game.players.findIndex(p => p._id === props.contestPlayer._id) >= 0);
+	});
+
+	const dispatch = useDispatch();
+	const [loadGames, setLoadGames] = React.useState(false);
+	React.useEffect(() => {
+		if (!loadGames) {
+			return;
+		}
+
+		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
+	}, [props.contestId, props.contestPlayer._id, loadGames]);
+
 	return <Accordion as={Container} className="p-0">
-		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap">
+		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank}位</b></h5></Col>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
@@ -89,8 +110,39 @@ export function ContestPlayerDisplay(props: {contestPlayer: Rest.ContestPlayer})
 			</Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.contestPlayer.tourneyScore / 1000}</b></h5></Col>
 		</Accordion.Toggle>
-		<Accordion.Collapse as={Row} eventKey="0">
-			<Container>Hello</Container>
+		<Accordion.Collapse as={Row} eventKey="0" >
+			<Container>
+				{games.map(game => {
+					const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
+					const position = game.finalScore
+						.map((score, seat) => ({score, seat}))
+						.sort((a, b) => b.score.uma - a.score.uma)
+						.findIndex(r => r.seat === playerSeat);
+					return <Row key={game._id}>
+						<Col md="auto">
+							{getSeatCharacter(playerSeat)}
+						</Col>
+
+						<Col md="auto">
+							{position + 1}位
+						</Col>
+
+						<Col>
+							{game.finalScore[playerSeat].uma / 1000}
+						</Col>
+
+						<Col md="auto">
+							{moment(game.start_time).calendar()}
+						</Col>
+
+						<Col md="auto">
+							<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">On Majsoul</a>
+						</Col>
+
+
+					</Row>
+				})}
+			</Container>
 		</Accordion.Collapse>
 	</Accordion>
 }
@@ -110,7 +162,7 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		{contestPlayers.map((player, placing) =>
 			<Row key={player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-				<ContestPlayerDisplay contestPlayer={player}/>
+				<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player}/>
 			</Row>
 		)}
 	</Container>

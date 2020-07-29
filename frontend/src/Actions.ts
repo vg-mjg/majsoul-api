@@ -2,6 +2,7 @@ import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
 import { IState, Session, ContestTeam } from "./State";
+import { GameResult } from "majsoul-api/dist/store";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
@@ -17,6 +18,7 @@ export enum ActionType {
 	SetMusic,
 	StopMusic,
 	GetContestPlayers,
+	GetContestPlayerGames,
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -55,6 +57,10 @@ export interface GetContestPlayers extends Action<ActionType.GetContestPlayers> 
 	players: Rest.ContestPlayer[];
 }
 
+export interface GetContestPlayerGames extends Action<ActionType.GetContestPlayerGames> {
+	games: GameResult[];
+}
+
 export function buildApiUrl(path: string): URL {
 	if (process.env.NODE_ENV === "production") {
 		return new URL(`${location.protocol}//${location.host}/api/${path}`);
@@ -86,6 +92,16 @@ export function fetchContestPlayers(dispatch: Dispatch, contestId: string): void
 		.then(players => dispatch({
 			type: ActionType.GetContestPlayers,
 			players
+		}));
+}
+
+
+export function fetchContestPlayerGames(dispatch: Dispatch, contestId: string, playerId: string): void {
+	fetch(buildApiUrl(`contests/${contestId}/players/${playerId}/games`).toString())
+		.then(response => response.json())
+		.then(games => dispatch({
+			type: ActionType.GetContestPlayerGames,
+			games
 		}));
 }
 

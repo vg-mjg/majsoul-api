@@ -131,7 +131,9 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				...state,
 				...{ contest }
 			};
-		} case ActionType.GamesRetrieved: {
+		} case ActionType.GamesRetrieved:
+			case ActionType.GetContestPlayerGames:
+		{
 			const gamesRetrievedAction = action as SessionGamesRetrieved;
 			return {
 				...state,

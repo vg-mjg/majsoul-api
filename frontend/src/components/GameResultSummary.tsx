@@ -44,7 +44,7 @@ function GameSeat(props: {
 	</Container>;
 }
 
-function getSeatCharacter(seat: number): string {
+export function getSeatCharacter(seat: number): string {
 	switch (seat) {
 		case 0:
 			return "東";

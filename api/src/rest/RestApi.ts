@@ -166,6 +166,37 @@ export class RestApi {
 			}
 		});
 
+		this.app.get<any, GameResult[]>('/contests/:contestId/players/:playerId/games', async (req, res) => {
+			try {
+				const contest = await this.mongoStore.contestCollection.findOne(
+					{ $or: [
+						{ majsoulFriendlyId: parseInt(req.params.contestId) },
+						{ _id: ObjectId.isValid(req.params.contestId) ? ObjectId.createFromHexString(req.params.contestId) : null },
+					]}
+				);
+
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const games = await this.mongoStore.gamesCollection.find(
+					{
+						contestMajsoulId: contest.majsoulId,
+						"players._id": ObjectId.createFromHexString(req.params.playerId)
+					}
+				).toArray();
+
+				res.send(games.map(game => ({
+					...game,
+					contestId: contest._id
+				})));
+			} catch (error){
+				console.log(error);
+				res.status(500).send(error)
+			}
+		});
+
 		this.app.get<any, ContestPlayer[]>('/contests/:id/players', async (req, res) => {
 			try {
 				const contest = await this.mongoStore.contestCollection.findOne(
