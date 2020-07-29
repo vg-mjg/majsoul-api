@@ -7,11 +7,13 @@ import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
 
+const leagueContest = 113331;
+
 async function main() {
 	async function addToSpreadSheet(gameId): Promise<void> {
 		if (process.env.NODE_ENV !== "production" || process.env.MAJSOUL_ENV === "staging") {
 			console.log("skipping spreadsheet write");
-			return;
+			// return;
 		}
 
 		if(spreadsheet.isGameRecorded(gameId) && spreadsheet.isGameDetailRecorded(gameId)) {
@@ -57,7 +59,7 @@ async function main() {
 
 	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 
-	const majsoulContest = await api.findContestByContestId(113331);
+	const majsoulContest = await api.findContestByContestId(295708);
 	// const contestId2 = await api.findContestUniqueId(917559);
 	const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
 		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
@@ -76,35 +78,37 @@ async function main() {
 		{ upsert: true, returnOriginal: false }
 	)).value;
 
-	if (!contest.teams) {
-		console.log(`Contest doesn't have teams, importing`);
+	if (contest.majsoulFriendlyId === leagueContest) {
+		if (!contest.teams) {
+			console.log(`Contest doesn't have teams, importing`);
 
-		const teams = await spreadsheet.getTeamInformation();
-		for (const team of teams) {
-			team.players = (await Promise.all(team.players.map(player => mongoStore.playersCollection.findOneAndUpdate(
-				{ nickname: player.nickname },
-				{ $set: { displayName: player.displayName } },
-				{
-					upsert: true,
-					returnOriginal: false,
-					projection: { majsoulId: false }
-				}
-			)))).map(r => r.value);
-			team._id = new ObjectId();
+			const teams = await spreadsheet.getTeamInformation();
+			for (const team of teams) {
+				team.players = (await Promise.all(team.players.map(player => mongoStore.playersCollection.findOneAndUpdate(
+					{ nickname: player.nickname },
+					{ $set: { displayName: player.displayName } },
+					{
+						upsert: true,
+						returnOriginal: false,
+						projection: { majsoulId: false }
+					}
+				)))).map(r => r.value);
+				team._id = new ObjectId();
+			}
+
+			contest = (await mongoStore.contestCollection.findOneAndUpdate(
+				{ _id: contest._id },
+				{ $set: { teams } },
+				{ returnOriginal: false }
+			)).value;
 		}
 
-		contest = (await mongoStore.contestCollection.findOneAndUpdate(
-			{ _id: contest._id },
-			{ $set: { teams } },
-			{ returnOriginal: false }
-		)).value;
-	}
-
-	if (!(await mongoStore.sessionsCollection.findOne({contestId: contest._id}))) {
-		console.log(`Generating contest sessions`);
-		const sessions = (await spreadsheet.getMatchInformation(contest.teams))
-			.map(s => {s.contestId = contest._id; return s});
-		await mongoStore.sessionsCollection.insertMany(sessions);
+		if (!(await mongoStore.sessionsCollection.findOne({contestId: contest._id}))) {
+			console.log(`Generating contest sessions`);
+			const sessions = (await spreadsheet.getMatchInformation(contest.teams))
+				.map(s => {s.contestId = contest._id; return s});
+			await mongoStore.sessionsCollection.insertMany(sessions);
+		}
 	}
 
 	const gameIds = await api.getContestGamesIds(contest.majsoulId);

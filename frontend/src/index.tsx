@@ -102,8 +102,16 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			const contest = {
 				...state.contest,
 				...contestSummaryRetrievedAction.contest,
-				teams: contestSummaryRetrievedAction.contest.teams.reduce<Record<string, ContestTeam>>((hash, next, index) => {
-					hash[next._id] = {...next, ...{color: teamColors[index], index: index}};
+				teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
+					const team = contestSummaryRetrievedAction.contest.teams == null ? null : contestSummaryRetrievedAction.contest.teams[index];
+					hash[team?._id ?? index] = {...(team ?? {
+						players: [],
+						_id: index.toString(),
+						index: index,
+						anthem: undefined,
+						image: undefined,
+						name: undefined
+					}), ...{color: teamColors[index], index: index}};
 					return hash;
 				}, {})
 			} as Contest;
@@ -283,7 +291,7 @@ ReactDOM.render(
 								<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
 							</Route>
 							<Route path="/">
-								<ContestSummary contestId="113331"/>
+								<ContestSummary contestId="295708"/>
 							</Route>
 						</Switch>
 					</Container>

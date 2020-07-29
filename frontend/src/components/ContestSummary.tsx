@@ -103,7 +103,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 				<Container className="p-0">
 					<Row className="no-gutters">
 						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid grey`}}>
-							{props.contestPlayer.displayName}
+							{props.contestPlayer.nickname}
 						</Col>
 					</Row>
 				</Container>

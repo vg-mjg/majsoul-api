@@ -86,7 +86,7 @@ export function fetchContestSessions(dispatch: Dispatch, contestId: string): voi
 		}));
 }
 
-export function fetchContestPlayers(dispatch: Dispatch, contestId: string): void {
+export function fetchContestPlayers(dispatch: Dispatch, contestId: string | number): void {
 	fetch(buildApiUrl(`contests/${contestId}/players`).toString())
 		.then(response => response.json())
 		.then(players => dispatch({

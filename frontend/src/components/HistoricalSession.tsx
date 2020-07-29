@@ -1,13 +1,13 @@
 import * as React from "react";
 import { ContestTeam } from "../State";
-import { Store } from "majsoul-api";
+import { Rest } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { GameResultSummary } from "./GameResultSummary";
 interface HistoricalSessionProps {
 	teams: Record<string, ContestTeam>;
-	games: Store.GameResult[];
+	games: Rest.GameResult[];
 }
 export class HistoricalSession extends React.Component<HistoricalSessionProps> {
 	render() {

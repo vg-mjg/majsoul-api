@@ -20,7 +20,7 @@ export interface IGoogleAppInformation {
 }
 
 export class Spreadsheet {
-	private static readonly spreadsheetId = '1F8aIK0EnliSrV3ME_DNtTzfHi488THMx-m5vhO2lPSk';
+	private static readonly spreadsheetId = '13C5gq2Duf82M1UUX76cUhAjlyL_ogzNkgQjqMbF6TRs';
 	private static readonly gameResultsSheetName = "Robots";
 	private static readonly gameDetailsSheetName = "Details";
 
@@ -84,7 +84,7 @@ export class Spreadsheet {
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
 		)).data;
-		this.recordedGameIds = gameResultsIds.values.slice(1).map(v => v[0]).filter(v => isNaN(v));
+		this.recordedGameIds = gameResultsIds.values?.slice(1).map(v => v[0]).filter(v => isNaN(v)) ?? [];
 		const gameDetailsIds = (await this.sheets.spreadsheets.values.get(
 			{
 				spreadsheetId: Spreadsheet.spreadsheetId,
@@ -92,7 +92,7 @@ export class Spreadsheet {
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
 		)).data;
-		this.recordedGameDetailIds = gameDetailsIds.values.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0);
+		this.recordedGameDetailIds = gameDetailsIds.values?.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0) ?? [];
 	}
 
 	public async getTeamInformation(): Promise<store.ContestTeam<ObjectId>[]> {
