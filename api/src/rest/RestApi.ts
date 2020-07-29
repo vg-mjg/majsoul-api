@@ -215,7 +215,7 @@ export class RestApi {
 					{ contestMajsoulId: contest.majsoulId }
 				).toArray();
 
-				const playerGameInfo = games.reduce<Record<string, ContestPlayer & {gamesPlayed: number}>>((total, game) => {
+				const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
 					game.players.forEach((player, index) => {
 						const id = player._id.toHexString();
 						if (!(id in total)) {
@@ -227,10 +227,10 @@ export class RestApi {
 							};
 						}
 
-						if (total[id].gamesPlayed >= 8) {
+						total[id].gamesPlayed++;
+						if (total[id].gamesPlayed > 8) {
 							return;
 						}
-						total[id].gamesPlayed++;
 						total[id].tourneyScore += game.finalScore[index].uma;
 					});
 					return total;

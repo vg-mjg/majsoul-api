@@ -102,13 +102,14 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
-						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid grey`}}>
+						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid ${props.contestPlayer.gamesPlayed >= 8 ? "LightGreen" : "grey" }`}}>
 							{props.contestPlayer.nickname}
 						</Col>
 					</Row>
 				</Container>
 			</Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.contestPlayer.tourneyScore / 1000}</b></h5></Col>
+			<Col md="auto" className="mr-3" color> <h5><b>{Math.min(8, props.contestPlayer.gamesPlayed)}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>

@@ -13,4 +13,5 @@ export interface Session<Id = any> extends StoreSession<Id> {
 export interface ContestPlayer<Id = any> extends Player<Id> {
 	tourneyScore: number;
 	tourneyRank: number;
+	gamesPlayed: number;
 }
