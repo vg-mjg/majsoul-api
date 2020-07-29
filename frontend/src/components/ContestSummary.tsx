@@ -53,14 +53,14 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 
 	return <Container>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
-			<Col md="auto">
+			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
 			</Col>
 			<Col md="auto">
 				<i>
 					{secret
-						? "They said I could be anything, so I became yakitori."
-						: "We're going down, and sugar we're going down swinging."}
+						? "Nothing holding you back."
+						: "No Tips, No Aka, No Tanyao, No Future."}
 					</i>
 				</Col>
 		</Row>
@@ -97,8 +97,8 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
 	return <Accordion as={Container} className="p-0">
-		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)}>
-			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank}位</b></h5></Col>
+		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
+			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
@@ -112,7 +112,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>
-				{games.map(game => {
+				{games.sort((a, b) => b.start_time - a.start_time).slice(-8).map(game => {
 					const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
 					const position = game.finalScore
 						.map((score, seat) => ({score, seat}))
@@ -138,8 +138,6 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 						<Col md="auto">
 							<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">On Majsoul</a>
 						</Col>
-
-
 					</Row>
 				})}
 			</Container>
