@@ -109,7 +109,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 				</Container>
 			</Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.contestPlayer.tourneyScore / 1000}</b></h5></Col>
-			<Col md="auto" className="mr-3" color> <h5><b>{Math.min(8, props.contestPlayer.gamesPlayed)}戦</b></h5></Col>
+			<Col md="auto" className="mr-3"> <h5><b>{Math.min(8, props.contestPlayer.gamesPlayed)}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>
