@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -11,6 +11,7 @@ import { Teams, jpNumeral } from "./Teams";
 import YouTube from 'react-youtube';
 import { Rest } from "majsoul-api";
 import Accordion from "react-bootstrap/Accordion";
+import { GameResultSummary } from "./GameResultSummary";
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -95,7 +96,7 @@ export function ContestPlayerDisplay(props: {contestPlayer: Rest.ContestPlayer})
 }
 
 export function PlayerStandings(props: {contestId: string}): JSX.Element {
-	const contestPlayers = useSelector((state: IState) => state?.contest?.players);
+	const contestPlayers = useSelector((state: IState) => state.contest?.players);
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
@@ -116,6 +117,26 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 }
 
 export function TourneyContestSummary(props: {contestId: string}): JSX.Element {
+	const games = useSelector((state: IState) => {
+		if (state.games == null) {
+			return [];
+		}
+
+		return Object.values(state.games)
+			.filter(game => game.contestId === props.contestId)
+			.sort((a, b) => a.start_time - b.start_time)
+			.slice(0, 4);
+	});
+
+	const dispatch = useDispatch();
+
+	React.useEffect(() => {
+		fetchGamesHook(dispatch, {
+			contestIds: [props.contestId],
+			last: 4,
+		});
+	}, [props.contestId]);
+
 	return <>
 		<Row className="mt-3">
 			<PlayerStandings contestId={props.contestId} />
@@ -124,6 +145,16 @@ export function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto" className="h4 mb-0"><u>Recent Games</u></Col>
 		</Row>
 		<Row>
+			<Container className="p-0 rounded bg-dark text-light px-1 py-2">
+				<Row className="no-gutters">
+					{games?.map((game, index) => <React.Fragment key={game._id}>
+						<Col style={{minWidth: "auto"}}>
+							<GameResultSummary game={game}/>
+						</Col>
+						{(index % 2 == 1) && <div className="w-100"/>}
+					</React.Fragment>)}
+				</Row>
+			</Container>
 		</Row>
 	</>
 }

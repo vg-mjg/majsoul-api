@@ -77,6 +77,25 @@ export class RestApi {
 
 		this.app.get<any, GameResult<ObjectId>[]>('/games', async (req, res) => {
 			const filter: FilterQuery<store.GameResult<ObjectId>> = {};
+			filter.$and = [];
+
+			const contestIds = (req.query.contests as string)?.split(' ');
+			if (contestIds) {
+				const contests = await this.mongoStore.contestCollection.find(
+					{ $or: [
+						{ majsoulFriendlyId: { $in: contestIds.map(id => parseInt(id)) } },
+						{ _id: { $in: contestIds.map(id => ObjectId.isValid(id) ? ObjectId.createFromHexString(id) : null) } },
+					]}
+				).toArray();
+
+				filter.$and.push(
+					{
+						$or: contestIds.map(string => ({
+							contestMajsoulId: { $in: contests.map(p => p.majsoulId) }
+						}))
+					}
+				);
+			}
 
 			const sessionIds = (req.query?.sessions as string)?.split(' ');
 			let sessionMap: {
@@ -88,8 +107,7 @@ export class RestApi {
 					_id: { $in: sessionIds.map(id => new ObjectId(id)) }
 				}).toArray();
 
-				filter.$or = [];
-
+				const sessionOr = [];
 				for(const session of sessions) {
 					let [startSession, endSession] = await this.mongoStore.sessionsCollection.find(
 						{scheduledTime: {$gte: session.scheduledTime}}
@@ -108,8 +126,14 @@ export class RestApi {
 						end_time.$lt = endSession.scheduledTime;
 					}
 
-					filter.$or.push({end_time});
+					sessionOr.push({end_time});
 				}
+
+				filter.$and.push({ $or: sessionOr });
+			}
+
+			if (filter.$and.length === 0) {
+				delete filter.$and;
 			}
 
 			const cursor = this.mongoStore.gamesCollection.find(filter);
@@ -122,17 +146,24 @@ export class RestApi {
 				}
 			}
 
-			cursor.toArray()
-				.then(games => res.send(games.map(game => ({
+			try {
+				const games = await cursor.toArray();
+				const contests = await this.mongoStore.contestCollection.find(
+					{majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
+				).toArray();
+
+				res.send(games.map(game => ({
 					...game,
+					contestId: contests.find(c => c.majsoulId === game.contestMajsoulId)._id,
 					sessionId: sessionMap.find((session) =>
 						game.end_time >= session.startSession.scheduledTime
-							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime))?.startSession?._id
-				}))))
-				.catch(error => {
-					console.log(error);
-					res.status(500).send(error)
-				});
+							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime)
+					)?.startSession?._id
+				})));
+			} catch (error) {
+				console.log(error);
+				res.status(500).send(error)
+			}
 		});
 
 		this.app.get<any, ContestPlayer[]>('/contests/:id/players', async (req, res) => {

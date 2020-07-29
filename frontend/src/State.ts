@@ -7,12 +7,12 @@ export interface Contest extends Omit<Store.Contest<string>, "teams" | "sessions
 }
 
 export interface Session extends Rest.Session<string> {
-	games: Store.GameResult<string>[];
+	games: Rest.GameResult<string>[];
 }
 
 export interface IState {
 	contest?: Contest;
-	games?: Record<string, Store.GameResult<string>>;
+	games?: Record<string, Rest.GameResult<string>>;
 	user?: {
 		token: string;
 	};

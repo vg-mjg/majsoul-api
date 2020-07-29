@@ -92,6 +92,7 @@ export function fetchContestPlayers(dispatch: Dispatch, contestId: string): void
 export interface FetchGamesOptions {
 	sessionIds?: string[];
 	last?: number;
+	contestIds?: string[];
 }
 
 export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): void {
@@ -99,6 +100,10 @@ export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): v
 	const queryParameters: Record<string, string> = {};
 	if (params.sessionIds != null) {
 		queryParameters.sessions = params.sessionIds?.join('+');
+	}
+
+	if (params.contestIds != null) {
+		queryParameters.contests = params.contestIds?.join('+');
 	}
 
 	if (params.last != null) {

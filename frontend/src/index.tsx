@@ -10,7 +10,7 @@ import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
-import { Store } from "majsoul-api";
+import { Store, Rest } from "majsoul-api";
 import { Rigging } from "./components/Rigging";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
@@ -137,13 +137,13 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				...state,
 				games: {
 					...(state.games ?? {}),
-					...gamesRetrievedAction.games.reduce<Record<string, Store.GameResult<string>>>(
+					...gamesRetrievedAction.games.reduce<Record<string, Rest.GameResult<string>>>(
 						(record, next) => { record[next._id] = next; return record; }, {}
 					)
 				},
 				contest: {
 					...state.contest,
-					sessions: state.contest.sessions.map(session => {
+					sessions: state.contest?.sessions?.map(session => {
 						const games = gamesRetrievedAction.games.filter(g => g.sessionId === session._id);
 						if (games.length > 0) {
 							return {
@@ -152,7 +152,7 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 							}
 						}
 						return session;
-					})
+					}) ?? []
 				}
 			}
 		} case ActionType.RiggingTokenGet: {
