@@ -47,11 +47,11 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		if (!secret) {
 			return;
 		}
-		new Audio(require("../../assets/tuturu.mp3").default).play();
-		setTimeout(() => setSecret(false), 5000);
+		setTimeout(() => setSecret(true), 5000);
 	}, [secret]);
 
 	return <Container>
+		<SongPlayer videoId="SZNbabKjKpA" play={secret}/>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
