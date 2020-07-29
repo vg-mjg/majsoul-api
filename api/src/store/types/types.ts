@@ -18,7 +18,13 @@ export interface Player<Id = any> extends majsoul.Player {
 	displayName: string;
 }
 
+export enum ContestType {
+	League,
+	Tourney,
+}
+
 export interface Contest<Id = any> extends majsoul.Contest {
+	type: ContestType;
 	_id: Id;
 	teams: ContestTeam<Id>[];
 }

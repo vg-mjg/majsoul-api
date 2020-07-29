@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
@@ -224,6 +224,15 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				musicPlayer: {
 					...state.musicPlayer,
 					playing: false
+				}
+			}
+		} case ActionType.GetContestPlayers: {
+			const getContestPlayers = action as GetContestPlayers;
+			return {
+				...state,
+				contest: {
+					...state.contest,
+					players: getContestPlayers.players
 				}
 			}
 		}

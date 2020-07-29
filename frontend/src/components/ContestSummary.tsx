@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -61,7 +61,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 				</Col>
 		</Row>
 
-		{contest != null ? <LeagueContestSummary contest={contest}/> : null}
+		{contest != null ? <TourneyContestSummary contestId={contest._id}/> : null}
 
 		<Row className="mt-3 justify-content-center">
 			<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>
@@ -71,8 +71,34 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	</Container>
 }
 
-export function TournamentContestSummary(): JSX.Element {
-	return null;
+export function PlayerStandings(props: {contestId: string}): JSX.Element {
+	const contestPlayers = useSelector((state: IState) => state?.contest?.players);
+	const dispatch = useDispatch();
+
+	React.useEffect(() => {
+		fetchContestPlayers(dispatch, props.contestId);
+	}, [props.contestId]);
+
+	if (contestPlayers == null) {
+		return null;
+	}
+
+	return <Container>
+		{contestPlayers.map(player => <Row>{player.displayName}</Row>)}
+	</Container>
+}
+
+export function TourneyContestSummary(props: {contestId: string}): JSX.Element {
+	return <>
+		<Row className="mt-3">
+			<PlayerStandings contestId={props.contestId} />
+		</Row>
+		<Row className="px-4 py-3 justify-content-end" >
+			<Col md="auto" className="h4 mb-0"><u>Recent Games</u></Col>
+		</Row>
+		<Row>
+		</Row>
+	</>
 }
 
 export function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
@@ -118,14 +144,14 @@ export function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
 		<Row className="mt-3">
 			<LeagueStandingChart/>
 		</Row>
-			{ nextSession != null && <>
-				<Row className="px-4 py-3 justify-content-end" >
-					<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
-				</Row>
-				<Row>
-					<Session session={nextSession}></Session>
-				</Row>
-			</>}
+		{ nextSession != null && <>
+			<Row className="px-4 py-3 justify-content-end" >
+				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
+			</Row>
+			<Row>
+				<Session session={nextSession}></Session>
+			</Row>
+		</>}
 		<Row className="px-4 py-3 justify-content-end" >
 			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
 		</Row>

@@ -16,6 +16,7 @@ export enum ActionType {
 	PlayMusic,
 	SetMusic,
 	StopMusic,
+	GetContestPlayers,
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -50,6 +51,10 @@ export interface PlayMusic extends Action<ActionType.PlayMusic> {
 	videoId: string;
 }
 
+export interface GetContestPlayers extends Action<ActionType.GetContestPlayers> {
+	players: Rest.ContestPlayer[];
+}
+
 export function buildApiUrl(path: string): URL {
 	if (process.env.NODE_ENV === "production") {
 		return new URL(`${location.protocol}//${location.host}/api/${path}`);
@@ -72,6 +77,15 @@ export function fetchContestSessions(dispatch: Dispatch, contestId: string): voi
 		.then(sessions => dispatch({
 			type: ActionType.GetContestSessions,
 			sessions
+		}));
+}
+
+export function fetchContestPlayers(dispatch: Dispatch, contestId: string): void {
+	fetch(buildApiUrl(`contests/${contestId}/players`).toString())
+		.then(response => response.json())
+		.then(players => dispatch({
+			type: ActionType.GetContestPlayers,
+			players
 		}));
 }
 

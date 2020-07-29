@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session } from './types/types';
+import { GameResult, Session, ContestPlayer } from './types/types';
 import { ObjectId, FilterQuery, Condition } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -133,6 +133,57 @@ export class RestApi {
 					console.log(error);
 					res.status(500).send(error)
 				});
+		});
+
+		this.app.get<any, ContestPlayer[]>('/contests/:id/players', async (req, res) => {
+			try {
+				const contest = await this.mongoStore.contestCollection.findOne(
+					{ $or: [
+						{ majsoulFriendlyId: parseInt(req.params.id) },
+						{ _id: ObjectId.isValid(req.params.id) ? ObjectId.createFromHexString(req.params.id) : null },
+					]}
+				);
+
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const games = await this.mongoStore.gamesCollection.find(
+					{ contestMajsoulId: contest.majsoulId }
+				).toArray();
+
+				const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
+					game.players.forEach((player, index) => {
+						const id = player._id.toHexString();
+						if (!(id in total)) {
+							total[id] = {
+								...player,
+								tourneyScore: 0,
+								tourneyRank: undefined,
+							};
+						}
+						total[id].tourneyScore += game.finalScore[index].uma;
+					});
+					return total;
+				}, {});
+
+				const players = await this.mongoStore.playersCollection.find(
+					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id) } },
+					{ projection: { majsoulId: 0 } }
+				).toArray();
+
+				res.send(
+					players.map(player => ({
+						...playerGameInfo[player._id.toHexString()],
+						...player,
+					})).sort((a, b) => b.tourneyScore - a.tourneyScore)
+					.map((p, i) => ({...p, tourneyRank: i}))
+				);
+			} catch (error){
+				console.log(error);
+				res.status(500).send(error)
+			}
 		});
 	}
 
@@ -270,9 +321,6 @@ export class RestApi {
 				}
 				res.send(token);
 			});
-		})
-		.get("/users", (req, res) => {
-			res.send("test");
 		});
 	}
 

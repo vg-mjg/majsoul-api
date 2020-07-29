@@ -3,6 +3,7 @@ import { Rest, Store } from "majsoul-api";
 export interface Contest extends Omit<Store.Contest<string>, "teams" | "sessions" > {
 	teams?: Record<string, ContestTeam>;
 	sessions: Session[];
+	players?: Rest.ContestPlayer[];
 }
 
 export interface Session extends Rest.Session<string> {
