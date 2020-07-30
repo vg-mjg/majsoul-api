@@ -224,7 +224,7 @@ export class Spreadsheet {
 					range: {
 						sheetId: this.resultsSheetId,
 						startColumnIndex: 0,
-						endColumnIndex: 6,
+						endColumnIndex: 7,
 						startRowIndex: 1,
 						endRowIndex: 2,
 					}
@@ -272,6 +272,7 @@ export class Spreadsheet {
 							{ userEnteredValue: { numberValue: player.score } },
 							{ userEnteredValue: { numberValue: player.uma / 1000} },
 							{ userEnteredValue: { formulaValue: `=RANK(E${3 + i}; E3:E6)` } },
+							{ userEnteredValue: { formulaValue: `=COUNTIFS(C${4 + i}:C,C${3 + i})` } },
 						]
 					}))
 				}
@@ -281,7 +282,7 @@ export class Spreadsheet {
 					range: {
 						sheetId: this.resultsSheetId,
 						startColumnIndex: 0,
-						endColumnIndex: 6,
+						endColumnIndex: 7,
 						startRowIndex: 1,
 						endRowIndex: 6,
 					},
