@@ -51,7 +51,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	}, [secret]);
 
 	return <Container>
-		<SongPlayer videoId="SZNbabKjKpA" play={secret}/>
+		<SongPlayer videoId="WhrbK254yRE" play={secret}/>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
@@ -59,7 +59,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto">
 				<i>
 					{secret
-						? "Nothing holding you back."
+						? "No Warning."
 						: "No Tips, No Aka, No Tanyao, No Future."}
 					</i>
 				</Col>
