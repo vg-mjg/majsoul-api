@@ -33,10 +33,10 @@ export class Store {
 	}
 
 	public async recordGame(contest: Contest, gameResult: Majsoul.GameResult): Promise<void> {
-		if (gameResult.players.length !== 4) {
-			console.log(`Game id ${gameResult.majsoulId} doesn't have enough players, skipping`);
-			return;
-		}
+		// if (gameResult.players.length !== 4) {
+		// 	console.log(`Game id ${gameResult.majsoulId} doesn't have enough players, skipping`);
+		// 	return;
+		// }
 
 		const session = (await this.contestCollection.findOne(
 			{ _id: contest._id, 'sessions.scheduledTime': { $lte: gameResult.end_time } },

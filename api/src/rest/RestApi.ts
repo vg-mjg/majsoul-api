@@ -234,8 +234,10 @@ export class RestApi {
 							};
 						}
 
+						const games = 6;
+
 						total[id].gamesPlayed++;
-						if (total[id].gamesPlayed > 8) {
+						if (total[id].gamesPlayed > games) {
 							return;
 						}
 						total[id].tourneyScore += game.finalScore[index].uma;

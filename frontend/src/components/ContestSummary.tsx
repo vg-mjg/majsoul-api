@@ -99,24 +99,26 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
+	const maxGames = 6;
+
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
-						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid ${props.contestPlayer.gamesPlayed >= 8 ? "LightGreen" : "grey" }`}}>
+						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid ${props.contestPlayer.gamesPlayed >= maxGames ? "LightGreen" : "grey" }`}}>
 							{props.contestPlayer.nickname}
 						</Col>
 					</Row>
 				</Container>
 			</Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.contestPlayer.tourneyScore / 1000}</b></h5></Col>
-			<Col md="auto" className="mr-3"> <h5><b>{Math.min(8, props.contestPlayer.gamesPlayed)}戦</b></h5></Col>
+			<Col md="auto" className="mr-3"> <h5><b>{Math.min(maxGames, props.contestPlayer.gamesPlayed)}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>
-				{games.sort((a, b) => b.start_time - a.start_time).slice(-8).map(game => {
+				{games.sort((a, b) => b.start_time - a.start_time).slice(-maxGames).map(game => {
 					const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
 					const position = game.finalScore
 						.map((score, seat) => ({score, seat}))
