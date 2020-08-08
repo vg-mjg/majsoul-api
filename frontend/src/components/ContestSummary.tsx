@@ -13,6 +13,7 @@ import { Rest } from "majsoul-api";
 import Accordion from "react-bootstrap/Accordion";
 import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
 import moment = require("moment");
+import { Link } from "react-router-dom";
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -280,8 +281,10 @@ export function ContestList(): JSX.Element {
 	const contests = useSelector((state: IState) => Object.values(state.contestsByMajsoulFriendlyId));
 	return <Container>
 		{contests.map(contest =>
-			<Row key={contest._id}>
-				{contest.name}
+			<Row className="bg-dark rounded text-white" key={contest._id}>
+				<Link to={`/contests/${contest.majsoulFriendlyId}`}>
+					<h4>{contest.name}</h4>
+				</Link>
 			</Row>
 		)}
 	</Container>

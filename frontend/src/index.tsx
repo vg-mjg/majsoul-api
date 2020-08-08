@@ -334,7 +334,7 @@ ReactDOM.render(
 									<ContestList/>
 								</Route>
 								<Route path="/">
-									<ContestSummary contestId="295708"/>
+									<ContestSummary contestId="269607"/>
 								</Route>
 							</Switch>
 						</Row>
