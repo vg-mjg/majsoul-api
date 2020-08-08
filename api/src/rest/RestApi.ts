@@ -34,6 +34,13 @@ export class RestApi {
 		this.app.use(cors());
 		this.app.use(express.json({limit: "1MB"}));
 
+		this.app.get<any, store.Contest<ObjectId>[]>('/contests', (req, res) => {
+			this.mongoStore.contestCollection.find({})
+				.toArray()
+				.then(contests => res.send(contests))
+				.catch(error => res.status(500).send(error));
+		});
+
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.mongoStore.contestCollection.findOne(
 				{ majsoulFriendlyId: parseInt(req.params.id) },

@@ -5,8 +5,8 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers } from "./Actions";
-import { ContestSummary } from "./components/ContestSummary";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests } from "./Actions";
+import { ContestSummary, ContestList } from "./components/ContestSummary";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
@@ -245,6 +245,34 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 					players: getContestPlayers.players
 				}
 			}
+		} case ActionType.GetContests: {
+			const getContests = action as GetContests;
+			const contests: Record<number, Contest> = {};
+			for (const contest of getContests.contests) {
+				contests[contest.majsoulFriendlyId] = {
+					...contest,
+					teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
+						const team = contest.teams == null ? null : contest.teams[index];
+						hash[team?._id ?? index] = {...(team ?? {
+							players: [],
+							_id: index.toString(),
+							index: index,
+							anthem: undefined,
+							image: undefined,
+							name: undefined
+						}), ...{color: teamColors[index], index: index}};
+						return hash;
+					}, {})
+				} as Contest;
+			}
+
+			return {
+				...state,
+				contestsByMajsoulFriendlyId: {
+					...state.contestsByMajsoulFriendlyId,
+					...contests
+				}
+			}
 		}
 	}
 
@@ -263,6 +291,7 @@ const store = createStore(
 		contestReducer
 	),
 	{
+		contestsByMajsoulFriendlyId: {},
 		musicPlayer: {
 			playing: false,
 			videoId: null
@@ -289,6 +318,9 @@ ReactDOM.render(
 							</Route>
 							<Route path="/youtube">
 								<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
+							</Route>
+							<Route path="/contests">
+								<ContestList/>
 							</Route>
 							<Route path="/">
 								<ContestSummary contestId="295708"/>

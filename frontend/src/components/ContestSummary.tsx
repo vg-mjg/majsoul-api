@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames, fetchContests } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -268,4 +268,20 @@ export function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
 			<Session session={currentSession}></Session>
 		</Row>
 	</>
+}
+
+
+export function ContestList(): JSX.Element {
+	const dispatch = useDispatch();
+	React.useEffect(() => {
+		fetchContests(dispatch);
+	}, [true]);
+	const contests = useSelector((state: IState) => Object.values(state.contestsByMajsoulFriendlyId));
+	return <Container>
+		{contests.map(contest =>
+			<Row key={contest._id}>
+				{contest.name}
+			</Row>
+		)}
+	</Container>
 }
