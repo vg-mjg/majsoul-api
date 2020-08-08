@@ -3,7 +3,7 @@ import * as ReactDOM from "react-dom";
 import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
-import { BrowserRouter, Route, Switch } from "react-router-dom";
+import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
 import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests } from "./Actions";
 import { ContestSummary, ContestList } from "./components/ContestSummary";
@@ -17,6 +17,8 @@ import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
 
 import YouTube from 'react-youtube';
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 
 const teamColors = [
@@ -306,26 +308,44 @@ const store = createStore(
 
 const persistor = persistStore(store);
 
+function ContestFromRoute(): JSX.Element {
+	const { id } = useParams();
+	return <ContestSummary contestId={id}/>
+}
+
 ReactDOM.render(
 	<Provider store={store}>
 		<PersistGate loading={null} persistor={persistor}>
 			<BrowserRouter>
 				<Container className={`${styles.feed} bg-dark px-5`}>
-					<Container className={`${styles.feed} bg-primary px-3 pb-3`}>
-						<Switch>
-							<Route path="/rigging">
-								<Rigging/>
-							</Route>
-							<Route path="/youtube">
-								<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
-							</Route>
-							<Route path="/contests">
-								<ContestList/>
-							</Route>
-							<Route path="/">
-								<ContestSummary contestId="295708"/>
-							</Route>
-						</Switch>
+					<Container className={`${styles.feed} bg-primary px-3 pb-3`} style={{display:"flex", flexDirection:"column"}}>
+						<Row className="no-gutters">
+							<Switch>
+								<Route path="/rigging">
+									<Rigging/>
+								</Route>
+								<Route path="/youtube">
+									<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
+								</Route>
+								<Route path="/contests/:id">
+									<ContestFromRoute/>
+								</Route>
+								<Route path="/contests">
+									<ContestList/>
+								</Route>
+								<Route path="/">
+									<ContestSummary contestId="295708"/>
+								</Route>
+							</Switch>
+						</Row>
+						<Row style={{flex:"1"}}></Row>
+						<Row className="mt-3 justify-content-center">
+							<Col md="auto"><Link className="text-dark" to="/" >Home</Link></Col>
+							<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>
+							<Col md="auto"><a className="text-dark" href="https://repo.riichi.moe/">Repo</a></Col>
+							<Col md="auto"><a className="text-dark" href="https://github.com/riichinomics/majsoul-api">Source Code/Report Issue</a></Col>
+							<Col md="auto"><Link className="text-dark" to="/contests" >Contests</Link></Col>
+						</Row>
 					</Container>
 				</Container>
 			</BrowserRouter>

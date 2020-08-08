@@ -7,7 +7,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
-import { Teams, jpNumeral } from "./Teams";
+import { Teams } from "./Teams";
 import YouTube from 'react-youtube';
 import { Rest } from "majsoul-api";
 import Accordion from "react-bootstrap/Accordion";
@@ -50,6 +50,14 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		setTimeout(() => setSecret(true), 5000);
 	}, [secret]);
 
+	if (contest == null) {
+		return <Container className="text-light text-center pt-4">
+			<h5 className="bg-dark rounded py-3">
+				Tourney #{props.contestId} doesn't exist.
+			</h5>
+		</Container>;
+	}
+
 	return <Container>
 		<SongPlayer videoId="WhrbK254yRE" play={secret}/>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
@@ -66,12 +74,6 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		</Row>
 
 		{contest != null ? <TourneyContestSummary contestId={contest._id}/> : null}
-
-		<Row className="mt-3 justify-content-center">
-			<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>
-			<Col md="auto"><a className="text-dark" href="https://repo.riichi.moe/">Repo</a></Col>
-			<Col md="auto"><a className="text-dark" href="https://github.com/riichinomics/majsoul-api">Source Code/Report Issue</a></Col>
-		</Row>
 	</Container>
 }
 
@@ -269,7 +271,6 @@ export function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
 		</Row>
 	</>
 }
-
 
 export function ContestList(): JSX.Element {
 	const dispatch = useDispatch();
