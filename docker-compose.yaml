@@ -5,8 +5,6 @@ services:
     build:
       context: .
     image: majsoul-nginx
-    ports:
-      - 80:80
 
   riichi-connector:
     build:
