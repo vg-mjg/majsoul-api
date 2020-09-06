@@ -19,8 +19,8 @@ export interface Player<Id = any> extends majsoul.Player {
 }
 
 export enum ContestType {
-	League,
 	Tourney,
+	League,
 }
 
 export interface Contest<Id = any> extends majsoul.Contest {

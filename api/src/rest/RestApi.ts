@@ -10,6 +10,7 @@ import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { Observable } from 'rxjs';
 import { toArray } from 'rxjs/operators';
+import { body, validationResult } from 'express-validator';
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -312,6 +313,34 @@ export class RestApi {
 			  return;
 			}
 			next();
+		})
+
+		.put<any, store.Contest<ObjectId>>(
+			'/contests',
+			[
+				body('majsoulFriendlyId').isInt(),
+				body('password').isLength({ min: 5 })
+			],
+			(req, res) => {
+			const patch = req.body as Session<string>;
+			if (patch?.scheduledTime == undefined) {
+				res.sendStatus(304);
+				return;
+			}
+
+			this.mongoStore.contestCollection.findOneAndUpdate(
+				{ _id: new ObjectId(req.params.id) },
+				{ $set: { scheduledTime: patch.scheduledTime } },
+				{ returnOriginal: false }
+			).then((session) => {
+				res.send({
+					_id: session.value._id,
+					scheduledTime: session.value.scheduledTime
+				} as Session);
+			}).catch((err) => {
+				console.log(err);
+				res.status(500).send(err);
+			})
 		})
 
 		.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
