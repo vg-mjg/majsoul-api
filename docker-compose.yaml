@@ -4,6 +4,9 @@ services:
   nginx:
     build:
       context: .
+    networks:
+      - riichi-ingress
+      - default
     image: majsoul-nginx
 
   riichi-connector:
@@ -50,3 +53,7 @@ secrets:
 
 volumes:
   mongo-db-data:
+
+networks:
+  riichi-ingress:
+    external: true
