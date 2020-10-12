@@ -16,7 +16,7 @@ In /api:
 ```
 yarn
 yarn run tsc
-cp secrets.json.examples dist/secrets.json
+cp secrets.json.example dist/secrets.json
 yarn connect
 ```
 
@@ -41,7 +41,7 @@ In /api:
 ```
 yarn
 yarn run tsc
-cp secrets.json.examples dist/secrets.json
+cp secrets.json.example dist/secrets.json
 # create and copy certs!
 yarn rest
 ```
