@@ -334,8 +334,7 @@ export class RestApi {
 				{ returnOriginal: false }
 			).then((session) => {
 				res.send({
-					_id: session.value._id,
-					scheduledTime: session.value.scheduledTime
+					_id: session.value._id
 				} as Session);
 			}).catch((err) => {
 				console.log(err);

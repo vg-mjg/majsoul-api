@@ -60,7 +60,7 @@ async function main() {
 
 	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 
-	const majsoulContest = await api.findContestByContestId(269607);
+	const majsoulContest = await api.findContestByContestId(657799);
 	// const contestId2 = await api.findContestUniqueId(917559);
 	const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
 		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
@@ -132,10 +132,12 @@ async function main() {
 	const mongoSub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
 		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
 			setTimeout(() => {
-				api.getGame(notification.uuid).then(gameResult => mongoStore.recordGame(contest, gameResult));
+				api.getGame(notification.uuid)
+					.then(gameResult => mongoStore.recordGame(contest, gameResult)
+					.catch(e => console.log(e)));
 			}, 5000);
 		}
 	});
 }
 
-main();
+main().catch(e => console.log(e));

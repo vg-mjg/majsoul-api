@@ -4,7 +4,7 @@ version: '3.1'
 services:
 
   mongo:
-    image: mongo
+    image: mongo:4.2
     restart: always
     ports:
       - 27017:27017
@@ -13,7 +13,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
 
   mongo-express:
-    image: mongo-express
+    image: mongo-express:4.2
     restart: always
     ports:
       - 8081:8081
