@@ -99,7 +99,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
-	const maxGames = 6;
+	const maxGames = 5;
 
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
