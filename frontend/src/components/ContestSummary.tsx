@@ -14,6 +14,7 @@ import Accordion from "react-bootstrap/Accordion";
 import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
 import moment = require("moment");
 import { Link } from "react-router-dom";
+import nantoka_nare from "../../assets/nantoka_nare.mp3";
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -48,7 +49,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		if (!secret) {
 			return;
 		}
-		setTimeout(() => setSecret(true), 5000);
+		new Audio(nantoka_nare as any).play()
 	}, [secret]);
 
 	if (contest == null) {
@@ -60,7 +61,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	}
 
 	return <Container>
-		<SongPlayer videoId="PNcXo7_b9M4" play={secret}/>
+		{/* <SongPlayer videoId="PNcXo7_b9M4" play={secret}/> */}
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
@@ -68,8 +69,8 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto">
 				<i>
 					{secret
-						? "<secret goes here>"
-						: "<tagline goes here>"}
+						? "(You) did this."
+						: "Pls no bully."}
 					</i>
 				</Col>
 		</Row>
