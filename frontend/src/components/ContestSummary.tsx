@@ -49,7 +49,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		if (!secret) {
 			return;
 		}
-		new Audio(nantoka_nare as any).play()
+		// new Audio(nantoka_nare as any).play()
 	}, [secret]);
 
 	if (contest == null) {
@@ -61,7 +61,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	}
 
 	return <Container>
-		{/* <SongPlayer videoId="PNcXo7_b9M4" play={secret}/> */}
+		<SongPlayer videoId="wIcHj_XH4QI" play={secret}/>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
@@ -69,8 +69,8 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto">
 				<i>
 					{secret
-						? "(You) did this."
-						: "Pls no bully."}
+						? "*lewd rinshan lesbian sounds*"
+						: "there are crabs under the river"}
 					</i>
 				</Col>
 		</Row>
