@@ -235,7 +235,7 @@ export class RestApi {
 							};
 						}
 
-						const games = 5;
+						const games = 3;
 
 						total[id].gamesPlayed++;
 						if (total[id].gamesPlayed > games) {
