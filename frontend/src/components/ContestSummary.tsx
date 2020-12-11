@@ -68,7 +68,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			</Col>
 			<Col md="auto">
 				<i>
-					{secret
+					{!secret
 						? "*lewd rinshan lesbian sounds*"
 						: "there are crabs under the river"}
 					</i>
