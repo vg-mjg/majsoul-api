@@ -104,8 +104,8 @@ function TeamIcon(props: {team:string}): JSX.Element {
 		return null;
 	}
 
-	return <h4 className="pr-2">
-		<Badge style={{backgroundColor:sakiTeamInfo[props.team].color, color: "black"}}>
+	return <h4 className="pr-2 text-dark">
+		<Badge style={{backgroundColor:sakiTeamInfo[props.team].color}}>
 			{sakiTeamInfo[props.team].name}
 		</Badge>
 	</h4>
