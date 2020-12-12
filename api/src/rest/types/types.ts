@@ -14,4 +14,5 @@ export interface ContestPlayer<Id = any> extends Player<Id> {
 	tourneyScore: number;
 	tourneyRank: number;
 	gamesPlayed: number;
+	team: string;
 }

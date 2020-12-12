@@ -10,7 +10,80 @@ import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { Observable } from 'rxjs';
 import { toArray } from 'rxjs/operators';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
+
+const sakiTeams = {
+	"Ryuumonbuchi": [
+		"hierarch",
+		"spinach",
+		"michaelao",
+		"BULKVANDERHUGE",
+		"Obskiur",
+		"Seanchovy",
+		"Sticky",
+		"XSA",
+		"cecily",
+		"kodomo",
+		"Watapon",
+		"crackhead",
+		"guano",
+		"quququququ",
+		"Bodhi",
+		"dorksport",
+	],
+	"Kiyosumi": [
+		"Patriarkatet",
+		"amegumo",
+		"Fire",
+		"snacks",
+		"ChickenDinner",
+		"Meido",
+		"Toraaa",
+		"bakasenpai",
+		"Kirk",
+		"socculta",
+		"ZZZ",
+		"Zeon_Ace",
+		"Soupman",
+		"NullProphet",
+		"B_Reveler",
+		"Raivoli",
+		"rigged",
+	],
+	"Kazekoshi": [
+		"生意気な猫",
+		"RisingBob",
+		"UncleMoton",
+		"Waifu",
+		"6k5e",
+		"sand_witch",
+		"ChihiroFJ",
+		"Bodoque",
+		"(((caillou)))",
+		"Tarkus",
+		"Kingdomfreak",
+		"LucMagnus",
+		"mottwww",
+		"24601",
+	],
+	"Tsuruga": [
+		"Kress",
+		"MrPotato",
+		"GG_to_all",
+		"Garden",
+		"UNIVERSE",
+		"CrazyWafel",
+		"bob1444",
+		"Clinton_Emails",
+		"Maria33",
+		"Nuxoz",
+		"FurudoErika",
+		"theo",
+		"地獄の砂",
+		"Meduchi",
+		"Gorona",
+	]
+}
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -29,8 +102,13 @@ export class RestApi {
 	}
 
 	private app: express.Express;
+	private readonly playerTeam: Record<string, string>;
 
 	constructor(private readonly mongoStore: store.Store) {
+		this.playerTeam = Object.entries(sakiTeams)
+			.map(([team, players]) => players.map(player => [player, team]))
+			.flat()
+			.reduce((total, next) => ({...total, [next[0]]: next[1]}), {});
 		this.app = express();
 		this.app.use(cors());
 		this.app.use(express.json({limit: "1MB"}));
@@ -232,6 +310,7 @@ export class RestApi {
 								tourneyScore: 0,
 								tourneyRank: undefined,
 								gamesPlayed: 0,
+								team: undefined
 							};
 						}
 
@@ -255,6 +334,7 @@ export class RestApi {
 					players.map(player => ({
 						...playerGameInfo[player._id.toHexString()],
 						...player,
+						team: this.playerTeam[player.nickname]
 					})).sort((a, b) => b.tourneyScore - a.tourneyScore)
 					.map((p, i) => ({...p, tourneyRank: i}))
 				);

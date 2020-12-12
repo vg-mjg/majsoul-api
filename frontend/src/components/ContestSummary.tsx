@@ -6,6 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Badge from 'react-bootstrap/Badge';
 import { Session } from "./Session";
 import { Teams } from "./Teams";
 import YouTube from 'react-youtube';
@@ -79,6 +80,37 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	</Container>
 }
 
+const sakiTeamInfo: Record<string, {color:string, name:string}> = {
+	"Kazekoshi": {
+		color: "#ffd966",
+		name: "風越"
+	},
+	"Kiyosumi": {
+		color: "#6fa8dc",
+		name: "清澄"
+	},
+	"Ryuumonbuchi": {
+		color: "#e06666",
+		name: "龍門渕"
+	},
+	"Tsuruga": {
+		color: "#b4a7d6",
+		name: "敦賀"
+	}
+}
+
+function TeamIcon(props: {team:string}): JSX.Element {
+	if (!props.team) {
+		return null;
+	}
+
+	return <h4 className="pr-2">
+		<Badge style={{backgroundColor:sakiTeamInfo[props.team].color, color: "black"}}>
+			{sakiTeamInfo[props.team].name}
+		</Badge>
+	</h4>
+}
+
 export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: Rest.ContestPlayer}): JSX.Element {
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
@@ -105,6 +137,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
+			<TeamIcon team={props.contestPlayer.team}/>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
