@@ -161,7 +161,8 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 
 	const games = useSelector((state: IState) =>
 		Object.values(state.games ?? {})
-			.filter(game => game.rounds.find(round => getYakumanAgari(round).length > 0))
+			.filter(game => game.contestId === props.contestId
+				&& game.rounds.find(round => getYakumanAgari(round).length > 0))
 	);
 
 	// const rounds = games
