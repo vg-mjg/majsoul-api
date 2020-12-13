@@ -101,35 +101,35 @@ function getYakumanName(han: Han[]): string {
 			case Han.All_Green:
 				return "绿一色";
 			case Han.All_Terminals:
-				return "清老头";
+				return "清老頭";
 			case Han.Thirteen_Orphans:
-				return "国士无双";
+				return "国士無双";
 			case Han.Four_Little_Winds:
 				return "小四喜";
 			case Han.Four_Quads:
-				return "四杠子";
+				return "四槓子";
 			case Han.Nine_Gates:
-				return "九莲宝灯";
+				return "九蓮宝燈";
 			case Han.Eight_time_East_Staying:
-				return "八连庄";
+				return "八連荘";
 			case Han.True_Nine_Gates:
-				return "纯正九莲宝灯";
+				return "純正九蓮宝燈";
 			case Han.Single_wait_Four_Concealed_Triplets:
-				return "四暗刻单骑";
+				return "四暗刻単騎";
 			case Han.Thirteen_wait_Thirteen_Orphans:
-				return "国士无双十三面";
+				return "国士無双十三面待ち";
 			case Han.Four_Big_Winds:
 				return "大四喜";
 			case Han.Hand_of_Man:
 				return "人和";
 			case Han.Big_Wheels:
-				return "大车轮";
+				return "大車輪";
 			case Han.Bamboo_Forest:
 				return "大竹林";
 			case Han.Numerous_Neighbours:
-				return "大数邻";
+				return "大数隣";
 			case Han.Ishinouenimosannen:
-				return "石上三年";
+				return "石の上にも三年";
 			case Han.Big_Seven_Stars:
 				return "大七星";
 		}
