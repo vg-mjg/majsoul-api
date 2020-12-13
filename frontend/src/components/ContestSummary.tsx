@@ -309,7 +309,7 @@ export function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 
 		return Object.values(state.games)
 			.filter(game => game.contestId === props.contestId)
-			.sort((a, b) => a.start_time - b.start_time)
+			.sort((a, b) => b.start_time - a.start_time)
 			.slice(0, 4);
 	});
 
