@@ -194,6 +194,15 @@ export const getRiggingToken = (params: GetRiggingTokenOptions): AppThunk<Riggin
 	}
 }
 
+export function fetchYakuman(dispatch: Dispatch, contestId: string): void {
+	fetch(buildApiUrl(`contests/${contestId}/yakuman`).toString())
+		.then(response => response.json())
+		.then(games => dispatch({
+			type: ActionType.GamesRetrieved,
+			games
+		}));
+}
+
 export function logout(dispatch: Dispatch) {
 	dispatch({type: ActionType.LogOut});
 }

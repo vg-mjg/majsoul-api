@@ -283,6 +283,43 @@ export class RestApi {
 			}
 		});
 
+		this.app.get<any, GameResult[]>('/contests/:contestId/yakuman', async (req, res) => {
+			try {
+				const contest = await this.mongoStore.contestCollection.findOne(
+					{ $or: [
+						{ majsoulFriendlyId: parseInt(req.params.contestId) },
+						{ _id: ObjectId.isValid(req.params.contestId) ? ObjectId.createFromHexString(req.params.contestId) : null },
+					]}
+				);
+
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const games = await this.mongoStore.gamesCollection.find(
+					{
+						contestMajsoulId: contest.majsoulId,
+					}
+				).toArray();
+
+				res.send(games
+					.filter(game => game.rounds.find(round =>
+						round.tsumo?.value === 32000
+							|| round.tsumo?.value === 48000
+							|| round.rons?.find(ron => ron.value === 32000 || ron.value === 48000) != null
+					))
+					.map(game => ({
+						...game,
+						contestId: contest._id
+					}))
+				);
+			} catch (error){
+				console.log(error);
+				res.status(500).send(error)
+			}
+		});
+
 		this.app.get<any, ContestPlayer[]>('/contests/:id/players', async (req, res) => {
 			try {
 				const contest = await this.mongoStore.contestCollection.findOne(
