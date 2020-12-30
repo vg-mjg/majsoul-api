@@ -3,6 +3,12 @@ pipeline {
   stages {
     stage('docker compose') {
       steps {
+        sh 'touch majsoul.env'
+      }
+    }
+
+    stage('docker compose') {
+      steps {
         sh 'docker-compose build'
       }
     }
