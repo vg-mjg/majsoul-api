@@ -16,7 +16,7 @@ pipeline {
       }
     }
 
-    stage('docker stack') {
+    stage('docker down') {
       steps {
         sh 'docker stack down majsoul'
       }
