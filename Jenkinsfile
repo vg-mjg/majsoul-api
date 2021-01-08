@@ -1,10 +1,5 @@
 pipeline {
   agent any
-  withCredentials([
-    file(credentialsId: 'majsoul_secrets', variable: 'MAJSOUL_SECRETS'),
-    file(credentialsId: 'riichi_cert', variable: 'RIICHI_CERT'),
-    file(credentialsId: 'riichi_key', variable: 'RIICHI_KEY')
-  ]) {
     stages {
       stage('docker compose') {
         steps {
@@ -13,6 +8,11 @@ pipeline {
         }
       }
 
+    withCredentials([
+      file(credentialsId: 'majsoul_secrets', variable: 'MAJSOUL_SECRETS'),
+      file(credentialsId: 'riichi_cert', variable: 'RIICHI_CERT'),
+      file(credentialsId: 'riichi_key', variable: 'RIICHI_KEY')
+    ]) {
       stage('docker stack') {
         steps {
           sh 'cp ${MAJSOUL_SECRETS} majsoul.json'
