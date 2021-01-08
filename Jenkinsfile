@@ -19,6 +19,15 @@ pipeline {
     stage('docker down') {
       steps {
         sh 'docker stack down majsoul'
+        sh '''
+          until [ -z "$(docker service ls --filter label=com.docker.stack.namespace=majsoul -q)" ] || [ "$limit" -lt 0 ]; do
+            sleep 1;
+          done
+
+          until [ -z "$(docker network ls --filter label=com.docker.stack.namespace=majsoul -q)" ] || [ "$limit" -lt 0 ]; do
+            sleep 1;
+          done
+        '''
       }
     }
 
