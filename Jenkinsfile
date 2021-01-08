@@ -18,7 +18,7 @@ pipeline {
 
     stage('docker stack') {
       steps {
-        sh 'cp ${MAJSOUL_SECRETS} majsoul.json'
+        sh 'cp ${MAJSOUL_SECRETS} secrets.json'
         sh 'cp ${RIICHI_CERT} riichi.crt.pem'
         sh 'cp ${RIICHI_KEY} riichi.key.pem'
         sh 'cp ${MONGO_CREDS} mongo-creds'
