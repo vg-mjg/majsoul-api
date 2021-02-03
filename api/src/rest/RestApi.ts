@@ -28,7 +28,6 @@ const sakiTeams = {
 
 	"Shiraitodai": [
 		"amegumo",
-		"Patriarkatet",
 		"Kingdomfreak",
 		"michaelao",
 		"BULKVANDERHUGE",
@@ -76,7 +75,6 @@ const sakiTeams = {
 
 	"Kiyosumi": [
 		"Patriarkatet",
-		"snacks",
 		"kfarwell",
 		"Zeon_Ace",
 		"S496",
@@ -106,7 +104,6 @@ const sakiTeams = {
 	],
 
 	"Miyamori": [
-		"Meido",
 		"Sticky",
 		"生意気な猫",
 		"6k5e",
@@ -123,7 +120,6 @@ const sakiTeams = {
 	],
 
 	"Himematsu": [
-		"amegumo",
 		"spinach",
 		"BULKVANDERHUGE",
 		"Kress",
@@ -137,6 +133,13 @@ const sakiTeams = {
 		"aruchomu",
 	]
 }
+
+const seededPlayers = [
+	"Patriarkatet",
+	"snacks",
+	"Meido",
+	"amegumo",
+]
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -155,13 +158,8 @@ export class RestApi {
 	}
 
 	private app: express.Express;
-	private readonly playerTeam: Record<string, string>;
 
 	constructor(private readonly mongoStore: store.Store) {
-		this.playerTeam = Object.entries(sakiTeams)
-			.map(([team, players]) => players.map(player => [player, team]))
-			.flat()
-			.reduce((total, next) => ({...total, [next[0]]: next[1]}), {});
 		this.app = express();
 		this.app.use(cors());
 		this.app.use(express.json({limit: "1MB"}));
@@ -424,7 +422,12 @@ export class RestApi {
 					players.map(player => ({
 						...playerGameInfo[player._id.toHexString()],
 						...player,
-						team: this.playerTeam[player.nickname]
+						team: {
+							teams: Object.entries(sakiTeams)
+								.filter(([team, players]) => players.indexOf(player.nickname) >= 0)
+								.map(([team, _]) => team),
+							seeded: seededPlayers.indexOf(player.nickname) >= 0,
+						}
 					})).sort((a, b) => b.tourneyScore - a.tourneyScore)
 					.map((p, i) => ({...p, tourneyRank: i}))
 				);
