@@ -63,7 +63,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	}
 
 	return <Container>
-		<SongPlayer videoId="wIcHj_XH4QI" play={secret}/>
+		<SongPlayer videoId="C7zoZe-ZATs" play={secret}/>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
@@ -71,8 +71,8 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto">
 				<i>
 					{!secret
-						? "*lewd rinshan lesbian sounds*"
-						: "there are crabs under the river"}
+						? "nyaggers of the world unite"
+						: "you have nothing to lose but your points"}
 					</i>
 				</Col>
 		</Row>
@@ -261,7 +261,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
-	const maxGames = 3;
+	const maxGames = 7;
 
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
