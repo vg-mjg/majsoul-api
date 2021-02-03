@@ -6,6 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Nav from 'react-bootstrap/Nav';
 import Badge from 'react-bootstrap/Badge';
 import { Session } from "./Session";
 import { Teams } from "./Teams";
@@ -268,7 +269,7 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 	</>
 }
 
-export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: Rest.ContestPlayer}): JSX.Element {
+export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: Rest.ContestPlayer, teams: Array<string>}): JSX.Element {
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];
@@ -294,7 +295,7 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
-			<TeamIcon team={props.contestPlayer.team.teams[0]}/>
+			<TeamIcon team={props.teams.find(team => props.contestPlayer.team.teams.indexOf(team) >= 0)}/>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
@@ -342,7 +343,50 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 	</Accordion>
 }
 
+const brackets: Record<string, Array<string>> = {
+	"Achiga": [
+		"Achiga",
+		"Shiraitodai",
+		"Senriyama",
+		"Shindouji",
+	],
+	"Kiyosumi":	[
+		"Kiyosumi",
+		"Eisui",
+		"Miyamori",
+		"Himematsu",
+	]
+}
+
 export function PlayerStandings(props: {contestId: string}): JSX.Element {
+	const [activeSide, activeSideSetter]  = React.useState("Achiga");
+
+	return <Container>
+		<Nav
+			justify
+			variant="tabs"
+			activeKey={activeSide}
+			className="rounded-top text-light"
+			style={{
+				backgroundColor: "black"
+			}}
+			onSelect={(key: string) => activeSideSetter(key)}
+		>
+			<Nav.Item className="rounded-0">
+				<Nav.Link eventKey="Achiga" className="h3 m-0 rounded-0" >阿知賀側</Nav.Link>
+			</Nav.Item>
+			<Nav.Item className="rounded-0">
+				<Nav.Link eventKey="Kiyosumi" className="h3 m-0 rounded-0">清澄側</Nav.Link>
+			</Nav.Item>
+			</Nav>
+		<BracketPlayerStandings contestId={props.contestId} teams={brackets[activeSide]}/>
+	</Container>
+}
+
+export function BracketPlayerStandings(props: {
+	contestId: string,
+	teams: Array<string>
+}): JSX.Element {
 	const contestPlayers = useSelector((state: IState) => state.contest?.players);
 	const dispatch = useDispatch();
 
@@ -354,10 +398,10 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 		return null;
 	}
 
-	return <Container className="rounded bg-dark text-light px-3 py-4">
+	return <Container className="rounded-bottom bg-dark text-light px-3 py-4">
 		{contestPlayers.map((player, placing) =>
 			<Row key={player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-				<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player}/>
+				<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player} teams={props.teams}/>
 			</Row>
 		)}
 	</Container>

@@ -24,3 +24,20 @@
 
 	.team#{$i}Rank
 		border-bottom: 2px solid var(--team-#{$i}-base)
+
+:global .nav
+	border-bottom: none
+
+:global .h3
+	&.nav-link
+		border: none
+		background-color: #24292d
+		&:hover
+			border: none
+			margin: inherit
+			text-decoration: underline
+		&.active
+			background-color: #343a40
+			font-weight: 600
+			color: white
+			border: none
