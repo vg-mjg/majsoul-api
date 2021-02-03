@@ -102,6 +102,34 @@ const sakiTeamInfo: Record<string, {color:string, name:string}> = {
 	"Tsuruga": {
 		color: "#b4a7d6",
 		name: "敦賀"
+	},
+	"Achiga": {
+		color: "#e1a9e8",
+		name: "阿知賀"
+	},
+	"Shiraitodai": {
+		color: "#2e49c1",
+		name: "白糸台"
+	},
+	"Senriyama": {
+		color: "#b7964e",
+		name: "千里山"
+	},
+	"Shindouji": {
+		color: "#7954d8",
+		name: "新道寺"
+	},
+	"Eisui": {
+		color: "#ee0000",
+		name: "永水"
+	},
+	"Miyamori": {
+		color: "#71ba50",
+		name: "宮守"
+	},
+	"Himematsu": {
+		color: "#e5da44",
+		name: "姫松"
 	}
 }
 
