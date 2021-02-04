@@ -1,11 +1,12 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames, fetchContests, fetchYakuman } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames, fetchContests, fetchYakuman, fetchContestPlayersDirect } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Spinner from 'react-bootstrap/Spinner';
 import Nav from 'react-bootstrap/Nav';
 import Badge from 'react-bootstrap/Badge';
 import { Session } from "./Session";
@@ -18,6 +19,7 @@ import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
 import moment = require("moment");
 import { Link } from "react-router-dom";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
+import { ContestPlayer } from "majsoul-api/dist/rest";
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -87,6 +89,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	</Container>
 }
 
+const maxGames = 4;
 const sakiTeamInfo: Record<string, {color:string, name:string}> = {
 	"Kazekoshi": {
 		color: "#ffd966",
@@ -269,7 +272,11 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 	</>
 }
 
-export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: Rest.ContestPlayer, teams: Array<string>}): JSX.Element {
+export function ContestPlayerDisplay(props: {
+	contestId: string,
+	contestPlayer: Rest.ContestPlayer,
+	teams: Array<string>
+}): JSX.Element {
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];
@@ -289,8 +296,6 @@ export function ContestPlayerDisplay(props: {contestId: string, contestPlayer: R
 
 		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
-
-	const maxGames = 7;
 
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
@@ -379,31 +384,42 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 				<Nav.Link eventKey="Kiyosumi" className="h3 m-0 rounded-0">清澄側</Nav.Link>
 			</Nav.Item>
 			</Nav>
-		<BracketPlayerStandings contestId={props.contestId} teams={brackets[activeSide]}/>
+		<BracketPlayerStandings contestId={props.contestId} teams={brackets[activeSide]} ignoredGames={activeSide === "Achiga" ? 0 : 4}/>
 	</Container>
 }
 
 export function BracketPlayerStandings(props: {
 	contestId: string,
-	teams: Array<string>
+	teams: Array<string>,
+	ignoredGames?: number
 }): JSX.Element {
-	const contestPlayers = useSelector((state: IState) => state.contest?.players);
 	const dispatch = useDispatch();
+	const [contestPlayers, setContestPlayers] = React.useState<Array<Rest.ContestPlayer<any>>>(null);
 
 	React.useEffect(() => {
-		fetchContestPlayers(dispatch, props.contestId);
-	}, [props.contestId]);
+		setContestPlayers(null);
+		fetchContestPlayersDirect({
+			contestId: props.contestId,
+			gameLimit: maxGames,
+			ignoredGames: props.ignoredGames
+		}).then(setContestPlayers);
+	}, [props.contestId, props.ignoredGames, props.teams]);
 
-	if (contestPlayers == null) {
-		return null;
-	}
-
-	return <Container className="rounded-bottom bg-dark text-light px-3 py-4">
-		{contestPlayers.map((player, placing) =>
-			<Row key={player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-				<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player} teams={props.teams}/>
+	return <Container className="rounded-bottom bg-dark text-light text-center px-3 py-4">
+		{contestPlayers == null
+			? <Row>
+				<Col>
+					<Spinner animation="border" role="status">
+						<span className="sr-only">Loading...</span>
+					</Spinner>
+				</Col>
 			</Row>
-		)}
+			: contestPlayers.map((player, placing) =>
+				<Row key={player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
+					<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player} teams={props.teams}/>
+				</Row>
+			)
+		}
 	</Container>
 }
 

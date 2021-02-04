@@ -389,6 +389,16 @@ export class RestApi {
 					{ contestMajsoulId: contest.majsoulId }
 				).toArray();
 
+				let gameLimit = parseInt(req.query?.gameLimit as string);
+				if (isNaN(gameLimit)) {
+					gameLimit = 5;
+				}
+
+				let ignoredGames = parseInt(req.query?.ignoredGames as string);
+				if (isNaN(ignoredGames)) {
+					ignoredGames = 0;
+				}
+
 				const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
 					game.players.forEach((player, index) => {
 						const id = player._id.toHexString();
@@ -402,10 +412,8 @@ export class RestApi {
 							};
 						}
 
-						const games = 7;
-
 						total[id].gamesPlayed++;
-						if (total[id].gamesPlayed > games) {
+						if (total[id].gamesPlayed <= ignoredGames || total[id].gamesPlayed > (gameLimit + ignoredGames)) {
 							return;
 						}
 						total[id].tourneyScore += game.finalScore[index].uma;

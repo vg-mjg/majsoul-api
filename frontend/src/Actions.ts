@@ -90,13 +90,39 @@ export function fetchContestSessions(dispatch: Dispatch, contestId: string): voi
 		}));
 }
 
-export function fetchContestPlayers(dispatch: Dispatch, contestId: string | number): void {
-	fetch(buildApiUrl(`contests/${contestId}/players`).toString())
-		.then(response => response.json())
-		.then(players => dispatch({
-			type: ActionType.GetContestPlayers,
-			players
-		}));
+interface FetchContestPlayerParams {
+	contestId: string | number,
+	gameLimit?: number,
+	ignoredGames?: number,
+}
+
+export function fetchContestPlayers(
+	dispatch: Dispatch,
+	params: FetchContestPlayerParams,
+): void {
+	fetchContestPlayersDirect(params).then(players => dispatch({
+		type: ActionType.GetContestPlayers,
+		players
+	}));
+}
+
+export function fetchContestPlayersDirect(
+	params: FetchContestPlayerParams,
+): Promise<Array<Rest.ContestPlayer<any>>> {
+	const url = buildApiUrl(`contests/${params.contestId}/players`);
+	const queryParameters: Record<string, string> = {};
+	if (params.gameLimit != null) {
+		queryParameters.gameLimit = params.gameLimit.toString();
+	}
+
+	if (params.ignoredGames != null) {
+		queryParameters.ignoredGames = params.ignoredGames.toString();
+	}
+
+	url.search = new URLSearchParams(queryParameters).toString();
+
+	return fetch(url.toString())
+		.then(response => response.json());
 }
 
 export function fetchContestPlayerGames(dispatch: Dispatch, contestId: string, playerId: string): void {

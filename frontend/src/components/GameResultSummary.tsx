@@ -28,7 +28,9 @@ function GameSeat(props: {
 			return;
 		}
 
-		fetchContestPlayers(dispatch, props.game.contestId);
+		fetchContestPlayers(dispatch, {
+			contestId: props.game.contestId
+		});
 	}, [props.game.contestId]);
 
 	if (player == null) {
