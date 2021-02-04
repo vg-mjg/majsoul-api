@@ -137,12 +137,18 @@ const sakiTeamInfo: Record<string, {color:string, name:string}> = {
 	}
 }
 
-function TeamIcon(props: {team:string}): JSX.Element {
+function TeamIcon(props: {team:string, seeded: boolean}): JSX.Element {
 	if (!props.team) {
 		return null;
 	}
 
 	return <h4 className="pr-2 text-dark">
+		{props.seeded
+			? <Badge className="bg-light mr-2" style={{backgroundColor:sakiTeamInfo[props.team].color}}>
+				シード
+			</Badge>
+			: null
+		}
 		<Badge style={{backgroundColor:sakiTeamInfo[props.team].color}}>
 			{sakiTeamInfo[props.team].name}
 		</Badge>
@@ -275,7 +281,7 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 export function ContestPlayerDisplay(props: {
 	contestId: string,
 	contestPlayer: Rest.ContestPlayer,
-	teams: Array<string>
+	team: string
 }): JSX.Element {
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
@@ -300,7 +306,7 @@ export function ContestPlayerDisplay(props: {
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
-			<TeamIcon team={props.teams.find(team => props.contestPlayer.team.teams.indexOf(team) >= 0)}/>
+			<TeamIcon team={props.team} seeded={props.contestPlayer.team.seeded}/>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
@@ -388,6 +394,13 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 	</Container>
 }
 
+function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: string}): number {
+	if (params.player.team.seeded && params.team != null) {
+		return 1;
+	}
+	return 0;
+}
+
 export function BracketPlayerStandings(props: {
 	contestId: string,
 	teams: Array<string>,
@@ -414,9 +427,14 @@ export function BracketPlayerStandings(props: {
 					</Spinner>
 				</Col>
 			</Row>
-			: contestPlayers.map((player, placing) =>
-				<Row key={player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-					<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player} teams={props.teams}/>
+			: contestPlayers.map(player => ({
+				player,
+				team: props.teams.find(team => player.team.teams.indexOf(team) >= 0)
+			}))
+			.sort((a, b) => contestPlayerTeamSort(b) - contestPlayerTeamSort(a))
+			.map((player, placing) =>
+				<Row key={player.player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
+					<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player.player} team={player.team}/>
 				</Row>
 			)
 		}

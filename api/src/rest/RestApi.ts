@@ -134,7 +134,7 @@ const sakiTeams = {
 	]
 }
 
-const seededPlayers = [
+const seededPlayerNames = [
 	"Patriarkatet",
 	"snacks",
 	"Meido",
@@ -421,6 +421,24 @@ export class RestApi {
 					return total;
 				}, {});
 
+				const seededPlayers = await this.mongoStore.playersCollection.find(
+					{ nickname: { $in: seededPlayerNames } }
+				).toArray();
+
+				for (const seededPlayer of seededPlayers) {
+					const id = seededPlayer._id.toHexString();
+					if (id in playerGameInfo) {
+						continue
+					}
+					playerGameInfo[id] =  {
+						...seededPlayer,
+						tourneyScore: 0,
+						tourneyRank: undefined,
+						gamesPlayed: 0,
+						team: undefined
+					};
+				}
+
 				const players = await this.mongoStore.playersCollection.find(
 					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id) } },
 					{ projection: { majsoulId: 0 } }
@@ -434,7 +452,7 @@ export class RestApi {
 							teams: Object.entries(sakiTeams)
 								.filter(([team, players]) => players.indexOf(player.nickname) >= 0)
 								.map(([team, _]) => team),
-							seeded: seededPlayers.indexOf(player.nickname) >= 0,
+							seeded: seededPlayerNames.indexOf(player.nickname) >= 0,
 						}
 					})).sort((a, b) => b.tourneyScore - a.tourneyScore)
 					.map((p, i) => ({...p, tourneyRank: i}))

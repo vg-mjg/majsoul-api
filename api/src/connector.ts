@@ -67,7 +67,7 @@ async function main() {
 	}
 
 	logEvery2Seconds(0);
-	const majsoulContest = await api.findContestByContestId(174079);
+	const majsoulContest = await api.findContestByContestId(236728);
 	// const contestId2 = await api.findContestUniqueId(917559);
 	const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
 		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
