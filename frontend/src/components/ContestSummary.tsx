@@ -17,7 +17,7 @@ import { Han, RoundResult, AgariInfo } from "majsoul-api/dist/majsoul/types";
 import Accordion from "react-bootstrap/Accordion";
 import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
 import moment = require("moment");
-import { Link } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { ContestPlayer } from "majsoul-api/dist/rest";
 
@@ -365,13 +365,13 @@ export function ContestPlayerDisplay(props: {
 }
 
 const brackets: Record<string, Array<string>> = {
-	"Achiga": [
+	"achiga": [
 		"Achiga",
 		"Shiraitodai",
 		"Senriyama",
 		"Shindouji",
 	],
-	"Kiyosumi":	[
+	"kiyosumi":	[
 		"Kiyosumi",
 		"Eisui",
 		"Miyamori",
@@ -380,7 +380,9 @@ const brackets: Record<string, Array<string>> = {
 }
 
 export function PlayerStandings(props: {contestId: string}): JSX.Element {
-	const [activeSide, activeSideSetter]  = React.useState("Achiga");
+	const history = useHistory();
+	const hash = useLocation().hash.toLowerCase().substr(1);
+	const activeSide = hash in brackets ? hash : "achiga";
 
 	return <Container>
 		<Nav
@@ -391,16 +393,20 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 			style={{
 				backgroundColor: "black"
 			}}
-			onSelect={(key: string) => activeSideSetter(key)}
+			onSelect={(key: string) => {
+				history.push({
+					hash: `#${key}`,
+				})
+			}}
 		>
 			<Nav.Item className="rounded-0">
-				<Nav.Link eventKey="Achiga" className="h3 m-0 rounded-0" >阿知賀側</Nav.Link>
+				<Nav.Link eventKey="achiga" className="h3 m-0 rounded-0" >阿知賀側</Nav.Link>
 			</Nav.Item>
 			<Nav.Item className="rounded-0">
-				<Nav.Link eventKey="Kiyosumi" className="h3 m-0 rounded-0">清澄側</Nav.Link>
+				<Nav.Link eventKey="kiyosumi" className="h3 m-0 rounded-0">清澄側</Nav.Link>
 			</Nav.Item>
 			</Nav>
-		<BracketPlayerStandings contestId={props.contestId} teams={brackets[activeSide]} ignoredGames={activeSide === "Achiga" ? 0 : 4}/>
+		<BracketPlayerStandings contestId={props.contestId} teams={brackets[activeSide]} ignoredGames={activeSide === "achiga" ? 0 : 4}/>
 	</Container>
 }
 
