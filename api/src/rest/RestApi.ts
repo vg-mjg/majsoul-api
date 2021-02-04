@@ -24,6 +24,15 @@ const sakiTeams = {
 		"YAM",
 		"Sanyap",
 		"Fenryl",
+		"Geh",
+		"dorksport",
+		"ワハハ",
+		"fhum",
+		"Bazuso",
+		"Obskiur",
+		"sand_witch",
+		"mottwww",
+		"Inspecta",
 	],
 
 	"Shiraitodai": [
@@ -35,9 +44,16 @@ const sakiTeams = {
 		"Rimu",
 		"Betty",
 		"Hambo",
-		"Rising Bob",
+		"RisingBob",
 		"Fire",
 		"Barranco",
+		"Tilemagician",
+		"Honhon",
+		"lain",
+		"S496",
+		"UncleMoton",
+		"ZZZ",
+		"(((caillou)))",
 	],
 
 	"Senriyama": [
@@ -55,6 +71,10 @@ const sakiTeams = {
 		"TanyaoGOD",
 		"24601",
 		"Gorona",
+		"Resko",
+		"NullProphet",
+		"RipVanWenkle",
+		"BKot23",
 	],
 
 	"Shindouji" :[
@@ -71,21 +91,33 @@ const sakiTeams = {
 		"Kirk",
 		"aruchomu",
 		"Boots",
+		"SparrowSkull",
+		"CrazyWafel",
+		"peepeemonster",
+		"FurudoErika",
+		"philzin",
+		"YOUMU!!",
 	],
 
 	"Kiyosumi": [
 		"Patriarkatet",
+		"snacks",
 		"kfarwell",
 		"Zeon_Ace",
 		"S496",
 		"Nekovic",
 		"lunaslicethm",
 		"Hambo",
-		"Rising Bob",
+		"Risingob",
 		"Fire",
 		"rigged",
 		"ExelionBuster",
 		"Fenryl",
+		"Resko",
+		"SparrowSkull",
+		"Obskiur",
+		"sand_witch",
+		"BKot23",
 	],
 
 	"Eisui": [
@@ -101,6 +133,14 @@ const sakiTeams = {
 		"Sanyap",
 		"Barranco",
 		"Gorona",
+		"ワハハ",
+		"fhum",
+		"Bazuso",
+		"dorksport",
+		"RipVanWenkle",
+		"mottwww",
+		"Inspecta",
+		"YOUMU!!",
 	],
 
 	"Miyamori": [
@@ -117,6 +157,11 @@ const sakiTeams = {
 		"Kirk",
 		"TanyaoGOD",
 		"Boots",
+		"Honhon",
+		"lain",
+		"peepeemonster",
+		"ZZZ",
+		"philzin",
 	],
 
 	"Himematsu": [
@@ -131,6 +176,13 @@ const sakiTeams = {
 		"BOOMER",
 		"Soupman",
 		"aruchomu",
+		"Geh",
+		"Tilemagician",
+		"CrazyWafel",
+		"24601",
+		"UncleMoton",
+		"FurudoErika",
+		"(((caillou)))",
 	]
 }
 

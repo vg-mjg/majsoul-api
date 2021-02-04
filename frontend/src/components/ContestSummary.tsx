@@ -138,20 +138,19 @@ const sakiTeamInfo: Record<string, {color:string, name:string}> = {
 }
 
 function TeamIcon(props: {team:string, seeded: boolean}): JSX.Element {
-	if (!props.team) {
-		return null;
-	}
-
 	return <h4 className="pr-2 text-dark">
 		{props.seeded
-			? <Badge className="bg-light mr-2" style={{backgroundColor:sakiTeamInfo[props.team].color}}>
+			? <Badge className={`bg-light ${props.team ? "mr-2" : ""}`}>
 				シード
 			</Badge>
 			: null
 		}
-		<Badge style={{backgroundColor:sakiTeamInfo[props.team].color}}>
-			{sakiTeamInfo[props.team].name}
-		</Badge>
+		{ props.team
+			? <Badge style={{backgroundColor:sakiTeamInfo[props.team].color}}>
+				{sakiTeamInfo[props.team].name}
+			</Badge>
+			: null
+		}
 	</h4>
 }
 
