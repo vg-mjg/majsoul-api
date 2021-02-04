@@ -443,7 +443,8 @@ export function BracketPlayerStandings(props: {
 					</Spinner>
 				</Col>
 			</Row>
-			: contestPlayers.map(player => ({
+			: contestPlayers
+			.map(player => ({
 				player,
 				team: props.teams.find(team => player.team.teams.indexOf(team) >= 0)
 			}))

@@ -506,7 +506,9 @@ export class RestApi {
 								.map(([team, _]) => team),
 							seeded: seededPlayerNames.indexOf(player.nickname) >= 0,
 						}
-					})).sort((a, b) => b.tourneyScore - a.tourneyScore)
+					}))
+					.filter(player => player.gamesPlayed > ignoredGames || player.team.seeded)
+					.sort((a, b) => b.tourneyScore - a.tourneyScore)
 					.map((p, i) => ({...p, tourneyRank: i}))
 				);
 			} catch (error){
