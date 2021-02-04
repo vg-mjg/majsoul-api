@@ -329,7 +329,7 @@ export function ContestPlayerDisplay(props: {
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>
 				{games.sort((a, b) => b.start_time - a.start_time)
-					.slice(props.ignoredGames ?? 0, props.ignoredGames + Math.min(maxGames, gamesPlayed))
+					.slice(-(props.ignoredGames ?? 0) - Math.min(maxGames, gamesPlayed), props.ignoredGames ? -props.ignoredGames : undefined)
 					.map(game => {
 						const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
 						const position = game.finalScore
