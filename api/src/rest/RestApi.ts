@@ -108,7 +108,7 @@ const sakiTeams = {
 		"Nekovic",
 		"lunaslicethm",
 		"Hambo",
-		"Risingob",
+		"RisingBob",
 		"Fire",
 		"rigged",
 		"ExelionBuster",
