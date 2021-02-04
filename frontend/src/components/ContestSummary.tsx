@@ -90,50 +90,50 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 }
 
 const maxGames = 4;
-const sakiTeamInfo: Record<string, {color:string, name:string}> = {
+const sakiTeamInfo: Record<string, {color:string, name:string, blackFont?: boolean}> = {
 	"Kazekoshi": {
 		color: "#ffd966",
-		name: "風越"
+		name: "風越",
 	},
 	"Kiyosumi": {
 		color: "#6fa8dc",
-		name: "清澄"
+		name: "清澄",
 	},
 	"Ryuumonbuchi": {
 		color: "#e06666",
-		name: "龍門渕"
+		name: "龍門渕",
 	},
 	"Tsuruga": {
 		color: "#b4a7d6",
-		name: "敦賀"
+		name: "敦賀",
 	},
 	"Achiga": {
-		color: "#e1a9e8",
-		name: "阿知賀"
+		color: "#df8cea",
+		name: "阿知賀",
 	},
 	"Shiraitodai": {
-		color: "#2e49c1",
-		name: "白糸台"
+		color: "#3e5bdd",
+		name: "白糸台",
 	},
 	"Senriyama": {
-		color: "#b7964e",
-		name: "千里山"
+		color: "#cea84e",
+		name: "千里山",
 	},
 	"Shindouji": {
 		color: "#7954d8",
-		name: "新道寺"
+		name: "新道寺",
 	},
 	"Eisui": {
 		color: "#ee0000",
-		name: "永水"
+		name: "永水",
 	},
 	"Miyamori": {
 		color: "#71ba50",
-		name: "宮守"
+		name: "宮守",
 	},
 	"Himematsu": {
-		color: "#e5da44",
-		name: "姫松"
+		color: "#d3b700",
+		name: "姫松",
 	}
 }
 
@@ -146,7 +146,10 @@ function TeamIcon(props: {team:string, seeded: boolean}): JSX.Element {
 			: null
 		}
 		{ props.team
-			? <Badge style={{backgroundColor:sakiTeamInfo[props.team].color}}>
+			? <Badge style={{
+				backgroundColor: sakiTeamInfo[props.team].color,
+				color: sakiTeamInfo[props.team].blackFont ? undefined : "white"
+			}}>
 				{sakiTeamInfo[props.team].name}
 			</Badge>
 			: null
