@@ -281,7 +281,8 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 export function ContestPlayerDisplay(props: {
 	contestId: string,
 	contestPlayer: Rest.ContestPlayer,
-	team: string
+	team: string,
+	ignoredGames?: number
 }): JSX.Element {
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
@@ -303,6 +304,8 @@ export function ContestPlayerDisplay(props: {
 		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
+	const gamesPlayed = Math.max(0, props.contestPlayer.gamesPlayed - props.ignoredGames);
+
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
@@ -310,45 +313,48 @@ export function ContestPlayerDisplay(props: {
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
-						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid ${props.contestPlayer.gamesPlayed >= maxGames ? "LightGreen" : "grey" }`}}>
+						<Col md="auto" className="font-weight-bold h5 text-truncate"  style={{borderBottom: `3px solid ${gamesPlayed  >= maxGames ? "LightGreen" : "grey" }`}}>
 							{props.contestPlayer.nickname}
 						</Col>
 					</Row>
 				</Container>
 			</Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.contestPlayer.tourneyScore / 1000}</b></h5></Col>
-			<Col md="auto" className="mr-3"> <h5><b>{Math.min(maxGames, props.contestPlayer.gamesPlayed)}戦</b></h5></Col>
+			<Col md="auto" className="mr-3"> <h5><b>{Math.min(maxGames, gamesPlayed)}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>
-				{games.sort((a, b) => b.start_time - a.start_time).slice(-maxGames).map(game => {
-					const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
-					const position = game.finalScore
-						.map((score, seat) => ({score, seat}))
-						.sort((a, b) => b.score.uma - a.score.uma)
-						.findIndex(r => r.seat === playerSeat);
-					return <Row key={game._id}>
-						<Col md="auto">
-							{getSeatCharacter(playerSeat)}
-						</Col>
+				{games.sort((a, b) => b.start_time - a.start_time)
+					.slice(props.ignoredGames ?? 0, props.ignoredGames + Math.min(maxGames, gamesPlayed))
+					.map(game => {
+						const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
+						const position = game.finalScore
+							.map((score, seat) => ({score, seat}))
+							.sort((a, b) => b.score.uma - a.score.uma)
+							.findIndex(r => r.seat === playerSeat);
+						return <Row key={game._id}>
+							<Col md="auto">
+								{getSeatCharacter(playerSeat)}
+							</Col>
 
-						<Col md="auto">
-							{position + 1}位
-						</Col>
+							<Col md="auto">
+								{position + 1}位
+							</Col>
 
-						<Col>
-							{game.finalScore[playerSeat].uma / 1000}
-						</Col>
+							<Col>
+								{game.finalScore[playerSeat].uma / 1000}
+							</Col>
 
-						<Col md="auto">
-							{moment(game.start_time).calendar()}
-						</Col>
+							<Col md="auto">
+								{moment(game.start_time).calendar()}
+							</Col>
 
-						<Col md="auto">
-							<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">On Majsoul</a>
-						</Col>
-					</Row>
-				})}
+							<Col md="auto">
+								<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">On Majsoul</a>
+							</Col>
+						</Row>
+					})
+				}
 			</Container>
 		</Accordion.Collapse>
 	</Accordion>
@@ -434,7 +440,7 @@ export function BracketPlayerStandings(props: {
 			.sort((a, b) => contestPlayerTeamSort(b) - contestPlayerTeamSort(a))
 			.map((player, placing) =>
 				<Row key={player.player._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-					<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player.player} team={player.team}/>
+					<ContestPlayerDisplay contestId={props.contestId} contestPlayer={player.player} team={player.team} ignoredGames={props.ignoredGames}/>
 				</Row>
 			)
 		}
