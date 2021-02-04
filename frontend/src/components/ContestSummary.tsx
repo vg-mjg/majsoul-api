@@ -268,8 +268,10 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 						</Row>
 					)
 					:
-					<Row>
-						Nothing Yet
+					<Row className={`no-gutters text-center pb-1 mb-1`}>
+						<Col>
+							<div className="h4 font-weight-bold m-0">未だ無し</div>
+						</Col>
 					</Row>
 				}
 			</Container>
