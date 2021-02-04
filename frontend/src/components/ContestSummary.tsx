@@ -66,7 +66,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	}
 
 	return <Container>
-		<SongPlayer videoId="C7zoZe-ZATs" play={secret}/>
+		<SongPlayer videoId="5P-DTsVE1ZQ" play={secret}/>
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
@@ -74,8 +74,8 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto">
 				<i>
 					{!secret
-						? "nyaggers of the world unite"
-						: "you have nothing to lose but your points"}
+						? ">not playing as a saki character in the saki tourney"
+						: ">playing as a saki character in the saki tourney"}
 					</i>
 				</Col>
 		</Row>
