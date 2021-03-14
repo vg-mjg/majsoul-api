@@ -217,7 +217,12 @@ export class RestApi {
 		this.app.use(express.json({limit: "1MB"}));
 
 		this.app.get<any, store.Contest<ObjectId>[]>('/contests', (req, res) => {
-			this.mongoStore.contestCollection.find({})
+			this.mongoStore.contestCollection
+				.find()
+				.project({
+					majsoulFriendlyId: true,
+					name: true
+				})
 				.toArray()
 				.then(contests => res.send(contests))
 				.catch(error => res.status(500).send(error));

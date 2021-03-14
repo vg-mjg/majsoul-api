@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames, fetchContests, fetchYakuman, fetchContestPlayersDirect } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames, fetchYakuman, fetchContestPlayersDirect } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -17,7 +17,7 @@ import { Han, RoundResult, AgariInfo } from "majsoul-api/dist/majsoul/types";
 import Accordion from "react-bootstrap/Accordion";
 import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
 import moment = require("moment");
-import { Link, useHistory, useLocation } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { ContestPlayer } from "majsoul-api/dist/rest";
 
@@ -561,19 +561,4 @@ export function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
 	</>
 }
 
-export function ContestList(): JSX.Element {
-	const dispatch = useDispatch();
-	React.useEffect(() => {
-		fetchContests(dispatch);
-	}, [true]);
-	const contests = useSelector((state: IState) => Object.values(state.contestsByMajsoulFriendlyId));
-	return <Container>
-		{contests.map(contest =>
-			<Row className="bg-dark rounded text-white" key={contest._id}>
-				<Link to={`/contests/${contest.majsoulFriendlyId}`}>
-					<h4>{contest.name}</h4>
-				</Link>
-			</Row>
-		)}
-	</Container>
-}
+
