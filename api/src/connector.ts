@@ -6,8 +6,7 @@ import { ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
-
-const leagueContest = 113331;
+import { Subscription } from "rxjs";
 
 async function main() {
 	async function addToSpreadSheet(gameId): Promise<void> {
@@ -37,6 +36,50 @@ async function main() {
 		spreadsheet.addGameDetails(gameResult);
 	};
 
+	async function trackContest(contest: store.Contest<ObjectId>): Promise<Subscription> {
+		const majsoulContest = await api.findContestByContestId(contest.majsoulFriendlyId);
+		if (majsoulContest == null) {
+			console.log(`contest ${contest.majsoulFriendlyId} not found on majsoul`);
+			return null;
+		}
+		console.log(`tracking contest ${contest.majsoulFriendlyId}`);
+
+		contest = (await mongoStore.contestCollection.findOneAndUpdate(
+			{ majsoulId: majsoulContest.majsoulId },
+			{ $set: { ...majsoulContest } },
+			{ upsert: true, returnOriginal: false }
+		)).value;
+
+		const gameIds = await api.getContestGamesIds(contest.majsoulId);
+
+		for (const game of gameIds) {
+			await addToSpreadSheet(game.majsoulId);
+		}
+
+		for (const game of gameIds) {
+			if (await mongoStore.isGameRecorded(game)){
+				console.log(`Game id ${game.majsoulId} already recorded`);
+				continue;
+			}
+
+			const gameResult = await api.getGame(game.majsoulId);
+
+			await mongoStore.recordGame(contest, gameResult);
+		}
+
+		const mongoSub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
+			if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
+				setTimeout(() => {
+					api.getGame(notification.uuid)
+						.then(gameResult => mongoStore.recordGame(contest, gameResult)
+						.catch(e => console.log(e)));
+				}, 5000);
+			}
+		});
+
+		return mongoSub;
+	}
+
 	const secrets = getSecrets();
 
 	const googleAppInfo = {
@@ -58,93 +101,25 @@ async function main() {
 	await api.init();
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
 
+	// const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
+	// 	if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
+	// 		setTimeout(() => addToSpreadSheet(notification.uuid), 5000);
+	// 	}
+	// });
+
 	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
-
-	function logEvery2Seconds(i) {
-		setTimeout(() => {
-			logEvery2Seconds(++i);
-		}, 2000)
-	}
-
-	logEvery2Seconds(0);
-	const majsoulContest = await api.findContestByContestId(236728);
-	// const contestId2 = await api.findContestUniqueId(917559);
-	const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
-		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
-			setTimeout(() => addToSpreadSheet(notification.uuid), 5000);
-		}
-	});
-
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
-	let contest = (await mongoStore.contestCollection.findOneAndUpdate(
-		{ majsoulId: majsoulContest.majsoulId },
-		{ $setOnInsert: { ...majsoulContest } },
-		{ upsert: true, returnOriginal: false }
-	)).value;
+	const contests = await mongoStore.contestCollection.find().toArray();
 
-	if (contest.majsoulFriendlyId === leagueContest) {
-		if (!contest.teams) {
-			console.log(`Contest doesn't have teams, importing`);
-
-			const teams = await spreadsheet.getTeamInformation();
-			for (const team of teams) {
-				team.players = (await Promise.all(team.players.map(player => mongoStore.playersCollection.findOneAndUpdate(
-					{ nickname: player.nickname },
-					{ $set: { displayName: player.displayName } },
-					{
-						upsert: true,
-						returnOriginal: false,
-						projection: { majsoulId: false }
-					}
-				)))).map(r => r.value);
-				team._id = new ObjectId();
-			}
-
-			contest = (await mongoStore.contestCollection.findOneAndUpdate(
-				{ _id: contest._id },
-				{ $set: { teams } },
-				{ returnOriginal: false }
-			)).value;
-		}
-
-		if (!(await mongoStore.sessionsCollection.findOne({contestId: contest._id}))) {
-			console.log(`Generating contest sessions`);
-			const sessions = (await spreadsheet.getMatchInformation(contest.teams))
-				.map(s => {s.contestId = contest._id; return s});
-			await mongoStore.sessionsCollection.insertMany(sessions);
-		}
-	}
-
-	const gameIds = await api.getContestGamesIds(contest.majsoulId);
-
-	for (const game of gameIds) {
-		await addToSpreadSheet(game.majsoulId);
-	}
-
-	for (const game of gameIds) {
-		if (await mongoStore.isGameRecorded(game)){
-			console.log(`Game id ${game.majsoulId} already recorded`);
-			continue;
-		}
-
-		const gameResult = await api.getGame(game.majsoulId);
-
-		await mongoStore.recordGame(contest, gameResult);
-	}
-
-	const mongoSub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
-		if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
-			setTimeout(() => {
-				api.getGame(notification.uuid)
-					.then(gameResult => mongoStore.recordGame(contest, gameResult)
-					.catch(e => console.log(e)));
-			}, 5000);
-		}
-	});
+	const subscriptions = await Promise.all(
+		contests
+			.filter(contest => contest.majsoulFriendlyId != null)
+			.map(contest => trackContest(contest))
+	);
 }
 
 main().catch(e => console.log(e));

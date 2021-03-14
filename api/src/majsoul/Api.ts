@@ -115,10 +115,18 @@ export class Api {
 		const resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
 			contest_id: id,
 		});
+
+		if (!resp.contest_info) {
+			return null;
+		}
+
 		return {
 			majsoulId: resp.contest_info.unique_id,
 			majsoulFriendlyId: resp.contest_info.contest_id,
 			name: resp.contest_info.contest_name,
+			createdTime: resp.contest_info.create_time * 1000,
+			startTime: resp.contest_info.start_time * 1000,
+			finishTime: resp.contest_info.finish_time * 1000,
 		};
 	}
 
