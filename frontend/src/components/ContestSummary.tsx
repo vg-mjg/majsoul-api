@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchContestPlayers, fetchGamesHook, fetchContestPlayerGames, fetchYakuman, fetchContestPlayersDirect } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchGamesHook, fetchContestPlayerGames, fetchYakuman, fetchContestPlayersDirect } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -18,8 +18,10 @@ import Accordion from "react-bootstrap/Accordion";
 import { GameResultSummary, getSeatCharacter } from "./GameResultSummary";
 import moment = require("moment");
 import { useHistory, useLocation } from "react-router-dom";
-import nantoka_nare from "../../assets/nantoka_nare.mp3";
-import { ContestPlayer } from "majsoul-api/dist/rest";
+import { ContestType } from "majsoul-api/dist/store/types/types";
+import Form from "react-bootstrap/Form";
+import { useState } from "react";
+import Button from "react-bootstrap/Button";
 
 function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 	const [player, setPlayer] = React.useState<YT.Player>(null);
@@ -38,6 +40,90 @@ function SongPlayer(props: {videoId: string, play?: boolean}): JSX.Element {
 		>
 		</YouTube>
 	</div>
+}
+
+const contestTypeValues =
+	Object.keys(ContestType)
+		.map(k => parseInt(k))
+		.filter(k => !isNaN(k));
+
+function ContestMetadataEditor(props: {id: number}): JSX.Element {
+	const token = useSelector((state: IState) => state.user?.token);
+	const contest = useSelector((state: IState) => state.contestsByMajsoulFriendlyId[props.id]);
+	const [majsoulId, setMajsoulId] = useState<string>(undefined);
+	const [editMajsouldId, setEditMajsoulId] = useState(false);
+	const [majsoulIdIsValid, setMajsoulIdIsValid] = useState(false);
+	const dispatch = useDispatch();
+	if (token == null || contest == null) {
+		return null;
+	}
+
+	return <Container className="pb-1 px-4 bg-dark rounded text-white">
+		<Row className="no-gutters">
+			<Col>
+				<Form inline>
+					<Form.Label
+						className="py-3 mr-2" htmlFor="majsoulIdEditor">
+						Majsoul ID:
+					</Form.Label>
+					<Form.Control
+						id="majsoulIdEditor"
+						plaintext={!editMajsouldId}
+						readOnly={!editMajsouldId}
+						style={{
+							width: "auto"
+						}}
+						isInvalid={!majsoulIdIsValid}
+						className={`py-0 mr-4 ${editMajsouldId ? "" : " text-light"}`}
+						value={`${majsoulId === undefined ? contest.majsoulFriendlyId : majsoulId === null ? "" : majsoulId}`}
+						placeholder="Not Linked"
+						onChange={event => {
+							if (event.target.value === "") {
+								setMajsoulId(null);
+								setMajsoulIdIsValid(true);
+								return;
+							}
+							setMajsoulId(event.target.value);
+							const id = parseInt(event.target.value);
+							setMajsoulIdIsValid(id >= 100000 && id < 1000000 && !isNaN(id));
+						}}
+						onFocus={(event: any) => setEditMajsoulId(true)}
+						onBlur={(event: any) => {
+							setEditMajsoulId(false)
+							if (majsoulId === null) {
+								return;
+							}
+
+							if (majsoulIdIsValid) {
+								setMajsoulId(parseInt(majsoulId).toString());
+								return;
+							}
+							setMajsoulId(contest.majsoulFriendlyId.toString());
+						}}
+					/>
+
+					<Form.Label
+						className="py-3 mr-2"
+						htmlFor="contestTypeSelector"
+					>
+						Type:
+					</Form.Label>
+					<Form.Control
+						id="contestTypeSelector"
+						as="select"
+						custom
+					>
+						{contestTypeValues.map((value, index) => <option key={index} value={value}>{ContestType[value]}</option>)}
+					</Form.Control>
+				</Form>
+				<Button
+					variant="secondary"
+					disabled={contest.majsoulFriendlyId == majsoulId || contest.majsoulFriendlyId.toString() === majsoulId || majsoulId === undefined}
+					onClick={(event: any) => {}}
+				>Save</Button>
+			</Col>
+		</Row>
+	</Container>
 }
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
@@ -79,13 +165,12 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 					</i>
 				</Col>
 		</Row>
-
-		{contest != null ?
-			<>
-				<TourneyContestSummary contestId={contest._id}/>
-				<YakumanDisplay contestId={contest._id}/>
-			</>
-		: null}
+		<ContestMetadataEditor id={contest.majsoulFriendlyId}/>
+		{ contest.type === ContestType.League
+			? <LeagueContestSummary contest={contest}/>
+			: <TourneyContestSummary contestId={contest._id}/>
+		}
+		<YakumanDisplay contestId={contest._id}/>
 	</Container>
 }
 
@@ -236,14 +321,6 @@ export function YakumanDisplay(props: {contestId: string}): JSX.Element {
 			.filter(game => game.contestId === props.contestId
 				&& game.rounds.find(round => getYakumanAgari(round).length > 0))
 	);
-
-	// const rounds = games
-	// 	.map(game =>
-	// 		game.rounds
-	// 			.filter(round => getYakumanAgari(round).length > 0)
-	// 			.map<[RoundResult, Rest.GameResult]>(round => [round, game])
-	// 	).flat();
-
 	return <>
 		<Row className="px-4 py-3 justify-content-end" >
 			<Col md="auto" className="h4 mb-0"><u>Yakuman Attained</u></Col>

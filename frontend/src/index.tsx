@@ -140,7 +140,13 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 
 			return {
 				...state,
-				...{ contest }
+				...{
+					contest,
+					contestsByMajsoulFriendlyId: {
+						...state.contestsByMajsoulFriendlyId,
+						[contest.majsoulFriendlyId]: { ...contest }
+					}
+				}
 			};
 		} case ActionType.GamesRetrieved:
 			case ActionType.GetContestPlayerGames:
