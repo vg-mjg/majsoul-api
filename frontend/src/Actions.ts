@@ -2,6 +2,7 @@ import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
 import { IState, Session, ContestTeam } from "./State";
+import { Contest } from "majsoul-api/dist/store";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
@@ -192,6 +193,33 @@ export function patchSession(dispatch: Dispatch, token: string, session: Session
 			type: ActionType.SessionPatched,
 			session
 		}));
+}
+
+
+export function patchContest(dispatch: Dispatch, token: string, id: string, contest: Partial<Contest<string>>): Promise<unknown> {
+	const url = buildApiUrl(`contests/${id}`);
+	return fetch(
+		url.toString(),
+		{
+			method: "PATCH",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({
+				anthem: contest.anthem,
+				tagline: contest.tagline,
+				taglineAlternate: contest.taglineAlternate,
+				majsoulFriendlyId: contest.majsoulFriendlyId,
+				type: contest.type,
+			})
+		})
+		.then(response => response.json())
+		// .then(session => dispatch({
+		// 	type: ActionType.SessionPatched,
+		// 	session
+		// }));
 }
 
 export interface GetRiggingTokenOptions {

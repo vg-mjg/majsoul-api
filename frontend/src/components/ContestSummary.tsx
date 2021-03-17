@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchGamesHook, fetchContestPlayerGames, fetchYakuman, fetchContestPlayersDirect } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchGamesHook, fetchContestPlayerGames, fetchYakuman, fetchContestPlayersDirect, patchContest } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -50,15 +50,24 @@ const contestTypeValues =
 function TextField(props: {
 	id: string,
 	label: string,
-	onCommit: (value: string, isValid: boolean) => string,
-	onChange: (oldValue: string, newValue: string) => { value: string, isValid: boolean },
-	displayTransform: (value: string) => string
+	placeholder?: string,
+	inline?: boolean,
+	onChange?: (oldValue: string, newValue: string) => { value: string, isValid: boolean },
+	onCommit?: (value: string, isValid: boolean) => string,
+	displayTransform?: (value: string) => string
 }): JSX.Element {
+	const {
+		placeholder = "Not Specified",
+		inline = false,
+		onChange = (_, newValue) => ({value: newValue, isValid: true}),
+		onCommit = (value) => value,
+		displayTransform = (value) => value,
+	} = props;
 	const [value, setValue] = useState<string>();
 	const [isEditing, setIsEditing] = useState(false);
 	const [isValid, setIsValid] = useState(true);
 
-	return <Form inline>
+	return <Form inline={inline}>
 		<Form.Label
 			className="py-3 mr-2"
 			htmlFor={props.id}
@@ -74,17 +83,17 @@ function TextField(props: {
 			}}
 			isInvalid={!isValid}
 			className={`${isEditing ? "" : " text-light"}`}
-			value={props.displayTransform(value)}
-			placeholder="Not Linked"
+			value={displayTransform(value) ?? ""}
+			placeholder={placeholder}
 			onChange={event => {
-				const changeResult = props.onChange(value, event.target.value);
+				const changeResult = onChange(value, event.target.value);
 				setValue(changeResult.value);
 				setIsValid(changeResult.isValid)
 			}}
 			onFocus={(event: any) => setIsEditing(true)}
 			onBlur={(event: any) => {
 				setIsEditing(false);
-				const commitValue = props.onCommit(value, isValid);
+				const commitValue = onCommit(value, isValid);
 				if (commitValue !== value){
 					setValue(commitValue);
 				}
@@ -96,7 +105,11 @@ function TextField(props: {
 function ContestMetadataEditor(props: {id: number}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
 	const contest = useSelector((state: IState) => state.contestsByMajsoulFriendlyId[props.id]);
-	const [majsoulId, setMajsoulId] = useState<number>(undefined);
+	const [majsoulFriendlyId, setMajsoulFriendlyId] = useState<number>(undefined);
+	const [type, setType] = useState<ContestType>(undefined);
+	const [anthem, setAnthem] = useState<string>(undefined);
+	const [tagline, setTagline] = useState<string>(undefined);
+	const [taglineAlternate, setTaglineAlternate] = useState<string>(undefined);
 	const dispatch = useDispatch();
 	if (token == null || contest == null) {
 		return null;
@@ -105,46 +118,49 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 	return <Container className="pb-1 px-4 bg-dark rounded text-white">
 		<Row className="no-gutters">
 			<Col>
-				<Form inline>
-					<TextField
-						label="Majsoul ID:"
-						id="majsoulEditor"
-						displayTransform={(value: string) => value === undefined ? contest.majsoulFriendlyId.toString() : value === null ? "" : value}
-						onChange={(oldValue: string, newValue: string) => {
-							if (newValue === "") {
-								return {
-									value: null,
-									isValid: true,
-								};
-							}
-							const id = parseInt(newValue);
+				<TextField
+					inline
+					label="Majsoul ID:"
+					id="majsoulEditor"
+					placeholder="Not Linked"
+					displayTransform={(value: string) => value === undefined ? contest.majsoulFriendlyId.toString() : value === null ? "" : value}
+					onChange={(oldValue: string, newValue: string) => {
+						if (newValue === "") {
 							return {
-								value: newValue,
-								isValid: id >= 100000 && id < 1000000 && !isNaN(id)
+								value: null,
+								isValid: true,
 							};
-						}}
-						onCommit={(value: string, isValid: boolean) => {
-							if (value == null) {
-								if (value === null) {
-									setMajsoulId(null);
-								}
-								return value;
+						}
+						const id = parseInt(newValue);
+						return {
+							value: newValue,
+							isValid: id >= 100000 && id < 1000000 && !isNaN(id)
+						};
+					}}
+					onCommit={(value: string, isValid: boolean) => {
+						if (value == null) {
+							if (value === null) {
+								setMajsoulFriendlyId(null);
 							}
+							return value;
+						}
 
-							if (isValid) {
-								const intValue = parseInt(value);
-								setMajsoulId(intValue);
-								return intValue.toString();
-							}
+						if (isValid) {
+							const intValue = parseInt(value);
+							setMajsoulFriendlyId(intValue);
+							return intValue.toString();
+						}
 
-							if (majsoulId == null) {
-								return majsoulId as null | undefined;
-							}
+						if (majsoulFriendlyId == null) {
+							return majsoulFriendlyId as null | undefined;
+						}
 
-							return majsoulId.toString();
-						}}
-					/>
-
+						return majsoulFriendlyId.toString();
+					}}
+				/>
+			</Col>
+			<Col>
+				<Form inline className="justify-content-end">
 					<Form.Label
 						className="py-3 mr-2"
 						htmlFor="contestTypeSelector"
@@ -155,19 +171,75 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 						id="contestTypeSelector"
 						as="select"
 						custom
+						value={type ?? contestTypeValues[0]}
+						size="sm"
+						onChange={(event) => setType(parseInt(event.target.value) as ContestType)}
 					>
 						{contestTypeValues.map((value, index) => <option key={index} value={value}>{ContestType[value]}</option>)}
 					</Form.Control>
 				</Form>
 			</Col>
 		</Row>
-		{/* <Row className="no-gutters">
+		<Row className="no-gutters">
+			<Col>
+					<TextField
+						label="Anthem"
+						id="contestAnthemEditor"
+						displayTransform={(value) => value ?? contest.anthem}
+						onCommit={(value) => {
+							setAnthem(value);
+							return value;
+						}}
+					/>
+			</Col>
+		</Row>
+		<Row className="no-gutters">
+			<Col>
+					<TextField
+						label="Tagline"
+						id="contestTaglineEditor"
+						displayTransform={(value) => value ?? contest.tagline}
+						onCommit={(value) => {
+							setTagline(value);
+							return value;
+						}}
+					/>
+			</Col>
+		</Row>
+		<Row className="no-gutters">
+			<Col>
+					<TextField
+						label="Tagline Alternative"
+						id="contestTaglineAltEditor"
+						displayTransform={(value) => value ?? contest.taglineAlternate}
+						onCommit={(value) => {
+							setTaglineAlternate(value);
+							return value;
+						}}
+					/>
+			</Col>
+		</Row>
+		<Row className="no-gutters">
+			<Col className="justify-content-end">
 				<Button
 					variant="secondary"
-					disabled={contest.majsoulFriendlyId == majsoulId || contest.majsoulFriendlyId.toString() === majsoulId || majsoulId === undefined}
-					onClick={(event: any) => {}}
+					disabled={
+						(contest.majsoulFriendlyId === majsoulFriendlyId || majsoulFriendlyId === undefined)
+						&& (contest.type === type || type === undefined)
+						&& (contest.anthem === anthem || anthem === undefined)
+						&& (contest.tagline === tagline || tagline === undefined)
+						&& (contest.taglineAlternate === taglineAlternate || taglineAlternate === undefined)
+					}
+					onClick={(event: any) => {patchContest(dispatch, token, contest._id, {
+						majsoulFriendlyId,
+						tagline,
+						taglineAlternate,
+						anthem: anthem,
+						type: type
+					})}}
 				>Save</Button>
-		</Row> */}
+			</Col>
+		</Row>
 	</Container>
 }
 
@@ -195,9 +267,8 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			</h5>
 		</Container>;
 	}
-
 	return <Container>
-		<SongPlayer videoId="5P-DTsVE1ZQ" play={secret}/>
+		{contest.anthem == null ? null : <SongPlayer videoId={contest.anthem} play={secret}/>}
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
 				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
@@ -205,8 +276,8 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			<Col md="auto">
 				<i>
 					{!secret
-						? ">not playing as a saki character in the saki tourney"
-						: ">playing as a saki character in the saki tourney"}
+						? (contest.tagline ?? "")
+						: (contest.taglineAlternate ?? "")}
 					</i>
 				</Col>
 		</Row>
