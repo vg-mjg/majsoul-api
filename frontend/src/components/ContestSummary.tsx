@@ -47,12 +47,56 @@ const contestTypeValues =
 		.map(k => parseInt(k))
 		.filter(k => !isNaN(k));
 
+function TextField(props: {
+	id: string,
+	label: string,
+	onCommit: (value: string, isValid: boolean) => string,
+	onChange: (oldValue: string, newValue: string) => { value: string, isValid: boolean },
+	displayTransform: (value: string) => string
+}): JSX.Element {
+	const [value, setValue] = useState<string>();
+	const [isEditing, setIsEditing] = useState(false);
+	const [isValid, setIsValid] = useState(true);
+
+	return <Form inline>
+		<Form.Label
+			className="py-3 mr-2"
+			htmlFor={props.id}
+		>
+			{props.label}
+		</Form.Label>
+		<Form.Control
+			id={props.id}
+			plaintext={!isEditing}
+			readOnly={!isEditing}
+			style={{
+				width: "auto"
+			}}
+			isInvalid={!isValid}
+			className={`${isEditing ? "" : " text-light"}`}
+			value={props.displayTransform(value)}
+			placeholder="Not Linked"
+			onChange={event => {
+				const changeResult = props.onChange(value, event.target.value);
+				setValue(changeResult.value);
+				setIsValid(changeResult.isValid)
+			}}
+			onFocus={(event: any) => setIsEditing(true)}
+			onBlur={(event: any) => {
+				setIsEditing(false);
+				const commitValue = props.onCommit(value, isValid);
+				if (commitValue !== value){
+					setValue(commitValue);
+				}
+			}}
+		/>
+	</Form>
+}
+
 function ContestMetadataEditor(props: {id: number}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
 	const contest = useSelector((state: IState) => state.contestsByMajsoulFriendlyId[props.id]);
-	const [majsoulId, setMajsoulId] = useState<string>(undefined);
-	const [editMajsouldId, setEditMajsoulId] = useState(false);
-	const [majsoulIdIsValid, setMajsoulIdIsValid] = useState(false);
+	const [majsoulId, setMajsoulId] = useState<number>(undefined);
 	const dispatch = useDispatch();
 	if (token == null || contest == null) {
 		return null;
@@ -62,43 +106,42 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 		<Row className="no-gutters">
 			<Col>
 				<Form inline>
-					<Form.Label
-						className="py-3 mr-2" htmlFor="majsoulIdEditor">
-						Majsoul ID:
-					</Form.Label>
-					<Form.Control
-						id="majsoulIdEditor"
-						plaintext={!editMajsouldId}
-						readOnly={!editMajsouldId}
-						style={{
-							width: "auto"
-						}}
-						isInvalid={!majsoulIdIsValid}
-						className={`py-0 mr-4 ${editMajsouldId ? "" : " text-light"}`}
-						value={`${majsoulId === undefined ? contest.majsoulFriendlyId : majsoulId === null ? "" : majsoulId}`}
-						placeholder="Not Linked"
-						onChange={event => {
-							if (event.target.value === "") {
-								setMajsoulId(null);
-								setMajsoulIdIsValid(true);
-								return;
+					<TextField
+						label="Majsoul ID:"
+						id="majsoulEditor"
+						displayTransform={(value: string) => value === undefined ? contest.majsoulFriendlyId.toString() : value === null ? "" : value}
+						onChange={(oldValue: string, newValue: string) => {
+							if (newValue === "") {
+								return {
+									value: null,
+									isValid: true,
+								};
 							}
-							setMajsoulId(event.target.value);
-							const id = parseInt(event.target.value);
-							setMajsoulIdIsValid(id >= 100000 && id < 1000000 && !isNaN(id));
+							const id = parseInt(newValue);
+							return {
+								value: newValue,
+								isValid: id >= 100000 && id < 1000000 && !isNaN(id)
+							};
 						}}
-						onFocus={(event: any) => setEditMajsoulId(true)}
-						onBlur={(event: any) => {
-							setEditMajsoulId(false)
-							if (majsoulId === null) {
-								return;
+						onCommit={(value: string, isValid: boolean) => {
+							if (value == null) {
+								if (value === null) {
+									setMajsoulId(null);
+								}
+								return value;
 							}
 
-							if (majsoulIdIsValid) {
-								setMajsoulId(parseInt(majsoulId).toString());
-								return;
+							if (isValid) {
+								const intValue = parseInt(value);
+								setMajsoulId(intValue);
+								return intValue.toString();
 							}
-							setMajsoulId(contest.majsoulFriendlyId.toString());
+
+							if (majsoulId == null) {
+								return majsoulId as null | undefined;
+							}
+
+							return majsoulId.toString();
 						}}
 					/>
 
@@ -116,13 +159,15 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 						{contestTypeValues.map((value, index) => <option key={index} value={value}>{ContestType[value]}</option>)}
 					</Form.Control>
 				</Form>
+			</Col>
+		</Row>
+		{/* <Row className="no-gutters">
 				<Button
 					variant="secondary"
 					disabled={contest.majsoulFriendlyId == majsoulId || contest.majsoulFriendlyId.toString() === majsoulId || majsoulId === undefined}
 					onClick={(event: any) => {}}
 				>Save</Button>
-			</Col>
-		</Row>
+		</Row> */}
 	</Container>
 }
 
