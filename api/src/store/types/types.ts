@@ -27,6 +27,9 @@ export interface Contest<Id = any> extends majsoul.Contest {
 	type: ContestType;
 	_id: Id;
 	teams: ContestTeam<Id>[];
+	anthem?: string;
+	tagline?: string;
+	taglineAlternate?: string;
 }
 
 export interface ContestTeam<Id = any> {

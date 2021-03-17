@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
 import { GameResult, Session, ContestPlayer } from './types/types';
-import { ObjectId, FilterQuery, Condition } from 'mongodb';
+import { ObjectId, FilterQuery, Condition, MatchKeysAndValues, OnlyFieldsOfType } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
@@ -10,7 +10,8 @@ import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { Observable } from 'rxjs';
 import { toArray } from 'rxjs/operators';
-import { body } from 'express-validator';
+import { body, matchedData, oneOf, param, validationResult } from 'express-validator';
+import { ContestType } from '../store/types/types';
 
 const sakiTeams = {
 	"Achiga": [
@@ -185,6 +186,9 @@ const sakiTeams = {
 		"(((caillou)))",
 	]
 }
+
+export const nameofFactory = <T>() => (name: keyof T) => name;
+const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 
 const seededPlayerNames = [
 	"Patriarkatet",
@@ -573,32 +577,60 @@ export class RestApi {
 			next();
 		})
 
-		.put<any, store.Contest<ObjectId>>(
-			'/contests',
-			[
-				body('majsoulFriendlyId').isInt(),
-				body('password').isLength({ min: 5 })
-			],
+		.patch<any, store.Contest<ObjectId>>(
+			'/contests/:id',
+			oneOf([param("id").isMongoId(), param("id").isInt({min: 100000, lt: 1000000})]),
+			body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({min: 100000, lt: 1000000}).optional({nullable: true}),
+			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(ContestType)).optional(),
+			body(nameofContest('anthem')).isString().bail().isLength({max: 50}).optional({nullable: true}),
+			body(nameofContest('tagline')).isString().bail().isLength({max: 200}).optional({nullable: true}),
+			body(nameofContest('taglineAlternate')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			(req, res) => {
-			const patch = req.body as Session<string>;
-			if (patch?.scheduledTime == undefined) {
-				res.sendStatus(304);
-				return;
-			}
+				const errors = validationResult(req);
+				if (!errors.isEmpty()) {
+					return res.status(400).json({ errors: errors.array() } as any);
+				}
+				const update: {
+					$set?: {},
+					$unset?: {},
+				} = {};
+				const data = matchedData(req, {includeOptionals: true});
+				for (const key in data) {
+					if (key === "id") {
+						continue;
+					}
 
-			this.mongoStore.contestCollection.findOneAndUpdate(
-				{ _id: new ObjectId(req.params.id) },
-				{ $set: { scheduledTime: patch.scheduledTime } },
-				{ returnOriginal: false }
-			).then((session) => {
-				res.send({
-					_id: session.value._id
-				} as Session);
-			}).catch((err) => {
-				console.log(err);
-				res.status(500).send(err);
-			})
-		})
+					if (data[key] === undefined) {
+						continue;
+					}
+
+					if (data[key] === null) {
+						update.$unset ??= {};
+						update.$unset[key] = true;
+						continue;
+					}
+					update.$set ??= {};
+					update.$set[key] = data[key];
+				}
+
+				this.mongoStore.contestCollection.findOneAndUpdate(
+					ObjectId.isValid(req.params.id)
+						? { _id: new ObjectId(req.params.id) }
+						: { majsoulFriendlyId: parseInt(req.params.id) },
+					update,
+					{ returnOriginal: false }
+				).then((contest) => {
+					if (contest.value === null) {
+						res.status(404).send();
+						return;
+					}
+					res.send(contest.value);
+				}).catch((err) => {
+					console.log(err);
+					res.status(500).send(err);
+				})
+			}
+		)
 
 		.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
 			const patch = req.body as Session<string>;
