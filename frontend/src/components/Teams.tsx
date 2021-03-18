@@ -119,22 +119,23 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 }
 
 export function Teams(props: { session?: Session; }): JSX.Element {
-	const teams = useSelector((state: IState) => state?.contest?.teams);
-	if (!teams) {
-		return null;
-	}
+	return null;
+	// const teams = useSelector((state: IState) => state?.contest?.teams);
+	// if (!teams) {
+	// 	return null;
+	// }
 
-	let teamsArray = Object.values(teams);
-	if (props.session != null) {
-		teamsArray = teamsArray.map(team => ({...team, total: props.session.aggregateTotals[team._id]})).sort((a, b) => b.total - a.total);
-	}
+	// let teamsArray = Object.values(teams);
+	// if (props.session != null) {
+	// 	teamsArray = teamsArray.map(team => ({...team, total: props.session.aggregateTotals[team._id]})).sort((a, b) => b.total - a.total);
+	// }
 
-	return <Container className="rounded bg-dark text-light px-3 py-4">
-		{teamsArray.map((team, placing) => <Row key={team._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-			<Team
-				team={team}
-				score={props.session?.aggregateTotals[team._id]}
-				placing={placing + 1} />
-		</Row>)}
-	</Container>;
+	// return <Container className="rounded bg-dark text-light px-3 py-4">
+	// 	{teamsArray.map((team, placing) => <Row key={team._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
+	// 		<Team
+	// 			team={team}
+	// 			score={props.session?.aggregateTotals[team._id]}
+	// 			placing={placing + 1} />
+	// 	</Row>)}
+	// </Container>;
 }

@@ -15,7 +15,7 @@ import Button from "react-bootstrap/Button";
 export function Session(props: {
 	session: Session;
 }): JSX.Element{
-	const teams = useSelector((state: IState) => state.contest.teams, shallowEqual);
+	const teams = useSelector((state: IState) => state.contestsById[props.session.contestId], shallowEqual);
 	const token = useSelector((state: IState) => state.user?.token);
 
 	const dispatch = useDispatch();

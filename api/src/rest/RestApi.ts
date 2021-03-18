@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
 import { GameResult, Session, ContestPlayer } from './types/types';
-import { ObjectId, FilterQuery, Condition, MatchKeysAndValues, OnlyFieldsOfType } from 'mongodb';
+import { ObjectId, FilterQuery, Condition, MatchKeysAndValues, OnlyFieldsOfType, FindOneOptions } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
@@ -233,14 +233,17 @@ export class RestApi {
 		});
 
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
-			this.mongoStore.contestCollection.findOne(
-				{ majsoulFriendlyId: parseInt(req.params.id) },
+			this.findContest(req.params.id,
 				{
 					projection: {
 						sessions: 0
 					}
 				}
 			).then((contest) => {
+				if (contest === null) {
+					res.status(404).send();
+					return;
+				}
 				res.send(contest);
 			})
 			.catch(error => {
@@ -366,12 +369,7 @@ export class RestApi {
 
 		this.app.get<any, GameResult[]>('/contests/:contestId/players/:playerId/games', async (req, res) => {
 			try {
-				const contest = await this.mongoStore.contestCollection.findOne(
-					{ $or: [
-						{ majsoulFriendlyId: parseInt(req.params.contestId) },
-						{ _id: ObjectId.isValid(req.params.contestId) ? ObjectId.createFromHexString(req.params.contestId) : null },
-					]}
-				);
+				const contest = await this.findContest(req.params.contestId);
 
 				if (contest == null) {
 					res.sendStatus(404);
@@ -397,12 +395,7 @@ export class RestApi {
 
 		this.app.get<any, GameResult[]>('/contests/:contestId/yakuman', async (req, res) => {
 			try {
-				const contest = await this.mongoStore.contestCollection.findOne(
-					{ $or: [
-						{ majsoulFriendlyId: parseInt(req.params.contestId) },
-						{ _id: ObjectId.isValid(req.params.contestId) ? ObjectId.createFromHexString(req.params.contestId) : null },
-					]}
-				);
+				const contest = await this.findContest(req.params.contestId);
 
 				if (contest == null) {
 					res.sendStatus(404);
@@ -434,12 +427,7 @@ export class RestApi {
 
 		this.app.get<any, ContestPlayer[]>('/contests/:id/players', async (req, res) => {
 			try {
-				const contest = await this.mongoStore.contestCollection.findOne(
-					{ $or: [
-						{ majsoulFriendlyId: parseInt(req.params.id) },
-						{ _id: ObjectId.isValid(req.params.id) ? ObjectId.createFromHexString(req.params.id) : null },
-					]}
-				);
+				const contest = await this.findContest(req.params.id);
 
 				if (contest == null) {
 					res.sendStatus(404);
@@ -525,6 +513,16 @@ export class RestApi {
 				res.status(500).send(error)
 			}
 		});
+	}
+
+	private findContest(contestId: string, options?: FindOneOptions): Promise<store.Contest<ObjectId>> {
+		return this.mongoStore.contestCollection.findOne(
+			{ $or: [
+				{ majsoulFriendlyId: parseInt(contestId) },
+				{ _id: ObjectId.isValid(contestId) ? ObjectId.createFromHexString(contestId) : null },
+			]},
+			options
+		);
 	}
 
 	public async init(root: {username: string, password: string}) {
@@ -618,7 +616,13 @@ export class RestApi {
 						? { _id: new ObjectId(req.params.id) }
 						: { majsoulFriendlyId: parseInt(req.params.id) },
 					update,
-					{ returnOriginal: false }
+					{
+						returnOriginal: false,
+						projection: {
+							teams: false,
+							sessions: false,
+						}
+					}
 				).then((contest) => {
 					if (contest.value === null) {
 						res.status(404).send();
@@ -641,7 +645,7 @@ export class RestApi {
 
 			this.mongoStore.sessionsCollection.findOneAndUpdate(
 				{ _id: new ObjectId(req.params.id) },
-				{ $set: { scheduledTime: patch.scheduledTime } },
+				{ $set: { scheduledTime: patch.scheduledTime }},
 				{ returnOriginal: false }
 			).then((session) => {
 				res.send({

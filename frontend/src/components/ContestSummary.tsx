@@ -103,9 +103,9 @@ function TextField(props: {
 	</Form.Group>
 }
 
-function ContestMetadataEditor(props: {id: number}): JSX.Element {
+function ContestMetadataEditor(props: {contestId: string}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
-	const contest = useSelector((state: IState) => state.contestsByMajsoulFriendlyId[props.id]);
+	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const [majsoulFriendlyId, setMajsoulFriendlyId] = useState<number>(undefined);
 	const [type, setType] = useState<ContestType>(undefined);
 	const [anthem, setAnthem] = useState<string>(undefined);
@@ -245,12 +245,12 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 }
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
-	const contest = useSelector((state: IState) => state.contest);
+	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
-		fetchContestSummary(dispatch, props.contestId);
-		fetchContestSessions(dispatch, props.contestId);
+		fetchContestSummary(dispatch, props.contestId.toString());
+		fetchContestSessions(dispatch, props.contestId.toString());
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);
@@ -264,7 +264,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	if (contest == null) {
 		return <Container className="text-light text-center pt-4">
 			<h5 className="bg-dark rounded py-3">
-				Tourney #{props.contestId} doesn't exist.
+				Tourney #{props.contestId} doesn&apos;t exist.
 			</h5>
 		</Container>;
 	}
@@ -282,7 +282,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 					</i>
 				</Col>
 		</Row>
-		<ContestMetadataEditor id={contest.majsoulFriendlyId}/>
+		<ContestMetadataEditor contestId={contest._id}/>
 		{ contest.type === ContestType.League
 			? <LeagueContestSummary contest={contest}/>
 			: <TourneyContestSummary contestId={contest._id}/>

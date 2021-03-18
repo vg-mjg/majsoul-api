@@ -14,12 +14,10 @@ function GameSeat(props: {
 	seat: number,
 	game: Rest.GameResult
 }): JSX.Element {
-	const teams = useSelector((state: IState) => state.contest.teams);
-
+	const contest = useSelector((state: IState) => state.contestsById[props.game.contestId]);
+	const teams = contest.teams;
 	const playerId = props.game.players[props.seat];
-	const player = useSelector((state: IState) => {
-		return state.contest.players?.find(p => p._id === playerId._id);
-	});
+	const player = contest.players?.find(p => p._id === playerId._id);
 
 	const dispatch = useDispatch();
 
@@ -31,7 +29,7 @@ function GameSeat(props: {
 		fetchContestPlayers(dispatch, {
 			contestId: props.game.contestId
 		});
-	}, [props.game.contestId]);
+	}, [player, dispatch, props.game.contestId]);
 
 	if (player == null) {
 		return null;

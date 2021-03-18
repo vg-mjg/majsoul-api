@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests, ContestPatched } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
@@ -20,6 +20,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import YouTube from 'react-youtube';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import { Store } from "majsoul-api/dist/store";
 
 
 const teamColors = [
@@ -97,13 +98,29 @@ function invertHex(hex: string): string {
 	return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
 }
 
+function updatedContestRecord(state: IState, contestId: string, contest: Partial<Contest>): {
+	contestsById: Record<string, Contest>,
+ } {
+	const originalContest = state.contestsById[contestId] ?? {};
+
+	return {
+		contestsById: {
+			...state.contestsById,
+			[contestId]: {
+				...originalContest,
+				...contest,
+			} as Contest
+		}
+	};
+}
+
 //todo: splatting some of these states is probably not correct and triggers changes.
 function contestReducer(state: IState, action: Action<ActionType>): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
 			const contestSummaryRetrievedAction = action as SummaryRetrievedAction;
 			const contest = {
-				...state.contest,
+				...(state.contestsById[contestSummaryRetrievedAction.contest._id] ?? {}),
 				...contestSummaryRetrievedAction.contest,
 				teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
 					const team = contestSummaryRetrievedAction.contest.teams == null ? null : contestSummaryRetrievedAction.contest.teams[index];
@@ -140,18 +157,26 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 
 			return {
 				...state,
-				...{
-					contest,
-					contestsByMajsoulFriendlyId: {
-						...state.contestsByMajsoulFriendlyId,
-						[contest.majsoulFriendlyId]: { ...contest }
-					}
-				}
+				...updatedContestRecord(state, contest._id, contest)
 			};
 		} case ActionType.GamesRetrieved:
 			case ActionType.GetContestPlayerGames:
 		{
 			const gamesRetrievedAction = action as SessionGamesRetrieved;
+			// const contest: Contest = {
+			// 	...originalContest,
+			// 	sessions: originalContest?.sessions?.map(session => {
+			// 		const games = gamesRetrievedAction.games.filter(g => g.sessionId === session._id);
+			// 		if (games.length > 0) {
+			// 			return {
+			// 				...session,
+			// 				games: Array.from(new Set(games.concat(gamesRetrievedAction.games ?? [])))
+			// 			}
+			// 		}
+			// 		return session;
+			// 	}) ?? []
+			// };
+
 			return {
 				...state,
 				games: {
@@ -160,19 +185,6 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 						(record, next) => { record[next._id] = next; return record; }, {}
 					)
 				},
-				contest: {
-					...state.contest,
-					sessions: state.contest?.sessions?.map(session => {
-						const games = gamesRetrievedAction.games.filter(g => g.sessionId === session._id);
-						if (games.length > 0) {
-							return {
-								...session,
-								games: Array.from(new Set(games.concat(gamesRetrievedAction.games ?? [])))
-							}
-						}
-						return session;
-					}) ?? []
-				}
 			}
 		} case ActionType.RiggingTokenGet: {
 			const riggingTokenGetAction = action as RiggingTokenAquired;
@@ -183,42 +195,45 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 				}
 			}
 		} case ActionType.SessionPatched: {
-			const sessionPatchedAction = action as SessionPatched;
-			const contest = {...state.contest};
-			const sessionIndex = contest.sessions.findIndex(session => session._id === sessionPatchedAction.session._id);
-			contest.sessions[sessionIndex] = {
-				...contest.sessions[sessionIndex],
-				...sessionPatchedAction.session
-			};
-			return {
-				...state,
-				contest
-			}
+			return state;
+			// const sessionPatchedAction = action as SessionPatched;
+			// const contest = {...state.contest};
+			// const sessionIndex = contest.sessions.findIndex(session => session._id === sessionPatchedAction.session._id);
+			// contest.sessions[sessionIndex] = {
+			// 	...contest.sessions[sessionIndex],
+			// 	...sessionPatchedAction.session
+			// };
+			// return {
+			// 	...state,
+			// 	contest
+			// }
 		} case ActionType.LogOut: {
 			if (state.user) {
 				return {...state, user: undefined};
 			}
 			break;
 		} case ActionType.PatchTeam: {
-			const patchAction = action as PatchTeam;
-			const teams = {...state.contest.teams};
-			teams[patchAction.team._id] = patchAction.team;
-			return {
-				...state,
-				contest: {
-					...state.contest,
-					teams
-				}
-			}
+			return state;
+			// const patchAction = action as PatchTeam;
+			// const teams = {...state.contest.teams};
+			// teams[patchAction.team._id] = patchAction.team;
+			// return {
+			// 	...state,
+			// 	contest: {
+			// 		...state.contest,
+			// 		teams
+			// 	}
+			// }
 		} case ActionType.GetContestSessions: {
-			const getContestSessions = action as GetContestSessions;
-			return {
-				...state,
-				contest: {
-					...(state.contest ?? {} as Contest),
-					sessions: getContestSessions.sessions
-				}
-			}
+			return state;
+			// const getContestSessions = action as GetContestSessions;
+			// return {
+			// 	...state,
+			// 	contest: {
+			// 		...(state.contest ?? {} as Contest),
+			// 		sessions: getContestSessions.sessions
+			// 	}
+			// }
 		} case ActionType.PlayMusic: {
 			const playMusic = action as PlayMusic;
 			return {
@@ -249,16 +264,15 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			const getContestPlayers = action as GetContestPlayers;
 			return {
 				...state,
-				contest: {
-					...state.contest,
+				...updatedContestRecord(state, getContestPlayers.contestId, {
 					players: getContestPlayers.players
-				}
+				})
 			}
 		} case ActionType.GetContests: {
 			const getContests = action as GetContests;
 			const contests: Record<number, Contest> = {};
 			for (const contest of getContests.contests) {
-				contests[contest.majsoulFriendlyId] = {
+				contests[contest._id] = {
 					...contest,
 					teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
 						const team = contest.teams == null ? null : contest.teams[index];
@@ -277,10 +291,16 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 
 			return {
 				...state,
-				contestsByMajsoulFriendlyId: {
-					...state.contestsByMajsoulFriendlyId,
+				contestsById: {
+					...state.contestsById,
 					...contests
 				}
+			}
+		} case ActionType.ContestPatched: {
+			const contestPatchedAction = action as ContestPatched;
+			return {
+				...state,
+				...updatedContestRecord(state, contestPatchedAction.contest._id, contestPatchedAction.contest)
 			}
 		}
 	}
@@ -300,7 +320,7 @@ const store = createStore(
 		contestReducer
 	),
 	{
-		contestsByMajsoulFriendlyId: {},
+		contestsById: {},
 		musicPlayer: {
 			playing: false,
 			videoId: null

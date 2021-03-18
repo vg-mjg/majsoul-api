@@ -11,8 +11,7 @@ export interface Session extends Rest.Session<string> {
 }
 
 export interface IState {
-	contestsByMajsoulFriendlyId: Record<number, Contest>;
-	contest?: Contest;
+	contestsById: Record<string, Contest>;
 	games?: Record<string, Rest.GameResult<string>>;
 	user?: {
 		token: string;

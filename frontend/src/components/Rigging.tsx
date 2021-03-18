@@ -14,7 +14,8 @@ import { Session } from "./Session";
 import { Teams } from "./Teams";
 
 function RiggingSessions(props: {}): JSX.Element {
-	const sessions = useSelector((state: IState) => state.contest?.sessions, shallowEqual);
+	return null;
+	const sessions = useSelector((state: IState) => [], shallowEqual);
 
 	if (!sessions) {
 		return null;

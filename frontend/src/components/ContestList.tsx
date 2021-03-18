@@ -12,10 +12,10 @@ export function ContestList(): JSX.Element {
 	React.useEffect(() => {
 		fetchContests(dispatch);
 	}, [true]);
-	const contests = useSelector((state: IState) => Object.values(state.contestsByMajsoulFriendlyId));
+	const contests = useSelector((state: IState) => Object.values(state.contestsById));
 	return <Container>
 		{contests.map(contest => <Row className="bg-dark rounded text-white" key={contest._id}>
-			<Link to={`/contests/${contest.majsoulFriendlyId}`}>
+			<Link to={`/contests/${contest._id}`}>
 				<h4>{contest.name}</h4>
 			</Link>
 		</Row>

@@ -20,6 +20,7 @@ export enum ActionType {
 	GetContestPlayers,
 	GetContestPlayerGames,
 	GetContests,
+	ContestPatched,
 }
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
@@ -55,6 +56,7 @@ export interface PlayMusic extends Action<ActionType.PlayMusic> {
 }
 
 export interface GetContestPlayers extends Action<ActionType.GetContestPlayers> {
+	contestId: string;
 	players: Rest.ContestPlayer[];
 }
 
@@ -64,6 +66,10 @@ export interface GetContestPlayerGames extends Action<ActionType.GetContestPlaye
 
 export interface GetContests extends Action<ActionType.GetContests> {
 	contests: Store.Contest[];
+}
+
+export interface ContestPatched extends Action<ActionType.ContestPatched> {
+	contest: Omit<Store.Contest, "teams" | "session">;
 }
 
 export function buildApiUrl(path: string): URL {
@@ -103,6 +109,7 @@ export function fetchContestPlayers(
 ): void {
 	fetchContestPlayersDirect(params).then(players => dispatch({
 		type: ActionType.GetContestPlayers,
+		contestId: params.contestId,
 		players
 	}));
 }
@@ -195,7 +202,6 @@ export function patchSession(dispatch: Dispatch, token: string, session: Session
 		}));
 }
 
-
 export function patchContest(dispatch: Dispatch, token: string, id: string, contest: Partial<Contest<string>>): Promise<unknown> {
 	const url = buildApiUrl(`contests/${id}`);
 	return fetch(
@@ -216,10 +222,10 @@ export function patchContest(dispatch: Dispatch, token: string, id: string, cont
 			})
 		})
 		.then(response => response.json())
-		// .then(session => dispatch({
-		// 	type: ActionType.SessionPatched,
-		// 	session
-		// }));
+		.then(contest => dispatch({
+			type: ActionType.ContestPatched,
+			contest
+		}));
 }
 
 export interface GetRiggingTokenOptions {
