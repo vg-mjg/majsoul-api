@@ -292,54 +292,91 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 }
 
 const maxGames = 4;
-const sakiTeamInfo: Record<string, {color:string, name:string, blackFont?: boolean}> = {
-	"Kazekoshi": {
-		color: "#ffd966",
-		name: "風越",
+
+const sakiTeamInfo: Record<string, Record<string, {color:string, name:string, blackFont?: boolean}>> = {
+	"236728": {
+		"Kazekoshi": {
+			color: "#ffd966",
+			name: "風越",
+		},
+		"Kiyosumi": {
+			color: "#6fa8dc",
+			name: "清澄",
+		},
+		"Ryuumonbuchi": {
+			color: "#e06666",
+			name: "龍門渕",
+		},
+		"Tsuruga": {
+			color: "#b4a7d6",
+			name: "敦賀",
+		},
+		"Achiga": {
+			color: "#df8cea",
+			name: "阿知賀",
+		},
+		"Shiraitodai": {
+			color: "#3e5bdd",
+			name: "白糸台",
+		},
+		"Senriyama": {
+			color: "#cea84e",
+			name: "千里山",
+		},
+		"Shindouji": {
+			color: "#7954d8",
+			name: "新道寺",
+		},
+		"Eisui": {
+			color: "#ee0000",
+			name: "永水",
+		},
+		"Miyamori": {
+			color: "#71ba50",
+			name: "宮守",
+		},
+		"Himematsu": {
+			color: "#d3b700",
+			name: "姫松",
+		}
 	},
-	"Kiyosumi": {
-		color: "#6fa8dc",
-		name: "清澄",
-	},
-	"Ryuumonbuchi": {
-		color: "#e06666",
-		name: "龍門渕",
-	},
-	"Tsuruga": {
-		color: "#b4a7d6",
-		name: "敦賀",
-	},
-	"Achiga": {
-		color: "#df8cea",
-		name: "阿知賀",
-	},
-	"Shiraitodai": {
-		color: "#3e5bdd",
-		name: "白糸台",
-	},
-	"Senriyama": {
-		color: "#cea84e",
-		name: "千里山",
-	},
-	"Shindouji": {
-		color: "#7954d8",
-		name: "新道寺",
-	},
-	"Eisui": {
-		color: "#ee0000",
-		name: "永水",
-	},
-	"Miyamori": {
-		color: "#71ba50",
-		name: "宮守",
-	},
-	"Himematsu": {
-		color: "#d3b700",
-		name: "姫松",
+
+	"635236" : {
+		"Kazekoshi": {
+			color: "#ffd966",
+			name: "風越"
+		},
+		"Kiyosumi": {
+			color: "#6fa8dc",
+			name: "清澄"
+		},
+		"Ryuumonbuchi": {
+			color: "#e06666",
+			name: "龍門渕"
+		},
+		"Tsuruga": {
+			color: "#b4a7d6",
+			name: "敦賀"
+		}
 	}
 }
 
-function TeamIcon(props: {team:string, seeded: boolean}): JSX.Element {
+function TeamIcon(props: {
+	team: string,
+	seeded: boolean,
+	contestId: string
+}): JSX.Element {
+	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
+	if (!(contest.majsoulFriendlyId in sakiTeamInfo)) {
+		return null;
+	}
+
+	if (sakiTeamInfo[contest.majsoulFriendlyId] == null) {
+		return null;
+	}
+
+	const team = sakiTeamInfo[contest.majsoulFriendlyId][props.team];
+
 	return <h4 className="pr-2 text-dark">
 		{props.seeded
 			? <Badge className={`bg-light ${props.team ? "mr-2" : ""}`}>
@@ -349,10 +386,10 @@ function TeamIcon(props: {team:string, seeded: boolean}): JSX.Element {
 		}
 		{ props.team
 			? <Badge style={{
-				backgroundColor: sakiTeamInfo[props.team].color,
-				color: sakiTeamInfo[props.team].blackFont ? undefined : "white"
+				backgroundColor: team.color,
+				color: team.blackFont ? undefined : "white"
 			}}>
-				{sakiTeamInfo[props.team].name}
+				{team.name}
 			</Badge>
 			: null
 		}
@@ -492,6 +529,10 @@ export function ContestPlayerDisplay(props: {
 				&& game.players.findIndex(p => p._id === props.contestPlayer._id) >= 0);
 	});
 
+	const {
+		ignoredGames = 0,
+	} = props;
+
 	const dispatch = useDispatch();
 	const [loadGames, setLoadGames] = React.useState(false);
 	React.useEffect(() => {
@@ -502,12 +543,12 @@ export function ContestPlayerDisplay(props: {
 		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
-	const gamesPlayed = Math.max(0, props.contestPlayer.gamesPlayed - props.ignoredGames);
+	const gamesPlayed = Math.max(0, props.contestPlayer.gamesPlayed - ignoredGames );
 
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{cursor: "pointer"}}>
 			<Col md="auto" style={{minWidth: 50}} className="mr-3 text-right"> <h5><b>{props.contestPlayer.tourneyRank + 1}位</b></h5></Col>
-			<TeamIcon team={props.team} seeded={props.contestPlayer.team.seeded}/>
+			<TeamIcon team={props.team} seeded={props.contestPlayer.team.seeded} contestId={props.contestId}/>
 			<Col className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
@@ -523,7 +564,7 @@ export function ContestPlayerDisplay(props: {
 		<Accordion.Collapse as={Row} eventKey="0" >
 			<Container>
 				{games.sort((a, b) => b.start_time - a.start_time)
-					.slice(-(props.ignoredGames ?? 0) - Math.min(maxGames, gamesPlayed), props.ignoredGames ? -props.ignoredGames : undefined)
+					.slice(-ignoredGames - Math.min(maxGames, gamesPlayed), ignoredGames ? -ignoredGames : undefined)
 					.map(game => {
 						const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
 						const position = game.finalScore
@@ -573,7 +614,7 @@ const brackets: Record<string, Array<string>> = {
 	]
 }
 
-export function PlayerStandings(props: {contestId: string}): JSX.Element {
+export function BracketPlayerStandings(props: {contestId: string}): JSX.Element {
 	const history = useHistory();
 	const hash = useLocation().hash.toLowerCase().substr(1);
 	const activeSide = hash in brackets ? hash : "achiga";
@@ -600,7 +641,7 @@ export function PlayerStandings(props: {contestId: string}): JSX.Element {
 				<Nav.Link eventKey="kiyosumi" className="h3 m-0 rounded-0">清澄側</Nav.Link>
 			</Nav.Item>
 			</Nav>
-		<BracketPlayerStandings contestId={props.contestId} teams={brackets[activeSide]} ignoredGames={activeSide === "achiga" ? 0 : 4}/>
+		<PlayerStandings contestId={props.contestId} allowedTeams={brackets[activeSide]} ignoredGames={activeSide === "achiga" ? 0 : 4}/>
 	</Container>
 }
 
@@ -611,12 +652,11 @@ function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: s
 	return 0;
 }
 
-export function BracketPlayerStandings(props: {
+export function PlayerStandings(props: {
 	contestId: string,
-	teams: Array<string>,
+	allowedTeams?: Array<string>,
 	ignoredGames?: number
 }): JSX.Element {
-	const dispatch = useDispatch();
 	const [contestPlayers, setContestPlayers] = React.useState<Array<Rest.ContestPlayer<any>>>(null);
 
 	React.useEffect(() => {
@@ -626,7 +666,7 @@ export function BracketPlayerStandings(props: {
 			gameLimit: maxGames,
 			ignoredGames: props.ignoredGames
 		}).then(setContestPlayers);
-	}, [props.contestId, props.ignoredGames, props.teams]);
+	}, [props.contestId, props.ignoredGames]);
 
 	return <Container className="rounded-bottom bg-dark text-light text-center px-3 py-4">
 		{contestPlayers == null
@@ -640,7 +680,7 @@ export function BracketPlayerStandings(props: {
 			: contestPlayers
 			.map(player => ({
 				player,
-				team: props.teams.find(team => player.team.teams.indexOf(team) >= 0)
+				team: props.allowedTeams == null ? player.team.teams[0] : props.allowedTeams.find(team => player.team.teams.indexOf(team) >= 0)
 			}))
 			.sort((a, b) => contestPlayerTeamSort(b) - contestPlayerTeamSort(a))
 			.map((player, placing) =>
@@ -675,7 +715,10 @@ export function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 
 	return <>
 		<Row className="mt-3">
-			<PlayerStandings contestId={props.contestId} />
+			{props.contestId === "601bb7c2ad32bacea6d8d92c"
+				? <BracketPlayerStandings contestId={props.contestId} />
+				: <PlayerStandings contestId={props.contestId} />
+			}
 		</Row>
 		<Row className="px-4 py-3 justify-content-end" >
 			<Col md="auto" className="h4 mb-0"><u>Recent Games</u></Col>
