@@ -21,6 +21,8 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const [majsoulFriendlyId, setMajsoulFriendlyId] = useState<number>(undefined);
 	const [type, setType] = useState<ContestType>(undefined);
+	const [displayName, setDisplayName] = useState<string>(undefined);
+	const [maxGames, setMaxGames] = useState<number>(undefined);
 	const [anthem, setAnthem] = useState<string>(undefined);
 	const [tagline, setTagline] = useState<string>(undefined);
 	const [taglineAlternate, setTaglineAlternate] = useState<string>(undefined);
@@ -37,7 +39,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					label="Majsoul ID:"
 					id="majsoulEditor"
 					placeholder="Not Linked"
-					displayTransform={(value: string) => value === undefined ? contest.majsoulFriendlyId.toString() : value === null ? "" : value}
+					fallbackValue={contest.majsoulFriendlyId.toString() ?? ""}
 					onChange={(oldValue: string, newValue: string) => {
 						if (newValue === "") {
 							return {
@@ -70,7 +72,49 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						}
 
 						return majsoulFriendlyId.toString();
-					}} />
+					}}
+				/>
+			</Col>
+			<Col>
+				<TextField
+					inline
+					label="Max Games"
+					id="contestMaxGamesEditor"
+					fallbackValue={contest.maxGames?.toString() ?? ""}
+					onChange={(oldValue, newValue) => {
+						if (newValue === "") {
+							return {
+								value: null,
+								isValid: true,
+							};
+						}
+						const value = parseInt(newValue);
+						return {
+							isValid: value >= 0,
+							value: newValue,
+						}
+					}}
+					onCommit={(value: string, isValid: boolean) => {
+						if (value == null) {
+							if (value === null) {
+								setMaxGames(null);
+							}
+							return value;
+						}
+
+						if (isValid) {
+							const intValue = parseInt(value);
+							setMaxGames(intValue);
+							return intValue.toString();
+						}
+
+						if (maxGames == null) {
+							return maxGames as null | undefined;
+						}
+
+						return maxGames.toString();
+					}}
+				/>
 			</Col>
 			<Col>
 				<Form inline className="justify-content-end">
@@ -96,9 +140,22 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 		<Row className="no-gutters">
 			<Col>
 				<TextField
+					label="Display Name"
+					id="contestDisplayNameEditor"
+					placeholder="Inherited From Majsoul"
+					fallbackValue={contest.displayName}
+					onCommit={(value) => {
+						setDisplayName(value);
+						return value;
+					}} />
+			</Col>
+		</Row>
+		<Row className="no-gutters">
+			<Col>
+				<TextField
 					label="Anthem"
 					id="contestAnthemEditor"
-					displayTransform={(value) => value ?? contest.anthem}
+					fallbackValue={contest.anthem}
 					onCommit={(value) => {
 						setAnthem(value);
 						return value;
@@ -110,7 +167,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 				<TextField
 					label="Tagline"
 					id="contestTaglineEditor"
-					displayTransform={(value) => value ?? contest.tagline}
+					fallbackValue={contest.tagline}
 					onCommit={(value) => {
 						setTagline(value);
 						return value;
@@ -122,7 +179,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 				<TextField
 					label="Tagline Alternative"
 					id="contestTaglineAltEditor"
-					displayTransform={(value) => value ?? contest.taglineAlternate}
+					fallbackValue={contest.taglineAlternate}
 					onCommit={(value) => {
 						setTaglineAlternate(value);
 						return value;
@@ -135,16 +192,21 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					variant="secondary"
 					disabled={(contest.majsoulFriendlyId === majsoulFriendlyId || majsoulFriendlyId === undefined)
 						&& (contest.type === type || type === undefined)
+						&& (contest.displayName === displayName || displayName === undefined)
 						&& (contest.anthem === anthem || anthem === undefined)
 						&& (contest.tagline === tagline || tagline === undefined)
-						&& (contest.taglineAlternate === taglineAlternate || taglineAlternate === undefined)}
+						&& (contest.taglineAlternate === taglineAlternate || taglineAlternate === undefined)
+						&& (contest.maxGames === maxGames || maxGames === undefined)
+					}
 					onClick={(event: any) => {
 						patchContest(dispatch, token, contest._id, {
 							majsoulFriendlyId,
 							tagline,
 							taglineAlternate,
-							anthem: anthem,
-							type: type
+							anthem,
+							type,
+							maxGames,
+							displayName
 						});
 					}}
 				>Save</Button>

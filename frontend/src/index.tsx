@@ -298,9 +298,19 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 			}
 		} case ActionType.ContestPatched: {
 			const contestPatchedAction = action as ContestPatched;
+			const originalContest = state.contestsById[contestPatchedAction.contest._id];
 			return {
 				...state,
-				...updatedContestRecord(state, contestPatchedAction.contest._id, contestPatchedAction.contest)
+				...{
+					contestsById: {
+						...state.contestsById,
+						[contestPatchedAction.contest._id]: {
+							...contestPatchedAction.contest,
+							teams: originalContest.teams,
+							sessions: originalContest.sessions,
+						}
+					}
+				}
 			}
 		}
 	}

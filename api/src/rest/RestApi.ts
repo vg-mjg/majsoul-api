@@ -661,6 +661,8 @@ export class RestApi {
 			body(nameofContest('anthem')).isString().bail().isLength({max: 50}).optional({nullable: true}),
 			body(nameofContest('tagline')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			body(nameofContest('taglineAlternate')).isString().bail().isLength({max: 200}).optional({nullable: true}),
+			body(nameofContest('displayName')).isString().bail().isLength({max: 100}).optional({nullable: true}),
+			body(nameofContest('maxGames')).not().isString().bail().isInt({gt: 0, max: 50}).optional({nullable: true}),
 			(req, res) => {
 				const errors = validationResult(req);
 				if (!errors.isEmpty()) {

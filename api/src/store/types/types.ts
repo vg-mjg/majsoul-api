@@ -30,6 +30,8 @@ export interface Contest<Id = any> extends majsoul.Contest {
 	anthem?: string;
 	tagline?: string;
 	taglineAlternate?: string;
+	maxGames?: number;
+	displayName?: string;
 }
 
 export interface ContestTeam<Id = any> {

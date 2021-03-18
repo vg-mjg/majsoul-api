@@ -5,8 +5,9 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
 import { Rest } from "majsoul-api";
-import { maxGames } from "./ContestSummary";
 import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
+import { useSelector } from "react-redux";
+import { IState } from "src/State";
 
 function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: string}): number {
 	if (params.player.team.seeded && params.team != null) {
@@ -20,6 +21,7 @@ export function PlayerStandings(props: {
 	allowedTeams?: Array<string>;
 	ignoredGames?: number;
 }): JSX.Element {
+	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId]?.maxGames ?? 5);
 	const [contestPlayers, setContestPlayers] = React.useState<Array<Rest.ContestPlayer<any>>>(null);
 
 	React.useEffect(() => {

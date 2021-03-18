@@ -4,7 +4,6 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Rest } from "majsoul-api";
-import { maxGames } from "./ContestSummary";
 import { useDispatch, useSelector } from "react-redux";
 import Accordion from "react-bootstrap/Accordion";
 import moment = require("moment");
@@ -27,6 +26,8 @@ export function ContestPlayerDisplay(props: {
 			.filter(game => game.contestId === props.contestId
 				&& game.players.findIndex(p => p._id === props.contestPlayer._id) >= 0);
 	});
+
+	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId].maxGames ?? 4);
 
 	const {
 		ignoredGames = 0,

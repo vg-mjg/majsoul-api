@@ -40,11 +40,12 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 			</h5>
 		</Container>;
 	}
+
 	return <Container>
 		{contest.anthem == null ? null : <SongPlayer videoId={contest.anthem} play={secret}/>}
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
-				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest?.name}</u></h1>
+				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest.displayName ?? contest?.name}</u></h1>
 			</Col>
 			<Col md="auto">
 				<i>
@@ -62,8 +63,6 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		<YakumanDisplay contestId={contest._id}/>
 	</Container>
 }
-
-export const maxGames = 4;
 
 function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 	const games = useSelector((state: IState) => {

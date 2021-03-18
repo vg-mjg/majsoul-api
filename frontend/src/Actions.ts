@@ -219,6 +219,8 @@ export function patchContest(dispatch: Dispatch, token: string, id: string, cont
 				taglineAlternate: contest.taglineAlternate,
 				majsoulFriendlyId: contest.majsoulFriendlyId,
 				type: contest.type,
+				displayName: contest.displayName,
+				maxGames: contest.maxGames,
 			})
 		})
 		.then(response => response.json())
