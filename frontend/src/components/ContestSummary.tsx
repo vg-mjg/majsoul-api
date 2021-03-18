@@ -77,6 +77,8 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			.slice(0, 4);
 	});
 
+	const contest = useSelector((state: IState) => state.contestsById[props.contestId])
+
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
@@ -88,7 +90,7 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 
 	return <>
 		<Row className="mt-3">
-			{props.contestId === "601bb7c2ad32bacea6d8d92c"
+			{ contest.majsoulFriendlyId === 236728
 				? <BracketPlayerStandings contestId={props.contestId} />
 				: <PlayerStandings contestId={props.contestId} />
 			}
