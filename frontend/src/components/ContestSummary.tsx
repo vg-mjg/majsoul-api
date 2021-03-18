@@ -67,39 +67,40 @@ function TextField(props: {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isValid, setIsValid] = useState(true);
 
-	return <Form inline={inline}>
+	return <Form.Group as={Row} className="no-gutters">
 		<Form.Label
-			className="py-3 mr-2"
+			column
+			className="mr-2 font-weight-bold"
 			htmlFor={props.id}
+			sm={inline ? "auto" : "3"}
 		>
 			{props.label}
 		</Form.Label>
-		<Form.Control
-			id={props.id}
-			plaintext={!isEditing}
-			readOnly={!isEditing}
-			style={{
-				width: "auto"
-			}}
-			isInvalid={!isValid}
-			className={`${isEditing ? "" : " text-light"}`}
-			value={displayTransform(value) ?? ""}
-			placeholder={placeholder}
-			onChange={event => {
-				const changeResult = onChange(value, event.target.value);
-				setValue(changeResult.value);
-				setIsValid(changeResult.isValid)
-			}}
-			onFocus={(event: any) => setIsEditing(true)}
-			onBlur={(event: any) => {
-				setIsEditing(false);
-				const commitValue = onCommit(value, isValid);
-				if (commitValue !== value){
-					setValue(commitValue);
-				}
-			}}
-		/>
-	</Form>
+		<Col>
+			<Form.Control
+				id={props.id}
+				plaintext={!isEditing}
+				readOnly={!isEditing}
+				isInvalid={!isValid}
+				className={`${inline ? "" : "text-right"} ${isEditing ? "" : " text-light"}`}
+				value={displayTransform(value) ?? ""}
+				placeholder={placeholder}
+				onChange={event => {
+					const changeResult = onChange(value, event.target.value);
+					setValue(changeResult.value);
+					setIsValid(changeResult.isValid)
+				}}
+				onFocus={(event: any) => setIsEditing(true)}
+				onBlur={(event: any) => {
+					setIsEditing(false);
+					const commitValue = onCommit(value, isValid);
+					if (commitValue !== value){
+						setValue(commitValue);
+					}
+				}}
+			/>
+		</Col>
+	</Form.Group>
 }
 
 function ContestMetadataEditor(props: {id: number}): JSX.Element {
@@ -115,7 +116,7 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 		return null;
 	}
 
-	return <Container className="pb-1 px-4 bg-dark rounded text-white">
+	return <Container className="pt-3 pb-3 px-4 bg-dark rounded text-white">
 		<Row className="no-gutters">
 			<Col>
 				<TextField
@@ -162,7 +163,7 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 			<Col>
 				<Form inline className="justify-content-end">
 					<Form.Label
-						className="py-3 mr-2"
+						className="font-weight-bold mr-2"
 						htmlFor="contestTypeSelector"
 					>
 						Type:
@@ -220,7 +221,7 @@ function ContestMetadataEditor(props: {id: number}): JSX.Element {
 			</Col>
 		</Row>
 		<Row className="no-gutters">
-			<Col className="justify-content-end">
+			<Col className="text-right">
 				<Button
 					variant="secondary"
 					disabled={
