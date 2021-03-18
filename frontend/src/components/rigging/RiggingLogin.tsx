@@ -1,6 +1,6 @@
 import * as React from "react";
-import { getRiggingToken, GetRiggingTokenOptions } from "../Actions";
-import { IState } from "../State";
+import { getRiggingToken, GetRiggingTokenOptions } from "../../Actions";
+import { IState } from "../../State";
 import { connect } from "react-redux";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { IState, ContestTeam, Session } from "../State";
+import { IState, ContestTeam, Session } from "../../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import * as moment from "moment";

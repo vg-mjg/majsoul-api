@@ -1,6 +1,6 @@
 import * as React from "react";
 import { findPlayerInformation, IState } from "../State";
-import { Store, Rest } from "majsoul-api";
+import { Rest } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';

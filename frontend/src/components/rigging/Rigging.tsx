@@ -1,5 +1,5 @@
 import * as React from "react";
-import { IState } from "../State";
+import { IState } from "../../State";
 import { useSelector, shallowEqual, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import { RiggingLogin } from "./RiggingLogin";
@@ -9,9 +9,9 @@ import Col from "react-bootstrap/Col";
 import { LinkContainer } from 'react-router-bootstrap';
 import { Route, Switch, useRouteMatch } from "react-router-dom";
 import { useEffect } from "react";
-import { buildApiUrl, ActionType, logout } from "../Actions";
-import { Session } from "./Session";
-import { Teams } from "./Teams";
+import { buildApiUrl, ActionType, logout } from "../../Actions";
+import { Session } from "../Session";
+import { Teams } from "../Teams";
 
 function RiggingSessions(props: {}): JSX.Element {
 	return null;

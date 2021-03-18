@@ -12,7 +12,7 @@ import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
 import { Rest } from "majsoul-api";
-import { Rigging } from "./components/Rigging";
+import { Rigging } from "./components/rigging/Rigging";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
