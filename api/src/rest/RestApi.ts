@@ -655,7 +655,7 @@ export class RestApi {
 
 		.patch<any, store.Contest<ObjectId>>(
 			'/contests/:id',
-			oneOf([param("id").isMongoId(), param("id").isInt({min: 100000, lt: 1000000})]),
+			param("id").isMongoId(),
 			body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({min: 100000, lt: 1000000}).optional({nullable: true}),
 			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(ContestType)).optional(),
 			body(nameofContest('anthem')).isString().bail().isLength({max: 50}).optional({nullable: true}),
@@ -663,7 +663,7 @@ export class RestApi {
 			body(nameofContest('taglineAlternate')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			body(nameofContest('displayName')).isString().bail().isLength({max: 100}).optional({nullable: true}),
 			body(nameofContest('maxGames')).not().isString().bail().isInt({gt: 0, max: 50}).optional({nullable: true}),
-			(req, res) => {
+			async (req, res) => {
 				const errors = validationResult(req);
 				if (!errors.isEmpty()) {
 					return res.status(400).json({ errors: errors.array() } as any);
@@ -672,7 +672,19 @@ export class RestApi {
 					$set?: {},
 					$unset?: {},
 				} = {};
-				const data = matchedData(req, {includeOptionals: true});
+				const data: Partial<store.Contest<string>> = matchedData(req, {includeOptionals: true});
+
+				if (data.majsoulFriendlyId != null) {
+					try {
+						const existingGame = await this.mongoStore.contestCollection.findOne({majsoulFriendlyId: data.majsoulFriendlyId});
+						if (existingGame != null && !existingGame._id.equals(data._id)) {
+							res.status(400).send(`Contest #${existingGame._id.toHexString()} already subscribed to majsoul ID ${data.majsoulFriendlyId}` as any);
+						};
+					} catch (e) {
+						res.status(500).send(e);
+					}
+				}
+
 				for (const key in data) {
 					if (key === "id") {
 						continue;
@@ -692,9 +704,7 @@ export class RestApi {
 				}
 
 				this.mongoStore.contestCollection.findOneAndUpdate(
-					ObjectId.isValid(req.params.id)
-						? { _id: new ObjectId(req.params.id) }
-						: { majsoulFriendlyId: parseInt(req.params.id) },
+					{ _id: new ObjectId(req.params.id) },
 					update,
 					{
 						returnOriginal: false,
