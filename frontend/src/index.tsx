@@ -20,8 +20,6 @@ import { PersistGate } from 'redux-persist/integration/react'
 import YouTube from 'react-youtube';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { Store } from "majsoul-api/dist/store";
-
 
 const teamColors = [
 	"#980000",

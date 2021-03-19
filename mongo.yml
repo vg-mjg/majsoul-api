@@ -1,19 +1,25 @@
 # Use root/example as user/password credentials
-version: '3.1'
+version: '3.4'
 
 services:
 
   mongo:
     image: mongo:4.2
     restart: always
+    command: ["--replSet", "main", "--bind_ip_all"]
+    hostname: mongodb
     ports:
       - 27017:27017
+    healthcheck:
+      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --quiet) -eq 1
+      interval: 10s
+      start_period: 30s
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
 
   mongo-express:
-    image: mongo-express:4.2
+    image: mongo-express:0.49
     restart: always
     ports:
       - 8081:8081

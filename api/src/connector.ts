@@ -2,7 +2,7 @@ import { Spreadsheet } from "./google";
 import * as fs from "fs";
 import * as util from "util";
 
-import { ObjectId } from 'mongodb';
+import { ChangeStream, ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
@@ -112,6 +112,9 @@ async function main() {
 
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
+	mongoStore.contestCollection.watch().on("change", (next => {
+		console.log(next);
+	}))
 
 	const contests = await mongoStore.contestCollection.find().toArray();
 
