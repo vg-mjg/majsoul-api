@@ -1,8 +1,10 @@
+import { ObjectId } from "bson";
 import * as majsoul from "../../majsoul";
 
 export interface GameResult<Id = any> extends majsoul.GameResult {
 	_id: Id;
-	players: Player<Id>[]
+	contestId: ObjectId;
+	players: Player<Id>[];
 }
 
 export interface Session<Id = any> {

@@ -28,24 +28,25 @@ export class Store {
 		this.userCollection = await oauthDb.createCollection("users", {});
 	}
 
-	public async isGameRecorded(game: { majsoulId: string }): Promise<boolean> {
-		return await this.gamesCollection.countDocuments({majsoulId: game.majsoulId}, { limit: 1 }) === 1;
+	public async isGameRecorded(majsoulId: string): Promise<boolean> {
+		return await this.gamesCollection.countDocuments({majsoulId}, { limit: 1 }) === 1;
 	}
 
-	public async recordGame(contest: Contest, gameResult: Majsoul.GameResult): Promise<void> {
+	public async recordGame(contestId: ObjectId, gameResult: Majsoul.GameResult): Promise<void> {
 		// if (gameResult.players.length !== 4) {
 		// 	console.log(`Game id ${gameResult.majsoulId} doesn't have enough players, skipping`);
 		// 	return;
 		// }
 
 		const session = (await this.contestCollection.findOne(
-			{ _id: contest._id, 'sessions.scheduledTime': { $lte: gameResult.end_time } },
+			{ _id: contestId, 'sessions.scheduledTime': { $lte: gameResult.end_time } },
 			{ projection: { "sessions.$.games": true, total: true } }
 		));
 
 		console.log(`Recording game id ${gameResult.majsoulId}`);
 		const gameRecord: GameResult<ObjectId> = {
 			_id: undefined,
+			contestId,
 			...gameResult,
 			players: (await Promise.all(gameResult.players.map(player =>
 				this.playersCollection.findOneAndUpdate(

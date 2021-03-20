@@ -261,7 +261,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 	}
 }
 
-export const nameofFactory = <T>() => (name: keyof T) => name;
+const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 
 const seededPlayerNames: Record<string, string[]> = {
@@ -694,11 +694,16 @@ export class RestApi {
 						continue;
 					}
 
+					if (key === nameofContest("majsoulFriendlyId")) {
+						update.$unset[nameofContest("majsoulId")] = true;
+					}
+
 					if (data[key] === null) {
 						update.$unset ??= {};
 						update.$unset[key] = true;
 						continue;
 					}
+
 					update.$set ??= {};
 					update.$set[key] = data[key];
 				}
