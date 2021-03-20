@@ -95,14 +95,16 @@ async function main() {
 			);
 
 			const sub = tracking.games$.subscribe((gameId) => {
-				if (mongoStore.isGameRecorded(gameId)) {
-					console.log(`Game id ${gameId} already recorded`);
-					return;
-				}
+				mongoStore.isGameRecorded(gameId).then(isRecorded => {
+					if (isRecorded) {
+						console.log(`Game id ${gameId} already recorded`);
+						return;
+					}
 
-				api.getGame(gameId).then(gameResult => {
-					mongoStore.recordGame(trackable.contestId, gameResult);
-				});
+					api.getGame(gameId).then(gameResult => {
+						mongoStore.recordGame(trackable.contestId, gameResult);
+					});
+				})
 			})
 		})
 	});

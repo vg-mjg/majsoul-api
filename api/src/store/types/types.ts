@@ -1,9 +1,8 @@
-import { ObjectId } from "bson";
 import * as majsoul from "../../majsoul";
 
 export interface GameResult<Id = any> extends majsoul.GameResult {
 	_id: Id;
-	contestId: ObjectId;
+	contestId: Id;
 	players: Player<Id>[];
 }
 

@@ -39,7 +39,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					label="Majsoul ID:"
 					id="majsoulEditor"
 					placeholder="Not Linked"
-					fallbackValue={contest.majsoulFriendlyId.toString() ?? ""}
+					fallbackValue={contest.majsoulFriendlyId?.toString() ?? ""}
 					onChange={(oldValue: string, newValue: string) => {
 						if (newValue === "") {
 							return {

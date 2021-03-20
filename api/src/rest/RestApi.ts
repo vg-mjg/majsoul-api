@@ -509,6 +509,7 @@ export class RestApi {
 					res.sendStatus(404);
 					return;
 				}
+				const contestMajsoulFriendlyId = contest.majsoulFriendlyId?.toString() ?? "";
 
 				const games = await this.mongoStore.gamesCollection.find(
 					{ contestMajsoulId: contest.majsoulId }
@@ -546,7 +547,7 @@ export class RestApi {
 					return total;
 				}, {});
 
-				const seededPlayersForContest = seededPlayerNames[contest.majsoulFriendlyId.toString()] ?? [];
+				const seededPlayersForContest = seededPlayerNames[contestMajsoulFriendlyId] ?? [];
 
 				const seededPlayers = await this.mongoStore.playersCollection.find(
 					{ nickname: { $in: seededPlayersForContest } }
@@ -576,7 +577,7 @@ export class RestApi {
 						...playerGameInfo[player._id.toHexString()],
 						...player,
 						team: {
-							teams: Object.entries(sakiTeams[contest.majsoulFriendlyId.toString()] ?? {})
+							teams: Object.entries(sakiTeams[contestMajsoulFriendlyId] ?? {})
 								.filter(([team, players]) => players.indexOf(player.nickname) >= 0)
 								.map(([team, _]) => team),
 							seeded: seededPlayersForContest.indexOf(player.nickname) >= 0,
@@ -679,9 +680,11 @@ export class RestApi {
 						const existingGame = await this.mongoStore.contestCollection.findOne({majsoulFriendlyId: data.majsoulFriendlyId});
 						if (existingGame != null && !existingGame._id.equals(data._id)) {
 							res.status(400).send(`Contest #${existingGame._id.toHexString()} already subscribed to majsoul ID ${data.majsoulFriendlyId}` as any);
+							return;
 						};
 					} catch (e) {
 						res.status(500).send(e);
+						return;
 					}
 				}
 
@@ -695,6 +698,7 @@ export class RestApi {
 					}
 
 					if (key === nameofContest("majsoulFriendlyId")) {
+						update.$unset ??= {};
 						update.$unset[nameofContest("majsoulId")] = true;
 					}
 

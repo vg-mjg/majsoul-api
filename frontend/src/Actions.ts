@@ -21,7 +21,23 @@ export enum ActionType {
 	GetContestPlayerGames,
 	GetContests,
 	ContestPatched,
+	ContestCreated,
 }
+
+export type MajsoulAction = SummaryRetrievedAction
+	| SessionGamesRetrieved
+	| RiggingTokenAquired
+	| SessionPatched
+	| PatchTeam
+	| GetContestSessions
+	| SetMusic
+	| PlayMusic
+	| GetContestPlayers
+	| GetContestPlayerGames
+	| GetContests
+	| CreateContest
+	| ContestPatched
+	| LogOutAction;
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
 	contest: Store.Contest<string>;
@@ -66,6 +82,16 @@ export interface GetContestPlayerGames extends Action<ActionType.GetContestPlaye
 
 export interface GetContests extends Action<ActionType.GetContests> {
 	contests: Store.Contest[];
+}
+
+export interface CreateContest extends Action<ActionType.ContestCreated> {
+	contest: {
+		_id: string;
+	};
+}
+
+export interface LogOutAction extends Action<ActionType.LogOut> {
+
 }
 
 export interface ContestPatched extends Action<ActionType.ContestPatched> {
@@ -151,6 +177,22 @@ export function fetchContests(dispatch: Dispatch): void {
 		}));
 }
 
+export function putContest(dispatch: Dispatch<CreateContest>, token: string): void {
+	fetch(
+		buildApiUrl(`contests`).toString(),
+		{
+			method: "PUT",
+			headers: {
+				'Authorization': `Bearer ${token}`
+			},
+		}
+	)
+		.then(response => response.json())
+		.then(contest => dispatch({
+			type: ActionType.ContestCreated,
+			contest
+		}));
+}
 export interface FetchGamesOptions {
 	sessionIds?: string[];
 	last?: number;
@@ -265,7 +307,7 @@ export function fetchYakuman(dispatch: Dispatch, contestId: string): void {
 		}));
 }
 
-export function logout(dispatch: Dispatch) {
+export function logout(dispatch: Dispatch<LogOutAction>) {
 	dispatch({type: ActionType.LogOut});
 }
 

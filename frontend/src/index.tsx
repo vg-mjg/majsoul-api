@@ -5,7 +5,7 @@ import { createStore, applyMiddleware, compose, Action } from "redux";
 import { Provider } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests, ContestPatched } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests, ContestPatched, MajsoulAction } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
@@ -113,15 +113,14 @@ function updatedContestRecord(state: IState, contestId: string, contest: Partial
 }
 
 //todo: splatting some of these states is probably not correct and triggers changes.
-function contestReducer(state: IState, action: Action<ActionType>): IState {
+function contestReducer(state: IState, action: MajsoulAction): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
-			const contestSummaryRetrievedAction = action as SummaryRetrievedAction;
 			const contest = {
-				...(state.contestsById[contestSummaryRetrievedAction.contest._id] ?? {}),
-				...contestSummaryRetrievedAction.contest,
+				...(state.contestsById[action.contest._id] ?? {}),
+				...action.contest,
 				teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
-					const team = contestSummaryRetrievedAction.contest.teams == null ? null : contestSummaryRetrievedAction.contest.teams[index];
+					const team = action.contest.teams == null ? null : action.contest.teams[index];
 					hash[team?._id ?? index] = {...(team ?? {
 						players: [],
 						_id: index.toString(),
@@ -241,23 +240,23 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 					videoId: playMusic.videoId ?? state.musicPlayer.videoId
 				}
 			}
-		} case ActionType.SetMusic: {
-			const setMusic = action as SetMusic;
-			return {
-				...state,
-				musicPlayer: {
-					...state.musicPlayer,
-					videoId: setMusic.videoId
-				}
-			}
-		} case ActionType.StopMusic: {
-			return {
-				...state,
-				musicPlayer: {
-					...state.musicPlayer,
-					playing: false
-				}
-			}
+		// } case ActionType.SetMusic: {
+		// 	const setMusic = action as SetMusic;
+		// 	return {
+		// 		...state,
+		// 		musicPlayer: {
+		// 			...state.musicPlayer,
+		// 			videoId: setMusic.videoId
+		// 		}
+		// 	}
+		// } case ActionType.StopMusic: {
+		// 	return {
+		// 		...state,
+		// 		musicPlayer: {
+		// 			...state.musicPlayer,
+		// 			playing: false
+		// 		}
+		// 	}
 		} case ActionType.GetContestPlayers: {
 			const getContestPlayers = action as GetContestPlayers;
 			return {
@@ -310,6 +309,11 @@ function contestReducer(state: IState, action: Action<ActionType>): IState {
 					}
 				}
 			}
+		} case ActionType.ContestCreated: {
+			return {
+				...state,
+				...updatedContestRecord(state, action.contest._id, action.contest)
+			}
 		}
 	}
 
@@ -344,7 +348,9 @@ const store = createStore(
 const persistor = persistStore(store);
 
 function ContestFromRoute(): JSX.Element {
-	const { id } = useParams();
+	const { id } = useParams<{
+		id: string;
+	}>();
 	return <ContestSummary contestId={id}/>
 }
 
