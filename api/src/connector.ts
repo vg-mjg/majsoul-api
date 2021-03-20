@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
-import { defer, EMPTY,  from,  merge,  Observable, Subject } from "rxjs";
+import { defer, EMPTY,  from,  merge,  Observable, Subject, Subscription } from "rxjs";
 import { filter, first, map, mergeAll, takeUntil } from 'rxjs/operators';
 
 const nameofFactory = <T>() => (name: keyof T) => name;
@@ -74,6 +74,7 @@ async function main() {
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
 	const trackables = await createTrackableContestObservable(mongoStore);
+	let lobbySub: Subscription = null;
 
 	const trackablesSub = trackables.subscribe((trackable) => {
 		trackContest(api, trackable).then(tracking => {
@@ -94,7 +95,9 @@ async function main() {
 				{ $set: { ...tracking.contest } },
 			);
 
-			const sub = tracking.games$.subscribe((gameId) => {
+			lobbySub?.unsubscribe();
+
+			lobbySub = tracking.games$.subscribe((gameId) => {
 				mongoStore.isGameRecorded(gameId).then(isRecorded => {
 					if (isRecorded) {
 						console.log(`Game id ${gameId} already recorded`);
