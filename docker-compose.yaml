@@ -39,7 +39,7 @@ services:
     secrets:
       - mongo-creds
     healthcheck:
-      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_INITDB_ROOT_USERNAME} -p $(cat $${MONGO_INITDB_ROOT_PASSWORD_FILE}) --quiet) -eq 1
+      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_INITDB_ROOT_USERNAME} -p $$(cat $${MONGO_INITDB_ROOT_PASSWORD_FILE}) --quiet) -eq 1
       interval: 10s
       start_period: 60s
     environment:
