@@ -32,10 +32,16 @@ services:
   mongo:
     restart: always
     image: mongo:4.2
+    hostname: riichi-mongo
+    command: ["--replSet", "main", "--bind_ip_all"]
     volumes:
       - mongo-db-data:/data/db
     secrets:
       - mongo-creds
+    healthcheck:
+      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --quiet) -eq 1
+      interval: 10s
+      start_period: 30s
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-creds
