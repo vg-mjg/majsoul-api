@@ -2,10 +2,10 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose, Action } from "redux";
-import { Provider } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests, ContestPatched, MajsoulAction } from "./Actions";
+import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests, ContestPatched, MajsoulAction, fetchContestSummary } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
@@ -354,6 +354,22 @@ function ContestFromRoute(): JSX.Element {
 	return <ContestSummary contestId={id}/>
 }
 
+function LatestContestSummary(): JSX.Element {
+	const dispatch = useDispatch();
+	const [contestId, setContestId] = React.useState<string>();
+	React.useEffect(() => {
+		fetchContestSummary(dispatch, "latest").then(contest => {
+			setContestId(contest._id);
+		});
+	});
+
+	if (contestId == null) {
+		return <div>Loading...</div>;
+	}
+
+	return <ContestSummary contestId={contestId}/>
+}
+
 ReactDOM.render(
 	<Provider store={store}>
 		<PersistGate loading={null} persistor={persistor}>
@@ -375,7 +391,7 @@ ReactDOM.render(
 									<ContestList/>
 								</Route>
 								<Route path="/">
-									<ContestSummary contestId="236728"/>
+									<LatestContestSummary/>
 								</Route>
 							</Switch>
 						</Row>

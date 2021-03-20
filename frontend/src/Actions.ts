@@ -105,13 +105,16 @@ export function buildApiUrl(path: string): URL {
 	return new URL(`${location.protocol}//${location.hostname}:9515/${path}`);
 }
 
-export function fetchContestSummary(dispatch: Dispatch, contestId: string): void {
-	fetch(buildApiUrl(`contests/${contestId}`).toString())
-		.then(response => response.json())
-		.then(contest => dispatch({
+export function fetchContestSummary(dispatch: Dispatch, contestId: string): Promise<Store.Contest<string>> {
+	const fetchPromise = fetch(buildApiUrl(`contests/${contestId}`).toString())
+		.then(response => response.json());
+
+	fetchPromise.then(contest => dispatch({
 			type: ActionType.ContestSummaryRetrieved,
 			contest
 		}));
+
+	return fetchPromise;
 }
 
 export function fetchContestSessions(dispatch: Dispatch, contestId: string): void {

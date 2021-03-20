@@ -308,6 +308,19 @@ export class RestApi {
 				.catch(error => res.status(500).send(error));
 		});
 
+		this.app.get<any, store.Contest<ObjectId>>('/contests/latest', (req, res) => {
+			this.mongoStore.contestCollection
+				.find()
+				.sort({_id:-1})
+				.limit(1)
+				.project({
+					sessions: 0
+				})
+				.toArray()
+				.then(contests => res.send(contests[0]))
+				.catch(error => res.status(500).send(error));
+		});
+
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.findContest(req.params.id,
 				{
@@ -365,8 +378,6 @@ export class RestApi {
 						{ _id: { $in: contestIds.map(id => ObjectId.isValid(id) ? ObjectId.createFromHexString(id) : null) } },
 					]}
 				).toArray();
-
-				console.log(contests);
 
 				filter.$and.push(
 					{
