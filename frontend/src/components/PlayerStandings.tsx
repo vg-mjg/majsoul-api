@@ -21,7 +21,7 @@ export function PlayerStandings(props: {
 	allowedTeams?: Array<string>;
 	ignoredGames?: number;
 }): JSX.Element {
-	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId]?.maxGames ?? 5);
+	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId]?.maxGames);
 	const [contestPlayers, setContestPlayers] = React.useState<Array<Rest.ContestPlayer<any>>>(null);
 
 	React.useEffect(() => {

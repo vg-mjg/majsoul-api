@@ -353,8 +353,9 @@ export class RestApi {
 		});
 
 		this.app.get<any, GameResult<ObjectId>[]>('/games', async (req, res) => {
-			const filter: FilterQuery<store.GameResult<ObjectId>> = {};
-			filter.$and = [];
+			const filter: FilterQuery<store.GameResult<ObjectId>> = {
+				$and: []
+			};
 
 			const contestIds = (req.query.contests as string)?.split(' ');
 			if (contestIds) {
@@ -364,6 +365,8 @@ export class RestApi {
 						{ _id: { $in: contestIds.map(id => ObjectId.isValid(id) ? ObjectId.createFromHexString(id) : null) } },
 					]}
 				).toArray();
+
+				console.log(contests);
 
 				filter.$and.push(
 					{
@@ -517,7 +520,7 @@ export class RestApi {
 
 				let gameLimit = parseInt(req.query?.gameLimit as string);
 				if (isNaN(gameLimit)) {
-					gameLimit = 5;
+					gameLimit = Infinity;
 				}
 
 				let ignoredGames = parseInt(req.query?.ignoredGames as string);

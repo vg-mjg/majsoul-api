@@ -2,6 +2,11 @@ import { Collection, MongoClient, ObjectId } from "mongodb";
 import { Contest, GameResult, Player, User, Session } from "./types/types";
 import { Majsoul } from "..";
 
+interface Migration {
+	perform(store: Store): Promise<void>;
+}
+
+const migrations: Migration[] = [];
 export class Store {
 	public contestCollection: Collection<Contest<ObjectId>>;
 	public gamesCollection: Collection<GameResult<ObjectId>>;
@@ -58,5 +63,11 @@ export class Store {
 		};
 
 		await this.gamesCollection.insertOne(gameRecord);
+	}
+
+	public async migrate(): Promise<void> {
+		for (const migration of migrations) {
+			await migration.perform(this);
+		}
 	}
 }

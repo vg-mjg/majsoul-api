@@ -27,7 +27,7 @@ export function ContestPlayerDisplay(props: {
 				&& game.players.findIndex(p => p._id === props.contestPlayer._id) >= 0);
 	});
 
-	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId].maxGames ?? 4);
+	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId].maxGames ?? Infinity);
 
 	const {
 		ignoredGames = 0,
