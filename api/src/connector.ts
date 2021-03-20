@@ -104,9 +104,13 @@ async function main() {
 						return;
 					}
 
-					api.getGame(gameId).then(gameResult => {
+					setTimeout(() => api.getGame(gameId).then(gameResult => {
+						if (gameResult == null) {
+							console.log(`game #${gameId} not found!`)
+							return;
+						}
 						mongoStore.recordGame(trackable.contestId, gameResult);
-					});
+					}), 2000);
 				})
 			})
 		})
