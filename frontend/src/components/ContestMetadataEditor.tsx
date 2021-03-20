@@ -26,6 +26,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 	const [anthem, setAnthem] = useState<string>(undefined);
 	const [tagline, setTagline] = useState<string>(undefined);
 	const [taglineAlternate, setTaglineAlternate] = useState<string>(undefined);
+	const [bonusPerGame, setBonusPerGame] = useState<number>(undefined);
 	const dispatch = useDispatch();
 	if (token == null || contest == null) {
 		return null;
@@ -187,6 +188,48 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 			</Col>
 		</Row>
 		<Row className="no-gutters">
+			<Col>
+				<TextField
+					label="Bonus Per Game"
+					id="contestBonusPerGameEditor"
+					fallbackValue={contest.bonusPerGame?.toString() ?? ""}
+					onChange={(oldValue, newValue) => {
+						if (newValue === "") {
+							return {
+								value: null,
+								isValid: true,
+							};
+						}
+						const value = parseInt(newValue);
+						return {
+							isValid: value >= 0,
+							value: newValue,
+						}
+					}}
+					onCommit={(value: string, isValid: boolean) => {
+						if (value == null) {
+							if (value === null) {
+								setBonusPerGame(null);
+							}
+							return value;
+						}
+
+						if (isValid) {
+							const intValue = parseInt(value);
+							setBonusPerGame(intValue);
+							return intValue.toString();
+						}
+
+						if (bonusPerGame == null) {
+							return bonusPerGame as null | undefined;
+						}
+
+						return bonusPerGame.toString();
+					}}
+				/>
+			</Col>
+		</Row>
+		<Row className="no-gutters">
 			<Col className="text-right">
 				<Button
 					variant="secondary"
@@ -197,6 +240,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						&& (contest.tagline === tagline || tagline === undefined)
 						&& (contest.taglineAlternate === taglineAlternate || taglineAlternate === undefined)
 						&& (contest.maxGames === maxGames || maxGames === undefined)
+						&& (contest.bonusPerGame === bonusPerGame || bonusPerGame === undefined)
 					}
 					onClick={(event: any) => {
 						patchContest(dispatch, token, contest._id, {
@@ -206,7 +250,8 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 							anthem,
 							type,
 							maxGames,
-							displayName
+							displayName,
+							bonusPerGame
 						});
 					}}
 				>Save</Button>

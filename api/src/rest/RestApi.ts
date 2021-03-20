@@ -556,7 +556,7 @@ export class RestApi {
 						if (total[id].gamesPlayed <= ignoredGames || total[id].gamesPlayed > (gameLimit + ignoredGames)) {
 							return;
 						}
-						total[id].tourneyScore += game.finalScore[index].uma;
+						total[id].tourneyScore += game.finalScore[index].uma + (contest.bonusPerGame ?? 0);
 					});
 					return total;
 				}, {});
@@ -570,7 +570,7 @@ export class RestApi {
 				for (const seededPlayer of seededPlayers) {
 					const id = seededPlayer._id.toHexString();
 					if (id in playerGameInfo) {
-						continue
+						continue;
 					}
 					playerGameInfo[id] =  {
 						...seededPlayer,
@@ -678,6 +678,7 @@ export class RestApi {
 			body(nameofContest('taglineAlternate')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			body(nameofContest('displayName')).isString().bail().isLength({max: 100}).optional({nullable: true}),
 			body(nameofContest('maxGames')).not().isString().bail().isInt({gt: 0, max: 50}).optional({nullable: true}),
+			body(nameofContest('bonusPerGame')).not().isString().bail().isInt({min: 0}).optional({nullable: true}),
 			async (req, res) => {
 				const errors = validationResult(req);
 				if (!errors.isEmpty()) {
