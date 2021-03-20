@@ -16,9 +16,9 @@ export interface Contest {
 	majsoulId: number;
 	majsoulFriendlyId: number;
 	name: string;
-	createdTime?: number;
-	startTime?: number;
-	finishTime?: number;
+	createdTime: number;
+	startTime: number;
+	finishTime: number;
 }
 
 export interface GameResult {

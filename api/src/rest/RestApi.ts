@@ -726,6 +726,21 @@ export class RestApi {
 			}
 		)
 
+		.put<any, store.Contest<string>>('/contests', (req, res) => {
+			this.mongoStore.contestCollection.insertOne({}).then(result => res.send({ _id: result.insertedId.toHexString() }));
+		})
+
+		.delete<any, store.Contest<string>>(
+			'/contests/:id',
+			param("id").isMongoId(),
+			(req, res) => {
+				this.mongoStore.contestCollection.deleteOne({
+					_id: new ObjectId(req.params.id)
+				}).then(_ => res.send())
+				.catch(error => res.status(500).send(error));
+			}
+		)
+
 		.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
 			const patch = req.body as Session<string>;
 			if (patch?.scheduledTime == undefined) {

@@ -23,10 +23,10 @@ export enum ContestType {
 	League,
 }
 
-export interface Contest<Id = any> extends majsoul.Contest {
-	type: ContestType;
+export interface Contest<Id = any> extends Partial<majsoul.Contest> {
+	type?: ContestType;
 	_id: Id;
-	teams: ContestTeam<Id>[];
+	teams?: ContestTeam<Id>[];
 	anthem?: string;
 	tagline?: string;
 	taglineAlternate?: string;
