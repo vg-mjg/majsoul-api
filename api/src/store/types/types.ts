@@ -33,6 +33,7 @@ export interface Contest<Id = any> extends Partial<majsoul.Contest> {
 	taglineAlternate?: string;
 	maxGames?: number;
 	displayName?: string;
+	notFoundOnMajsoul?: boolean;
 }
 
 export interface ContestTeam<Id = any> {

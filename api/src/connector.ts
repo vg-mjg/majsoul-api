@@ -80,7 +80,7 @@ async function main() {
 			if (tracking.contest == null) {
 				mongoStore.contestCollection.findOneAndUpdate(
 					{ _id: trackable.contestId },
-					{ $set: { majsoulId: null } },
+					{ $set: { notFoundOnMajsoul: true } },
 				);
 
 				console.log(`contest ${trackable.majsoulFriendlyId} not found on majsoul`);
@@ -157,7 +157,7 @@ function createTrackableContestObservable(mongoStore: store.Store): Observable<T
 		defer(() => from(mongoStore.contestCollection.find().toArray()))
 			.pipe(
 				mergeAll(),
-				filter(contest => contest.majsoulFriendlyId != null && contest.majsoulId !== null),
+				filter(contest => contest.majsoulFriendlyId != null && !contest.notFoundOnMajsoul),
 				map(contest => createTrackable(contest._id, contest.majsoulFriendlyId))
 			),
 	);

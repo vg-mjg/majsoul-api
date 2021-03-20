@@ -702,7 +702,7 @@ export class RestApi {
 
 					if (key === nameofContest("majsoulFriendlyId")) {
 						update.$unset ??= {};
-						update.$unset[nameofContest("majsoulId")] = true;
+						update.$unset[nameofContest("notFoundOnMajsoul")] = true;
 					}
 
 					if (data[key] === null) {
