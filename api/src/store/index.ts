@@ -1,9 +1,10 @@
-import { Contest, GameResult, Player, Session, ContestTeam, Match } from "./types/types";
+import { Contest, GameResult, Player, Session, ContestTeam, Match, Config, ContestType } from "./types/types";
 import { Store } from "./Store";
 
 export {
 	Store,
-
+	Config,
+	ContestType,
 	Contest,
 	GameResult,
 	Player,

@@ -61,3 +61,9 @@ export interface User<Id = any> {
 	};
 	scopes: string[];
 }
+
+export interface Config<Id = any> {
+	_id: Id;
+	trackedContest?: Id;
+	failedToTrackContest?: boolean;
+}

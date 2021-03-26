@@ -11,7 +11,6 @@ import * as expressJwt from 'express-jwt';
 import { Observable } from 'rxjs';
 import { toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, validationResult } from 'express-validator';
-import { ContestType } from '../store/types/types';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -365,6 +364,21 @@ export class RestApi {
 			});
 		});
 
+		this.app.get<any, store.Config<ObjectId>>('/config', (req, res) => {
+			this.mongoStore.configCollection.find().toArray()
+			.then((config) => {
+				if (config[0] == null) {
+					res.sendStatus(404);
+					return;
+				}
+				res.send(config[0]);
+			})
+			.catch(error => {
+				console.log(error);
+				res.status(500).send(error)
+			});
+		});
+
 		this.app.get<any, GameResult<ObjectId>[]>('/games', async (req, res) => {
 			const filter: FilterQuery<store.GameResult<ObjectId>> = {
 				$and: []
@@ -672,7 +686,7 @@ export class RestApi {
 			'/contests/:id',
 			param("id").isMongoId(),
 			body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({min: 100000, lt: 1000000}).optional({nullable: true}),
-			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(ContestType)).optional(),
+			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
 			body(nameofContest('anthem')).isString().bail().isLength({max: 50}).optional({nullable: true}),
 			body(nameofContest('tagline')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			body(nameofContest('taglineAlternate')).isString().bail().isLength({max: 200}).optional({nullable: true}),

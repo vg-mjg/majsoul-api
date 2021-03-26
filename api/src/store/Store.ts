@@ -1,5 +1,5 @@
 import { Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session } from "./types/types";
+import { Contest, GameResult, Player, User, Session, Config } from "./types/types";
 import { Majsoul } from "..";
 
 interface Migration {
@@ -12,6 +12,7 @@ export class Store {
 	public gamesCollection: Collection<GameResult<ObjectId>>;
 	public sessionsCollection: Collection<Session<ObjectId>>;
 	public playersCollection: Collection<Player<ObjectId>>;
+	public configCollection: Collection<Config<ObjectId>>;
 	public userCollection: Collection<User<ObjectId>>;
 
 	public async init(username: string, password: string): Promise<void> {
@@ -27,7 +28,11 @@ export class Store {
 		this.sessionsCollection = await majsoulDb.createCollection("sessions", {});
 		this.sessionsCollection.createIndex({scheduledTime: -1});
 		this.playersCollection = await majsoulDb.createCollection("players", {});
+		this.configCollection = await majsoulDb.createCollection("config", {});
 
+		if ((await this.configCollection.countDocuments()) < 1 ){
+			this.configCollection.insertOne({});
+		}
 
 		const oauthDb = client.db('oauth');
 		this.userCollection = await oauthDb.createCollection("users", {});
