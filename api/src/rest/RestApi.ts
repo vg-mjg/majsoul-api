@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
 import { GameResult, Session, ContestPlayer } from './types/types';
-import { ObjectId, FilterQuery, Condition, MatchKeysAndValues, OnlyFieldsOfType, FindOneOptions } from 'mongodb';
+import { ObjectId, FilterQuery, Condition, FindOneOptions } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
@@ -10,7 +10,7 @@ import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { Observable } from 'rxjs';
 import { toArray } from 'rxjs/operators';
-import { body, matchedData, oneOf, param, validationResult } from 'express-validator';
+import { body, matchedData, param, validationResult } from 'express-validator';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -262,6 +262,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
+const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -270,6 +271,13 @@ const seededPlayerNames: Record<string, string[]> = {
 		"Meido",
 		"amegumo",
 	]
+}
+
+function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<express.Response<ResponseType>>) {
+	return (request, response) => callback(request, response).catch(error => {
+		console.log(error);
+		response.status(500).send(error);
+	});
 }
 
 export class RestApi {
@@ -741,6 +749,11 @@ export class RestApi {
 					update.$set[key] = data[key];
 				}
 
+				if (update.$set == null && update.$unset == null) {
+					res.status(400).send("No operations requested" as any);
+					return;
+				}
+
 				this.mongoStore.contestCollection.findOneAndUpdate(
 					{ _id: new ObjectId(req.params.id) },
 					update,
@@ -777,6 +790,67 @@ export class RestApi {
 				}).then(_ => res.send())
 				.catch(error => res.status(500).send(error));
 			}
+		)
+
+		.patch<any, store.Config<ObjectId>>(
+			'/config',
+			body(nameofConfig('trackedContest')).isMongoId().optional({nullable: true}),
+			logError<any, store.Config<ObjectId>>(async (req, res) => {
+				const errors = validationResult(req);
+				if (!errors.isEmpty()) {
+					return res.status(400).json({ errors: errors.array() } as any);
+				}
+				const update: {
+					$set?: {},
+					$unset?: {},
+				} = {};
+				const data: Partial<store.Config<string>> = matchedData(req, {includeOptionals: true});
+
+				for (const key in data) {
+					if (data[key] === undefined) {
+						continue;
+					}
+
+					if (key === nameofConfig("trackedContest")) {
+						update.$unset ??= {};
+						update.$unset[nameofConfig("failedToTrackContest")] = true;
+					}
+
+					if (data[key] === null) {
+						update.$unset ??= {};
+						update.$unset[key] = true;
+						continue;
+					}
+
+					update.$set ??= {};
+					update.$set[key] = data[key];
+				}
+
+				if (update.$set == null && update.$unset == null) {
+					res.status(400).send("No operations requested" as any);
+					return;
+				}
+
+				const [existingConfig] = await this.mongoStore.configCollection.find().toArray();
+				if (existingConfig == null) {
+					res.status(404).send();
+					return;
+				}
+
+				const updatedConfig = await this.mongoStore.configCollection.findOneAndUpdate(
+					{ _id: existingConfig._id },
+					update,
+					{
+						returnOriginal: false,
+					}
+				);
+
+				if (updatedConfig.value === null) {
+					res.status(404).send();
+					return;
+				}
+				res.send(updatedConfig.value);
+			})
 		)
 
 		.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
