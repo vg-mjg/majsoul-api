@@ -4,14 +4,14 @@ FROM base AS build
 
 WORKDIR /build/api
 COPY ./api/package.json ./api/yarn.lock ./
-RUN yarn
+RUN yarn --frozen-lockfile
 RUN yarn link
 COPY ./api/ ./
 RUN yarn run tsc
 
 WORKDIR /build/frontend
 COPY ./frontend/package.json ./frontend/yarn.lock ./
-RUN yarn
+RUN yarn --frozen-lockfile
 RUN yarn link majsoul-api
 
 COPY ./frontend ./
