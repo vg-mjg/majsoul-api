@@ -273,7 +273,7 @@ const seededPlayerNames: Record<string, string[]> = {
 	]
 }
 
-function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<express.Response<ResponseType>>) {
+function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<void>) {
 	return (request, response) => callback(request, response).catch(error => {
 		console.log(error);
 		response.status(500).send(error);
@@ -784,12 +784,21 @@ export class RestApi {
 		.delete<any, store.Contest<string>>(
 			'/contests/:id',
 			param("id").isMongoId(),
-			(req, res) => {
-				this.mongoStore.contestCollection.deleteOne({
+			logError<any, store.Contest<string>>(async (req, res) => {
+				const result = await this.mongoStore.contestCollection.deleteOne({
 					_id: new ObjectId(req.params.id)
-				}).then(_ => res.send())
-				.catch(error => res.status(500).send(error));
-			}
+				})
+
+				await this.mongoStore.configCollection.findOneAndUpdate({
+					trackedContest: new ObjectId(req.params.id)
+				}, {
+					$unset: {
+						trackedContest: true
+					}
+				})
+
+				res.send();
+			})
 		)
 
 		.patch<any, store.Config<ObjectId>>(
@@ -798,14 +807,14 @@ export class RestApi {
 			logError<any, store.Config<ObjectId>>(async (req, res) => {
 				const errors = validationResult(req);
 				if (!errors.isEmpty()) {
-					return res.status(400).json({ errors: errors.array() } as any);
+					res.status(400).json({ errors: errors.array() } as any);
+					return;
 				}
 				const update: {
 					$set?: {},
 					$unset?: {},
 				} = {};
 				const data: Partial<store.Config<string>> = matchedData(req, {includeOptionals: true});
-
 
 				if (data.trackedContest != null) {
 					const existingContest = await this.mongoStore.contestCollection.findOne({_id: new ObjectId(data.trackedContest)});
@@ -832,7 +841,7 @@ export class RestApi {
 					}
 
 					update.$set ??= {};
-					update.$set[key] = data[key];
+					update.$set[key] = key === nameofConfig("trackedContest") ? new ObjectId(data[key] as string) : data[key];
 				}
 
 				if (update.$set == null && update.$unset == null) {
