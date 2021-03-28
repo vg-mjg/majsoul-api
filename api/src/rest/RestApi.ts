@@ -806,6 +806,15 @@ export class RestApi {
 				} = {};
 				const data: Partial<store.Config<string>> = matchedData(req, {includeOptionals: true});
 
+
+				if (data.trackedContest != null) {
+					const existingContest = await this.mongoStore.contestCollection.findOne({_id: new ObjectId(data.trackedContest)});
+					if (existingContest == null) {
+						res.status(400).send(`Contest #${data._id} doesn't exist.` as any);
+						return;
+					};
+				}
+
 				for (const key in data) {
 					if (data[key] === undefined) {
 						continue;
