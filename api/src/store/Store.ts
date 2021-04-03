@@ -1,6 +1,7 @@
-import { Collection, MongoClient, ObjectId } from "mongodb";
+import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
 import { Contest, GameResult, Player, User, Session, Config } from "./types/types";
 import { Majsoul } from "..";
+import { Observable, Subject } from "rxjs";
 
 interface Migration {
 	perform(store: Store): Promise<void>;
@@ -14,6 +15,19 @@ export class Store {
 	public playersCollection: Collection<Player<ObjectId>>;
 	public configCollection: Collection<Config<ObjectId>>;
 	public userCollection: Collection<User<ObjectId>>;
+
+	private readonly contestChangesSubject = new Subject<ChangeEvent<Contest<ObjectId>>>();
+	private readonly configChangesSubject = new Subject<ChangeEvent<Config<ObjectId>>>();
+	private contestStream: ChangeStream<Contest<ObjectId>>;
+	private configStream: ChangeStream<Config<ObjectId>>;
+
+	public get ContestChanges(): Observable<ChangeEvent<Contest<ObjectId>>> {
+		return this.contestChangesSubject;
+	}
+
+	public get ConfigChanges(): Observable<ChangeEvent<Config<ObjectId>>> {
+		return this.configChangesSubject;
+	}
 
 	public async init(username: string, password: string): Promise<void> {
 		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
@@ -29,6 +43,9 @@ export class Store {
 		this.sessionsCollection.createIndex({scheduledTime: -1});
 		this.playersCollection = await majsoulDb.createCollection("players", {});
 		this.configCollection = await majsoulDb.createCollection("config", {});
+
+		this.contestStream = this.contestCollection.watch().on("change", change => this.contestChangesSubject.next(change));
+		this.configStream = this.configCollection.watch().on("change", change => this.configChangesSubject.next(change));
 
 		if ((await this.configCollection.countDocuments()) < 1 ){
 			this.configCollection.insertOne({});

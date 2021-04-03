@@ -2,12 +2,13 @@ import { Spreadsheet } from "./google";
 import * as fs from "fs";
 import * as util from "util";
 
-import { ObjectId } from 'mongodb';
+import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
-import { defer, EMPTY,  from,  merge,  Observable, Subject, Subscription } from "rxjs";
-import { filter, first, map, mergeAll, takeUntil } from 'rxjs/operators';
+import { concat, defer, EMPTY,  from,  merge,  Observable, Subject, Subscription, timer } from "rxjs";
+import { filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil } from 'rxjs/operators';
+import { Majsoul, Store } from ".";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
@@ -73,133 +74,162 @@ async function main() {
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
-	const trackables = await createTrackableContestObservable(mongoStore);
-	let lobbySub: Subscription = null;
+	const contestIds$ = await createContestIds$(mongoStore);
+	contestIds$.subscribe((contestId) => {
+		const {
+			contestDeleted$,
+			majsoulFriendlyId$,
+			majsoulId$
+		} = createContestObservables(contestId, mongoStore);
 
-	const trackablesSub = trackables.subscribe((trackable) => {
-		trackContest(api, trackable).then(tracking => {
-			if (tracking.contest == null) {
+		const updateRequest$ = majsoulFriendlyId$.pipe(
+			map(majsoulFriendlyId => {
+				if (majsoulFriendlyId == null) {
+					return EMPTY;
+				}
+				return timer(0, 86400000).pipe(
+					mapTo(majsoulFriendlyId),
+					takeUntil(contestDeleted$)
+				)
+			}),
+			switchAll(),
+		)
+
+		updateRequest$.subscribe(async (majsoulFriendlyId) => {
+			const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
+			if (majsoulContest == null) {
 				mongoStore.contestCollection.findOneAndUpdate(
-					{ _id: trackable.contestId },
+					{ _id: contestId },
 					{ $set: { notFoundOnMajsoul: true } },
 				);
 
-				console.log(`contest ${trackable.majsoulFriendlyId} not found on majsoul`);
+				console.log(`contest ${majsoulFriendlyId} not found on majsoul`);
 				return;
 			}
 
-			console.log(`tracking contest ${trackable.majsoulFriendlyId}`);
+			console.log(`updating contest ${majsoulFriendlyId}`);
 
 			mongoStore.contestCollection.findOneAndUpdate(
-				{ _id: trackable.contestId },
-				{ $set: { ...tracking.contest } },
+				{ _id: contestId },
+				{ $set: { ...majsoulContest } },
 			);
 
-			lobbySub?.unsubscribe();
+			console.log(`updating contest ${majsoulFriendlyId} games`);
+			for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)){
+				await recordGame(contestId, gameId.majsoulId, mongoStore, api);
+			}
+		});
 
-			lobbySub = tracking.games$.subscribe((gameId) => {
-				mongoStore.isGameRecorded(gameId).then(isRecorded => {
-					if (isRecorded) {
-						console.log(`Game id ${gameId} already recorded`);
-						return;
-					}
+		const liveGames$ = majsoulId$.pipe(
+			map(majsoulId =>
+				api.subscribeToContestChatSystemMessages(majsoulId).pipe(
+					filter(notification => notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd"),
+					map(notification => notification.uuid as string),
+					takeUntil(contestDeleted$)
+				),
+			),
+			switchAll(),
+		)
 
-					setTimeout(() => api.getGame(gameId).then(gameResult => {
-						if (gameResult == null) {
-							console.log(`game #${gameId} not found!`)
-							return;
-						}
-						mongoStore.recordGame(trackable.contestId, gameResult);
-					}), 2000);
-				})
-			})
-		})
+		liveGames$.subscribe(gameId => recordGame(contestId, gameId, mongoStore, api));
 	});
 }
 
-interface TrackableContest {
-	contestId: ObjectId;
-	majsoulFriendlyId: number;
-	trackingEnd$: Observable<void | ObjectId>;
-}
-
-function createTrackableContestObservable(mongoStore: store.Store): Observable<TrackableContest> {
-	const trackingEnded = new Subject<ObjectId>();
-	const createTrackable = (contestId: ObjectId, majsoulFriendlyId: number): TrackableContest => {
-		return {
-			contestId: contestId,
-			majsoulFriendlyId: majsoulFriendlyId,
-			trackingEnd$: trackingEnded.pipe(first((id: ObjectId) => contestId.equals(id))),
-		}
+async function recordGame(
+	contestId: ObjectId,
+	gameId: string,
+	mongoStore: Store.Store,
+	api: Majsoul.Api
+): Promise<void> {
+	const isRecorded = await mongoStore.isGameRecorded(gameId);
+	if (isRecorded) {
+		console.log(`Game id ${gameId} already recorded`);
+		return;
 	}
 
+	const gameResult = await api.getGame(gameId);
+	if (gameResult == null) {
+		console.log(`game #${gameId} not found!`)
+		return;
+	}
+
+	mongoStore.recordGame(contestId, gameResult);
+}
+
+
+function createContestObservables(
+	id: ObjectId,
+	mongoStore: store.Store
+): {
+	contestDeleted$: Observable<any>;
+	majsoulFriendlyId$: Observable<number>;
+	majsoulId$: Observable<number>;
+} {
+	const contestDeleted$ = mongoStore.ContestChanges.pipe(
+		filter(changeEvent => changeEvent.operationType === "delete"
+			&& changeEvent.documentKey._id.equals(this.id)),
+		share()
+	);
+
+	const contestUpdates$ = mongoStore.ContestChanges.pipe(
+		filter(changeEvent =>
+			changeEvent.operationType === "update"
+			&& changeEvent.documentKey._id.equals(this.id)
+		),
+		share()
+	) as Observable<ChangeEventUpdate<store.Contest<ObjectId>>>;
+
+	const majsoulId$ = merge(
+		defer(() => from(mongoStore.contestCollection.findOne({_id: this.id})))
+			.pipe(map(contest => contest.notFoundOnMajsoul ? null as number : contest.majsoulId)),
+		contestUpdates$.pipe(
+			filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulId")) >= 0
+				|| event.updateDescription.updatedFields?.notFoundOnMajsoul === true),
+			mapTo(null as number),
+		),
+		contestUpdates$.pipe(
+			filter(event => event.updateDescription.updatedFields?.majsoulId !== undefined),
+			map(event => event.updateDescription.updatedFields.majsoulId)
+		)
+	).pipe(
+		takeUntil(contestDeleted$)
+	);
+
+	const majsoulFriendlyId$ = merge(
+		defer(() => from(mongoStore.contestCollection.findOne({_id: this.id})))
+			.pipe(map(contest => contest.notFoundOnMajsoul ? null as number : contest.majsoulFriendlyId)),
+		contestUpdates$.pipe(
+			filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulFriendlyId")) >= 0
+				|| event.updateDescription.updatedFields?.notFoundOnMajsoul === true),
+			mapTo(null as number),
+		),
+		contestUpdates$.pipe(
+			filter(event => event.updateDescription.updatedFields?.majsoulFriendlyId !== undefined),
+			map(event => event.updateDescription.updatedFields.majsoulFriendlyId)
+		)
+	).pipe(
+		takeUntil(contestDeleted$)
+	);
+
+	return {
+		contestDeleted$,
+		majsoulFriendlyId$,
+		majsoulId$,
+	}
+}
+
+function createContestIds$(mongoStore: store.Store): Observable<ObjectId> {
 	return merge(
-		new Observable<TrackableContest>((subscriber) => {
-			const stream = mongoStore.contestCollection.watch().on("change", (change => {
-				switch (change.operationType) {
-					case "update": {
-						if (change.updateDescription.removedFields.indexOf(nameofContest("majsoulFriendlyId")) >= 0) {
-							trackingEnded.next(change.documentKey._id);
-							return;
-						}
-
-						const updatedValue = change.updateDescription.updatedFields.majsoulFriendlyId;
-						if (updatedValue == null) {
-							return;
-						}
-
-						subscriber.next(createTrackable(change.documentKey._id, updatedValue))
-						return;
-					} case "delete": {
-						trackingEnded.next(change.documentKey._id);
-						return;
-					}
-				}
-			}));
-
-			return () =>{
-				stream.close();
-			};
-		}),
+		mongoStore.ContestChanges.pipe(
+			filter(changeEvent => changeEvent.operationType === "insert"),
+			map((changeEvent: ChangeEventCR<store.Contest<ObjectId>>) => changeEvent.documentKey._id)
+		),
 		defer(() => from(mongoStore.contestCollection.find().toArray()))
 			.pipe(
 				mergeAll(),
-				filter(contest => contest.majsoulFriendlyId != null && !contest.notFoundOnMajsoul),
-				map(contest => createTrackable(contest._id, contest.majsoulFriendlyId))
-			),
+				map(contest => contest._id)
+			)
 	);
-}
-
-async function trackContest(
-	majsoulApi: majsoul.Api,
-	trackable: TrackableContest
-): Promise<{
-	contest: majsoul.Contest,
-	games$: Observable<string>
-}> {
-	const majsoulContest = await majsoulApi.findContestByContestId(trackable.majsoulFriendlyId);
-	if (majsoulContest == null) {
-		return {
-			contest: null,
-			games$: EMPTY
-		};
-	}
-
-	return {
-		contest: majsoulContest,
-		games$: merge(
-			majsoulApi.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).pipe(
-				filter(notification => notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd"),
-				map(notification => notification.uuid),
-				takeUntil(trackable.trackingEnd$)
-			),
-			defer(() => from(majsoulApi.getContestGamesIds(majsoulContest.majsoulId)))
-				.pipe(
-					mergeAll(),
-					map(contest => contest.majsoulId)
-				),
-		)
-	}
 }
 
 main().catch(e => console.log(e));
