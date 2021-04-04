@@ -47,7 +47,7 @@ export class Api {
 	private readonly rpc: RpcImplementation;
 	private readonly lobbyService: RpcService;
 	private readonly codec: Codec;
-	private readonly notifications: Observable<any>;
+	public readonly notifications: Observable<any>;
 
 	constructor(private readonly apiResources: ApiResources) {
 		this.protobufRoot = Root.fromJSON(this.apiResources.protobufDefinition);
@@ -178,7 +178,7 @@ export class Api {
 				return this.notifications.pipe(
 					filter(
 						message => message.unique_id === id
-						&& message.constructor.name === "NotifyCustomContestSystemMsg"
+						// && message.constructor.name === "NotifyCustomContestSystemMsg"
 					)
 				);
 			}

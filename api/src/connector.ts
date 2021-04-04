@@ -6,7 +6,7 @@ import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
-import { defer, EMPTY,  from,  merge,  Observable, timer } from "rxjs";
+import { combineLatest, defer, EMPTY,  from,  merge,  Observable, timer } from "rxjs";
 import { filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 
@@ -60,6 +60,7 @@ async function main() {
 	await spreadsheet.init();
 
 	const api = new majsoul.Api(await majsoul.Api.retrieveApiResources());
+	api.notifications.subscribe(n => console.log(n));
 	await api.init();
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
 
@@ -75,10 +76,10 @@ async function main() {
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
-	const sub = api.subscribeToContestChatSystemMessages(4832).subscribe(m => console.log(m));
-	api.subscribeToContestChatSystemMessages(4832).subscribe(m => console.log(m)).unsubscribe();
-	api.subscribeToContestChatSystemMessages(4623).subscribe(m => console.log(m));
-	sub.unsubscribe();
+	// const sub = api.subscribeToContestChatSystemMessages(4832).subscribe(m => console.log(m));
+	// api.subscribeToContestChatSystemMessages(4832).subscribe(m => console.log(m)).unsubscribe();
+	// api.subscribeToContestChatSystemMessages(4623).subscribe(m => console.log(m));
+	// sub.unsubscribe();
 
 	createContestIds$(mongoStore).subscribe((contestId) => {
 		const tracker = new ContestTracker(contestId, mongoStore, api);
@@ -96,7 +97,6 @@ async function main() {
 			}
 
 			console.log(`updating contest ${majsoulFriendlyId}`);
-			return;
 
 			mongoStore.contestCollection.findOneAndUpdate(
 				{ _id: contestId },
@@ -108,6 +108,10 @@ async function main() {
 				await recordGame(contestId, gameId.majsoulId, mongoStore, api);
 			}
 		});
+
+		tracker.LiveGames$.subscribe(gameId => {
+			recordGame(contestId, gameId, mongoStore, api);
+		})
 	});
 
 	createTrackedContest$(mongoStore).pipe(
@@ -201,12 +205,28 @@ class ContestTracker {
 		)
 	}
 
+	public get Track$(): Observable<boolean> {
+		return merge(
+			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
+				.pipe(map(contest => contest.track ?? false)),
+			this.ContestUpdates$.pipe(
+				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("track")) >= 0),
+				mapTo(false),
+			),
+			this.ContestUpdates$.pipe(
+				filter(event => event.updateDescription.updatedFields?.track !== undefined),
+				map(event => event.updateDescription.updatedFields.track ?? false)
+			)
+		).pipe(
+			takeUntil(this.ContestDeleted$)
+		);
+	}
+
 	public get LiveGames$() {
-		return this.MajsoulId$.pipe(
-			map(majsoulId => majsoulId == null
+		return combineLatest([this.MajsoulId$, this.Track$]).pipe(
+			map(([majsoulId, track]) => (majsoulId == null || !track)
 				? EMPTY
 				: this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
-					tap(m => console.log(m)),
 					filter(notification => notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd"),
 					map(notification => notification.uuid as string),
 					takeUntil(this.ContestDeleted$)
