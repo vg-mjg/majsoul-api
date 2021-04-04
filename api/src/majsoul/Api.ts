@@ -1,8 +1,8 @@
 import * as uuidv4 from "uuid/v4";
 import { Root } from "protobufjs";
 import fetch from "node-fetch";
-import { Observable, merge } from 'rxjs';
-import { filter, map, share, tap } from 'rxjs/operators';
+import { Observable, merge, Subject, using, EMPTY, defer, timer, NEVER } from 'rxjs';
+import { distinctUntilChanged, filter, first, map, mergeAll, share, skipUntil, takeUntil, tap } from 'rxjs/operators';
 import { GameResult, Contest } from "./types/types";
 import { RoundResult, AgariInfo, RoundInfo } from "./types/types";
 import { DrawStatus } from "./types/DrawStatus";
@@ -41,7 +41,7 @@ export class Api {
 		};
 	}
 
-	private readonly contestObservables: Observable<any>[] = [];
+	private readonly contestSystemMessagesSubscriptions: Record<number, number> = {};
 	private readonly protobufRoot: Root;
 	private readonly connection: Connection;
 	private readonly rpc: RpcImplementation;
@@ -152,24 +152,37 @@ export class Api {
 	}
 
 	public subscribeToContestChatSystemMessages(id: number): Observable<any> {
-		const observable = this.contestObservables[id];
-		if (observable) {
-			return observable;
-		}
-		return this.contestObservables[id] = merge(this.notifications.pipe(tap(m => console.log(m)), filter(message => message.constructor.name === "NotifyCustomContestSystemMsg"
-			&& message.unique_id === id)), new Observable<string>((subscriber) => {
-				console.log("subscribed");
-				this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: id });
-				return () => {
-					console.log("unsubscribed");
-					this.lobbyService.rpcCall("leaveCustomizedContestChatRoom", {}).then(() => {
-						delete this.contestObservables[id];
-						for (const contest of Object.keys(this.contestObservables)) {
-							this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: contest });
-						}
-					});
-				};
-			})).pipe(share());
+		return using(
+			() => ({
+				unsubscribe: () => {
+					this.contestSystemMessagesSubscriptions[id]--;
+					if (this.contestSystemMessagesSubscriptions[id] > 0) {
+						return;
+					}
+
+					delete this.contestSystemMessagesSubscriptions[id];
+					this.lobbyService.rpcCall("leaveCustomizedContestChatRoom", {});
+					for (const id of Object.keys(this.contestSystemMessagesSubscriptions)) {
+						this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: id });
+					}
+				}
+			}),
+			() => {
+				if (this.contestSystemMessagesSubscriptions[id] == null) {
+					this.contestSystemMessagesSubscriptions[id] = 1;
+					this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: id });
+				} else {
+					this.contestSystemMessagesSubscriptions[id]++;
+				}
+
+				return this.notifications.pipe(
+					filter(
+						message => message.unique_id === id
+						&& message.constructor.name === "NotifyCustomContestSystemMsg"
+					)
+				);
+			}
+		);
 	}
 
 	public async getGame(id: string): Promise<GameResult> {
