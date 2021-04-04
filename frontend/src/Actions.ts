@@ -267,6 +267,7 @@ export function patchContest(dispatch: Dispatch, token: string, id: string, cont
 				displayName: contest.displayName,
 				maxGames: contest.maxGames,
 				bonusPerGame: contest.bonusPerGame,
+				track: contest.track,
 			})
 		})
 		.then(response => response.json())

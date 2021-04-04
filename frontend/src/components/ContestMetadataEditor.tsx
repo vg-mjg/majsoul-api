@@ -27,6 +27,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 	const [tagline, setTagline] = useState<string>(undefined);
 	const [taglineAlternate, setTaglineAlternate] = useState<string>(undefined);
 	const [bonusPerGame, setBonusPerGame] = useState<number>(undefined);
+	const [track, setTrack] = useState<boolean>(undefined);
 	const dispatch = useDispatch();
 	if (token == null || contest == null) {
 		return null;
@@ -230,6 +231,16 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 			</Col>
 		</Row>
 		<Row className="no-gutters">
+			<Col>
+				<Form.Check
+					inline
+					label="Track"
+					type="checkbox"
+					id={`track-contest`}
+					checked={track ?? contest.track ?? false}
+					onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTrack(event.target.checked)}
+				/>
+			</Col>
 			<Col className="text-right">
 				<Button
 					variant="secondary"
@@ -241,6 +252,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						&& (contest.taglineAlternate === taglineAlternate || taglineAlternate === undefined)
 						&& (contest.maxGames === maxGames || maxGames === undefined)
 						&& (contest.bonusPerGame === bonusPerGame || bonusPerGame === undefined)
+						&& (contest.track === track || track === undefined)
 					}
 					onClick={(event: any) => {
 						patchContest(dispatch, token, contest._id, {
@@ -251,7 +263,8 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 							type,
 							maxGames,
 							displayName,
-							bonusPerGame
+							bonusPerGame,
+							track
 						});
 					}}
 				>Save</Button>
