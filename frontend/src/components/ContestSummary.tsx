@@ -15,6 +15,7 @@ import { SongPlayer } from "./utils/SongPlayer";
 import { PlayerStandings } from "./PlayerStandings";
 import { YakumanDisplay } from "./YakumanDisplay";
 import { BracketPlayerStandings } from "./BracketPlayerStandings";
+import nantoka_nare from "../../assets/nantoka_nare.mp3";
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
@@ -30,7 +31,10 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		if (!secret) {
 			return;
 		}
-		// new Audio(nantoka_nare as any).play()
+
+		if (contest.majsoulFriendlyId === 866709) {
+			new Audio(nantoka_nare as any).play()
+		}
 	}, [secret]);
 
 	if (contest == null) {
