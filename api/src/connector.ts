@@ -110,19 +110,10 @@ async function main() {
 		});
 
 		tracker.LiveGames$.subscribe(gameId => {
-			recordGame(contestId, gameId, mongoStore, api);
+			// Delay game recording because production is too fast and tries to fetch game before it is saved.
+			setTimeout(() => recordGame(contestId, gameId, mongoStore, api), 2000);
 		})
 	});
-
-	createTrackedContest$(mongoStore).pipe(
-		map(contestId => contestId == null
-			? EMPTY
-			: new ContestTracker(contestId, mongoStore, api).LiveGames$.pipe(
-				map(gameId => ({gameId, contestId}))
-			)
-		),
-		switchAll(),
-	).subscribe(({gameId, contestId}) => recordGame(contestId, gameId, mongoStore, api));
 }
 
 class ContestTracker {
