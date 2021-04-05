@@ -6,8 +6,8 @@ import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { getSecrets, getSecretsFilePath } from "./secrets";
-import { combineLatest, defer, EMPTY,  from,  merge,  Observable, timer } from "rxjs";
-import { filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap } from 'rxjs/operators';
+import { combineLatest, concat, defer, EMPTY,  from,  merge,  Observable, of, timer } from "rxjs";
+import { distinctUntilChanged, filter, first, map, mapTo, mergeAll, pairwise, share, switchAll, takeUntil, tap } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
@@ -84,6 +84,38 @@ async function main() {
 	createContestIds$(mongoStore).subscribe((contestId) => {
 		const tracker = new ContestTracker(contestId, mongoStore, api);
 
+		concat(
+			of(null),
+			tracker.MajsoulId$.pipe(distinctUntilChanged())
+		).pipe(pairwise())
+		.subscribe(([previous, next]) => {
+			console.log(previous, next);
+
+			if (next == null && previous != null) {
+				mongoStore.gamesCollection.updateMany(
+					{
+						contestMajsoulId: previous
+					},
+					{
+						$unset: {
+							contestId: true,
+						}
+					}
+				);
+				return;
+			}
+			mongoStore.gamesCollection.updateMany(
+				{
+					contestMajsoulId: next
+				},
+				{
+					$set: {
+						contestId: contestId,
+					}
+				}
+			);
+		});
+
 		tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
 			const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
 			if (majsoulContest == null) {
@@ -147,13 +179,29 @@ class ContestTracker {
 		) as Observable<ChangeEventUpdate<store.Contest<ObjectId>>>;
 	}
 
+	public get NotFoundOnMajsoul$(): Observable<boolean> {
+		return merge(
+			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
+				.pipe(map(contest => contest.notFoundOnMajsoul ?? false)),
+			this.ContestUpdates$.pipe(
+				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("notFoundOnMajsoul")) >= 0),
+				mapTo(false),
+			),
+			this.ContestUpdates$.pipe(
+				filter(event => event.updateDescription.updatedFields?.notFoundOnMajsoul !== undefined),
+				map(event => event.updateDescription.updatedFields.notFoundOnMajsoul)
+			)
+		).pipe(
+			takeUntil(this.ContestDeleted$)
+		);
+	}
+
 	public get MajsoulId$(): Observable<number> {
 		return merge(
 			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
-				.pipe(map(contest => contest.notFoundOnMajsoul ? null as number : contest.majsoulId)),
+				.pipe(map(contest => contest.majsoulId)),
 			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulId")) >= 0
-					|| event.updateDescription.updatedFields?.notFoundOnMajsoul === true),
+				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulId")) >= 0),
 				mapTo(null as number),
 			),
 			this.ContestUpdates$.pipe(
@@ -214,8 +262,8 @@ class ContestTracker {
 	}
 
 	public get LiveGames$() {
-		return combineLatest([this.MajsoulId$, this.Track$]).pipe(
-			map(([majsoulId, track]) => (majsoulId == null || !track)
+		return combineLatest([this.MajsoulId$, this.NotFoundOnMajsoul$, this.Track$]).pipe(
+			map(([majsoulId, notFoundOnMajsoul, track]) => (majsoulId == null || notFoundOnMajsoul || !track)
 				? EMPTY
 				: this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
 					filter(notification => notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd"),
