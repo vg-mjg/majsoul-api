@@ -404,7 +404,7 @@ export class RestApi {
 				filter.$and.push(
 					{
 						$or: contestIds.map(string => ({
-							contestMajsoulId: { $in: contests.map(p => p.majsoulId) }
+							contestId: { $in: contests.map(p => p._id) }
 						}))
 					}
 				);
@@ -490,7 +490,7 @@ export class RestApi {
 
 				const games = await this.mongoStore.gamesCollection.find(
 					{
-						contestMajsoulId: contest.majsoulId,
+						contestId: contest._id,
 						"players._id": ObjectId.createFromHexString(req.params.playerId)
 					}
 				).toArray();
@@ -516,7 +516,7 @@ export class RestApi {
 
 				const games = await this.mongoStore.gamesCollection.find(
 					{
-						contestMajsoulId: contest.majsoulId,
+						contestId: contest._id,
 					}
 				).toArray();
 
@@ -548,7 +548,7 @@ export class RestApi {
 				const contestMajsoulFriendlyId = contest.majsoulFriendlyId?.toString() ?? "";
 
 				const games = await this.mongoStore.gamesCollection.find(
-					{ contestMajsoulId: contest.majsoulId }
+					{ contestId: contest._id }
 				).toArray();
 
 				let gameLimit = parseInt(req.query?.gameLimit as string);
