@@ -13,6 +13,8 @@ services:
     build:
       context: ./api
     image: majsoul-api
+    depends_on:
+      - "mongo"
     secrets:
       - majsoul.json
     env_file:
@@ -23,6 +25,8 @@ services:
     build:
       context: ./api
     image: majsoul-api
+    depends_on:
+      - "mongo"
     secrets:
       - majsoul.json
       - riichi.key.pem
