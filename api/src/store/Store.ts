@@ -18,8 +18,10 @@ export class Store {
 
 	private readonly contestChangesSubject = new Subject<ChangeEvent<Contest<ObjectId>>>();
 	private readonly configChangesSubject = new Subject<ChangeEvent<Config<ObjectId>>>();
+	private readonly gameChangesSubject = new Subject<ChangeEvent<GameResult<ObjectId>>>();
 	private contestStream: ChangeStream<Contest<ObjectId>>;
 	private configStream: ChangeStream<Config<ObjectId>>;
+	private gameStream: ChangeStream<GameResult<ObjectId>>;
 
 	public get ContestChanges(): Observable<ChangeEvent<Contest<ObjectId>>> {
 		return this.contestChangesSubject;
@@ -27,6 +29,10 @@ export class Store {
 
 	public get ConfigChanges(): Observable<ChangeEvent<Config<ObjectId>>> {
 		return this.configChangesSubject;
+	}
+
+	public get GameChanges(): Observable<ChangeEvent<GameResult<ObjectId>>> {
+		return this.gameChangesSubject;
 	}
 
 	public async init(username: string, password: string): Promise<void> {
@@ -46,6 +52,7 @@ export class Store {
 
 		this.contestStream = this.contestCollection.watch().on("change", change => this.contestChangesSubject.next(change));
 		this.configStream = this.configCollection.watch().on("change", change => this.configChangesSubject.next(change));
+		this.gameStream = this.gamesCollection.watch().on("change", change => this.gameChangesSubject.next(change));
 
 		if ((await this.configCollection.countDocuments()) < 1 ){
 			this.configCollection.insertOne({});
@@ -56,7 +63,20 @@ export class Store {
 	}
 
 	public async isGameRecorded(majsoulId: string): Promise<boolean> {
-		return await this.gamesCollection.countDocuments({majsoulId}, { limit: 1 }) === 1;
+		return await this.gamesCollection.countDocuments(
+			{
+				majsoulId,
+				$or: [
+					{
+						notFoundOnMajsoul: { $exists: true },
+					},
+					{
+						contestMajsoulId: { $exists: true },
+					}
+				]
+			},
+			{ limit: 1 }
+		) === 1;
 	}
 
 	public async recordGame(contestId: ObjectId, gameResult: Majsoul.GameResult): Promise<void> {
@@ -75,6 +95,7 @@ export class Store {
 			_id: undefined,
 			contestId,
 			...gameResult,
+			notFoundOnMajsoul: false,
 			players: (await Promise.all(gameResult.players.map(player =>
 				this.playersCollection.findOneAndUpdate(
 					{ $or: [ { majsoulId: player.majsoulId }, { nickname: player.nickname } ] },

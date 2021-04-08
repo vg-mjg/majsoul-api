@@ -81,6 +81,20 @@ async function main() {
 	// api.subscribeToContestChatSystemMessages(4623).subscribe(m => console.log(m));
 	// sub.unsubscribe();
 
+	mongoStore.GameChanges.pipe(
+		filter(change => change.operationType === "insert"
+			&& change.fullDocument.contestMajsoulId == null
+			&& change.fullDocument.majsoulId != null
+		)
+	).subscribe(async (insertEvent: ChangeEventCR<store.GameResult<ObjectId>>) => {
+		recordGame(
+			insertEvent.fullDocument.contestId,
+			insertEvent.fullDocument.majsoulId,
+			mongoStore,
+			api
+		);
+	});
+
 	createContestIds$(mongoStore).subscribe((contestId) => {
 		const tracker = new ContestTracker(contestId, mongoStore, api);
 
@@ -89,8 +103,6 @@ async function main() {
 			tracker.MajsoulId$.pipe(distinctUntilChanged())
 		).pipe(pairwise())
 		.subscribe(([previous, next]) => {
-			console.log(previous, next);
-
 			if (next == null && previous != null) {
 				mongoStore.gamesCollection.updateMany(
 					{
@@ -291,6 +303,11 @@ async function recordGame(
 	const gameResult = await api.getGame(gameId);
 	if (gameResult == null) {
 		console.log(`game #${gameId} not found!`)
+
+		mongoStore.gamesCollection.updateOne(
+			{ majsoulId: gameId },
+			{ $set: { notFoundOnMajsoul: true }}
+		);
 		return;
 	}
 

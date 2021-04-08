@@ -1,9 +1,10 @@
 import * as majsoul from "../../majsoul";
 
-export interface GameResult<Id = any> extends majsoul.GameResult {
+export interface GameResult<Id = any> extends Partial<majsoul.GameResult> {
 	_id: Id;
 	contestId: Id;
-	players: Player<Id>[];
+	players?: Player<Id>[];
+	notFoundOnMajsoul?: boolean;
 }
 
 export interface Session<Id = any> {

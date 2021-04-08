@@ -263,6 +263,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
+const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -389,7 +390,16 @@ export class RestApi {
 
 		this.app.get<any, GameResult<ObjectId>[]>('/games', async (req, res) => {
 			const filter: FilterQuery<store.GameResult<ObjectId>> = {
-				$and: []
+				$and: [{
+					$or: [
+						{
+							notFoundOnMajsoul: false,
+						},
+						{
+							contestMajsoulId: { $exists: true },
+						}
+					]
+				}]
 			};
 
 			const contestIds = (req.query.contests as string)?.split(' ');
@@ -467,7 +477,6 @@ export class RestApi {
 
 				res.send(games.map(game => ({
 					...game,
-					contestId: contests.find(c => c.majsoulId === game.contestMajsoulId)._id,
 					sessionId: sessionMap.find((session) =>
 						game.end_time >= session.startSession.scheduledTime
 							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime)
@@ -491,6 +500,10 @@ export class RestApi {
 				const games = await this.mongoStore.gamesCollection.find(
 					{
 						contestId: contest._id,
+						$or: [
+							{ notFoundOnMajsoul: false },
+							{ contestMajsoulId: { $exists: true } }
+						],
 						"players._id": ObjectId.createFromHexString(req.params.playerId)
 					}
 				).toArray();
@@ -517,6 +530,10 @@ export class RestApi {
 				const games = await this.mongoStore.gamesCollection.find(
 					{
 						contestId: contest._id,
+						$or: [
+							{ notFoundOnMajsoul: false },
+							{ contestMajsoulId: { $exists: true } }
+						],
 					}
 				).toArray();
 
@@ -548,7 +565,13 @@ export class RestApi {
 				const contestMajsoulFriendlyId = contest.majsoulFriendlyId?.toString() ?? "";
 
 				const games = await this.mongoStore.gamesCollection.find(
-					{ contestId: contest._id }
+					{
+						contestId: contest._id,
+						$or: [
+							{ notFoundOnMajsoul: false},
+							{ contestMajsoulId: { $exists: true } }
+						],
+					}
 				).toArray();
 
 				let gameLimit = parseInt(req.query?.gameLimit as string);
@@ -778,20 +801,85 @@ export class RestApi {
 			}
 		)
 
+		.put<any, string>(
+			'/games',
+			body(nameofGameResult('contestId')).isMongoId().isString(),
+			body(nameofGameResult('majsoulId')).isString(),
+			logError<any, string>(
+				async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+					const data: Partial<store.GameResult<string>> = matchedData(req, {includeOptionals: true});
+					const contestId = new ObjectId(data.contestId);
+					const existingContest = await this.mongoStore.contestCollection.find({_id: contestId}).toArray();
+					if (existingContest.length <= 0) {
+						res.status(400).send("Contest Id is invalid." as any);
+						return;
+					}
+
+					const existingGame = await this.mongoStore.gamesCollection.find({majsoulId: data.majsoulId}).toArray();
+
+					if (existingGame.length > 0) {
+						res.status(400).send(`Game with id ${data.majsoulId} already exists.` as any);
+						return;
+					}
+
+					const gameResult = await this.mongoStore.gamesCollection.insertOne({
+						contestId,
+						majsoulId: data.majsoulId
+					});
+
+					res.send(gameResult.insertedId.toHexString());
+				}
+			)
+		)
+
+		.delete<any, void>(
+			'/games/:id',
+			param("id").isMongoId(),
+			logError(async (req, res) => {
+				const errors = validationResult(req);
+				if (!errors.isEmpty()) {
+					res.status(400).json({ errors: errors.array() } as any);
+					return;
+				}
+				const data = matchedData(req, {includeOptionals: true}) as { id: string; };
+				const gameId = new ObjectId(data.id);
+
+				const result = await this.mongoStore.gamesCollection.deleteOne({
+					_id: gameId
+				})
+
+				res.send();
+			})
+		)
+
 		.put<any, store.Contest<string>>('/contests', (req, res) => {
 			this.mongoStore.contestCollection.insertOne({}).then(result => res.send({ _id: result.insertedId.toHexString() }));
 		})
 
-		.delete<any, store.Contest<string>>(
+		.delete<any, void>(
 			'/contests/:id',
 			param("id").isMongoId(),
 			logError<any, store.Contest<string>>(async (req, res) => {
+				const errors = validationResult(req);
+				if (!errors.isEmpty()) {
+					res.status(400).json({ errors: errors.array() } as any);
+					return;
+				}
+
+				const data: Partial<store.Contest<string>> = matchedData(req, {includeOptionals: true});
+				const contestId = new ObjectId(data._id);
+
 				const result = await this.mongoStore.contestCollection.deleteOne({
-					_id: new ObjectId(req.params.id)
+					_id: contestId
 				})
 
 				await this.mongoStore.configCollection.findOneAndUpdate({
-					trackedContest: new ObjectId(req.params.id)
+					trackedContest: contestId
 				}, {
 					$unset: {
 						trackedContest: true
