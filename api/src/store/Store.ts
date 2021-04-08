@@ -91,8 +91,7 @@ export class Store {
 		));
 
 		console.log(`Recording game id ${gameResult.majsoulId}`);
-		const gameRecord: GameResult<ObjectId> = {
-			_id: undefined,
+		const gameRecord: Omit<GameResult<ObjectId>, "_id"> = {
 			contestId,
 			...gameResult,
 			notFoundOnMajsoul: false,
@@ -105,7 +104,19 @@ export class Store {
 			))).map(p => p.value),
 		};
 
-		await this.gamesCollection.insertOne(gameRecord);
+		await this.gamesCollection.findOneAndUpdate(
+			{
+				majsoulId: gameResult.majsoulId
+			},
+			{
+				$set: {
+					...gameRecord,
+				}
+			},
+			{
+				upsert: true
+			}
+		);
 	}
 
 	public async migrate(): Promise<void> {

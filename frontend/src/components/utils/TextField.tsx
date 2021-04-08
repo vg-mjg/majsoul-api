@@ -6,7 +6,7 @@ import { useState } from "react";
 
 export function TextField(props: {
 	id: string;
-	label: string;
+	label?: string;
 	fallbackValue: string;
 	placeholder?: string;
 	inline?: boolean;
@@ -25,14 +25,16 @@ export function TextField(props: {
 	const [isValid, setIsValid] = useState(true);
 
 	return <Form.Group as={Row} className="no-gutters">
-		<Form.Label
-			column
-			className="mr-2 font-weight-bold"
-			htmlFor={props.id}
-			sm={inline ? "auto" : "3"}
-		>
-			{props.label}
-		</Form.Label>
+		{ props.label &&
+			<Form.Label
+				column
+				className="mr-2 font-weight-bold"
+				htmlFor={props.id}
+				sm={inline ? "auto" : "3"}
+			>
+				{props.label}
+			</Form.Label>
+		}
 		<Col>
 			<Form.Control
 				id={props.id}

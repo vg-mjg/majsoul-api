@@ -2,7 +2,7 @@ import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
 import { IState, Session, ContestTeam } from "./State";
-import { Contest } from "majsoul-api/dist/store";
+import { Contest, GameResult } from "majsoul-api/dist/store";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
@@ -275,6 +275,53 @@ export function patchContest(dispatch: Dispatch, token: string, id: string, cont
 			type: ActionType.ContestPatched,
 			contest
 		}));
+}
+
+export async function createGame(dispatch: Dispatch, token: string, game: Partial<GameResult<string>>): Promise<string> {
+	const url = buildApiUrl(`games/`);
+	const response = await fetch(
+		url.toString(),
+		{
+			method: "PUT",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({
+				contestId: game.contestId,
+				majsoulId: game.majsoulId,
+			})
+		}
+	);
+	return await response.json();
+}
+
+export async function deleteGame(dispatch: Dispatch, token: string, id: string): Promise<void> {
+	const url = buildApiUrl(`games/${id}`);
+	const response = await fetch(
+		url.toString(),
+		{
+			method: "DELETE",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			}
+		}
+	);
+}
+
+export async function  fetchPendingGames(dispatch: Dispatch, id: string): Promise<GameResult<string>[]> {
+	const url = buildApiUrl(`contests/${id}/pendingGames/`);
+	const response = await fetch(url.toString());
+	return await response.json();
+}
+
+export async function fetchGame(dispatch: Dispatch, id: string): Promise<GameResult<string>> {
+	const url = buildApiUrl(`games/${id}`);
+	const response = await fetch(url.toString());
+	return await response.json();
 }
 
 export interface GetRiggingTokenOptions {

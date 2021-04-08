@@ -274,10 +274,31 @@ const seededPlayerNames: Record<string, string[]> = {
 	]
 }
 
-function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<void>) {
-	return (request, response) => callback(request, response).catch(error => {
-		console.log(error);
-		response.status(500).send(error);
+function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void) {
+	return async (request: express.Request, response: express.Response<ResponseType>) => {
+		try {
+			await callback(request, response);
+		} catch (error) {
+			console.log(error);
+			response.status(500).send(error);
+		}
+	};
+}
+
+function withData<DataType, RequestType, ResponseType>(
+	callback: (data: DataType, request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void
+) {
+	return logError(async (request, response) => {
+		const errors = validationResult(request);
+		if (!errors.isEmpty()) {
+			response.status(400).json({ errors: errors.array() } as any);
+			return;
+		}
+		await callback(
+			matchedData(request, {includeOptionals: true}) as DataType,
+			request,
+			response
+		)
 	});
 }
 
@@ -328,6 +349,36 @@ export class RestApi {
 				.then(contests => res.send(contests[0]))
 				.catch(error => res.status(500).send(error));
 		});
+
+		this.app.get<any, store.GameResult<ObjectId>>(
+			'/games/:id',
+			param("id").isMongoId(),
+			withData<{id: string}, any, store.GameResult<ObjectId>>(async (data, req, res) => {
+				const gameId = new ObjectId(data.id);
+				const games = await this.mongoStore.gamesCollection.find({
+					_id: gameId
+				}).toArray();
+
+				if (games.length < 1) {
+					res.status(404).send();
+					return;
+				}
+				res.send(games[0]);
+			})
+		)
+
+		this.app.get(
+			'/contests/:id/pendingGames',
+			param("id").isMongoId(),
+			withData<{id: string}, any, store.GameResult<ObjectId>[]>(async (data, req, res) => {
+				const games = await this.mongoStore.gamesCollection.find({
+					contestId: new ObjectId(data.id),
+					notFoundOnMajsoul: { $ne: false },
+					contestMajsoulId: { $exists: false }
+				}).toArray();
+				res.send(games);
+			})
+		)
 
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.findContest(req.params.id,
@@ -832,7 +883,7 @@ export class RestApi {
 						majsoulId: data.majsoulId
 					});
 
-					res.send(gameResult.insertedId.toHexString());
+					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
 				}
 			)
 		)
@@ -864,7 +915,7 @@ export class RestApi {
 		.delete<any, void>(
 			'/contests/:id',
 			param("id").isMongoId(),
-			logError<any, store.Contest<string>>(async (req, res) => {
+			logError(async (req, res) => {
 				const errors = validationResult(req);
 				if (!errors.isEmpty()) {
 					res.status(400).json({ errors: errors.array() } as any);

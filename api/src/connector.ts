@@ -81,15 +81,28 @@ async function main() {
 	// api.subscribeToContestChatSystemMessages(4623).subscribe(m => console.log(m));
 	// sub.unsubscribe();
 
-	mongoStore.GameChanges.pipe(
-		filter(change => change.operationType === "insert"
-			&& change.fullDocument.contestMajsoulId == null
-			&& change.fullDocument.majsoulId != null
-		)
-	).subscribe(async (insertEvent: ChangeEventCR<store.GameResult<ObjectId>>) => {
+	merge(
+		mongoStore.GameChanges.pipe(
+			filter(change => change.operationType === "insert"
+				&& change.fullDocument.contestMajsoulId == null
+				&& change.fullDocument.majsoulId != null
+			),
+			map((insertEvent: ChangeEventCR<store.GameResult<ObjectId>>) => insertEvent.fullDocument)
+		),
+		defer(() => from(
+			mongoStore.gamesCollection.find({
+				notFoundOnMajsoul: {
+					$exists: false
+				},
+				contestMajsoulId: {
+					$exists: false
+				}
+			}).toArray()
+		).pipe(mergeAll()))
+	).subscribe(game => {
 		recordGame(
-			insertEvent.fullDocument.contestId,
-			insertEvent.fullDocument.majsoulId,
+			game.contestId,
+			game.majsoulId,
 			mongoStore,
 			api
 		);
