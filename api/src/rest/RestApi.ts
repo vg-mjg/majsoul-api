@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
 import { GameResult, Session, ContestPlayer } from './types/types';
-import { ObjectId, FilterQuery, Condition, FindOneOptions } from 'mongodb';
+import { ObjectId, FilterQuery, Condition, FindOneOptions, UpdateQuery } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
@@ -337,9 +337,15 @@ export class RestApi {
 				.catch(error => res.status(500).send(error));
 		});
 
-		this.app.get<any, store.Contest<ObjectId>>('/contests/latest', (req, res) => {
+		this.app.get<any, store.Contest<ObjectId>>('/contests/featured', logError(async (req, res) => {
+			const [config] = await this.mongoStore.configCollection.find().limit(1).toArray();
+			const query: FilterQuery<store.Contest<ObjectId>> = {};
+			if (config.featuredContest != null) {
+				query._id = config.featuredContest;
+			}
+
 			this.mongoStore.contestCollection
-				.find()
+				.find(query)
 				.sort({_id:-1})
 				.limit(1)
 				.project({
@@ -348,7 +354,7 @@ export class RestApi {
 				.toArray()
 				.then(contests => res.send(contests[0]))
 				.catch(error => res.status(500).send(error));
-		});
+		}));
 
 		this.app.get<any, store.GameResult<ObjectId>>(
 			'/games/:id',
@@ -925,6 +931,11 @@ export class RestApi {
 				const data: Partial<store.Contest<string>> = matchedData(req, {includeOptionals: true});
 				const contestId = new ObjectId(data._id);
 
+				await this.mongoStore.configCollection.findOneAndUpdate(
+					{ featuredContest: contestId },
+					{ $unset: {featuredContest: true }
+				});
+
 				const result = await this.mongoStore.contestCollection.deleteOne({
 					_id: contestId
 				})
@@ -943,35 +954,24 @@ export class RestApi {
 
 		.patch<any, store.Config<ObjectId>>(
 			'/config',
-			body(nameofConfig('trackedContest')).isMongoId().optional({nullable: true}),
-			logError<any, store.Config<ObjectId>>(async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					res.status(400).json({ errors: errors.array() } as any);
-					return;
-				}
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-				const data: Partial<store.Config<string>> = matchedData(req, {includeOptionals: true});
-
-				if (data.trackedContest != null) {
-					const existingContest = await this.mongoStore.contestCollection.findOne({_id: new ObjectId(data.trackedContest)});
+			body(nameofConfig('featuredContest')).isMongoId().optional({nullable: true}),
+			withData<Partial<store.Config<string>>, any, store.Config<ObjectId>>(async (data, req, res) => {
+				if (data.featuredContest != null) {
+					const existingContest = await this.mongoStore.contestCollection.findOne({_id: new ObjectId(data.featuredContest)});
 					if (existingContest == null) {
-						res.status(400).send(`Contest #${data._id} doesn't exist.` as any);
+						res.status(400).send(`Featured contest #${data._id} doesn't exist.` as any);
 						return;
 					};
 				}
 
+				const update: {
+					$set?: {},
+					$unset?: {},
+				} = {};
+
 				for (const key in data) {
 					if (data[key] === undefined) {
 						continue;
-					}
-
-					if (key === nameofConfig("trackedContest")) {
-						update.$unset ??= {};
-						update.$unset[nameofConfig("failedToTrackContest")] = true;
 					}
 
 					if (data[key] === null) {
@@ -981,7 +981,7 @@ export class RestApi {
 					}
 
 					update.$set ??= {};
-					update.$set[key] = key === nameofConfig("trackedContest") ? new ObjectId(data[key] as string) : data[key];
+					update.$set[key] = key === nameofConfig("featuredContest") ? new ObjectId(data[key] as string) : data[key];
 				}
 
 				if (update.$set == null && update.$unset == null) {

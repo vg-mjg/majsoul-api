@@ -66,6 +66,5 @@ export interface User<Id = any> {
 
 export interface Config<Id = any> {
 	_id: Id;
-	trackedContest?: Id;
-	failedToTrackContest?: boolean;
+	featuredContest?: Id;
 }

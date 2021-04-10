@@ -341,28 +341,4 @@ function createContestIds$(mongoStore: store.Store): Observable<ObjectId> {
 	);
 }
 
-
-function createTrackedContest$(mongoStore: store.Store): Observable<ObjectId> {
-	const updateChanges$ = mongoStore.ConfigChanges.pipe(
-		filter(changeEvent => changeEvent.operationType === "update"),
-		share()
-	) as Observable<ChangeEventUpdate<store.Config<ObjectId>>>;
-	return merge(
-		updateChanges$.pipe(
-			filter(event => event.updateDescription.removedFields.indexOf(nameofConfig("trackedContest")) >= 0),
-			mapTo(null as ObjectId)
-		),
-		updateChanges$.pipe(
-			filter(event => event.updateDescription.updatedFields.trackedContest !== undefined),
-			map(event => event.updateDescription.updatedFields.trackedContest)
-		),
-		defer(() => from(mongoStore.configCollection.find().toArray()))
-			.pipe(
-				mergeAll(),
-				first(),
-				map(config => config.trackedContest)
-			)
-	);
-}
-
 main().catch(e => console.log(e));

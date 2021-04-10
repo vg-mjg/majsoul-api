@@ -2,7 +2,7 @@ import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
 import { IState, Session, ContestTeam } from "./State";
-import { Contest, GameResult } from "majsoul-api/dist/store";
+import { Config, Contest, GameResult } from "majsoul-api/dist/store";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
@@ -245,6 +245,27 @@ export function patchSession(dispatch: Dispatch, token: string, session: Session
 			type: ActionType.SessionPatched,
 			session
 		}));
+}
+
+export function updateConfig(dispatch: Dispatch, token: string, config: Partial<Config>): Promise<unknown> {
+	const url = buildApiUrl(`config`);
+	return fetch(
+		url.toString(),
+		{
+			method: "PATCH",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+			body: JSON.stringify({ featuredContest: config.featuredContest })
+		})
+		.then(response => response.json());
+}
+
+export async function fetchConfig(dispatch: Dispatch): Promise<Config> {
+	const response = await fetch(buildApiUrl(`config`).toString());
+	return await response.json();
 }
 
 export function patchContest(dispatch: Dispatch, token: string, id: string, contest: Partial<Contest<string>>): Promise<unknown> {

@@ -358,7 +358,7 @@ function LatestContestSummary(): JSX.Element {
 	const dispatch = useDispatch();
 	const [contestId, setContestId] = React.useState<string>();
 	React.useEffect(() => {
-		fetchContestSummary(dispatch, "latest").then(contest => {
+		fetchContestSummary(dispatch, "featured").then(contest => {
 			setContestId(contest._id);
 		});
 	});

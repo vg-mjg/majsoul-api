@@ -1,8 +1,8 @@
 import * as uuidv4 from "uuid/v4";
 import { Root } from "protobufjs";
 import fetch from "node-fetch";
-import { Observable, merge, Subject, using, EMPTY, defer, timer, NEVER } from 'rxjs';
-import { distinctUntilChanged, filter, first, map, mergeAll, share, skipUntil, takeUntil, tap } from 'rxjs/operators';
+import { Observable, using } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { GameResult, Contest } from "./types/types";
 import { RoundResult, AgariInfo, RoundInfo } from "./types/types";
 import { DrawStatus } from "./types/DrawStatus";
