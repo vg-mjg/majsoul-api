@@ -95,13 +95,17 @@ export class Store {
 			contestId,
 			...gameResult,
 			notFoundOnMajsoul: false,
-			players: (await Promise.all(gameResult.players.map(player =>
-				this.playersCollection.findOneAndUpdate(
-					{ $or: [ { majsoulId: player.majsoulId }, { nickname: player.nickname } ] },
-					{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
-					{ upsert: true, returnOriginal: false, projection: { _id: true } }
+			players: (await Promise.all(gameResult.players
+				.map(player =>
+					player == null
+					? Promise.resolve(null)
+					: this.playersCollection.findOneAndUpdate(
+						{ $or: [ { majsoulId: player.majsoulId }, { nickname: player.nickname } ] },
+						{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
+						{ upsert: true, returnOriginal: false, projection: { _id: true } }
+					)
 				)
-			))).map(p => p.value),
+			)).map(p => p?.value),
 		};
 
 		await this.gamesCollection.findOneAndUpdate(

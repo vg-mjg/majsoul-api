@@ -269,22 +269,30 @@ export class Api {
 			return;
 		}
 
+		const players = resp.head.result.players.sort((a, b) => a.seat - b.seat);
+
 		return {
+			config: {
+				aiLevel: resp.head.config.mode.detail_rule.ai_level
+			},
 			contestMajsoulId: resp.head.config ? resp.head.config.meta ? resp.head.config.meta.contest_uid : null : null,
 			majsoulId: id,
 			start_time: resp.head.start_time * 1000,
 			end_time: resp.head.end_time * 1000,
-			players: (resp.head.accounts as any[]).map(account => ({
-				nickname: account.nickname,
-				majsoulId: account.account_id,
-			})),
-			finalScore: (resp.head.accounts as any[]).map(account => {
-				const playerItem = resp.head.result.players.find(b => b.seat === account.seat);
+			players: players.map(playerItem => {
+				const account = resp.head.accounts.find(a => a.seat === playerItem.seat);
+				if (!account) {
+					return null;
+				}
 				return {
-					score: playerItem.part_point_1,
-					uma: playerItem.total_point,
-				};
+					nickname: account.nickname,
+					majsoulId: account.account_id,
+				}
 			}),
+			finalScore: players.map(playerItem => ({
+				score: playerItem.part_point_1,
+				uma: playerItem.total_point,
+			})),
 			rounds: hands
 		};
 	}

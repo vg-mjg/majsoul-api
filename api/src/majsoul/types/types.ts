@@ -2,6 +2,12 @@ import { Han } from "./Han";
 import { Wind } from "./Wind";
 import { DrawStatus } from "./DrawStatus";
 
+export enum AILevel {
+	Easy = 1,
+	Normal = 2,
+	Hard = 3,
+}
+
 export interface FinalScore {
 	uma: number;
 	score: number;
@@ -22,6 +28,9 @@ export interface Contest {
 }
 
 export interface GameResult {
+	config: {
+		aiLevel: number;
+	}
 	contestMajsoulId: number;
 	majsoulId: string;
 	start_time: number;

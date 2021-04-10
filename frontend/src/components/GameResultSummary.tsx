@@ -9,6 +9,7 @@ import * as styles from "./styles.sass";
 import { pickColorGradient } from "..";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchContestPlayers } from "../Actions";
+import { levelToString } from "./utils";
 
 function GameSeat(props: {
 	seat: number,
@@ -17,7 +18,12 @@ function GameSeat(props: {
 	const contest = useSelector((state: IState) => state.contestsById[props.game.contestId]);
 	const teams = contest.teams;
 	const playerId = props.game.players[props.seat];
-	const player = contest.players?.find(p => p._id === playerId._id);
+	const player = playerId == null
+		? {
+			_id: null as string,
+			nickname: `AI (${(levelToString(props.game.config?.aiLevel) as string)})`
+		}
+		: contest.players?.find(p => p._id === playerId._id);
 
 	const dispatch = useDispatch();
 

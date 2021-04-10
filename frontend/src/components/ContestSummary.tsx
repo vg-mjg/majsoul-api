@@ -16,6 +16,7 @@ import { PlayerStandings } from "./PlayerStandings";
 import { YakumanDisplay } from "./YakumanDisplay";
 import { BracketPlayerStandings } from "./BracketPlayerStandings";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
+import { contestName } from "./utils";
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
@@ -49,7 +50,7 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		{contest.anthem == null ? null : <SongPlayer videoId={contest.anthem} play={secret}/>}
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
 			<Col>
-				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contest.displayName ?? contest?.name ?? `#${contest._id}`}</u></h1>
+				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contestName(contest)}</u></h1>
 			</Col>
 			<Col md="auto">
 				<i>

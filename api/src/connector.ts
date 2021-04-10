@@ -73,6 +73,10 @@ async function main() {
 	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
+	// api.getGame("210314-15e1b14f-2eb0-41fe-b161-4fc5812b792c").then(game => console.log(game));
+
+	// return;
+
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
@@ -100,6 +104,7 @@ async function main() {
 			}).toArray()
 		).pipe(mergeAll()))
 	).subscribe(game => {
+		console.log(`Custom game id added ${game.majsoulId}`);
 		recordGame(
 			game.contestId,
 			game.majsoulId,

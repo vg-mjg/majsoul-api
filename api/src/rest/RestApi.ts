@@ -643,6 +643,10 @@ export class RestApi {
 
 				const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
 					game.players.forEach((player, index) => {
+						if (player == null) {
+							return;
+						}
+
 						const id = player._id.toHexString();
 						if (!(id in total)) {
 							total[id] = {

@@ -24,7 +24,7 @@ export function ContestPlayerDisplay(props: {
 
 		return Object.values(state.games)
 			.filter(game => game.contestId === props.contestId
-				&& game.players.findIndex(p => p._id === props.contestPlayer._id) >= 0);
+				&& game.players.findIndex(p => p?._id === props.contestPlayer._id) >= 0);
 	});
 
 	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId].maxGames ?? Infinity);
@@ -66,7 +66,7 @@ export function ContestPlayerDisplay(props: {
 				{games.sort((a, b) => b.start_time - a.start_time)
 					.slice(-ignoredGames - Math.min(maxGames, gamesPlayed), ignoredGames ? -ignoredGames : undefined)
 					.map(game => {
-						const playerSeat = game.players.findIndex(p => p._id === props.contestPlayer._id);
+						const playerSeat = game.players.findIndex(p => p?._id === props.contestPlayer._id);
 						const position = game.finalScore
 							.map((score, seat) => ({ score, seat }))
 							.sort((a, b) => b.score.uma - a.score.uma)
