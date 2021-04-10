@@ -330,7 +330,8 @@ export class RestApi {
 				.find()
 				.project({
 					majsoulFriendlyId: true,
-					name: true
+					name: true,
+					displayName: true,
 				})
 				.toArray()
 				.then(contests => res.send(contests))

@@ -45,7 +45,7 @@ export function ContestList(): JSX.Element {
 					<Form.Label id="featuredContest">Featured Contest:</Form.Label>
 					<Form.Control id="featuredContest" as="select" onChange={onFeaturedContestChanged} value={featuredContest}>
 						<option value="">Latest</option>
-						{contests.map(contest => <option key={contest._id} value={contest._id}>{contest.name}</option>)}
+						{contests.map(contest => <option key={contest._id} value={contest._id}>{contestName(contest)}</option>)}
 					</Form.Control>
 				</Form>
 			</Col>
