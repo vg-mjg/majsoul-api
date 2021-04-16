@@ -159,7 +159,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 
 	return <>
 		<Row className="mt-3">
-			<Teams session={currentSession} />
+			<Teams contest={contest} session={currentSession} />
 		</Row>
 		<Row className="mt-3">
 			<LeagueStandingChart/>

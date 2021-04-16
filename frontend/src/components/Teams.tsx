@@ -1,5 +1,5 @@
 import * as React from "react";
-import { IState, Session, ContestTeam } from "../State";
+import { IState, Session, ContestTeam, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -118,24 +118,26 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 
 }
 
-export function Teams(props: { session?: Session; }): JSX.Element {
-	return null;
-	// const teams = useSelector((state: IState) => state?.contest?.teams);
-	// if (!teams) {
-	// 	return null;
-	// }
+export function Teams(props: {
+	contest?: Contest;
+	session?: Session;
+}): JSX.Element {
+	const teams = props.contest?.teams;
+	if (!teams) {
+		return null;
+	}
 
-	// let teamsArray = Object.values(teams);
-	// if (props.session != null) {
-	// 	teamsArray = teamsArray.map(team => ({...team, total: props.session.aggregateTotals[team._id]})).sort((a, b) => b.total - a.total);
-	// }
+	let teamsArray = Object.values(teams);
+	if (props.session != null) {
+		teamsArray = teamsArray.map(team => ({...team, total: props.session.aggregateTotals[team._id]})).sort((a, b) => b.total - a.total);
+	}
 
-	// return <Container className="rounded bg-dark text-light px-3 py-4">
-	// 	{teamsArray.map((team, placing) => <Row key={team._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-	// 		<Team
-	// 			team={team}
-	// 			score={props.session?.aggregateTotals[team._id]}
-	// 			placing={placing + 1} />
-	// 	</Row>)}
-	// </Container>;
+	return <Container className="rounded bg-dark text-light px-3 py-4">
+		{teamsArray.map((team, placing) => <Row key={team._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
+			<Team
+				team={team}
+				score={props.session?.aggregateTotals[team._id]}
+				placing={placing + 1} />
+		</Row>)}
+	</Container>;
 }
