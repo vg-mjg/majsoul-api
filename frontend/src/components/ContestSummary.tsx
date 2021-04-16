@@ -169,14 +169,14 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
 			</Row>
 			<Row>
-				<Session session={nextSession}></Session>
+				<Session session={nextSession}/>
 			</Row>
 		</>}
 		<Row className="px-4 py-3 justify-content-end" >
 			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
 		</Row>
 		<Row>
-			<Session session={currentSession}></Session>
+			<Session session={currentSession}/>
 		</Row>
 	</>
 }

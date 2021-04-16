@@ -9,7 +9,7 @@ import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { defer, from, Observable } from 'rxjs';
-import { map, mergeAll, mergeMap, mergeScan, pairwise, scan, toArray } from 'rxjs/operators';
+import { map, mergeAll, mergeMap, mergeScan, pairwise, toArray } from 'rxjs/operators';
 import { body, matchedData, param, validationResult } from 'express-validator';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {

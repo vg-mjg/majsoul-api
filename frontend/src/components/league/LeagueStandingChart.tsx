@@ -1,7 +1,8 @@
 import * as React from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { IState, ContestTeam, Session, Contest } from "../../State";
+import { Rest } from 'majsoul-api';
+import { IState, ContestTeam, Contest } from "../../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import * as moment from "moment";
@@ -9,7 +10,7 @@ import { useSelector } from "react-redux";
 
 chartjs.defaults.global.defaultFontColor = "white";
 
-function createData(sessions: Session[], teams: Record<string, ContestTeam>): ChartData<chartjs.ChartData> {
+function createData(sessions: Rest.Session[], teams: Record<string, ContestTeam>): ChartData<chartjs.ChartData> {
 	return {
 		labels: ["Start"].concat(sessions.map(session => {
 			const time =  moment(session.scheduledTime).tz('UTC');

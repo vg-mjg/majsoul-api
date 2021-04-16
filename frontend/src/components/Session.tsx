@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Session, IState } from "../State";
+import { IState } from "../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -11,12 +11,13 @@ import { GameResultSummary } from "./GameResultSummary";
 import { fetchGamesHook, patchSession } from "../Actions";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import { Rest } from "majsoul-api";
 
 export function Session(props: {
-	session: Session;
+	session: Rest.Session;
 }): JSX.Element{
-	const teams = useSelector((state: IState) => state.contestsById[props.session.contestId], shallowEqual);
 	const token = useSelector((state: IState) => state.user?.token);
+	const games = useSelector((state: IState) => Object.values(state.games ?? {}).filter(game => game.sessionId === props.session?._id));
 
 	const dispatch = useDispatch();
 	React.useEffect(() => {
@@ -83,7 +84,7 @@ export function Session(props: {
 		<Row>
 			<Container className="p-0">
 				<Row className="no-gutters">
-					{props.session.games?.map((game, index) => <React.Fragment key={game._id}>
+					{games.map((game, index) => <React.Fragment key={game._id}>
 						<Col style={{minWidth: "auto"}}>
 							<GameResultSummary game={game}/>
 						</Col>
@@ -102,7 +103,7 @@ export function Session(props: {
 						{
 							_id: props.session._id,
 							scheduledTime: moment(utcMoment).valueOf()
-						} as Session
+						} as Rest.Session
 					)}
 				>Save</Button>
 			</Row>

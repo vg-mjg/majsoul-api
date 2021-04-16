@@ -1,5 +1,6 @@
 import * as React from "react";
-import { IState, Session, ContestTeam, Contest } from "../State";
+import { IState, ContestTeam, Contest } from "../State";
+import { Rest } from 'majsoul-api';
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -120,7 +121,7 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 
 export function Teams(props: {
 	contest?: Contest;
-	session?: Session;
+	session?: Rest.Session;
 }): JSX.Element {
 	const teams = props.contest?.teams;
 	if (!teams) {

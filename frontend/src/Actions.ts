@@ -1,7 +1,7 @@
 import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
-import { IState, Session, ContestTeam } from "./State";
+import { IState, ContestTeam } from "./State";
 import { Config, Contest, GameResult } from "majsoul-api/dist/store";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
@@ -61,7 +61,7 @@ export interface PatchTeam extends Action<ActionType.PatchTeam> {
 
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
 	contestId: string;
-	sessions: Session[];
+	sessions: Rest.Session[];
 }
 
 export interface SetMusic extends Action<ActionType.PlayMusic> {
@@ -229,7 +229,7 @@ export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): v
 		}));
 }
 
-export function patchSession(dispatch: Dispatch, token: string, session: Session): Promise<unknown> {
+export function patchSession(dispatch: Dispatch, token: string, session: Rest.Session): Promise<unknown> {
 	const url = buildApiUrl(`sessions/${session._id}`);
 	return fetch(
 		url.toString(),
