@@ -24,7 +24,6 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 
 	React.useEffect(() => {
 		fetchContestSummary(dispatch, props.contestId.toString());
-		fetchContestSessions(dispatch, props.contestId.toString());
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);
@@ -117,16 +116,21 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 	</>
 }
 
-function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
+function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const games = useSelector((state: IState) => Object.values(state.games ?? [])?.sort((a, b) => b.end_time - a.end_time));
 	const musicPlayer = useSelector((state: IState) => state.musicPlayer);
 	const dispatch = useDispatch();
 
-	const contest = props.contest;
+	const { contest } = props;
 
 	const nextSessionIndex = contest?.sessions?.findIndex(session => session.scheduledTime > Date.now()) ?? -1;
 	const nextSession = contest?.sessions == null ? null : contest.sessions[nextSessionIndex];
 	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
+	console.log("test", contest);
+
+	React.useEffect(() => {
+		fetchContestSessions(dispatch, contest._id);
+	}, [dispatch, contest._id]);
 
 	React.useEffect(() => {
 		if (nextSession != null || currentSession == null || musicPlayer.playing || contest?.teams == null) {
@@ -149,7 +153,7 @@ function LeagueContestSummary(props: {contest: Contest}): JSX.Element {
 		});
 	}, [nextSession, currentSession, contest?.teams]);
 
-	if (contest == null) {
+	if (contest?.sessions == null) {
 		return null;
 	}
 

@@ -222,15 +222,17 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 			// 	}
 			// }
 		} case ActionType.GetContestSessions: {
-			return state;
-			// const getContestSessions = action as GetContestSessions;
-			// return {
-			// 	...state,
-			// 	contest: {
-			// 		...(state.contest ?? {} as Contest),
-			// 		sessions: getContestSessions.sessions
-			// 	}
-			// }
+			return {
+				...state,
+				...updatedContestRecord(
+					state,
+					action.contestId,
+					{
+						...state.contestsById[action.contestId],
+						sessions: action.sessions
+					}
+				)
+			}
 		} case ActionType.PlayMusic: {
 			const playMusic = action as PlayMusic;
 			return {

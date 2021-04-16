@@ -60,6 +60,7 @@ export interface PatchTeam extends Action<ActionType.PatchTeam> {
 }
 
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
+	contestId: string;
 	sessions: Session[];
 }
 
@@ -117,10 +118,11 @@ export function fetchContestSummary(dispatch: Dispatch, contestId: string): Prom
 	return fetchPromise;
 }
 
-export function fetchContestSessions(dispatch: Dispatch, contestId: string): void {
+export function fetchContestSessions(dispatch: Dispatch<GetContestSessions>, contestId: string): void {
 	fetch(buildApiUrl(`contests/${contestId}/sessions`).toString())
 		.then(response => response.json())
 		.then(sessions => dispatch({
+			contestId,
 			type: ActionType.GetContestSessions,
 			sessions
 		}));

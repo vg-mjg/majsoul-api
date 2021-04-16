@@ -246,7 +246,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						id="contestTypeSelector"
 						as="select"
 						custom
-						value={type ?? contestTypeValues[0]}
+						value={type ?? contest.type ?? contestTypeValues[0]}
 						size="sm"
 						onChange={(event) => setType(parseInt(event.target.value) as ContestType)}
 					>

@@ -8,8 +8,8 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
-import { Observable } from 'rxjs';
-import { toArray } from 'rxjs/operators';
+import { defer, from, Observable } from 'rxjs';
+import { map, mergeAll, mergeMap, mergeScan, pairwise, scan, toArray } from 'rxjs/operators';
 import { body, matchedData, param, validationResult } from 'express-validator';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
@@ -407,10 +407,11 @@ export class RestApi {
 			});
 		});
 
-		this.app.get<any, Session<ObjectId>[]>('/contests/:id/sessions', (req, res) => {
-			this.mongoStore.contestCollection.findOne(
-				{ majsoulFriendlyId: parseInt(req.params.id) }
-			).then((contest) => {
+		this.app.get(
+			'/contests/:id/sessions',
+			param("id").isMongoId(),
+			withData<{id: string}, any, Session<ObjectId>[]>(async (data, req, res) => {
+				const contest = await this.findContest(data.id);
 				if (contest == null) {
 					res.sendStatus(404);
 					return;
@@ -425,11 +426,7 @@ export class RestApi {
 						}
 					);
 			})
-			.catch(error => {
-				console.log(error);
-				res.status(500).send(error)
-			});
-		});
+		);
 
 		this.app.get<any, store.Config<ObjectId>>('/config', (req, res) => {
 			this.mongoStore.configCollection.find().toArray()
@@ -1126,38 +1123,36 @@ export class RestApi {
 	}
 
 	private getSessions(contest: store.Contest<ObjectId>): Observable<Session> {
-		return new Observable((subscriber) => {
-			setTimeout(async () => {
-				try {
-					const sessions = await this.mongoStore.sessionsCollection.find(
-						{ contestId: contest._id },
-						{ sort: { scheduledTime: 1 } }
-					).toArray();
+		return defer(() => from(
+			this.mongoStore.sessionsCollection.find(
+				{ contestId: contest._id },
+				{ sort: { scheduledTime: 1 } }
+			).toArray()
+		))
+		.pipe(
+			mergeAll(),
+			pairwise(),
+			mergeScan((total, [session, nextSession]) =>
+				defer(() => from(this.getSessionSummary(contest, session, nextSession)))
+					.pipe(
+						map(totals => {
+							const aggregateTotals = {...total.aggregateTotals};
 
-					let aggregateTotals: Record<string, number> = {};
-					for (let i = 0; i < sessions.length; i++) {
-						aggregateTotals = {...aggregateTotals};
-						const totals = await this.getSessionSummary(contest, sessions[i], sessions[i + 1]);
-
-						for (const team in totals) {
-							if (aggregateTotals[team] == null) {
-								aggregateTotals[team] = 0;
+							for (const team in totals) {
+								if (aggregateTotals[team] == null) {
+									aggregateTotals[team] = 0;
+								}
+								aggregateTotals[team] += totals[team];
 							}
-							aggregateTotals[team] += totals[team];
-						}
 
-						subscriber.next({
-							...sessions[i],
-							totals,
-							aggregateTotals
-						});
-					}
-
-					subscriber.complete();
-				} catch (error) {
-					subscriber.error(error);
-				}
-			});
-		});
+							return {
+								...session,
+								totals,
+								aggregateTotals
+							};
+						})
+					)
+			, {aggregateTotals: {}} as Session, 1),
+		);
 	}
 }
