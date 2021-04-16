@@ -8,8 +8,8 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
-import { defer, from, Observable } from 'rxjs';
-import { map, mergeAll, mergeMap, mergeScan, pairwise, toArray } from 'rxjs/operators';
+import { concat, defer, from, Observable, of } from 'rxjs';
+import { map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, param, validationResult } from 'express-validator';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
@@ -1110,6 +1110,7 @@ export class RestApi {
 		}
 
 		const games = await this.mongoStore.gamesCollection.find({
+			contestId: contest._id,
 			end_time: timeWindow
 		}).toArray();
 
@@ -1123,14 +1124,17 @@ export class RestApi {
 	}
 
 	private getSessions(contest: store.Contest<ObjectId>): Observable<Session> {
-		return defer(() => from(
-			this.mongoStore.sessionsCollection.find(
-				{ contestId: contest._id },
-				{ sort: { scheduledTime: 1 } }
-			).toArray()
-		))
-		.pipe(
-			mergeAll(),
+		return concat(
+			defer(() => from(
+				this.mongoStore.sessionsCollection.find(
+					{ contestId: contest._id },
+					{ sort: { scheduledTime: 1 } }
+				).toArray()
+			)).pipe(
+				mergeAll(),
+			),
+			of<store.Session<ObjectId>>(null)
+		).pipe(
 			pairwise(),
 			mergeScan((total, [session, nextSession]) =>
 				defer(() => from(this.getSessionSummary(contest, session, nextSession)))

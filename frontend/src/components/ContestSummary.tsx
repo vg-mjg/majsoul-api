@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./league/LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchGamesHook } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, ActionType, fetchGamesHook, fetchContestPlayers } from "../Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -23,7 +23,10 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
-		fetchContestSummary(dispatch, props.contestId.toString());
+		fetchContestSummary(dispatch, props.contestId);
+		fetchContestPlayers(dispatch, {
+			contestId: props.contestId
+		});
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);

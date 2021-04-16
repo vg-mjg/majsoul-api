@@ -7,8 +7,7 @@ import Col from 'react-bootstrap/Col';
 import * as moment from "moment-timezone";
 import * as styles from "./styles.sass";
 import { pickColorGradient } from "..";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchContestPlayers } from "../Actions";
+import { useSelector } from "react-redux";
 import { levelToString } from "./utils";
 
 function GameSeat(props: {
@@ -16,26 +15,20 @@ function GameSeat(props: {
 	game: Rest.GameResult
 }): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.game.contestId]);
-	const teams = contest.teams;
+	const teams = contest?.teams;
+
+	if (contest == null) {
+		return null;
+	}
+
 	const playerId = props.game.players[props.seat];
 	const player = playerId == null
 		? {
 			_id: null as string,
 			nickname: `AI (${(levelToString(props.game.config?.aiLevel) as string)})`
 		}
-		: contest.players?.find(p => p._id === playerId._id);
+		: contest?.players?.find(p => p._id === playerId._id);
 
-	const dispatch = useDispatch();
-
-	React.useEffect(() => {
-		if (player != null) {
-			return;
-		}
-
-		fetchContestPlayers(dispatch, {
-			contestId: props.game.contestId
-		});
-	}, [player, dispatch, props.game.contestId]);
 
 	if (player == null) {
 		return null;
@@ -82,7 +75,9 @@ export function getSeatCharacter(seat: number): string {
 }
 
 //todo: use wind enum from types package
-export function GameResultSummary(props: {game: Rest.GameResult}): JSX.Element {
+export function GameResultSummary(props: {
+	game: Rest.GameResult,
+}): JSX.Element {
 	const cellStyle = "mb-1 pl-0 pr-1";
 	const rowStyle = "pl-1 no-gutters";
 	return <Container className="px-1 py-2">

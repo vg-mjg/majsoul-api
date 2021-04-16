@@ -14,10 +14,16 @@ import Button from "react-bootstrap/Button";
 import { Rest } from "majsoul-api";
 
 export function Session(props: {
-	session: Rest.Session;
+	session: Rest.Session<string>;
 }): JSX.Element{
 	const token = useSelector((state: IState) => state.user?.token);
-	const games = useSelector((state: IState) => Object.values(state.games ?? {}).filter(game => game.sessionId === props.session?._id));
+	const games = useSelector((state: IState) =>
+		Object.values(state.games ?? {})
+			.filter(game =>
+				game.sessionId === props.session?._id
+				&& game.contestId === props.session?.contestId
+			)
+	);
 
 	const dispatch = useDispatch();
 	React.useEffect(() => {
@@ -25,7 +31,10 @@ export function Session(props: {
 			return;
 		}
 
-		fetchGamesHook(dispatch, {sessionIds: [props.session._id]});
+		fetchGamesHook(dispatch, {
+			sessionIds: [props.session._id],
+			contestIds: [props.session?.contestId],
+		});
 	}, [props.session?._id]);
 
 	const utcStartMoment = (props.session == null ? moment() : moment(props.session.scheduledTime)).tz("UTC");
