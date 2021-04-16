@@ -162,7 +162,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 			<Teams contest={contest} session={currentSession} />
 		</Row>
 		<Row className="mt-3">
-			<LeagueStandingChart/>
+			<LeagueStandingChart contest={contest}/>
 		</Row>
 		{ nextSession != null && <>
 			<Row className="px-4 py-3 justify-content-end" >

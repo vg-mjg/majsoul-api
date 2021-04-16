@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { IState, ContestTeam, Session } from "../../State";
+import { IState, ContestTeam, Session, Contest } from "../../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import * as moment from "moment";
@@ -50,50 +50,55 @@ function createData(sessions: Session[], teams: Record<string, ContestTeam>): Ch
 // 	console.log(e);
 // }
 
-export function LeagueStandingChart(): JSX.Element {
-	return null;
-	// const sessions = useSelector((state: IState) => {
-	// 	const now = Date.now();
-	// 	if (state.contest.sessions == null) {
-	// 		return [];
-	// 	}
-	// 	return state.contest.sessions.filter(session => session.scheduledTime < now);
-	// });
+export function LeagueStandingChart(props: {
+	contest: Contest;
+}): JSX.Element {
+	if (props.contest?.sessions == null) {
+		return;
+	}
 
-	// const teams = useSelector((state: IState) => state.contest?.teams);
+	const sessions = useSelector((state: IState) => {
+		const now = Date.now();
+		if (props.contest.sessions == null) {
+			return [];
+		}
+		return props.contest.sessions.filter(session => session.scheduledTime < now);
+	});
 
-	// return <Container className="bg-dark rounded text-white">
-	// 	<Row className="px-2 pb-3 pt-4">
-	// 		<Line
-	// 			data={createData(sessions, teams)}
-	// 			options={{
-	// 				// onClick: this.onClick,
-	// 				scales: {
-	// 					yAxes: [
-	// 						{
-	// 							id: "uma",
-	// 							position: "right",
-	// 							gridLines: {
-	// 								color: "#666666",
-	// 								zeroLineColor: "#666666"
-	// 							}
-	// 						},
-	// 					],
-	// 					xAxes: [
-	// 						{
-	// 							id: "sessions",
-	// 							gridLines: {
-	// 								display: false
-	// 							}
-	// 						},
-	// 					]
-	// 				},
-	// 				legend: {
-	// 					display: false
-	// 				}
-	// 			}}
-	// 			// onElementsClick={this.onElementsClick}
-	// 		></Line>
-	// 	</Row>
-	// </Container>
+	const teams = useSelector((state: IState) => props.contest?.teams);
+
+	return <Container className="bg-dark rounded text-white">
+		<Row className="px-2 pb-3 pt-4">
+			<Line
+				data={createData(sessions, teams)}
+				options={{
+					// onClick: this.onClick,
+					scales: {
+						yAxes: [
+							{
+								id: "uma",
+								position: "right",
+								gridLines: {
+									color: "#666666",
+									zeroLineColor: "#666666"
+								}
+							},
+						],
+						xAxes: [
+							{
+								id: "sessions",
+								gridLines: {
+									display: false
+								}
+							},
+						]
+					},
+					legend: {
+						display: false
+					}
+				}}
+				// onElementsClick={this.onElementsClick}
+			></Line>
+		</Row>
+	</Container>
 }
