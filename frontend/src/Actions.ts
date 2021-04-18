@@ -14,9 +14,6 @@ export enum ActionType {
 	LogOut,
 	PatchTeam,
 	GetContestSessions,
-	PlayMusic,
-	SetMusic,
-	StopMusic,
 	GetContestPlayers,
 	GetContestPlayerGames,
 	GetContests,
@@ -30,8 +27,6 @@ export type MajsoulAction = SummaryRetrievedAction
 	| SessionPatched
 	| PatchTeam
 	| GetContestSessions
-	| SetMusic
-	| PlayMusic
 	| GetContestPlayers
 	| GetContestPlayerGames
 	| GetContests
@@ -62,14 +57,6 @@ export interface PatchTeam extends Action<ActionType.PatchTeam> {
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
 	contestId: string;
 	sessions: Rest.Session[];
-}
-
-export interface SetMusic extends Action<ActionType.PlayMusic> {
-	videoId: string;
-}
-
-export interface PlayMusic extends Action<ActionType.PlayMusic> {
-	videoId: string;
 }
 
 export interface GetContestPlayers extends Action<ActionType.GetContestPlayers> {

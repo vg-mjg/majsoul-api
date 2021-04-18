@@ -6,7 +6,7 @@ import Col from 'react-bootstrap/Col';
 import * as moment from "moment-timezone";
 import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
-import { useSelector, useDispatch, shallowEqual } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
 import { fetchGamesHook, patchSession } from "../Actions";
 import Form from "react-bootstrap/Form";

@@ -10,6 +10,7 @@ import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
 import { patchTeam, ActionType } from "../Actions";
+import { SongPlayer } from "./utils/SongPlayer";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -40,9 +41,11 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 	const musicPlayer = useSelector((state: IState) => state.musicPlayer);
 	const [image, setImage] = React.useState(props.team.image ?? defaultImage);
 	const [anthem, setAnthem] = React.useState(props.team?.anthem);
+	const [playAnthem, setPlayAnthem] = React.useState(false);
 
 	const dispatch = useDispatch();
 	return <Accordion as={Container} className="p-0">
+		{(anthem?.length > 0) && <SongPlayer videoId={anthem} play={playAnthem}/> }
 		<Accordion.Toggle disabled as={Row} eventKey={(token == null ? -1 : 0).toString()} className="no-gutters align-items-center flex-nowrap">
 			{props.placing != null && <Col md="auto" className="mr-3"> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
@@ -102,15 +105,15 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 							// className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
 							value={anthem}
 							onChange={event => {
+								setPlayAnthem(false);
 								setAnthem(event.target.value);
 							}}
 							/>
 					</Col>
 					<Col md="auto">
-						<Button onClick={() => dispatch({
-							type: (musicPlayer.playing && musicPlayer.videoId === anthem) ? ActionType.StopMusic : ActionType.PlayMusic,
-							videoId: anthem
-						}) }>Play</Button>
+						<Button onClick={() => anthem?.length > 0 && setPlayAnthem(!playAnthem)}>
+							{playAnthem ? "Stop" : "Play"}
+						</Button>
 					</Col>
 				</Row>
 			</Container>

@@ -135,27 +135,6 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 		fetchContestSessions(dispatch, contest._id);
 	}, [dispatch, contest._id]);
 
-	React.useEffect(() => {
-		if (nextSession != null || currentSession == null || musicPlayer.playing || contest?.teams == null) {
-			return;
-		}
-
-		if (games.filter(g => g.start_time > currentSession.scheduledTime).length < 4) {
-			return;
-		}
-
-		const firstPlace = Object.entries(currentSession.aggregateTotals).map(([teamId, score]) => ({teamId, score})).sort((a, b) => b.score - a.score)[0];
-		const anthem = contest.teams[firstPlace.teamId]?.anthem;
-		if (anthem == null) {
-			return;
-		}
-
-		dispatch({
-			type: navigator.userAgent.indexOf('Firefox') != -1 ? ActionType.SetMusic : ActionType.PlayMusic,
-			videoId: anthem
-		});
-	}, [nextSession, currentSession, contest?.teams]);
-
 	if (contest?.sessions == null) {
 		return null;
 	}

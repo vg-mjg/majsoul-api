@@ -1,11 +1,11 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import thunkMiddleware from 'redux-thunk';
-import { createStore, applyMiddleware, compose, Action } from "redux";
+import { createStore, applyMiddleware, compose } from "redux";
 import { Provider, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest, ContestTeam } from "./State";
-import { SummaryRetrievedAction, ActionType, SessionGamesRetrieved, RiggingTokenAquired, SessionPatched, PatchTeam, GetContestSessions, PlayMusic, SetMusic, GetContestPlayers, GetContests, ContestPatched, MajsoulAction, fetchContestSummary } from "./Actions";
+import { ActionType, SessionGamesRetrieved, RiggingTokenAquired, GetContestPlayers, GetContests, ContestPatched, MajsoulAction, fetchContestSummary } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
@@ -233,32 +233,6 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					}
 				)
 			}
-		} case ActionType.PlayMusic: {
-			const playMusic = action as PlayMusic;
-			return {
-				...state,
-				musicPlayer: {
-					playing: true,
-					videoId: playMusic.videoId ?? state.musicPlayer.videoId
-				}
-			}
-		// } case ActionType.SetMusic: {
-		// 	const setMusic = action as SetMusic;
-		// 	return {
-		// 		...state,
-		// 		musicPlayer: {
-		// 			...state.musicPlayer,
-		// 			videoId: setMusic.videoId
-		// 		}
-		// 	}
-		// } case ActionType.StopMusic: {
-		// 	return {
-		// 		...state,
-		// 		musicPlayer: {
-		// 			...state.musicPlayer,
-		// 			playing: false
-		// 		}
-		// 	}
 		} case ActionType.GetContestPlayers: {
 			const getContestPlayers = action as GetContestPlayers;
 			return {
