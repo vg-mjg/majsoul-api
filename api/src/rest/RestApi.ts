@@ -1042,7 +1042,7 @@ export class RestApi {
 			param("teamId").isMongoId(),
 			body(nameofTeam('image')).isString().optional({nullable: true}),
 			body(nameofTeam('anthem')).isString().optional({nullable: true}),
-			body(nameofTeam('color')).isString().matches(/^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({nullable: true}),
+			body(nameofTeam('color')).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({nullable: true}),
 			withData<
 				{
 					id: string;

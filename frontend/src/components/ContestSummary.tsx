@@ -121,7 +121,6 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 
 function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const games = useSelector((state: IState) => Object.values(state.games ?? [])?.sort((a, b) => b.end_time - a.end_time));
-	const musicPlayer = useSelector((state: IState) => state.musicPlayer);
 	const dispatch = useDispatch();
 
 	const { contest } = props;

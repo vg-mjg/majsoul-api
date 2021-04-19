@@ -1,8 +1,8 @@
 import * as React from "react";
 import { Line, ChartData } from "react-chartjs-2";
 import * as chartjs from "chart.js";
-import { Rest } from 'majsoul-api';
-import { IState, ContestTeam, Contest } from "../../State";
+import { Store, Rest } from "majsoul-api";
+import { IState, Contest } from "../../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import * as moment from "moment";
@@ -10,36 +10,39 @@ import { useSelector } from "react-redux";
 
 chartjs.defaults.global.defaultFontColor = "white";
 
-function createData(sessions: Rest.Session[], teams: Record<string, ContestTeam>): ChartData<chartjs.ChartData> {
+function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData<chartjs.ChartData> {
 	return {
 		labels: ["Start"].concat(sessions.map(session => {
 			const time =  moment(session.scheduledTime).tz('UTC');
 			return `${time.hours() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
 		})),
 
-		datasets: Object.values(teams ?? {}).map(team => ({
-			label: team.name,
-			fill: false,
-			lineTension: 0.1,
-			borderCapStyle: 'butt',
-			borderDash: [],
-			borderDashOffset: 0.0,
-			borderJoinStyle: 'miter',
-			pointBorderColor: team.color,
-			pointBackgroundColor: team.color,
-			backgroundColor: team.color,
-			borderColor: team.color,
-			pointHoverBackgroundColor: team.color,
-			pointHoverBorderColor: team.color,
-			pointBorderWidth: 1,
-			pointHoverRadius: 4,
-			pointHoverBorderWidth: 2,
-			pointRadius: 3,
-			pointHitRadius: 10,
-			data: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
-			yAxisID: "uma",
-			xAxisID: "sessions",
-		}))
+		datasets: Object.values(teams ?? {}).map(team => {
+			const color = `#${team.color ?? "000"}`;
+			return {
+				label: team.name,
+				fill: false,
+				lineTension: 0.1,
+				borderCapStyle: 'butt',
+				borderDash: [],
+				borderDashOffset: 0.0,
+				borderJoinStyle: 'miter',
+				pointBorderColor: color,
+				pointBackgroundColor: color,
+				backgroundColor: color,
+				borderColor: color,
+				pointHoverBackgroundColor: color,
+				pointHoverBorderColor: color,
+				pointBorderWidth: 1,
+				pointHoverRadius: 4,
+				pointHoverBorderWidth: 2,
+				pointRadius: 3,
+				pointHitRadius: 10,
+				data: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
+				yAxisID: "uma",
+				xAxisID: "sessions",
+			}
+		})
 	}
 }
 

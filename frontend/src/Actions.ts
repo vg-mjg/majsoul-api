@@ -1,7 +1,7 @@
 import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
 import { ThunkAction } from "redux-thunk";
-import { IState, ContestTeam } from "./State";
+import { IState } from "./State";
 import { Config, Contest, GameResult } from "majsoul-api/dist/store";
 
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
@@ -51,7 +51,8 @@ export interface SessionPatched extends Action<ActionType.SessionPatched> {
 }
 
 export interface PatchTeam extends Action<ActionType.PatchTeam> {
-	team: ContestTeam;
+	contestId: string;
+	team: Store.ContestTeam;
 }
 
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
@@ -373,8 +374,8 @@ export function logout(dispatch: Dispatch<LogOutAction>) {
 	dispatch({type: ActionType.LogOut});
 }
 
-export function patchTeam(dispatch: Dispatch, token: string, team: ContestTeam): Promise<unknown> {
-	const url = buildApiUrl(`teams/${team._id}`);
+export function patchTeam(dispatch: Dispatch<PatchTeam>, token: string, contestId: string, team: Store.ContestTeam): Promise<unknown> {
+	const url = buildApiUrl(`contests/${contestId}/teams/${team._id}`);
 	return fetch(
 		url.toString(),
 		{
@@ -389,6 +390,7 @@ export function patchTeam(dispatch: Dispatch, token: string, team: ContestTeam):
 		.then(response => response.json())
 		.then(team => dispatch({
 			type: ActionType.PatchTeam,
+			contestId,
 			team
 		}));
 }

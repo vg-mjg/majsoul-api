@@ -1,6 +1,6 @@
 import * as React from "react";
-import { IState, ContestTeam, Contest } from "../State";
-import { Rest } from 'majsoul-api';
+import { IState, Contest } from "../State";
+import { Store, Rest } from 'majsoul-api';
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -11,6 +11,7 @@ import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
 import { patchTeam, ActionType } from "../Actions";
 import { SongPlayer } from "./utils/SongPlayer";
+import { TextField } from "./utils/TextField";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -36,12 +37,23 @@ export function jpNumeral(value: number): string {
 	return rep;
 }
 
-export function Team(props: {team: ContestTeam, score?: number, placing?: number}): JSX.Element {
+const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
+
+export function Team(props: {contestId: string, team: Store.ContestTeam, score?: number, placing?: number}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
-	const musicPlayer = useSelector((state: IState) => state.musicPlayer);
 	const [image, setImage] = React.useState(props.team.image ?? defaultImage);
 	const [anthem, setAnthem] = React.useState(props.team?.anthem);
 	const [playAnthem, setPlayAnthem] = React.useState(false);
+	const [color, setColor] = React.useState<string>();
+	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
+		const isValid = colorRegex.test(newValue);
+		const value = isValid ? newValue : oldValue;
+		setColor(value);
+		return {
+			value,
+			isValid,
+		};
+	}, [setColor]);
 
 	const dispatch = useDispatch();
 	return <Accordion as={Container} className="p-0">
@@ -77,7 +89,7 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 			<Col md="auto" className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
 				<Container className="p-0">
 					<Row className="no-gutters">
-						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid ${props.team.color}`}}>
+						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid #${props.team.color}`}}>
 							{props.team.name.toLocaleLowerCase()}
 						</Col>
 					</Row>
@@ -85,14 +97,6 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 			</Col>
 			<Col></Col>
 			{ isNaN(props.score) || <Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col> }
-			{ ((props.team.image !== image && image !== defaultImage) || anthem != props.team.anthem) &&
-				<Col md="auto">
-					<Button
-						variant="secondary"
-						onClick={(event: any) => {patchTeam(dispatch, token, {image: image, _id: props.team._id, anthem: anthem } as ContestTeam)}}
-					>Save</Button>
-				</Col>
-			}
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<Container>
@@ -114,6 +118,38 @@ export function Team(props: {team: ContestTeam, score?: number, placing?: number
 						<Button onClick={() => anthem?.length > 0 && setPlayAnthem(!playAnthem)}>
 							{playAnthem ? "Stop" : "Play"}
 						</Button>
+					</Col>
+				</Row>
+				<Row>
+					<Col>
+						<TextField
+							id={`team-${props.team._id}-color-editor`}
+							label="Color"
+							fallbackValue={color ?? props.team.color}
+							onChange={onColorChange}
+							inline
+						/>
+					</Col>
+					<Col md="auto">
+						<Button
+							variant="secondary"
+							disabled={
+								(props.team.image === image || image === defaultImage)
+								&& (anthem === props.team.anthem || anthem === undefined)
+								&& (color === props.team.anthem || color === undefined)
+							}
+							onClick={(event: any) => {patchTeam(
+								dispatch,
+								token,
+								props.contestId,
+								{
+									image: image,
+									_id: props.team._id,
+									anthem: anthem,
+									color
+								} as Store.ContestTeam)
+							}}
+						>Save</Button>
 					</Col>
 				</Row>
 			</Container>
@@ -139,6 +175,7 @@ export function Teams(props: {
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		{teamsArray.map((team, placing) => <Row key={team._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
 			<Team
+				contestId={props.contest?._id}
 				team={team}
 				score={props.session?.aggregateTotals[team._id]}
 				placing={placing + 1} />

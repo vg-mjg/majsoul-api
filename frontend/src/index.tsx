@@ -4,7 +4,7 @@ import thunkMiddleware from 'redux-thunk';
 import { createStore, applyMiddleware, compose } from "redux";
 import { Provider, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
-import { IState, Contest, ContestTeam } from "./State";
+import { IState, Contest } from "./State";
 import { ActionType, SessionGamesRetrieved, RiggingTokenAquired, GetContestPlayers, GetContests, ContestPatched, MajsoulAction, fetchContestSummary } from "./Actions";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
@@ -20,6 +20,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import YouTube from 'react-youtube';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import { toRecord } from "./components/utils";
 
 const teamColors = [
 	"#980000",
@@ -116,63 +117,18 @@ function updatedContestRecord(state: IState, contestId: string, contest: Partial
 function contestReducer(state: IState, action: MajsoulAction): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
-			const contest = {
-				...(state.contestsById[action.contest._id] ?? {}),
-				...action.contest,
-				teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
-					const team = action.contest.teams == null ? null : action.contest.teams[index];
-					hash[team?._id ?? index] = {...(team ?? {
-						players: [],
-						_id: index.toString(),
-						index: index,
-						anthem: undefined,
-						image: undefined,
-						name: undefined
-					}), ...{color: teamColors[index], index: index}};
-					return hash;
-				}, {})
-			} as Contest;
-
-			const hoverChange = 0.1;
-			for (const team of Object.values(contest.teams)) {
-				const hslColor = rgbToHsl(team.color);
-				document.documentElement.style.setProperty(`--team-${team.index}-base`, team.color);
-
-				//hslStyle(rgbToHsl(invertHex(team.color.slice(1)))));
-				document.documentElement.style.setProperty(`--team-${team.index}-color`, hslColor?.l >= .4 ?  "black" : "white");
-
-				document.documentElement.style.setProperty(`--team-${team.index}-border`, hslStyle({...hslColor, l: 0.35}));
-
-				if (hslColor.l >= .5) {
-					hslColor.l = Math.max(hslColor.l - hoverChange, 0);
-				} else {
-					hslColor.l = Math.min(hslColor.l + hoverChange, 1);
-				}
-
-				document.documentElement.style.setProperty(`--team-${team.index}-hover`, hslStyle(hslColor));
-			}
-
+			console.log("testa");
 			return {
 				...state,
-				...updatedContestRecord(state, contest._id, contest)
+				...updatedContestRecord(state, action.contest._id, {
+					...action.contest,
+					teams: toRecord(action.contest.teams, "_id")
+				})
 			};
 		} case ActionType.GamesRetrieved:
 			case ActionType.GetContestPlayerGames:
 		{
 			const gamesRetrievedAction = action as SessionGamesRetrieved;
-			// const contest: Contest = {
-			// 	...originalContest,
-			// 	sessions: originalContest?.sessions?.map(session => {
-			// 		const games = gamesRetrievedAction.games.filter(g => g.sessionId === session._id);
-			// 		if (games.length > 0) {
-			// 			return {
-			// 				...session,
-			// 				games: Array.from(new Set(games.concat(gamesRetrievedAction.games ?? [])))
-			// 			}
-			// 		}
-			// 		return session;
-			// 	}) ?? []
-			// };
 
 			return {
 				...state,
@@ -210,17 +166,15 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 			}
 			break;
 		} case ActionType.PatchTeam: {
-			return state;
-			// const patchAction = action as PatchTeam;
-			// const teams = {...state.contest.teams};
-			// teams[patchAction.team._id] = patchAction.team;
-			// return {
-			// 	...state,
-			// 	contest: {
-			// 		...state.contest,
-			// 		teams
-			// 	}
-			// }
+			return {
+				...state,
+				...updatedContestRecord(state, action.contestId, {
+					teams: {
+						...state.contestsById[action.contestId].teams,
+						...{ [action.team._id]: { ...action.team } }
+					}
+				})
+			}
 		} case ActionType.GetContestSessions: {
 			return {
 				...state,
@@ -228,7 +182,6 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					state,
 					action.contestId,
 					{
-						...state.contestsById[action.contestId],
 						sessions: action.sessions
 					}
 				)
@@ -242,31 +195,17 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				})
 			}
 		} case ActionType.GetContests: {
-			const getContests = action as GetContests;
-			const contests: Record<number, Contest> = {};
-			for (const contest of getContests.contests) {
-				contests[contest._id] = {
-					...contest,
-					teams: teamColors.reduce<Record<string, ContestTeam>>((hash, next, index) => {
-						const team = contest.teams == null ? null : contest.teams[index];
-						hash[team?._id ?? index] = {...(team ?? {
-							players: [],
-							_id: index.toString(),
-							index: index,
-							anthem: undefined,
-							image: undefined,
-							name: undefined
-						}), ...{color: teamColors[index], index: index}};
-						return hash;
-					}, {})
-				} as Contest;
-			}
-
 			return {
 				...state,
 				contestsById: {
 					...state.contestsById,
-					...contests
+					...toRecord(
+						action.contests.map(contest => ({
+							...contest,
+							teams: toRecord(contest.teams, "_id"),
+						} as Contest)),
+						"_id"
+					)
 				}
 			}
 		} case ActionType.ContestPatched: {

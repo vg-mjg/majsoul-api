@@ -1,7 +1,7 @@
 import { Rest, Store } from "majsoul-api";
 
-export interface Contest extends Omit<Store.Contest<string>, "teams" | "sessions" > {
-	teams?: Record<string, ContestTeam>;
+export interface Contest extends Omit<Store.Contest<string>, "teams" > {
+	teams?: Record<string, Store.ContestTeam>;
 	sessions: Rest.Session<string>[];
 	players?: Rest.ContestPlayer[];
 }
@@ -12,17 +12,9 @@ export interface IState {
 	user?: {
 		token: string;
 	};
-	musicPlayer: {
-		playing: boolean;
-		videoId: string;
-	}
 }
 
-export interface ContestTeam extends Store.ContestTeam<string> {
-	index: number;
-}
-
-export function findPlayerInformation(playerId: string, teams: Record<string, ContestTeam>): { team: ContestTeam; player: Store.Player; } {
+export function findPlayerInformation(playerId: string, teams: Record<string, Store.ContestTeam>): { team: Store.ContestTeam; player: Store.Player; } {
 	for (const teamId in teams) {
 		const player = teams[teamId].players.find(player => player._id === playerId);
 		if (player) {
