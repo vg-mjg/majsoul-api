@@ -128,7 +128,6 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const nextSessionIndex = contest?.sessions?.findIndex(session => session.scheduledTime > Date.now()) ?? -1;
 	const nextSession = contest?.sessions == null ? null : contest.sessions[nextSessionIndex];
 	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
-	console.log("test", contest);
 
 	React.useEffect(() => {
 		fetchContestSessions(dispatch, contest._id);

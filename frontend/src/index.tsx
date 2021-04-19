@@ -117,7 +117,6 @@ function updatedContestRecord(state: IState, contestId: string, contest: Partial
 function contestReducer(state: IState, action: MajsoulAction): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
-			console.log("testa");
 			return {
 				...state,
 				...updatedContestRecord(state, action.contest._id, {
@@ -276,7 +275,7 @@ function LatestContestSummary(): JSX.Element {
 		fetchContestSummary(dispatch, "featured").then(contest => {
 			setContestId(contest._id);
 		});
-	});
+	}, [dispatch]);
 
 	if (contestId == null) {
 		return <div>Loading...</div>;

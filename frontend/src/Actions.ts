@@ -7,18 +7,18 @@ import { Config, Contest, GameResult } from "majsoul-api/dist/store";
 export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
 
 export enum ActionType {
-	ContestSummaryRetrieved,
-	GamesRetrieved,
-	RiggingTokenGet,
-	SessionPatched,
-	LogOut,
-	PatchTeam,
-	GetContestSessions,
-	GetContestPlayers,
-	GetContestPlayerGames,
-	GetContests,
-	ContestPatched,
-	ContestCreated,
+	ContestSummaryRetrieved = "ContestSummaryRetrieved",
+	GamesRetrieved = "GamesRetrieved",
+	RiggingTokenGet = "RiggingTokenGet",
+	SessionPatched = "SessionPatched",
+	LogOut = "LogOut",
+	PatchTeam = "PatchTeam",
+	GetContestSessions = "GetContestSessions",
+	GetContestPlayers = "GetContestPlayers",
+	GetContestPlayerGames = "GetContestPlayerGames",
+	GetContests = "GetContests",
+	ContestPatched = "ContestPatched",
+	ContestCreated = "ContestCreated",
 }
 
 export type MajsoulAction = SummaryRetrievedAction
@@ -94,14 +94,16 @@ export function buildApiUrl(path: string): URL {
 	return new URL(`${location.protocol}//${location.hostname}:9515/${path}`);
 }
 
-export function fetchContestSummary(dispatch: Dispatch, contestId: string): Promise<Store.Contest<string>> {
+export function fetchContestSummary(dispatch: Dispatch<SummaryRetrievedAction>, contestId: string): Promise<Store.Contest<string>> {
 	const fetchPromise = fetch(buildApiUrl(`contests/${contestId}`).toString())
 		.then(response => response.json());
 
-	fetchPromise.then(contest => dispatch({
+	fetchPromise.then(contest => {
+		dispatch({
 			type: ActionType.ContestSummaryRetrieved,
 			contest
-		}));
+		})
+	});
 
 	return fetchPromise;
 }
@@ -117,13 +119,13 @@ export function fetchContestSessions(dispatch: Dispatch<GetContestSessions>, con
 }
 
 interface FetchContestPlayerParams {
-	contestId: string | number,
+	contestId: string,
 	gameLimit?: number,
 	ignoredGames?: number,
 }
 
 export function fetchContestPlayers(
-	dispatch: Dispatch,
+	dispatch: Dispatch<GetContestPlayers>,
 	params: FetchContestPlayerParams,
 ): void {
 	fetchContestPlayersDirect(params).then(players => dispatch({
@@ -152,7 +154,7 @@ export function fetchContestPlayersDirect(
 		.then(response => response.json());
 }
 
-export function fetchContestPlayerGames(dispatch: Dispatch, contestId: string, playerId: string): void {
+export function fetchContestPlayerGames(dispatch: Dispatch<GetContestPlayerGames>, contestId: string, playerId: string): void {
 	fetch(buildApiUrl(`contests/${contestId}/players/${playerId}/games`).toString())
 		.then(response => response.json())
 		.then(games => dispatch({
@@ -161,7 +163,7 @@ export function fetchContestPlayerGames(dispatch: Dispatch, contestId: string, p
 		}));
 }
 
-export function fetchContests(dispatch: Dispatch): void {
+export function fetchContests(dispatch: Dispatch<GetContests>): void {
 	fetch(buildApiUrl(`contests`).toString())
 		.then(response => response.json())
 		.then(contests => dispatch({
@@ -192,7 +194,7 @@ export interface FetchGamesOptions {
 	contestIds?: string[];
 }
 
-export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): void {
+export function fetchGamesHook(dispatch: Dispatch<SessionGamesRetrieved>, params: FetchGamesOptions): void {
 	const url = buildApiUrl(`games`);
 	const queryParameters: Record<string, string> = {};
 	if (params.sessionIds != null) {
@@ -217,7 +219,7 @@ export function fetchGamesHook(dispatch: Dispatch, params: FetchGamesOptions): v
 		}));
 }
 
-export function patchSession(dispatch: Dispatch, token: string, session: Rest.Session): Promise<unknown> {
+export function patchSession(dispatch: Dispatch<SessionPatched>, token: string, session: Rest.Session): Promise<unknown> {
 	const url = buildApiUrl(`sessions/${session._id}`);
 	return fetch(
 		url.toString(),
@@ -258,7 +260,7 @@ export async function fetchConfig(dispatch: Dispatch): Promise<Config> {
 	return await response.json();
 }
 
-export function patchContest(dispatch: Dispatch, token: string, id: string, contest: Partial<Contest<string>>): Promise<unknown> {
+export function patchContest(dispatch: Dispatch<ContestPatched>, token: string, id: string, contest: Partial<Contest<string>>): Promise<unknown> {
 	const url = buildApiUrl(`contests/${id}`);
 	return fetch(
 		url.toString(),
@@ -361,7 +363,7 @@ export const getRiggingToken = (params: GetRiggingTokenOptions): AppThunk<Riggin
 	}
 }
 
-export function fetchYakuman(dispatch: Dispatch, contestId: string): void {
+export function fetchYakuman(dispatch: Dispatch<SessionGamesRetrieved>, contestId: string): void {
 	fetch(buildApiUrl(`contests/${contestId}/yakuman`).toString())
 		.then(response => response.json())
 		.then(games => dispatch({
