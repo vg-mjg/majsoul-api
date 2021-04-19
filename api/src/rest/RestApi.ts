@@ -263,6 +263,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
+const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 
 const seededPlayerNames: Record<string, string[]> = {
@@ -1035,30 +1036,70 @@ export class RestApi {
 			})
 		})
 
-		.patch<any, store.ContestTeam<ObjectId>>('/teams/:id', (req, res) => {
-			const body = req.body as store.ContestTeam<string>;
+		.patch(
+			'/contests/:id/teams/:teamId',
+			param("id").isMongoId(),
+			param("teamId").isMongoId(),
+			body(nameofTeam('image')).isString().optional({nullable: true}),
+			body(nameofTeam('anthem')).isString().optional({nullable: true}),
+			body(nameofTeam('color')).isString().matches(/^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({nullable: true}),
+			withData<
+				{
+					id: string;
+					teamId: string;
+				} & Partial<store.ContestTeam<ObjectId>>,
+				any,
+				store.ContestTeam<ObjectId>
+			>(async (data, req, res) => {
+				const update: {
+					$set?: {},
+					$unset?: {},
+				} = {};
 
-			if (body.image == undefined && body.anthem == undefined) {
-				res.sendStatus(304);
-				return;
+				const id = new ObjectId(data.id);
+				const teamId = new ObjectId(data.teamId);
+
+				for (const key in data) {
+					if (data[key] === undefined) {
+						continue;
+					}
+
+					if (key === "id" || key === "teamId") {
+						continue;
+					}
+
+					const updateKey = `teams.$.${key}`;
+
+					if (data[key] === null) {
+						update.$unset ??= {};
+						update.$unset[updateKey] = true;
+						continue;
+					}
+
+					update.$set ??= {};
+					update.$set[updateKey] = data[key];
+				}
+
+				if (update.$set == null && update.$unset == null) {
+					res.status(400).send("No operations requested" as any);
+					return;
+				}
+
+				this.mongoStore.contestCollection.findOneAndUpdate(
+					{
+						_id: id,
+						teams: { $elemMatch: { _id: teamId } }
+					},
+					update,
+					{ returnOriginal: false, projection: { teams: true } }
+				).then((contest) => {
+					res.send(contest.value.teams.find(team => team._id.equals(teamId) ));
+				}).catch((err) => {
+					console.log(err);
+					res.status(500).send(err);
+				})
 			}
-
-			const teamId = new ObjectId(req.params.id);
-
-			this.mongoStore.contestCollection.findOneAndUpdate(
-				{ teams: { $elemMatch: { _id: teamId } } },
-				{ $set: {
-					"teams.$.image": body.image,
-					"teams.$.anthem": body.anthem
-				} },
-				{ returnOriginal: false, projection: { teams: true } }
-			).then((contest) => {
-				res.send(contest.value.teams.find(team => team._id.equals(teamId) ));
-			}).catch((err) => {
-				console.log(err);
-				res.status(500).send(err);
-			})
-		})
+		))
 
 		.get("/rigging/token", async (req, res) => {
 			const user = await this.mongoStore.userCollection.findOne({
