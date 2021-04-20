@@ -1,30 +1,6 @@
 .feed
 	min-height: 100vh
 
-@for $i from 0 through 9
-	:root
-		--team-#{$i}-base: black
-		--team-#{$i}-border: black
-		--team-#{$i}-hover: black
-		--team-#{$i}-color: black
-
-	.team#{$i}
-		background-color: var(--team-#{$i}-base)
-		border-color: var(--team-#{$i}-border)
-		color: var(--team-#{$i}-color)
-		&:disabled
-			background-color: var(--team-#{$i}-base)
-			border-color: var(--team-#{$i}-border)
-			color: var(--team-#{$i}-color)
-			opacity: 1
-		&:hover
-			// background-color: var(--team-#{$i}-hover)
-			// border-color: var(--team-#{$i}-border)
-			// color: var(--team-#{$i}-color)
-
-	.team#{$i}Rank
-		border-bottom: 2px solid var(--team-#{$i}-base)
-
 :global .nav
 	border-bottom: none
 
@@ -41,3 +17,43 @@
 			font-weight: 600
 			color: white
 			border: none
+
+$color-primary-0: #88064D	// Main Primary color */
+$color-primary-1: #B8377E
+$color-primary-2: #A51563
+$color-primary-3: #6C003B
+$color-primary-4: #490028
+
+$color-secondary-1-0: #A86007	// Main Secondary color (1) */
+$color-secondary-1-1: #E39C44
+$color-secondary-1-2: #CC7C19
+$color-secondary-1-3: #864A00
+$color-secondary-1-4: #5B3200
+
+$color-secondary-2-0: #0A476B	// Main Secondary color (2) */
+$color-secondary-2-1: #316D91
+$color-secondary-2-2: #175A82
+$color-secondary-2-3: #043755
+$color-secondary-2-4: #01253A
+
+$color-complement-0: #699D07	// Main Complement color */
+$color-complement-1: #A1D440
+$color-complement-2: #85BE18
+$color-complement-3: #527D00
+$color-complement-4: #375400
+
+.seat-0
+	color: white
+	background-color: $color-primary-2
+
+.seat-1
+	color: white
+	background-color: $color-secondary-1-2
+
+.seat-2
+	color: white
+	background-color: $color-secondary-2-2
+
+.seat-3
+	color: white
+	background-color: $color-complement-2

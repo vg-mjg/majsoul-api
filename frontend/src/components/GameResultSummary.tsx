@@ -15,6 +15,7 @@ function GameSeat(props: {
 	game: Rest.GameResult
 }): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.game.contestId]);
+
 	const teams = contest?.teams;
 
 	if (contest == null) {
@@ -34,7 +35,7 @@ function GameSeat(props: {
 		return null;
 	}
 
-	const colorIndex = findPlayerInformation(player._id, teams)?.team ?? props.seat + 2;
+	const playerInformation = findPlayerInformation(player._id, teams);
 
 	const scoreColor = pickColorGradient(
 		props.game.finalScore[props.seat].uma > 0 ? "93c47d" : "e06666",
@@ -42,18 +43,51 @@ function GameSeat(props: {
 		Math.min(Math.abs(props.game.finalScore[props.seat].uma / 1000 / 50), 1)
 	);
 
-	return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark`}>
-		<Row className="no-gutters">
-			<Col md="auto" className={`${(styles as any)[`team${colorIndex}`]} rounded-left px-2`}>
+	return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark border border-2`}>
+		<Row className={`no-gutters`} style={{lineHeight: "40px", textAlign: "center"}}>
+			<Col
+				md="auto"
+				className={`${(styles as any)[`seat-${props.seat}`]} rounded-left border-right border-2`}
+				style={{minWidth: "40px", boxSizing: "content-box"}}
+			>
 				{getSeatCharacter(props.seat)}
 			</Col>
-			<Col md="auto" className="border-right border-top border-bottom px-2">
+			<Col
+				md="auto"
+				className="border-right border-2"
+				style={{minWidth: "40px", boxSizing: "content-box"}}
+			>
 				{props.game.finalScore.map((score, index) => ({ score, index })).sort((a, b) => b.score.uma - a.score.uma).findIndex(s => s.index === props.seat) + 1}
 			</Col>
-			<Col className="border-right border-top border-bottom text-center">
-				{player.nickname}
+			{playerInformation?.team?.image &&
+				<Col
+					md="auto"
+					className="border-right border-2"
+				>
+					<div style={{
+						height: 40,
+						width: 40,
+						backgroundImage: `url(${playerInformation?.team?.image})`,
+						backgroundRepeat: "no-repeat",
+						backgroundPosition: "center",
+						backgroundSize: "contain"
+					}}/>
+				</Col>
+			}
+			<Col
+				className="border-right border-2"
+			>
+				<div
+					style={{
+						lineHeight: "initial",
+						display: "inline-block",
+						borderBottom: playerInformation?.team?.color ? `solid 3px #${playerInformation.team.color}` : "none"
+					}}
+				>
+					{player.nickname}
+				</div>
 			</Col>
-			<Col md="auto" style={{ minWidth: "112px", backgroundColor: `rgb(${scoreColor.r}, ${scoreColor.g}, ${scoreColor.b})` }} className="text-center border-right border-top border-bottom rounded-right">
+			<Col md="auto" style={{ minWidth: "112px", backgroundColor: `rgb(${scoreColor.r}, ${scoreColor.g}, ${scoreColor.b})` }} className="rounded-right">
 				{props.game.finalScore[props.seat].score}({props.game.finalScore[props.seat].uma / 1000})
 			</Col>
 		</Row>

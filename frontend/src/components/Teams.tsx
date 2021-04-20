@@ -9,7 +9,7 @@ import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
-import { patchTeam, ActionType } from "../Actions";
+import { patchTeam } from "../Actions";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
 
