@@ -20,6 +20,7 @@ export enum ActionType {
 	ContestPatched = "ContestPatched",
 	ContestCreated = "ContestCreated",
 	TeamCreated = "TeamCreated",
+	TeamDeleted = "TeamDeleted",
 }
 
 export type MajsoulAction = SummaryRetrievedAction
@@ -34,7 +35,13 @@ export type MajsoulAction = SummaryRetrievedAction
 	| CreateContest
 	| ContestPatched
 	| LogOutAction
-	| TeamCreatedAction;
+	| TeamCreatedAction
+	| TeamDeletedAction;
+
+export interface TeamDeletedAction extends Action<ActionType.TeamDeleted> {
+	contestId: string;
+	teamId: string;
+}
 
 export interface TeamCreatedAction extends Action<ActionType.TeamCreated> {
 	contestId: string;
@@ -425,4 +432,25 @@ export function patchTeam(dispatch: Dispatch<PatchTeam>, token: string, contestI
 			contestId,
 			team
 		}));
+}
+
+export async function deleteTeam(dispatch: Dispatch<TeamDeletedAction>, token: string, contestId: string, teamId: string): Promise<void> {
+	const url = buildApiUrl(`contests/${contestId}/teams/${teamId}`);
+	const response = await fetch(
+		url.toString(),
+		{
+			method: "DELETE",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			}
+		}
+	);
+
+	dispatch({
+		type: ActionType.TeamDeleted,
+		contestId,
+		teamId,
+	});
 }

@@ -9,7 +9,7 @@ import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
-import { createTeam, patchTeam } from "../Actions";
+import { createTeam, deleteTeam, patchTeam } from "../Actions";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
 
@@ -156,6 +156,13 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 					</Col>
 					<Col md="auto">
 						<Button
+							onClick={() => deleteTeam(dispatch, token, props.contestId, props.team._id)}
+						>
+							Delete
+						</Button>
+					</Col>
+					<Col md="auto">
+						<Button
 							variant="secondary"
 							disabled={
 								(name === props.team.name  || name === undefined)
@@ -223,7 +230,7 @@ export function Teams(props: {
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		{teamsArray.map((team, placing) =>
-			<TeamRow first={placing === 0}>
+			<TeamRow key={team._id} first={placing === 0}>
 				<Team
 					contestId={props.contest?._id}
 					team={team}

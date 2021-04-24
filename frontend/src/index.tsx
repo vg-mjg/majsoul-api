@@ -238,6 +238,16 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					}
 				})
 			}
+		} case ActionType.TeamDeleted: {
+			return {
+				...state,
+				...updatedContestRecord(state, action.contestId, {
+					teams: toRecord(
+						Object.values(state.contestsById[action.contestId].teams).filter(team => team._id !== action.teamId),
+						"_id"
+					)
+				})
+			}
 		}
 	}
 
