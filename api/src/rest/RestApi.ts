@@ -1243,7 +1243,7 @@ export class RestApi {
 				total[winningTeam._id.toHexString()] = (total[winningTeam._id.toHexString()] ?? 0) + score.uma;
 			});
 			return total;
-		}, {});
+		}, contest.teams.reduce((total, next) => (total[next._id.toHexString()] = 0, total), {}));
 	}
 
 	private getSessions(contest: store.Contest<ObjectId>): Observable<Session> {
