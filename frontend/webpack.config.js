@@ -93,7 +93,7 @@ module.exports = env => {
 		plugins: [
 			new HtmlWebpackPlugin({
 				base: "/",
-				title: "/mjg/ tournaments"
+				title: "/mjg/ competitions"
 			})
 		]
 	};

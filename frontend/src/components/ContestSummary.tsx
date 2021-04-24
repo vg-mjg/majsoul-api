@@ -40,6 +40,17 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 		}
 	}, [secret]);
 
+	React.useEffect(() => {
+		if (contest == null) {
+			return;
+		}
+
+		document.title = `/mjg/ competitions - ${contest.name ?? `#${contest._id}`}`;
+		return () => {
+			document.title = "/mjg/ competitions";
+		}
+	}, [contest?.name, contest?._id]);
+
 	if (contest == null) {
 		return <Container className="text-light text-center pt-4">
 			<h5 className="bg-dark rounded py-3">
