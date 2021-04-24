@@ -3,14 +3,18 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from "react-bootstrap/Form";
 import { useState } from "react";
+import clsx from "clsx";
+import Container from "react-bootstrap/Container";
 
 export function TextField(props: {
 	id: string;
+	isLocked?: boolean;
 	label?: string;
-	fallbackValue: string;
+	fallbackValue?: string;
 	placeholder?: string;
 	inline?: boolean;
 	type?: string;
+	className?: string;
 	onChange?: (oldValue: string, newValue: string) => { value: string; isValid: boolean; };
 	onCommit?: (value: string, isValid: boolean) => string;
 }): JSX.Element {
@@ -24,7 +28,8 @@ export function TextField(props: {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isValid, setIsValid] = useState(true);
 
-	return <Form.Group as={Row} className="no-gutters">
+	return <Container>
+		<Form.Group as={Row} className="no-gutters">
 		{ props.label &&
 			<Form.Label
 				column
@@ -38,11 +43,11 @@ export function TextField(props: {
 		<Col>
 			<Form.Control
 				id={props.id}
-				plaintext={!isEditing}
-				readOnly={!isEditing}
+				plaintext={!props.isLocked && !isEditing}
+				readOnly={!props.isLocked && !isEditing}
 				isInvalid={!isValid}
 				type={props.type}
-				className={`${inline ? "" : "text-right"} ${isEditing ? "" : " text-light"}`}
+				className={clsx(!inline && "text-right", !isEditing && " text-light", props.className)}
 				value={value === undefined ? props.fallbackValue ?? "" : value === null ? "" : value}
 				placeholder={placeholder}
 				onChange={event => {
@@ -59,5 +64,6 @@ export function TextField(props: {
 					}
 				}} />
 		</Col>
-	</Form.Group>;
+	</Form.Group>
+	</Container>;
 }

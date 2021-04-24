@@ -41,6 +41,7 @@ const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
 export function Team(props: {contestId: string, team: Store.ContestTeam, score?: number, placing?: number}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
+	const [name, setName] = React.useState<string>();
 	const [image, setImage] = React.useState<string>();
 	const [anthem, setAnthem] = React.useState<string>();
 	const [playAnthem, setPlayAnthem] = React.useState(false);
@@ -104,17 +105,38 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 			<Container>
 				<Row>
 					<Col>
-						<Form.Control
-							// plaintext={!token || !editTime}
-							// readOnly={!token || !editTime}
-							// isInvalid={timeIsInvalid}
-							// className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
-							value={teamAnthem}
-							onChange={event => {
-								setPlayAnthem(false);
-								setAnthem(event.target.value);
+						<TextField
+							inline
+							label="Name"
+							id={`${props.team._id}-name-editor`}
+							placeholder={`#${props.team._id}`}
+							fallbackValue={props.team.name}
+							onChange={(_, newValue) => {
+								setName(newValue.toLocaleLowerCase());
+								return {
+									value: newValue,
+									isValid: true,
+								}
 							}}
-							/>
+						/>
+					</Col>
+				</Row>
+				<Row>
+					<Col>
+						<TextField
+							inline
+							label="Anthem"
+							id={`${props.team._id}-anthem-editor`}
+							fallbackValue={props.team.anthem}
+							onChange={(_, newValue) => {
+								setPlayAnthem(false);
+								setAnthem(newValue);
+								return {
+									value: newValue,
+									isValid: true,
+								}
+							}}
+						/>
 					</Col>
 					<Col md="auto">
 						<Button onClick={() => teamAnthem?.length > 0 && setPlayAnthem(!playAnthem)}>
@@ -136,18 +158,20 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 						<Button
 							variant="secondary"
 							disabled={
-								(image === props.team.image  || image === undefined)
-								&& (anthem === props.team.anthem || anthem === undefined)
+								(name === props.team.name  || name === undefined)
+								&& (image === props.team.image  || image === undefined)
 								&& (color === props.team.anthem || color === undefined)
+								&& (anthem === props.team.anthem || anthem === undefined)
 							}
 							onClick={(event: any) => {patchTeam(
 								dispatch,
 								token,
 								props.contestId,
 								{
-									image: image,
 									_id: props.team._id,
+									name: name,
 									anthem: anthem,
+									image: image,
 									color
 								} as Store.ContestTeam)
 							}}
