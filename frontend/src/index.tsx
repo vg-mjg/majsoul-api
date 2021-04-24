@@ -228,6 +228,16 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				...state,
 				...updatedContestRecord(state, action.contest._id, action.contest)
 			}
+		} case ActionType.TeamCreated: {
+			return {
+				...state,
+				...updatedContestRecord(state, action.contestId, {
+					teams: {
+						...state.contestsById[action.contestId].teams,
+						[action.team._id]: action.team
+					}
+				})
+			}
 		}
 	}
 

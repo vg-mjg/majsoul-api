@@ -83,7 +83,10 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			.slice(0, 4);
 	});
 
-	const contest = useSelector((state: IState) => state.contestsById[props.contestId])
+	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
+	if (contest == null) {
+		return null;
+	}
 
 	const dispatch = useDispatch();
 

@@ -19,6 +19,7 @@ export enum ActionType {
 	GetContests = "GetContests",
 	ContestPatched = "ContestPatched",
 	ContestCreated = "ContestCreated",
+	TeamCreated = "TeamCreated",
 }
 
 export type MajsoulAction = SummaryRetrievedAction
@@ -32,7 +33,13 @@ export type MajsoulAction = SummaryRetrievedAction
 	| GetContests
 	| CreateContest
 	| ContestPatched
-	| LogOutAction;
+	| LogOutAction
+	| TeamCreatedAction;
+
+export interface TeamCreatedAction extends Action<ActionType.TeamCreated> {
+	contestId: string;
+	team: Store.ContestTeam;
+}
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
 	contest: Store.Contest<string>;
@@ -310,6 +317,28 @@ export async function createGame(dispatch: Dispatch, token: string, game: Partia
 	return await response.json();
 }
 
+export async function createTeam(dispatch: Dispatch<TeamCreatedAction>, token: string, contestId: string): Promise<Store.ContestTeam> {
+	const url = buildApiUrl(`contests/${contestId}/teams/`);
+	const response = await fetch(
+		url.toString(),
+		{
+			method: "PUT",
+			headers: {
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${token}`
+			},
+		}
+	);
+	const team = await response.json();
+	dispatch({
+		contestId,
+		type: ActionType.TeamCreated,
+		team,
+	});
+	return team;
+}
+
 export async function deleteGame(dispatch: Dispatch, token: string, id: string): Promise<void> {
 	const url = buildApiUrl(`games/${id}`);
 	const response = await fetch(
@@ -377,6 +406,7 @@ export function logout(dispatch: Dispatch<LogOutAction>) {
 }
 
 export function patchTeam(dispatch: Dispatch<PatchTeam>, token: string, contestId: string, team: Store.ContestTeam): Promise<unknown> {
+	console.log(team.image);
 	const url = buildApiUrl(`contests/${contestId}/teams/${team._id}`);
 	return fetch(
 		url.toString(),

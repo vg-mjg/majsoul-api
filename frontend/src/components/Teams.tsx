@@ -9,7 +9,7 @@ import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import Form from "react-bootstrap/Form";
-import { patchTeam } from "../Actions";
+import { createTeam, patchTeam } from "../Actions";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
 
@@ -41,8 +41,8 @@ const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
 export function Team(props: {contestId: string, team: Store.ContestTeam, score?: number, placing?: number}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
-	const [image, setImage] = React.useState(props.team.image ?? defaultImage);
-	const [anthem, setAnthem] = React.useState(props.team?.anthem);
+	const [image, setImage] = React.useState<string>();
+	const [anthem, setAnthem] = React.useState<string>();
 	const [playAnthem, setPlayAnthem] = React.useState(false);
 	const [color, setColor] = React.useState<string>();
 	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
@@ -55,9 +55,11 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 		};
 	}, [setColor]);
 
+	const teamAnthem = anthem ?? props.team.anthem ?? "";
+
 	const dispatch = useDispatch();
 	return <Accordion as={Container} className="p-0">
-		{(anthem?.length > 0) && <SongPlayer videoId={anthem} play={playAnthem}/> }
+		{(teamAnthem?.length > 0) && <SongPlayer videoId={teamAnthem} play={playAnthem}/> }
 		<Accordion.Toggle disabled as={Row} eventKey={(token == null ? -1 : 0).toString()} className="no-gutters align-items-center flex-nowrap">
 			{props.placing != null && <Col md="auto" className="mr-3"> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
@@ -68,7 +70,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 						margin: 0,
 						height: 64,
 						width: 64,
-						backgroundImage: `url(${image})`,
+						backgroundImage: `url(${image ?? props.team.image ?? defaultImage})`,
 						backgroundRepeat: "no-repeat",
 						backgroundPosition: "center",
 						backgroundSize: "contain"
@@ -79,7 +81,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 						const input = event.target as HTMLInputElement;
 						if (input.files && input.files[0]) {
 							reader.onload = function(e) {
-								setImage(e.target.result);
+								setImage(e.target.result.toString());
 							}
 							reader.readAsDataURL(input.files[0]);
 						}
@@ -90,7 +92,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 				<Container className="p-0">
 					<Row className="no-gutters">
 						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid #${props.team.color}`}}>
-							{props.team.name.toLocaleLowerCase()}
+							{props.team.name?.toLocaleLowerCase() ?? `#${props.team._id}`}
 						</Col>
 					</Row>
 				</Container>
@@ -107,7 +109,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 							// readOnly={!token || !editTime}
 							// isInvalid={timeIsInvalid}
 							// className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
-							value={anthem}
+							value={teamAnthem}
 							onChange={event => {
 								setPlayAnthem(false);
 								setAnthem(event.target.value);
@@ -115,7 +117,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 							/>
 					</Col>
 					<Col md="auto">
-						<Button onClick={() => anthem?.length > 0 && setPlayAnthem(!playAnthem)}>
+						<Button onClick={() => teamAnthem?.length > 0 && setPlayAnthem(!playAnthem)}>
 							{playAnthem ? "Stop" : "Play"}
 						</Button>
 					</Col>
@@ -134,7 +136,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 						<Button
 							variant="secondary"
 							disabled={
-								(props.team.image === image || image === defaultImage)
+								(image === props.team.image  || image === undefined)
 								&& (anthem === props.team.anthem || anthem === undefined)
 								&& (color === props.team.anthem || color === undefined)
 							}
@@ -155,13 +157,25 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 			</Container>
 		</Accordion.Collapse>
 	</Accordion>;
+}
 
+function TeamRow(props: {
+	first?: boolean,
+	children: React.ReactNode,
+}): JSX.Element {
+	return <Row className={`${props.first ? "" : "mt-3"} no-gutters text-center`} style={{maxWidth: 640, margin: "auto"}}>
+		<Col>
+			{props.children}
+		</Col>
+	</Row>
 }
 
 export function Teams(props: {
 	contest?: Contest;
 	session?: Rest.Session;
 }): JSX.Element {
+	const token = useSelector((state: IState) => state.user?.token);
+
 	const teams = props.contest?.teams;
 	if (!teams) {
 		return null;
@@ -172,13 +186,29 @@ export function Teams(props: {
 		teamsArray = teamsArray.map(team => ({...team, total: props.session.aggregateTotals[team._id]})).sort((a, b) => b.total - a.total);
 	}
 
+	const dispatch = useDispatch();
+
+	const addTeamOnClick = React.useCallback(() => {
+		const id = props.contest._id;
+		if (id == null) {
+			return;
+		}
+
+		createTeam(dispatch, token, id);
+	}, []);
+
 	return <Container className="rounded bg-dark text-light px-3 py-4">
-		{teamsArray.map((team, placing) => <Row key={team._id} className={`${placing > 0 ? "mt-3" : ""} no-gutters`} style={{maxWidth: 640, margin: "auto"}}>
-			<Team
-				contestId={props.contest?._id}
-				team={team}
-				score={props.session?.aggregateTotals[team._id]}
-				placing={placing + 1} />
-		</Row>)}
+		{teamsArray.map((team, placing) =>
+			<TeamRow first={placing === 0}>
+				<Team
+					contestId={props.contest?._id}
+					team={team}
+					score={props.session?.aggregateTotals[team._id]}
+					placing={placing + 1} />
+			</TeamRow>
+		)}
+		{token && <TeamRow>
+			<Button onClick={addTeamOnClick}>Add Team</Button>
+		</TeamRow>}
 	</Container>;
 }
