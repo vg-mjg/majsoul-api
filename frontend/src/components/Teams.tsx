@@ -39,7 +39,13 @@ export function jpNumeral(value: number): string {
 
 const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
-export function Team(props: {contestId: string, team: Store.ContestTeam, score?: number, placing?: number}): JSX.Element {
+export function Team(props: {
+	contestId: string,
+	team: Store.ContestTeam,
+	score?: number,
+	placing: number,
+	maxPlaceLength: number,
+}): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
 	const [name, setName] = React.useState<string>();
 	const [image, setImage] = React.useState<string>();
@@ -62,7 +68,7 @@ export function Team(props: {contestId: string, team: Store.ContestTeam, score?:
 	return <Accordion as={Container} className="p-0">
 		{(teamAnthem?.length > 0) && <SongPlayer videoId={teamAnthem} play={playAnthem}/> }
 		<Accordion.Toggle disabled as={Row} eventKey={(token == null ? -1 : 0).toString()} className="no-gutters align-items-center flex-nowrap">
-			{props.placing != null && <Col md="auto" className="mr-3"> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
+			{props.placing != null && <Col md="auto" className="mr-3 text-right" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}}> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
 				<label
 					className="rounded"
@@ -228,6 +234,8 @@ export function Teams(props: {
 		createTeam(dispatch, token, id);
 	}, []);
 
+	const maxPlaceLength = jpNumeral(teamsArray.length).length;
+
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		{teamsArray.map((team, placing) =>
 			<TeamRow key={team._id} first={placing === 0}>
@@ -235,7 +243,9 @@ export function Teams(props: {
 					contestId={props.contest?._id}
 					team={team}
 					score={props.session?.aggregateTotals[team._id]}
-					placing={placing + 1} />
+					placing={placing + 1}
+					maxPlaceLength={maxPlaceLength}
+				/>
 			</TeamRow>
 		)}
 		{token && <TeamRow>
