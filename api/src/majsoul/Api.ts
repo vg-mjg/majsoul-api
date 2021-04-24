@@ -28,7 +28,7 @@ export class Api {
 		const config = await Api.getRes<any>(majsoulUrl + `${resInfo.res["config.json"].prefix}/config.json`);
 		const ipDef = config.ip.filter((x) => x.name === "player")[0];
 		const serverListUrl = (ipDef.region_urls.mainland
-			|| ipDef.region_urls[Object.keys(ipDef.region_urls)[0]]) + "?service=ws-gateway&protocol=ws&ssl=true";
+			|| ipDef.region_urls[0].url) + "?service=ws-gateway&protocol=ws&ssl=true";
 		const serverList = await Api.getRes<any>(serverListUrl);
 		if (serverList.maintenance) {
 			console.log("Maintenance in progress");

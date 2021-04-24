@@ -41,11 +41,11 @@ export interface Contest<Id = any> extends Partial<majsoul.Contest> {
 
 export interface ContestTeam<Id = any> {
 	_id: Id;
-	name: string;
-	image: string;
-	players: Player<Id>[];
-	color: string;
-	anthem: string;
+	name?: string;
+	image?: string;
+	players?: Player<Id>[];
+	color?: string;
+	anthem?: string;
 }
 
 export interface Match<Id = any> {

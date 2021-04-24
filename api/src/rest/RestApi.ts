@@ -1041,6 +1041,7 @@ export class RestApi {
 			param("id").isMongoId(),
 			param("teamId").isMongoId(),
 			body(nameofTeam('image')).isString().optional({nullable: true}),
+			body(nameofTeam('name')).isString().optional({nullable: true}),
 			body(nameofTeam('anthem')).isString().optional({nullable: true}),
 			body(nameofTeam('color')).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({nullable: true}),
 			withData<
@@ -1098,6 +1099,87 @@ export class RestApi {
 					console.log(err);
 					res.status(500).send(err);
 				})
+			}
+		))
+
+		.put(
+			'/contests/:id/teams/',
+			param("id").isMongoId(),
+			withData<
+				{
+					id: string;
+				},
+				any,
+				store.ContestTeam<ObjectId>
+			>(async (data, req, res) => {
+				const contest = await this.findContest(data.id);
+
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const team = {
+					_id: new ObjectId()
+				};
+
+				await this.mongoStore.contestCollection.findOneAndUpdate(
+					{
+						_id: contest._id,
+					},
+					{
+						$push: {
+							teams: team
+						}
+					},
+					{ returnOriginal: false, projection: { teams: true } }
+				)
+
+				res.send(team);
+			}
+		))
+
+		.delete(
+			'/contests/:id/teams/:teamId',
+			param("id").isMongoId(),
+			param("teamId").isMongoId(),
+			withData<
+				{
+					id: string;
+					teamId: string;
+				},
+				any,
+				store.ContestTeam<ObjectId>
+			>(async (data, req, res) => {
+				const [contest] = await this.mongoStore.contestCollection.find(
+					{
+						_id: new ObjectId(data.id),
+						teams: { $elemMatch: { _id: new ObjectId(data.teamId) } }
+					},
+				).toArray();
+
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const teamId = new ObjectId(data.teamId);
+
+				await this.mongoStore.contestCollection.findOneAndUpdate(
+					{
+						_id: contest._id,
+					},
+					{
+						$pull: {
+							teams: {
+								_id: teamId
+							}
+						}
+					},
+					{ returnOriginal: false, projection: { teams: true } }
+				)
+
+				res.send();
 			}
 		))
 
