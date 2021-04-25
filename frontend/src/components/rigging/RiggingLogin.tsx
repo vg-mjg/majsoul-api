@@ -31,7 +31,7 @@ export function RiggingLogin() {
 			history.push('/');
 		})
 		event.preventDefault();
-	}, [setPassword]);
+	}, [username, password, setPassword]);
 
 	const onUserNameChanged = React.useCallback((event: any) => {
 		setUsername(event.target.value as string)
@@ -47,12 +47,12 @@ export function RiggingLogin() {
 				<Form
 					className="bg-dark rounded p-4"
 					style={{minWidth: "360px"}}
-					onSubmit={(event: React.FormEvent<HTMLFormElement>) => this.onFormSubmit(event)}
+					onSubmit={onFormSubmit}
 				>
 					<Form.Group as={Form.Row}>
 						<Form.Control
 							placeholder="Username"
-							value={this.state.username}
+							value={username}
 							onChange={onUserNameChanged}
 						/>
 					</Form.Group>
@@ -60,13 +60,13 @@ export function RiggingLogin() {
 						<Form.Control
 							type="password"
 							placeholder="Password"
-							value={this.state.password}
+							value={password}
 							onChange={onPasswordChanged}
 						/>
 					</Form.Group>
 					<Form.Row className="align-items-center">
 						<Col>
-							{this.state.failed && <u className="text-danger" >Invalid username or password.</u>}
+							{failed && <u className="text-danger" >Invalid username or password.</u>}
 						</Col>
 						<Col md="auto">
 							<Button variant="secondary" type="submit">
