@@ -358,8 +358,7 @@ export class RestApi {
 				.catch(error => res.status(500).send(error));
 		}));
 
-		this.app.get<any, store.GameResult<ObjectId>>(
-			'/games/:id',
+		this.app.get<any, store.GameResult<ObjectId>>('/games/:id',
 			param("id").isMongoId(),
 			withData<{id: string}, any, store.GameResult<ObjectId>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
@@ -375,8 +374,7 @@ export class RestApi {
 			})
 		)
 
-		this.app.get(
-			'/contests/:id/pendingGames',
+		this.app.get('/contests/:id/pendingGames',
 			param("id").isMongoId(),
 			withData<{id: string}, any, store.GameResult<ObjectId>[]>(async (data, req, res) => {
 				const games = await this.mongoStore.gamesCollection.find({
@@ -408,8 +406,7 @@ export class RestApi {
 			});
 		});
 
-		this.app.get(
-			'/contests/:id/sessions',
+		this.app.get('/contests/:id/sessions',
 			param("id").isMongoId(),
 			withData<{id: string}, any, Session<ObjectId>[]>(async (data, req, res) => {
 				const contest = await this.findContest(data.id);
@@ -773,8 +770,7 @@ export class RestApi {
 			next();
 		})
 
-		.patch<any, store.Contest<ObjectId>>(
-			'/contests/:id',
+		.patch<any, store.Contest<ObjectId>>('/contests/:id',
 			param("id").isMongoId(),
 			body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({min: 100000, lt: 1000000}).optional({nullable: true}),
 			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
@@ -861,8 +857,7 @@ export class RestApi {
 			}
 		)
 
-		.put<any, string>(
-			'/games',
+		.put<any, string>('/games',
 			body(nameofGameResult('contestId')).isMongoId().isString(),
 			body(nameofGameResult('majsoulId')).isString(),
 			logError<any, string>(
@@ -897,8 +892,7 @@ export class RestApi {
 			)
 		)
 
-		.delete<any, void>(
-			'/games/:id',
+		.delete<any, void>('/games/:id',
 			param("id").isMongoId(),
 			logError(async (req, res) => {
 				const errors = validationResult(req);
@@ -921,8 +915,7 @@ export class RestApi {
 			this.mongoStore.contestCollection.insertOne({}).then(result => res.send({ _id: result.insertedId.toHexString() }));
 		})
 
-		.delete<any, void>(
-			'/contests/:id',
+		.delete<any, void>('/contests/:id',
 			param("id").isMongoId(),
 			logError(async (req, res) => {
 				const errors = validationResult(req);
@@ -955,8 +948,7 @@ export class RestApi {
 			})
 		)
 
-		.patch<any, store.Config<ObjectId>>(
-			'/config',
+		.patch<any, store.Config<ObjectId>>('/config',
 			body(nameofConfig('featuredContest')).isMongoId().optional({nullable: true}),
 			withData<Partial<store.Config<string>>, any, store.Config<ObjectId>>(async (data, req, res) => {
 				if (data.featuredContest != null) {
@@ -1036,8 +1028,7 @@ export class RestApi {
 			})
 		})
 
-		.patch(
-			'/contests/:id/teams/:teamId',
+		.patch('/contests/:id/teams/:teamId',
 			param("id").isMongoId(),
 			param("teamId").isMongoId(),
 			body(nameofTeam('image')).isString().optional({nullable: true}),
@@ -1102,8 +1093,7 @@ export class RestApi {
 			}
 		))
 
-		.put(
-			'/contests/:id/teams/',
+		.put('/contests/:id/teams/',
 			param("id").isMongoId(),
 			withData<
 				{
@@ -1139,8 +1129,7 @@ export class RestApi {
 			}
 		))
 
-		.delete(
-			'/contests/:id/teams/:teamId',
+		.delete('/contests/:id/teams/:teamId',
 			param("id").isMongoId(),
 			param("teamId").isMongoId(),
 			withData<
