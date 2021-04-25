@@ -351,7 +351,7 @@ export class RestApi {
 				.sort({_id:-1})
 				.limit(1)
 				.project({
-					sessions: 0
+					_id: true
 				})
 				.toArray()
 				.then(contests => res.send(contests[0]))
@@ -746,6 +746,41 @@ export class RestApi {
 					.map((p, i) => ({...p, tourneyRank: i}))
 				);
 		}));
+
+		this.app.get('/players',
+			query("name").optional(),
+			query("limit").isInt({gt: 0}).optional(),
+			withData<{
+				name?: string;
+				limit?: string;
+			}, any, store.Player<ObjectId>[]>(async (data, req, res) => {
+				const cursor = this.mongoStore.playersCollection.find(
+					{
+						$or: [
+							{
+								displayName: { $regex: new RegExp(`^${data.name}.*$`), $options: "i" }
+							},
+							{
+								nickname: { $regex: new RegExp(`^${data.name}.*$`), $options: "i" }
+							}
+						],
+					},
+					{
+						projection: {
+							_id: true,
+							nickname: true,
+							displayName: true,
+						}
+					}
+				)
+
+				if (data.limit) {
+					cursor.limit(parseInt(data.limit))
+				}
+
+				res.send(await cursor.toArray());
+			})
+		)
 	}
 
 	private findContest(contestId: string, options?: FindOneOptions): Promise<store.Contest<ObjectId>> {
