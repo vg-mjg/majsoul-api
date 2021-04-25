@@ -2,12 +2,13 @@ import { Rest } from "majsoul-api";
 import { buildApiUrl } from "./utils";
 
 interface FetchContestPlayerParams {
-	contestId: string,
-	gameLimit?: number,
-	ignoredGames?: number,
+	contestId: string;
+	gameLimit?: number;
+	ignoredGames?: number;
+	teamId?: string;
 }
 
-export function fetchContestPlayers(
+export async function fetchContestPlayers(
 	params: FetchContestPlayerParams,
 ): Promise<Array<Rest.ContestPlayer<any>>> {
 	const url = buildApiUrl(`contests/${params.contestId}/players`);
@@ -20,8 +21,17 @@ export function fetchContestPlayers(
 		queryParameters.ignoredGames = params.ignoredGames.toString();
 	}
 
+	if (params.teamId != null) {
+		queryParameters.teamId = params.teamId;
+	}
+
 	url.search = new URLSearchParams(queryParameters).toString();
 
-	return fetch(url.toString())
-		.then(response => response.json());
+	const response = await fetch(url.toString());
+	if (response.status !== 200) {
+		throw {
+			status: response.status
+		};
+	}
+	return await response.json();
 }

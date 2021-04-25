@@ -645,7 +645,7 @@ export class RestApi {
 					return;
 				}
 
-				const playerIds = team?.players.map(player => player._id) ?? [];
+				const playerIds = team?.players?.map(player => player._id) ?? [];
 
 				const gameQuery: FilterQuery<store.GameResult<ObjectId>> = {
 					contestId: contest._id,
