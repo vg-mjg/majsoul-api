@@ -18,6 +18,7 @@ import { fetchContestPlayers, fetchPlayers } from "src/api/Players";
 import Spinner from "react-bootstrap/Spinner";
 import { css } from 'astroturf';
 import clsx from "clsx";
+import { BsX } from 'react-icons/bs';
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -52,9 +53,27 @@ const styles = css`
 			color: LightGray;
 		}
 	}
+
+	.searchResult {
+		cursor: pointer;
+		&:hover {
+			color: LightGray;
+			text-decoration: underline;
+		}
+	}
+
+	.removePlayerIcon {
+		cursor: pointer;
+		&:hover {
+			color: LightGray;
+		}
+	}
 `;
 
-function PlayerSearch(props: {}): JSX.Element {
+function PlayerSearch(props: {
+	excludedPlayerIds: string[];
+	onSelect?: (player: Store.Player<string>) => void;
+}): JSX.Element {
 	const [searchString, setSearchString] = React.useState<string>();
 	const [searchTaskId, setSearchTaskId] = React.useState<any>();
 	const [players, setPlayers] = React.useState<Store.Player<string>[]>([]);
@@ -62,33 +81,57 @@ function PlayerSearch(props: {}): JSX.Element {
 		if (searchTaskId) {
 			clearTimeout(searchTaskId);
 		}
+
+		if (searchString == null || searchString === "") {
+			setPlayers([]);
+			return;
+		}
+
 		setSearchTaskId(setTimeout(() => {
 			fetchPlayers({
 				name: searchString,
 				limit: 10,
-			}).then(players => setPlayers(players))
+			}).then(players => setPlayers(players
+				.filter(player => props.excludedPlayerIds.indexOf(player._id) < 0)))
 		}, 1000))
-	}, [searchString]);
+	}, [searchString, props.excludedPlayerIds]);
 
 	return <Container>
-		<TextField
-			id="player-search"
-			placeholder="Add Player"
-			fallbackValue={searchString}
-			onChange={(oldValue, newValue) => {
-				setSearchString(newValue);
-				return {
-					value: newValue,
-					isValid: true,
-				}
-			}}
-		/>
+		<Row>
+			<TextField
+				id="player-search"
+				placeholder="Add Player"
+				fallbackValue={searchString}
+				className="text-left"
+				onChange={(oldValue, newValue) => {
+					setSearchString(newValue);
+					return {
+						value: newValue,
+						isValid: true,
+					}
+				}}
+			/>
+		</Row>
 		{
-			players.map(player => <Row key={player._id}>
-				<Col>
-					{player.nickname}
-				</Col>
-			</Row>)
+			players.map(player =>
+				<Row
+					key={player._id}
+					className={clsx("py-1", styles.searchResult)}
+					onClick={() => {
+						setSearchString("");
+						if (props.onSelect) {
+							props.onSelect(player);
+						}
+					}}
+				>
+					<Col className="text-left">
+						{player.nickname}
+					</Col>
+					<Col className="text-right">
+						{player.displayName}
+					</Col>
+				</Row>
+			)
 		}
 	</Container>
 }
@@ -107,6 +150,7 @@ function Team(props: {
 	const [playAnthem, setPlayAnthem] = React.useState(false);
 	const [viewDetails, setViewDetails] = React.useState(false);
 	const [apiPlayers, setApiPlayers] = React.useState<Rest.ContestPlayer<string>[]>(null);
+	const [editedPlayers, setEditedPlayers] = React.useState<Partial<Rest.ContestPlayer<string>>[]>(null);
 	const [color, setColor] = React.useState<string>();
 	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
 		const isValid = colorRegex.test(newValue);
@@ -137,6 +181,9 @@ function Team(props: {
 	}, [setViewDetails])
 
 	const dispatch = useDispatch();
+
+	const players = editedPlayers ?? apiPlayers;
+
 	return <Accordion
 		as={Container}
 		className="p-0"
@@ -189,20 +236,25 @@ function Team(props: {
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
-				{ apiPlayers == null
+				{ players == null
 					? <Spinner animation="border" role="status">
 						<span className="sr-only">Loading...</span>
 					</Spinner>
 					: <Container className="p-0">
-						{[...apiPlayers].sort((a, b) => a.tourneyRank - b.tourneyRank).map(player =>
+						{[...players].sort((a, b) => a.tourneyRank - b.tourneyRank).map(player =>
 							<Row key={player._id} className="no-gutters py-1">
 								<Col md="auto" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}} className="mr-3"/>
-								<Col md="auto" style={{minWidth: 64}} className="mr-3"/>
+								<Col md="auto" style={{minWidth: 64}} className="mr-3">
+									{token && <BsX
+										className={styles.removePlayerIcon}
+										onClick={() => setEditedPlayers(players.filter(p => p._id !== player._id))}
+									/>}
+								</Col>
 								<Col className="text-left">
-									{player.displayName}
+									{player.displayName ?? player.nickname}
 								</Col>
 								<Col className="text-right">
-									{player.tourneyScore / 1000}
+									{(player.tourneyScore ?? 0) / 1000}
 								</Col>
 							</Row>
 						)}
@@ -227,6 +279,41 @@ function Team(props: {
 										}
 									}}
 								/>
+							</Col>
+							<Col md="auto">
+								<Button
+									onClick={() =>
+										deleteTeam(token, props.contestId, props.team._id)
+											.then(() => dispatchTeamDeletedAction(dispatch, props.contestId, props.team._id))
+									}
+								>
+									Delete
+								</Button>
+							</Col>
+							<Col md="auto">
+								<Button
+									variant="secondary"
+									disabled={
+										(name === props.team.name  || name === undefined)
+										&& (image === props.team.image  || image === undefined)
+										&& (color === props.team.anthem || color === undefined)
+										&& (anthem === props.team.anthem || anthem === undefined)
+										&& (editedPlayers == null)
+									}
+									onClick={(event: any) => {
+										patchTeam(
+											token,
+											props.contestId,
+											{
+												_id: props.team._id,
+												name: name,
+												anthem: anthem,
+												image: image,
+												color
+											} as Store.ContestTeam
+										).then(team => dispatchTeamPatchedAction(dispatch, props.contestId, team))
+									}}
+								>Save</Button>
 							</Col>
 						</Row>
 						<Row>
@@ -262,42 +349,13 @@ function Team(props: {
 									inline
 								/>
 							</Col>
-							<Col md="auto">
-								<Button
-									onClick={() =>
-										deleteTeam(token, props.contestId, props.team._id)
-											.then(() => dispatchTeamDeletedAction(dispatch, props.contestId, props.team._id))
-									}
-								>
-									Delete
-								</Button>
-							</Col>
-							<Col md="auto">
-								<Button
-									variant="secondary"
-									disabled={
-										(name === props.team.name  || name === undefined)
-										&& (image === props.team.image  || image === undefined)
-										&& (color === props.team.anthem || color === undefined)
-										&& (anthem === props.team.anthem || anthem === undefined)
-									}
-									onClick={(event: any) => {
-										patchTeam(
-											token,
-											props.contestId,
-											{
-												_id: props.team._id,
-												name: name,
-												anthem: anthem,
-												image: image,
-												color
-											} as Store.ContestTeam
-										).then(team => dispatchTeamPatchedAction(dispatch, props.contestId, team))
-									}}
-								>Save</Button>
-							</Col>
 						</Row>
-						<Row><PlayerSearch/></Row>
+						<Row>
+							<PlayerSearch
+								excludedPlayerIds={(players ?? []).map(player => player._id)}
+								onSelect={(player) => setEditedPlayers([...(players ?? []), player])}
+							/>
+						</Row>
 					</Container>
 				}
 			</>

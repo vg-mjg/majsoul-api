@@ -47,7 +47,7 @@ export function TextField(props: {
 				readOnly={!props.isLocked && !isEditing}
 				isInvalid={!isValid}
 				type={props.type}
-				className={clsx(!inline && "text-right", !isEditing && " text-light", props.className)}
+				className={clsx((props.label && !inline) && "text-right", !isEditing && " text-light", props.className)}
 				value={value === undefined ? props.fallbackValue ?? "" : value === null ? "" : value}
 				placeholder={placeholder}
 				onChange={event => {
