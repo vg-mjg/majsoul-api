@@ -10,7 +10,7 @@ import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
 import { map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
-import { body, matchedData, param, validationResult } from 'express-validator';
+import { body, matchedData, param, query, validationResult } from 'express-validator';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -339,6 +339,26 @@ export class RestApi {
 				.catch(error => res.status(500).send(error));
 		});
 
+		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
+			this.findContest(req.params.id,
+				{
+					projection: {
+						sessions: 0
+					}
+				}
+			).then((contest) => {
+				if (contest === null) {
+					res.status(404).send();
+					return;
+				}
+				res.send(contest);
+			})
+			.catch(error => {
+				console.log(error);
+				res.status(500).send(error)
+			});
+		});
+
 		this.app.get<any, store.Contest<ObjectId>>('/contests/featured', logError(async (req, res) => {
 			const [config] = await this.mongoStore.configCollection.find().limit(1).toArray();
 			const query: FilterQuery<store.Contest<ObjectId>> = {};
@@ -386,30 +406,16 @@ export class RestApi {
 			})
 		)
 
-		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
-			this.findContest(req.params.id,
-				{
-					projection: {
-						sessions: 0
-					}
-				}
-			).then((contest) => {
-				if (contest === null) {
-					res.status(404).send();
-					return;
-				}
-				res.send(contest);
-			})
-			.catch(error => {
-				console.log(error);
-				res.status(500).send(error)
-			});
-		});
-
 		this.app.get('/contests/:id/sessions',
 			param("id").isMongoId(),
 			withData<{id: string}, any, Session<ObjectId>[]>(async (data, req, res) => {
-				const contest = await this.findContest(data.id);
+				const contest = await this.findContest(data.id, {
+					projection: {
+						_id: true,
+						'teams._id': true,
+						'teams.players._id': true,
+					}
+				});
 				if (contest == null) {
 					res.sendStatus(404);
 					return;
@@ -543,16 +549,15 @@ export class RestApi {
 
 		this.app.get<any, GameResult[]>('/contests/:contestId/players/:playerId/games', async (req, res) => {
 			try {
-				const contest = await this.findContest(req.params.contestId);
-
-				if (contest == null) {
+				const contestId = await this.contestExists(req.params.contestId);
+				if (!contestId) {
 					res.sendStatus(404);
 					return;
 				}
 
 				const games = await this.mongoStore.gamesCollection.find(
 					{
-						contestId: contest._id,
+						contestId: contestId,
 						$or: [
 							{ notFoundOnMajsoul: false },
 							{ contestMajsoulId: { $exists: true } }
@@ -563,7 +568,7 @@ export class RestApi {
 
 				res.send(games.map(game => ({
 					...game,
-					contestId: contest._id
+					contestId: contestId
 				})));
 			} catch (error){
 				console.log(error);
@@ -573,16 +578,15 @@ export class RestApi {
 
 		this.app.get<any, GameResult[]>('/contests/:contestId/yakuman', async (req, res) => {
 			try {
-				const contest = await this.findContest(req.params.contestId);
-
-				if (contest == null) {
+				const contestId = await this.contestExists(req.params.contestId);
+				if (!contestId) {
 					res.sendStatus(404);
 					return;
 				}
 
 				const games = await this.mongoStore.gamesCollection.find(
 					{
-						contestId: contest._id,
+						contestId: contestId,
 						$or: [
 							{ notFoundOnMajsoul: false },
 							{ contestMajsoulId: { $exists: true } }
@@ -598,7 +602,7 @@ export class RestApi {
 					))
 					.map(game => ({
 						...game,
-						contestId: contest._id
+						contestId: contestId
 					}))
 				);
 			} catch (error){
@@ -607,32 +611,66 @@ export class RestApi {
 			}
 		});
 
-		this.app.get<any, ContestPlayer[]>('/contests/:id/players', async (req, res) => {
-			try {
-				const contest = await this.findContest(req.params.id);
+		this.app.get('/contests/:id/players',
+			param("id").isMongoId(),
+			query("gameLimit").isInt({min: 0}).optional(),
+			query("ignoredGames").isInt({min: 0}).optional(),
+			query("teamId").isMongoId().optional(),
+			withData<{
+				id: string;
+				teamId?: string;
+				gameLimit?: string;
+				ignoredGames?: string;
+			}, any, ContestPlayer[]>(async (data, req, res) => {
+				const contest = await this.findContest(data.id, {
+					projection: {
+						_id: true,
+						'teams._id': true,
+						'teams.players._id': true,
+						majsoulFriendlyId: true,
+						bonusPerGame: true,
+					}
+				});
 
 				if (contest == null) {
 					res.sendStatus(404);
 					return;
 				}
+
 				const contestMajsoulFriendlyId = contest.majsoulFriendlyId?.toString() ?? "";
 
-				const games = await this.mongoStore.gamesCollection.find(
-					{
-						contestId: contest._id,
-						$or: [
-							{ notFoundOnMajsoul: false},
-							{ contestMajsoulId: { $exists: true } }
-						],
+				const team = data.teamId && contest.teams.find(team => team._id.equals(data.teamId));
+				if (data.teamId && !team) {
+					res.status(400).send(`Team ${data.teamId} doesn't exist` as any);
+					return;
+				}
+
+				const playerIds = team?.players.map(player => player._id) ?? [];
+
+				const gameQuery: FilterQuery<store.GameResult<ObjectId>> = {
+					contestId: contest._id,
+					$or: [
+						{ notFoundOnMajsoul: false },
+						{ contestMajsoulId: { $exists: true } }
+					],
+				}
+
+				if (data.teamId) {
+					gameQuery["players._id"] = {
+						$in: playerIds
 					}
+				}
+
+				const games = await this.mongoStore.gamesCollection.find(
+					gameQuery
 				).toArray();
 
-				let gameLimit = parseInt(req.query?.gameLimit as string);
+				let gameLimit = parseInt(data.gameLimit);
 				if (isNaN(gameLimit)) {
 					gameLimit = Infinity;
 				}
 
-				let ignoredGames = parseInt(req.query?.ignoredGames as string);
+				let ignoredGames = parseInt(data.ignoredGames);
 				if (isNaN(ignoredGames)) {
 					ignoredGames = 0;
 				}
@@ -640,6 +678,10 @@ export class RestApi {
 				const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
 					game.players.forEach((player, index) => {
 						if (player == null) {
+							return;
+						}
+
+						if (data.teamId && !playerIds.find(id => id.equals(player._id))) {
 							return;
 						}
 
@@ -684,7 +726,7 @@ export class RestApi {
 				}
 
 				const players = await this.mongoStore.playersCollection.find(
-					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id) } },
+					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id).concat(playerIds) } },
 					{ projection: { majsoulId: 0 } }
 				).toArray();
 
@@ -703,11 +745,7 @@ export class RestApi {
 					.sort((a, b) => b.tourneyScore - a.tourneyScore)
 					.map((p, i) => ({...p, tourneyRank: i}))
 				);
-			} catch (error){
-				console.log(error);
-				res.status(500).send(error)
-			}
-		});
+		}));
 	}
 
 	private findContest(contestId: string, options?: FindOneOptions): Promise<store.Contest<ObjectId>> {
@@ -716,8 +754,17 @@ export class RestApi {
 				{ majsoulFriendlyId: parseInt(contestId) },
 				{ _id: ObjectId.isValid(contestId) ? ObjectId.createFromHexString(contestId) : null },
 			]},
-			options
+			options ?? {
+				projection: {
+					'teams.image': false,
+					sessions: false,
+				}
+			}
 		);
+	}
+
+	private contestExists(contestId: string): Promise<ObjectId> {
+		return this.findContest(contestId, { projection: { _id: true }}).then(contest => contest?._id);
 	}
 
 	public async init(root: {username: string, password: string}) {
@@ -1102,9 +1149,8 @@ export class RestApi {
 				any,
 				store.ContestTeam<ObjectId>
 			>(async (data, req, res) => {
-				const contest = await this.findContest(data.id);
-
-				if (contest == null) {
+				const contestId = await this.contestExists(data.id);
+				if (!contestId) {
 					res.sendStatus(404);
 					return;
 				}
@@ -1115,7 +1161,7 @@ export class RestApi {
 
 				await this.mongoStore.contestCollection.findOneAndUpdate(
 					{
-						_id: contest._id,
+						_id: contestId,
 					},
 					{
 						$push: {
