@@ -1,5 +1,4 @@
 import * as React from "react";
-import { fetchContestPlayerGames } from "../actions/Actions";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -10,6 +9,8 @@ import moment = require("moment");
 import { TeamIcon } from "./TeamIcon";
 import { IState } from "src/State";
 import { getSeatCharacter } from "./GameResultSummary";
+import { fetchContestPlayerGames } from "src/api/Games";
+import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 
 export function ContestPlayerDisplay(props: {
 	contestId: string;
@@ -40,7 +41,8 @@ export function ContestPlayerDisplay(props: {
 			return;
 		}
 
-		fetchContestPlayerGames(dispatch, props.contestId, props.contestPlayer._id);
+		fetchContestPlayerGames(props.contestId, props.contestPlayer._id)
+			.then(games => dispatchGamesRetrievedAction(dispatch, games));
 	}, [props.contestId, props.contestPlayer._id, loadGames]);
 
 	const gamesPlayed = Math.max(0, props.contestPlayer.gamesPlayed - ignoredGames);

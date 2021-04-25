@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import { getRiggingToken } from "src/api/Rigging";
-import { dispatchRiggingTokenAcquired } from "src/actions/RiggingTokenAcquired";
+import { dispatchRiggingTokenAcquired } from "src/actions/rigging/RiggingTokenAcquired";
 import { useHistory } from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";

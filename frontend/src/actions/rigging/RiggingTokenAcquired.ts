@@ -1,5 +1,5 @@
 import { Action, Dispatch } from "redux";
-import { ActionType } from "./ActionType";
+import { ActionType } from "../ActionType";
 
 
 export interface RiggingTokenAcquired extends Action<ActionType.RiggingTokenAcquired> {

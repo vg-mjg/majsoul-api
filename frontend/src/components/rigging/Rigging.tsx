@@ -8,11 +8,9 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { LinkContainer } from 'react-router-bootstrap';
 import { Route, Switch, useRouteMatch } from "react-router-dom";
-import { useEffect } from "react";
-import { buildApiUrl } from "../../api/utils";
 import { Session } from "../Session";
 import { Teams } from "../Teams";
-import { dispatchLoggedOutAction } from "src/actions/LoggedOutAction";
+import { dispatchLoggedOutAction } from "src/actions/rigging/LoggedOutAction";
 
 function RiggingSessions(props: {}): JSX.Element {
 	return null;

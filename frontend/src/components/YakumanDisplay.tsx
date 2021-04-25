@@ -1,5 +1,4 @@
 import * as React from "react";
-import { fetchYakuman } from "../actions/Actions";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -7,6 +6,8 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Han, RoundResult, AgariInfo } from "majsoul-api/dist/majsoul/types";
 import moment = require("moment");
+import { fetchYakuman } from "src/api/Games";
+import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 
 function getYakumanName(han: Han[]): string {
 	const names = han.map(h => {
@@ -79,7 +80,8 @@ function getYakumanAgari(round: RoundResult): AgariInfo[] {
 export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 	const dispatch = useDispatch();
 	React.useEffect(() => {
-		fetchYakuman(dispatch, props.contestId);
+		fetchYakuman(props.contestId)
+			.then(games => dispatchGamesRetrievedAction(dispatch, games));
 	}, [dispatch, props.contestId]);
 
 	const games = useSelector((state: IState) => Object.values(state.games ?? {})

@@ -1,13 +1,15 @@
 export enum ActionType {
-	ContestSummaryRetrieved = "ContestSummaryRetrieved",
-	GamesRetrieved = "GamesRetrieved",
-	SessionPatched = "SessionPatched",
-	GetContestSessions = "GetContestSessions",
-	GetContestPlayers = "GetContestPlayers",
-	GetContestPlayerGames = "GetContestPlayerGames",
-	GetContests = "GetContests",
-	ContestPatched = "ContestPatched",
 	ContestCreated = "ContestCreated",
+	ContestsIndexRetrieved = "ContestsIndexRetrieved",
+	ContestSummaryRetrieved = "ContestSummaryRetrieved",
+	ContestPatched = "ContestPatched",
+
+	ContestPlayersRetrieved = "ContestPlayersRetrieved",
+
+	GamesRetrieved = "GamesRetrieved",
+
+	ContestSessionsRetrieved = "ContestSessionsRetrieved",
+	SessionPatched = "SessionPatched",
 
 	RiggingTokenAcquired = "RiggingTokenAcquired",
 	LoggedOut = "LoggedOut",

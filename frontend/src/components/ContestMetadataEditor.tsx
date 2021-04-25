@@ -1,5 +1,4 @@
 import * as React from "react";
-import { createGame, deleteGame, fetchGame, fetchGamesHook, fetchPendingGames, patchContest } from "../actions/Actions";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -11,6 +10,9 @@ import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import { TextField } from "./utils/TextField";
 import { GameResult } from "majsoul-api/dist/rest";
+import { createGame, fetchGame, deleteGame, fetchPendingGames } from "src/api/Games";
+import { patchContest } from "src/api/Contests";
+import { dispatchContestPatchedAction } from "src/actions/ContestPatchedAction";
 
 const CustomGameAdder: React.FC<{
 	contestId: string;
@@ -38,7 +40,7 @@ const CustomGameAdder: React.FC<{
 				variant="secondary"
 				disabled={ (majsoulId?.length ?? 0) <= 0 }
 				onClick={(event: any) => {
-					createGame(dispatch, token, {
+					createGame(token, {
 						contestId,
 						majsoulId,
 					}).then(_id => onGameCreated({
@@ -69,7 +71,7 @@ const PendingGameDisplay: React.FC<{
 		if (game.notFoundOnMajsoul != null) {
 			return;
 		}
-		setTimeout(() => fetchGame(dispatch, game._id).then(game => setNotFoundOnMajsoulUpdated(game.notFoundOnMajsoul)), 5000);
+		setTimeout(() => fetchGame(game._id).then(game => setNotFoundOnMajsoulUpdated(game.notFoundOnMajsoul)), 5000);
 	}, [game.notFoundOnMajsoul]);
 
 	return <Row className="no-gutters">
@@ -84,7 +86,7 @@ const PendingGameDisplay: React.FC<{
 				variant="secondary"
 				disabled={ notFoundOnMajsoul !== true }
 				onClick={(event: any) => {
-					deleteGame(dispatch, token, game._id).then(() => onGameDeleted(game._id));
+					deleteGame(token, game._id).then(() => onGameDeleted(game._id));
 				}}
 			>Delete</Button>
 		</Col>
@@ -110,7 +112,7 @@ const ContestCustomGames: React.FC<{
 	}, [pendingGames]);
 
 	React.useEffect(() => {
-		fetchPendingGames(dispatch, contestId).then(games => setPendingGames(games));
+		fetchPendingGames(contestId).then(games => setPendingGames(games));
 	}, [contestId])
 	return <>
 		<Row className="no-gutters">
@@ -371,7 +373,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						&& (contest.track === track || track === undefined)
 					}
 					onClick={(event: any) => {
-						patchContest(dispatch, token, contest._id, {
+						patchContest(token, contest._id, {
 							majsoulFriendlyId,
 							tagline,
 							taglineAlternate,
@@ -381,7 +383,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 							displayName,
 							bonusPerGame,
 							track
-						});
+						}).then(contest => dispatchContestPatchedAction(dispatch, contest));
 					}}
 				>Save</Button>
 			</Col>

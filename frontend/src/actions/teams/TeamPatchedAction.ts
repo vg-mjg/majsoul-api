@@ -1,6 +1,6 @@
 import { Action, Dispatch } from "redux";
 import { Store } from "majsoul-api";
-import { ActionType } from "./ActionType";
+import { ActionType } from "../ActionType";
 
 export interface TeamPatchedAction extends Action<ActionType.TeamPatched> {
 	contestId: string;

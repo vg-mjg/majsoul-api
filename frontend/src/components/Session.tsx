@@ -8,10 +8,12 @@ import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
 import { useSelector, useDispatch } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
-import { fetchGamesHook, patchSession } from "../actions/Actions";
+import { patchSession } from "../actions/Actions";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import { Rest } from "majsoul-api";
+import { fetchGames } from "src/api/Games";
+import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 
 export function Session(props: {
 	session: Rest.Session<string>;
@@ -31,10 +33,10 @@ export function Session(props: {
 			return;
 		}
 
-		fetchGamesHook(dispatch, {
+		fetchGames({
 			sessionIds: [props.session._id],
 			contestIds: [props.session?.contestId],
-		});
+		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
 	}, [props.session?._id]);
 
 	const utcStartMoment = (props.session == null ? moment() : moment(props.session.scheduledTime)).tz("UTC");

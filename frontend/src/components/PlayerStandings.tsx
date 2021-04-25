@@ -1,5 +1,4 @@
 import * as React from "react";
-import { fetchContestPlayersDirect } from "../actions/Actions";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -8,6 +7,7 @@ import { Rest } from "majsoul-api";
 import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
 import { useSelector } from "react-redux";
 import { IState } from "src/State";
+import { fetchContestPlayers } from "src/api/Players";
 
 function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: string}): number {
 	if (params.player.team.seeded && params.team != null) {
@@ -27,7 +27,7 @@ export function PlayerStandings(props: {
 
 	React.useEffect(() => {
 		setContestPlayers(null);
-		fetchContestPlayersDirect({
+		fetchContestPlayers({
 			contestId: props.contestId,
 			gameLimit: maxGames,
 			ignoredGames: props.ignoredGames

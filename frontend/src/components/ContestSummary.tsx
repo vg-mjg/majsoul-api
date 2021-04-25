@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./league/LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, fetchGamesHook, fetchContestPlayers } from "../actions/Actions";
+import { fetchContestSessions } from "../actions/Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -17,16 +17,22 @@ import { YakumanDisplay } from "./YakumanDisplay";
 import { BracketPlayerStandings } from "./BracketPlayerStandings";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { contestName } from "./utils";
+import { fetchGames } from "src/api/Games";
+import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
+import { fetchContestPlayers } from "src/api/Players";
+import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
+import { fetchContestSummary } from "src/api/Contests";
+import { dispatchContestSummaryRetrievedAction } from "src/actions/ContestSummaryRetrievedAction";
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
-		fetchContestSummary(dispatch, props.contestId);
-		fetchContestPlayers(dispatch, {
+		fetchContestSummary(props.contestId).then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
+		fetchContestPlayers({
 			contestId: props.contestId
-		});
+		}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);
@@ -102,10 +108,10 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
-		fetchGamesHook(dispatch, {
+		fetchGames({
 			contestIds: [props.contestId],
 			last: 4,
-		});
+		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
 	}, [props.contestId]);
 
 	return <>

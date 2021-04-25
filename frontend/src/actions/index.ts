@@ -1,22 +1,28 @@
-import { SummaryRetrievedAction, SessionGamesRetrieved, SessionPatched, GetContestSessions, GetContestPlayers, GetContestPlayerGames, GetContests, CreateContest, ContestPatched } from "./Actions";
-import { LogOutAction } from "./LoggedOutAction";
-import { RiggingTokenAcquired } from "./RiggingTokenAcquired";
-import { TeamCreatedAction } from "./TeamCreatedAction";
-import { TeamDeletedAction } from "./TeamDeletedAction";
-import { TeamPatchedAction } from "./TeamPatchedAction";
+import { ContestCreatedAction } from "./contests/ContestCreatedAction";
+import { ContestPatchedAction } from "./contests/ContestPatchedAction";
+import { ContestsIndexRetrievedAction } from "./contests/ContestsIndexRetrievedAction";
+import { ContestSummaryRetrievedAction } from "./contests/ContestSummaryRetrievedAction";
+import { GamesRetrievedAction } from "./games/GamesRetrievedAction";
+import { ContestPlayersRetrievedAction } from "./players/ContestPlayersRetrievedAction";
+import { LogOutAction } from "./rigging/LoggedOutAction";
+import { RiggingTokenAcquired } from "./rigging/RiggingTokenAcquired";
+import { ContestSessionsRetrievedAction } from "./sessions/ContestSessionsRetrievedAction";
+import { TeamCreatedAction } from "./teams/TeamCreatedAction";
+import { TeamDeletedAction } from "./teams/TeamDeletedAction";
+import { TeamPatchedAction } from "./teams/TeamPatchedAction";
+
 export { ActionType } from "./ActionType";
 
-export type MajsoulAction = SummaryRetrievedAction
-| SessionGamesRetrieved
+export type MajsoulAction = ContestSummaryRetrievedAction
+| GamesRetrievedAction
 | RiggingTokenAcquired
-| SessionPatched
 | TeamPatchedAction
-| GetContestSessions
-| GetContestPlayers
-| GetContestPlayerGames
-| GetContests
-| CreateContest
-| ContestPatched
+| ContestSessionsRetrievedAction
+| ContestPlayersRetrievedAction
+| ContestPlayersRetrievedAction
+| ContestsIndexRetrievedAction
+| ContestCreatedAction
+| ContestPatchedAction
 | LogOutAction
 | TeamCreatedAction
 | TeamDeletedAction;

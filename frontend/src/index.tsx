@@ -4,8 +4,9 @@ import { createStore, compose } from "redux";
 import { Provider, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest } from "./State";
-import { SessionGamesRetrieved, GetContestPlayers, ContestPatched, fetchContestSummary } from "./actions/Actions";
-import { RiggingTokenAcquired } from "./actions/RiggingTokenAcquired";
+import { ContestPlayersRetrievedAction } from "./actions/players/ContestPlayersRetrievedAction";
+import { GamesRetrievedAction } from "./actions/games/GamesRetrievedAction";
+import { RiggingTokenAcquired } from "./actions/rigging/RiggingTokenAcquired";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
@@ -22,6 +23,8 @@ import Col from "react-bootstrap/Col";
 import { toRecord } from "./components/utils";
 import { ActionType, MajsoulAction } from "./actions";
 import { RiggingLogin } from "./components/rigging/RiggingLogin";
+import { fetchContestSummary } from "./api/Contests";
+import { dispatchContestSummaryRetrievedAction } from "./actions/contests/ContestSummaryRetrievedAction";
 
 const teamColors = [
 	"#980000",
@@ -125,10 +128,8 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					teams: toRecord(action.contest.teams, "_id")
 				})
 			};
-		} case ActionType.GamesRetrieved:
-			case ActionType.GetContestPlayerGames:
-		{
-			const gamesRetrievedAction = action as SessionGamesRetrieved;
+		} case ActionType.GamesRetrieved: {
+			const gamesRetrievedAction = action as GamesRetrievedAction;
 
 			return {
 				...state,
@@ -175,7 +176,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					}
 				})
 			}
-		} case ActionType.GetContestSessions: {
+		} case ActionType.ContestSessionsRetrieved: {
 			return {
 				...state,
 				...updatedContestRecord(
@@ -186,15 +187,15 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					}
 				)
 			}
-		} case ActionType.GetContestPlayers: {
-			const getContestPlayers = action as GetContestPlayers;
+		} case ActionType.ContestPlayersRetrieved: {
+			const getContestPlayers = action as ContestPlayersRetrievedAction;
 			return {
 				...state,
 				...updatedContestRecord(state, getContestPlayers.contestId, {
 					players: getContestPlayers.players
 				})
 			}
-		} case ActionType.GetContests: {
+		} case ActionType.ContestsIndexRetrieved: {
 			return {
 				...state,
 				contestsById: {
@@ -209,7 +210,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				}
 			}
 		} case ActionType.ContestPatched: {
-			const contestPatchedAction = action as ContestPatched;
+			const contestPatchedAction = action as ContestPatchedAction;
 			const originalContest = state.contestsById[contestPatchedAction.contest._id];
 			return {
 				...state,
@@ -288,7 +289,8 @@ function LatestContestSummary(): JSX.Element {
 	const dispatch = useDispatch();
 	const [contestId, setContestId] = React.useState<string>();
 	React.useEffect(() => {
-		fetchContestSummary(dispatch, "featured").then(contest => {
+		fetchContestSummary("featured").then(contest => {
+			dispatchContestSummaryRetrievedAction(dispatch, contest);
 			setContestId(contest._id);
 		});
 	}, [dispatch]);

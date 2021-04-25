@@ -12,7 +12,7 @@ import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
 import { createTeam, deleteTeam, patchTeam } from "src/api/Teams";
 import { dispatchTeamDeletedAction } from "src/actions/TeamDeletedAction";
-import { dispatchTeamPatchedAction } from "src/actions/TeamPatchedAction";
+import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
 import { dispatchTeamCreatedAction } from "src/actions/TeamCreatedAction";
 
 export function jpNumeral(value: number): string {
