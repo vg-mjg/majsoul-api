@@ -8,7 +8,7 @@ import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
 import { useSelector, useDispatch } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
-import { fetchGamesHook, patchSession } from "../Actions";
+import { fetchGamesHook, patchSession } from "../actions/Actions";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import { Rest } from "majsoul-api";

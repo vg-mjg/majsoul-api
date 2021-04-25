@@ -8,10 +8,12 @@ import defaultImage from "../../assets/hatsu.png";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
-import Form from "react-bootstrap/Form";
-import { createTeam, deleteTeam, patchTeam } from "../Actions";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
+import { createTeam, deleteTeam, patchTeam } from "src/api/Teams";
+import { dispatchTeamDeletedAction } from "src/actions/TeamDeletedAction";
+import { dispatchTeamPatchedAction } from "src/actions/TeamPatchedAction";
+import { dispatchTeamCreatedAction } from "src/actions/TeamCreatedAction";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -162,7 +164,10 @@ export function Team(props: {
 					</Col>
 					<Col md="auto">
 						<Button
-							onClick={() => deleteTeam(dispatch, token, props.contestId, props.team._id)}
+							onClick={() =>
+								deleteTeam(token, props.contestId, props.team._id)
+									.then(() => dispatchTeamDeletedAction(dispatch, props.contestId, props.team._id))
+							}
 						>
 							Delete
 						</Button>
@@ -176,17 +181,18 @@ export function Team(props: {
 								&& (color === props.team.anthem || color === undefined)
 								&& (anthem === props.team.anthem || anthem === undefined)
 							}
-							onClick={(event: any) => {patchTeam(
-								dispatch,
-								token,
-								props.contestId,
-								{
-									_id: props.team._id,
-									name: name,
-									anthem: anthem,
-									image: image,
-									color
-								} as Store.ContestTeam)
+							onClick={(event: any) => {
+								patchTeam(
+									token,
+									props.contestId,
+									{
+										_id: props.team._id,
+										name: name,
+										anthem: anthem,
+										image: image,
+										color
+									} as Store.ContestTeam
+								).then(team => dispatchTeamPatchedAction(dispatch, props.contestId, team))
 							}}
 						>Save</Button>
 					</Col>
@@ -231,7 +237,7 @@ export function Teams(props: {
 			return;
 		}
 
-		createTeam(dispatch, token, id);
+		createTeam(token, id).then(team => dispatchTeamCreatedAction(dispatch, id, team));
 	}, []);
 
 	const maxPlaceLength = jpNumeral(teamsArray.length).length;

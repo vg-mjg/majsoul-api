@@ -1,6 +1,6 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./league/LeagueStandingChart";
-import { fetchContestSummary, fetchContestSessions, ActionType, fetchGamesHook, fetchContestPlayers } from "../Actions";
+import { fetchContestSummary, fetchContestSessions, fetchGamesHook, fetchContestPlayers } from "../actions/Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';

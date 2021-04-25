@@ -1,18 +1,17 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import thunkMiddleware from 'redux-thunk';
-import { createStore, applyMiddleware, compose } from "redux";
+import { createStore, compose } from "redux";
 import { Provider, useDispatch } from "react-redux";
 import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
 import { IState, Contest } from "./State";
-import { ActionType, SessionGamesRetrieved, RiggingTokenAquired, GetContestPlayers, GetContests, ContestPatched, MajsoulAction, fetchContestSummary } from "./Actions";
+import { SessionGamesRetrieved, GetContestPlayers, ContestPatched, fetchContestSummary } from "./actions/Actions";
+import { RiggingTokenAcquired } from "./actions/RiggingTokenAcquired";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
 import { Rest } from "majsoul-api";
-import { Rigging } from "./components/rigging/Rigging";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
@@ -21,6 +20,8 @@ import YouTube from 'react-youtube';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { toRecord } from "./components/utils";
+import { ActionType, MajsoulAction } from "./actions";
+import { RiggingLogin } from "./components/rigging/RiggingLogin";
 
 const teamColors = [
 	"#980000",
@@ -138,8 +139,8 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					)
 				},
 			}
-		} case ActionType.RiggingTokenGet: {
-			const riggingTokenGetAction = action as RiggingTokenAquired;
+		} case ActionType.RiggingTokenAcquired: {
+			const riggingTokenGetAction = action as RiggingTokenAcquired;
 			return {
 				...state,
 				user: {
@@ -159,12 +160,12 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 			// 	...state,
 			// 	contest
 			// }
-		} case ActionType.LogOut: {
+		} case ActionType.LoggedOut: {
 			if (state.user) {
 				return {...state, user: undefined};
 			}
 			break;
-		} case ActionType.PatchTeam: {
+		} case ActionType.TeamPatched: {
 			return {
 				...state,
 				...updatedContestRecord(state, action.contestId, {
@@ -272,11 +273,6 @@ const store = createStore(
 			videoId: null
 		},
 	} as IState as any,
-	composeEnhancers(
-		applyMiddleware(
-			thunkMiddleware
-		)
-	),
 )
 
 const persistor = persistStore(store);
@@ -313,7 +309,7 @@ ReactDOM.render(
 						<Row className="no-gutters">
 							<Switch>
 								<Route path="/rigging">
-									<Rigging/>
+									<RiggingLogin/>
 								</Route>
 								<Route path="/youtube">
 									<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>

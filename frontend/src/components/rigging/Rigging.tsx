@@ -9,9 +9,10 @@ import Col from "react-bootstrap/Col";
 import { LinkContainer } from 'react-router-bootstrap';
 import { Route, Switch, useRouteMatch } from "react-router-dom";
 import { useEffect } from "react";
-import { buildApiUrl, ActionType, logout } from "../../Actions";
+import { buildApiUrl } from "../../api/utils";
 import { Session } from "../Session";
 import { Teams } from "../Teams";
+import { dispatchLoggedOutAction } from "src/actions/LoggedOutAction";
 
 function RiggingSessions(props: {}): JSX.Element {
 	return null;
@@ -32,15 +33,6 @@ export function Rigging(): JSX.Element {
 	const routeMatch = useRouteMatch();
 	const dispatch = useDispatch();
 	const token = useSelector((state: IState) => state.user?.token);
-	useEffect(() => {
-		fetch(buildApiUrl(`contests/113331`).toString())
-			.then(res => res.json())
-			.then(contest => dispatch({
-				type: ActionType.ContestSummaryRetrieved,
-				contest,
-			}));
-
-	}, [113331]);
 
 	if (token == null) {
 		return <Container className="pt-5">
@@ -66,7 +58,7 @@ export function Rigging(): JSX.Element {
 					</LinkContainer>
 				</Nav.Item>
 				<Nav.Item>
-					<Nav.Link onClick={() => logout(dispatch)}>Logout</Nav.Link>
+					<Nav.Link onClick={() => dispatchLoggedOutAction(dispatch)}>Logout</Nav.Link>
 				</Nav.Item>
 			</Nav>
 		</Row>

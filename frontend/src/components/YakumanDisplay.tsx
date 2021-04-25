@@ -1,5 +1,5 @@
 import * as React from "react";
-import { fetchYakuman } from "../Actions";
+import { fetchYakuman } from "../actions/Actions";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';

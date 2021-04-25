@@ -1,6 +1,5 @@
 {
 	"compilerOptions": {
-		"rootDir": "./src/",
 		"outDir": "./dist/",
 		"sourceMap": true,
 		"noImplicitAny": true,
@@ -18,6 +17,7 @@
 				"./node_modules/react-youtube"
 			]
 		},
-		"baseUrl": ".",
+		"rootDir": "./",
+		"baseUrl": "./"
 	}
 }

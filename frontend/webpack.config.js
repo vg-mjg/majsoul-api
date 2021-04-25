@@ -13,6 +13,10 @@ module.exports = env => {
 			historyApiFallback: true
 		},
 		resolve: {
+			modules: [
+				path.resolve(__dirname),
+				'node_modules',
+			],
 			extensions: [".ts", ".tsx", ".js", ".json"]
 		},
 		module: {

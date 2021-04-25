@@ -1,52 +1,8 @@
 import { Action, Dispatch } from "redux";
 import { Store, Rest } from "majsoul-api";
-import { ThunkAction } from "redux-thunk";
-import { IState } from "./State";
 import { Config, Contest, GameResult } from "majsoul-api/dist/store";
-
-export type AppThunk<AType extends Action<ActionType>, TReturn = void> =  ThunkAction<TReturn, IState, unknown, AType>;
-
-export enum ActionType {
-	ContestSummaryRetrieved = "ContestSummaryRetrieved",
-	GamesRetrieved = "GamesRetrieved",
-	RiggingTokenGet = "RiggingTokenGet",
-	SessionPatched = "SessionPatched",
-	LogOut = "LogOut",
-	PatchTeam = "PatchTeam",
-	GetContestSessions = "GetContestSessions",
-	GetContestPlayers = "GetContestPlayers",
-	GetContestPlayerGames = "GetContestPlayerGames",
-	GetContests = "GetContests",
-	ContestPatched = "ContestPatched",
-	ContestCreated = "ContestCreated",
-	TeamCreated = "TeamCreated",
-	TeamDeleted = "TeamDeleted",
-}
-
-export type MajsoulAction = SummaryRetrievedAction
-	| SessionGamesRetrieved
-	| RiggingTokenAquired
-	| SessionPatched
-	| PatchTeam
-	| GetContestSessions
-	| GetContestPlayers
-	| GetContestPlayerGames
-	| GetContests
-	| CreateContest
-	| ContestPatched
-	| LogOutAction
-	| TeamCreatedAction
-	| TeamDeletedAction;
-
-export interface TeamDeletedAction extends Action<ActionType.TeamDeleted> {
-	contestId: string;
-	teamId: string;
-}
-
-export interface TeamCreatedAction extends Action<ActionType.TeamCreated> {
-	contestId: string;
-	team: Store.ContestTeam;
-}
+import { ActionType } from "./ActionType";
+import { buildApiUrl } from "../api/utils";
 
 export interface SummaryRetrievedAction extends Action<ActionType.ContestSummaryRetrieved> {
 	contest: Store.Contest<string>;
@@ -56,18 +12,10 @@ export interface SessionGamesRetrieved extends Action<ActionType.GamesRetrieved>
 	games: Rest.GameResult[];
 }
 
-export interface RiggingTokenAquired extends Action<ActionType.RiggingTokenGet> {
-	token: string;
-}
-
 export interface SessionPatched extends Action<ActionType.SessionPatched> {
 	session: Store.Session;
 }
 
-export interface PatchTeam extends Action<ActionType.PatchTeam> {
-	contestId: string;
-	team: Store.ContestTeam;
-}
 
 export interface GetContestSessions extends Action<ActionType.GetContestSessions> {
 	contestId: string;
@@ -93,19 +41,8 @@ export interface CreateContest extends Action<ActionType.ContestCreated> {
 	};
 }
 
-export interface LogOutAction extends Action<ActionType.LogOut> {
-
-}
-
 export interface ContestPatched extends Action<ActionType.ContestPatched> {
 	contest: Omit<Store.Contest, "teams" | "session">;
-}
-
-export function buildApiUrl(path: string): URL {
-	if (process.env.NODE_ENV === "production") {
-		return new URL(`${location.protocol}//${location.host}/api/${path}`);
-	}
-	return new URL(`${location.protocol}//${location.hostname}:9515/${path}`);
 }
 
 export function fetchContestSummary(dispatch: Dispatch<SummaryRetrievedAction>, contestId: string): Promise<Store.Contest<string>> {
@@ -324,27 +261,6 @@ export async function createGame(dispatch: Dispatch, token: string, game: Partia
 	return await response.json();
 }
 
-export async function createTeam(dispatch: Dispatch<TeamCreatedAction>, token: string, contestId: string): Promise<Store.ContestTeam> {
-	const url = buildApiUrl(`contests/${contestId}/teams/`);
-	const response = await fetch(
-		url.toString(),
-		{
-			method: "PUT",
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${token}`
-			},
-		}
-	);
-	const team = await response.json();
-	dispatch({
-		contestId,
-		type: ActionType.TeamCreated,
-		team,
-	});
-	return team;
-}
 
 export async function deleteGame(dispatch: Dispatch, token: string, id: string): Promise<void> {
 	const url = buildApiUrl(`games/${id}`);
@@ -373,31 +289,7 @@ export async function fetchGame(dispatch: Dispatch, id: string): Promise<GameRes
 	return await response.json();
 }
 
-export interface GetRiggingTokenOptions {
-	username: string;
-	password: string;
-}
 
-export const getRiggingToken = (params: GetRiggingTokenOptions): AppThunk<RiggingTokenAquired, Promise<boolean>> => {
-	return function (dispatch) {
-		const url = buildApiUrl(`rigging/token`);
-		return fetch(
-			url.toString(),
-			{
-				headers: {
-					"Username": params.username,
-					"Password": params.password
-				}
-			}
-		).then(response => {
-			if (response.status !== 200) {
-				return false;
-			}
-			response.text().then(token => dispatch({type: ActionType.RiggingTokenGet, token}));
-			return true;
-		});
-	}
-}
 
 export function fetchYakuman(dispatch: Dispatch<SessionGamesRetrieved>, contestId: string): void {
 	fetch(buildApiUrl(`contests/${contestId}/yakuman`).toString())
@@ -408,49 +300,4 @@ export function fetchYakuman(dispatch: Dispatch<SessionGamesRetrieved>, contestI
 		}));
 }
 
-export function logout(dispatch: Dispatch<LogOutAction>) {
-	dispatch({type: ActionType.LogOut});
-}
 
-export function patchTeam(dispatch: Dispatch<PatchTeam>, token: string, contestId: string, team: Store.ContestTeam): Promise<unknown> {
-	console.log(team.image);
-	const url = buildApiUrl(`contests/${contestId}/teams/${team._id}`);
-	return fetch(
-		url.toString(),
-		{
-			method: "PATCH",
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${token}`
-			},
-			body: JSON.stringify(team)
-		})
-		.then(response => response.json())
-		.then(team => dispatch({
-			type: ActionType.PatchTeam,
-			contestId,
-			team
-		}));
-}
-
-export async function deleteTeam(dispatch: Dispatch<TeamDeletedAction>, token: string, contestId: string, teamId: string): Promise<void> {
-	const url = buildApiUrl(`contests/${contestId}/teams/${teamId}`);
-	const response = await fetch(
-		url.toString(),
-		{
-			method: "DELETE",
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${token}`
-			}
-		}
-	);
-
-	dispatch({
-		type: ActionType.TeamDeleted,
-		contestId,
-		teamId,
-	});
-}
