@@ -14,7 +14,7 @@ import { createTeam, deleteTeam, patchTeam } from "src/api/Teams";
 import { dispatchTeamDeletedAction } from "src/actions/teams/TeamDeletedAction";
 import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
 import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
-import { fetchContestPlayers } from "src/api/Players";
+import { fetchContestPlayers, fetchPlayers } from "src/api/Players";
 import Spinner from "react-bootstrap/Spinner";
 import { css } from 'astroturf';
 import clsx from "clsx";
@@ -54,7 +54,46 @@ const styles = css`
 	}
 `;
 
-export function Team(props: {
+function PlayerSearch(props: {}): JSX.Element {
+	const [searchString, setSearchString] = React.useState<string>();
+	const [searchTaskId, setSearchTaskId] = React.useState<any>();
+	const [players, setPlayers] = React.useState<Store.Player<string>[]>([]);
+	React.useEffect(() => {
+		if (searchTaskId) {
+			clearTimeout(searchTaskId);
+		}
+		setSearchTaskId(setTimeout(() => {
+			fetchPlayers({
+				name: searchString,
+				limit: 10,
+			}).then(players => setPlayers(players))
+		}, 1000))
+	}, [searchString]);
+
+	return <Container>
+		<TextField
+			id="player-search"
+			placeholder="Add Player"
+			fallbackValue={searchString}
+			onChange={(oldValue, newValue) => {
+				setSearchString(newValue);
+				return {
+					value: newValue,
+					isValid: true,
+				}
+			}}
+		/>
+		{
+			players.map(player => <Row key={player._id}>
+				<Col>
+					{player.nickname}
+				</Col>
+			</Row>)
+		}
+	</Container>
+}
+
+function Team(props: {
 	contestId: string,
 	team: Store.ContestTeam,
 	score?: number,
@@ -258,6 +297,7 @@ export function Team(props: {
 								>Save</Button>
 							</Col>
 						</Row>
+						<Row><PlayerSearch/></Row>
 					</Container>
 				}
 			</>

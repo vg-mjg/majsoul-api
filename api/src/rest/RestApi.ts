@@ -770,6 +770,9 @@ export class RestApi {
 							_id: true,
 							nickname: true,
 							displayName: true,
+						},
+						sort: {
+							nickname: 1,
 						}
 					}
 				)

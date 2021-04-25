@@ -4,7 +4,6 @@ import { Store } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { Team } from "./Teams";
 import { useSelector } from "react-redux";
 
 

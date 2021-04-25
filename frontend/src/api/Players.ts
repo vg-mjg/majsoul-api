@@ -1,4 +1,4 @@
-import { Rest } from "majsoul-api";
+import { Rest, Store } from "majsoul-api";
 import { buildApiUrl } from "./utils";
 
 interface FetchContestPlayerParams {
@@ -10,7 +10,7 @@ interface FetchContestPlayerParams {
 
 export async function fetchContestPlayers(
 	params: FetchContestPlayerParams,
-): Promise<Array<Rest.ContestPlayer<any>>> {
+): Promise<Array<Rest.ContestPlayer<string>>> {
 	const url = buildApiUrl(`contests/${params.contestId}/players`);
 	const queryParameters: Record<string, string> = {};
 	if (params.gameLimit != null) {
@@ -23,6 +23,31 @@ export async function fetchContestPlayers(
 
 	if (params.teamId != null) {
 		queryParameters.teamId = params.teamId;
+	}
+
+	url.search = new URLSearchParams(queryParameters).toString();
+
+	const response = await fetch(url.toString());
+	if (response.status !== 200) {
+		throw {
+			status: response.status
+		};
+	}
+	return await response.json();
+}
+
+export async function fetchPlayers(params: {
+	limit?: number;
+	name?: string;
+}): Promise<Array<Store.Player<string>>> {
+	const url = buildApiUrl(`players/`);
+	const queryParameters: Record<string, string> = {};
+	if (params.limit != null) {
+		queryParameters.limit = params.limit.toString();
+	}
+
+	if (params.name != null) {
+		queryParameters.name = params.name;
 	}
 
 	url.search = new URLSearchParams(queryParameters).toString();
