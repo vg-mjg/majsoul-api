@@ -31,9 +31,6 @@ export function ContestSummary(props: {contestId: string}): JSX.Element {
 
 	React.useEffect(() => {
 		fetchContestSummary(props.contestId).then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
-		fetchContestPlayers({
-			contestId: props.contestId
-		}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);
@@ -113,6 +110,10 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			contestIds: [props.contestId],
 			last: 4,
 		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
+
+		fetchContestPlayers({
+			contestId: props.contestId
+		}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
 	}, [props.contestId]);
 
 	return <>

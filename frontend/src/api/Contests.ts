@@ -23,7 +23,6 @@ export function createContest(token: string): Promise<Pick<Store.Contest<string>
 	).then(response => response.json())
 }
 
-
 export function patchContest(token: string, id: string, contest: Partial<Store.Contest<string>>): Promise<Omit<Store.Contest, "teams" | "session">> {
 	const url = buildApiUrl(`contests/${id}`);
 	return fetch(

@@ -27,6 +27,10 @@ module.exports = env => {
 					use: [
 						{
 							loader: "awesome-typescript-loader"
+						},
+						{
+							loader: "astroturf/loader",
+							options: { extension: '.module.scss' },
 						}
 					]
 				},

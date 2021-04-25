@@ -16,6 +16,8 @@ import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
 import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
 import { fetchContestPlayers } from "src/api/Players";
 import Spinner from "react-bootstrap/Spinner";
+import { css } from 'astroturf';
+import clsx from "clsx";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -42,6 +44,15 @@ export function jpNumeral(value: number): string {
 }
 
 const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
+
+const styles = css`
+	.teamDetailsToggle {
+		cursor: pointer;
+		&:hover {
+			color: LightGray;
+		}
+	}
+`;
 
 export function Team(props: {
 	contestId: string,
@@ -96,10 +107,7 @@ export function Team(props: {
 		<Accordion.Toggle
 			disabled as={Row}
 			eventKey="0"
-			className="no-gutters align-items-center flex-nowrap"
-			style={{
-				cursor: "pointer",
-			}}
+			className={clsx("no-gutters align-items-center flex-nowrap", styles.teamDetailsToggle)}
 		>
 			{props.placing != null && <Col md="auto" className="mr-3 text-right" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}}> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
