@@ -339,6 +339,25 @@ export class RestApi {
 				.catch(error => res.status(500).send(error));
 		});
 
+		this.app.get<any, store.Contest<ObjectId>>('/contests/featured', logError(async (req, res) => {
+			const [config] = await this.mongoStore.configCollection.find().limit(1).toArray();
+			const query: FilterQuery<store.Contest<ObjectId>> = {};
+			if (config.featuredContest != null) {
+				query._id = config.featuredContest;
+			}
+
+			this.mongoStore.contestCollection
+				.find(query)
+				.sort({_id:-1})
+				.limit(1)
+				.project({
+					sessions: 0
+				})
+				.toArray()
+				.then(contests => res.send(contests[0]))
+				.catch(error => res.status(500).send(error));
+		}));
+
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
 			this.findContest(req.params.id,
 				{
@@ -358,25 +377,6 @@ export class RestApi {
 				res.status(500).send(error)
 			});
 		});
-
-		this.app.get<any, store.Contest<ObjectId>>('/contests/featured', logError(async (req, res) => {
-			const [config] = await this.mongoStore.configCollection.find().limit(1).toArray();
-			const query: FilterQuery<store.Contest<ObjectId>> = {};
-			if (config.featuredContest != null) {
-				query._id = config.featuredContest;
-			}
-
-			this.mongoStore.contestCollection
-				.find(query)
-				.sort({_id:-1})
-				.limit(1)
-				.project({
-					sessions: 0
-				})
-				.toArray()
-				.then(contests => res.send(contests[0]))
-				.catch(error => res.status(500).send(error));
-		}));
 
 		this.app.get<any, store.GameResult<ObjectId>>('/games/:id',
 			param("id").isMongoId(),
