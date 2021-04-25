@@ -29,6 +29,10 @@ export async function deleteTeam(token: string, contestId: string, teamId: strin
 }
 
 export function patchTeam(token: string, contestId: string, team: Store.ContestTeam): Promise<Store.ContestTeam> {
+	if (team.players === null) {
+		delete team.players;
+	}
+
 	const url = buildApiUrl(`contests/${contestId}/teams/${team._id}`);
 	return fetch(
 		url.toString(),

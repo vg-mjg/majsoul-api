@@ -309,6 +309,7 @@ function Team(props: {
 												name: name,
 												anthem: anthem,
 												image: image,
+												players: players,
 												color
 											} as Store.ContestTeam
 										).then(team => dispatchTeamPatchedAction(dispatch, props.contestId, team))
