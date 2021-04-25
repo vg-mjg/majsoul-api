@@ -1118,13 +1118,15 @@ export class RestApi {
 			param("teamId").isMongoId(),
 			body(nameofTeam('image')).isString().optional({nullable: true}),
 			body(nameofTeam('name')).isString().optional({nullable: true}),
+			body(nameofTeam('players')).isArray().optional(),
+			body(`${nameofTeam('players')}.*._id`).isMongoId(),
 			body(nameofTeam('anthem')).isString().optional({nullable: true}),
 			body(nameofTeam('color')).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({nullable: true}),
 			withData<
 				{
 					id: string;
 					teamId: string;
-				} & Partial<store.ContestTeam<ObjectId>>,
+				} & Partial<store.ContestTeam<ObjectId | string>>,
 				any,
 				store.ContestTeam<ObjectId>
 			>(async (data, req, res) => {
@@ -1135,6 +1137,25 @@ export class RestApi {
 
 				const id = new ObjectId(data.id);
 				const teamId = new ObjectId(data.teamId);
+
+				if (data.players) {
+					for (const player of data.players) {
+						player._id = new ObjectId(player._id);
+					}
+					const players = await this.mongoStore.playersCollection.find({
+						_id: {$in: data.players.map(player => player._id as ObjectId)}
+					}).toArray();
+					if (players.length !== data.players.length) {
+						res.status(400).send(
+							`Players ${data.players
+								.filter(player => !players.find(p => p._id.equals(player._id)))
+								.map(player => `#${player._id}`)
+								.join(", ")
+							} not found.` as any
+						);
+						return;
+					}
+				}
 
 				for (const key in data) {
 					if (data[key] === undefined) {
@@ -1312,7 +1333,10 @@ export class RestApi {
 
 		return games.reduce<Record<string, number>>((total, game) => {
 			game.finalScore.forEach((score, index) => {
-				const winningTeam = contest.teams.find(t => t.players.find(p => p._id.equals(game.players[index]._id)));
+				const winningTeam = contest.teams.find(t => t.players?.find(p => p._id.equals(game.players[index]._id)));
+				if (!winningTeam) {
+					return;
+				}
 				total[winningTeam._id.toHexString()] = (total[winningTeam._id.toHexString()] ?? 0) + score.uma;
 			});
 			return total;
