@@ -11,7 +11,7 @@ import { contestName } from "./utils";
 import Form from "react-bootstrap/Form";
 import { fetchConfig, updateConfig } from "src/api/Config";
 import { createContest, fetchContests } from "src/api/Contests";
-import { dispatchContestsIndexRetrievedAction } from "src/actions/ContestsIndexRetrievedAction";
+import { dispatchContestsIndexRetrievedAction } from "src/actions/contests/ContestsIndexRetrievedAction";
 import { dispatchContestCreatedAction } from "src/actions/contests/ContestCreatedAction";
 
 export function ContestList(): JSX.Element {

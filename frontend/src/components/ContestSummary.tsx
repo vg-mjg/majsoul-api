@@ -1,6 +1,5 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./league/LeagueStandingChart";
-import { fetchContestSessions } from "../actions/Actions";
 import { IState, Contest } from "../State";
 import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
@@ -22,7 +21,9 @@ import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAc
 import { fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
 import { fetchContestSummary } from "src/api/Contests";
-import { dispatchContestSummaryRetrievedAction } from "src/actions/ContestSummaryRetrievedAction";
+import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
+import { fetchContestSessions } from "src/api/Sessions";
+import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
@@ -150,7 +151,8 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
 
 	React.useEffect(() => {
-		fetchContestSessions(dispatch, contest._id);
+		fetchContestSessions(contest._id)
+			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
 	}, [dispatch, contest._id]);
 
 	if (contest?.sessions == null) {

@@ -1,6 +1,6 @@
 import { Action, Dispatch } from "redux";
 import { Store } from "majsoul-api";
-import { ActionType } from "./ActionType";
+import { ActionType } from "../ActionType";
 
 export interface ContestPatchedAction extends Action<ActionType.ContestPatched> {
 	contest: Omit<Store.Contest, "teams" | "session">;

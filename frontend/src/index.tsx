@@ -148,19 +148,6 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					token: riggingTokenGetAction.token,
 				}
 			}
-		} case ActionType.SessionPatched: {
-			return state;
-			// const sessionPatchedAction = action as SessionPatched;
-			// const contest = {...state.contest};
-			// const sessionIndex = contest.sessions.findIndex(session => session._id === sessionPatchedAction.session._id);
-			// contest.sessions[sessionIndex] = {
-			// 	...contest.sessions[sessionIndex],
-			// 	...sessionPatchedAction.session
-			// };
-			// return {
-			// 	...state,
-			// 	contest
-			// }
 		} case ActionType.LoggedOut: {
 			if (state.user) {
 				return {...state, user: undefined};
@@ -210,15 +197,14 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				}
 			}
 		} case ActionType.ContestPatched: {
-			const contestPatchedAction = action as ContestPatchedAction;
-			const originalContest = state.contestsById[contestPatchedAction.contest._id];
+			const originalContest = state.contestsById[action.contest._id];
 			return {
 				...state,
 				...{
 					contestsById: {
 						...state.contestsById,
-						[contestPatchedAction.contest._id]: {
-							...contestPatchedAction.contest,
+						[action.contest._id]: {
+							...action.contest,
 							teams: originalContest.teams,
 							sessions: originalContest.sessions,
 						}

@@ -8,7 +8,6 @@ import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
 import { useSelector, useDispatch } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
-import { patchSession } from "../actions/Actions";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import { Rest } from "majsoul-api";
@@ -105,14 +104,6 @@ export function Session(props: {
 			<Row className="pb-3 px-3 justify-content-end">
 				<Button
 					variant="secondary"
-					onClick={(event: any) => patchSession(
-						dispatch,
-						token,
-						{
-							_id: props.session._id,
-							scheduledTime: moment(utcMoment).valueOf()
-						} as Rest.Session
-					)}
 				>Save</Button>
 			</Row>
 		}

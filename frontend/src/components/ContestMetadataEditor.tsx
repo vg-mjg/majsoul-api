@@ -12,7 +12,7 @@ import { TextField } from "./utils/TextField";
 import { GameResult } from "majsoul-api/dist/rest";
 import { createGame, fetchGame, deleteGame, fetchPendingGames } from "src/api/Games";
 import { patchContest } from "src/api/Contests";
-import { dispatchContestPatchedAction } from "src/actions/ContestPatchedAction";
+import { dispatchContestPatchedAction } from "src/actions/contests/ContestPatchedAction";
 
 const CustomGameAdder: React.FC<{
 	contestId: string;

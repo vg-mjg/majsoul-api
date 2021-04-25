@@ -11,9 +11,9 @@ import Accordion from "react-bootstrap/Accordion";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
 import { createTeam, deleteTeam, patchTeam } from "src/api/Teams";
-import { dispatchTeamDeletedAction } from "src/actions/TeamDeletedAction";
+import { dispatchTeamDeletedAction } from "src/actions/teams/TeamDeletedAction";
 import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
-import { dispatchTeamCreatedAction } from "src/actions/TeamCreatedAction";
+import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
