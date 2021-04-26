@@ -1,4 +1,4 @@
-import { Contest, GameResult, Player, Session, ContestTeam, Match, Config, ContestType } from "./types/types";
+import { Contest, GameResult, Player, Session, ContestTeam, Match, Config, ContestType, MatchTeam } from "./types/types";
 import { Store } from "./Store";
 
 export {
@@ -11,4 +11,5 @@ export {
 	Session,
 	ContestTeam,
 	Match,
+	MatchTeam
 }

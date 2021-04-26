@@ -264,6 +264,7 @@ const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
+const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 
 const seededPlayerNames: Record<string, string[]> = {
@@ -1091,27 +1092,145 @@ export class RestApi {
 			})
 		)
 
-		.patch<any, Session<ObjectId>>('/sessions/:id', (req, res) => {
-			const patch = req.body as Session<string>;
-			if (patch?.scheduledTime == undefined) {
-				res.sendStatus(304);
-				return;
-			}
+		.put('/sessions',
+			body(nameofSession("contestId")).isMongoId(),
+			withData<Partial<store.Session<string | ObjectId>>, any, store.Session<ObjectId>>(async (data, req, res) => {
+				const contestId =  await this.contestExists(data.contestId as string);
+				if (!contestId) {
+					res.status(400).send(`contest #${data.contestId} not found` as any);
+					return;
+				}
 
-			this.mongoStore.sessionsCollection.findOneAndUpdate(
-				{ _id: new ObjectId(req.params.id) },
-				{ $set: { scheduledTime: patch.scheduledTime }},
-				{ returnOriginal: false }
-			).then((session) => {
-				res.send({
-					_id: session.value._id,
-					scheduledTime: session.value.scheduledTime
-				} as Session);
-			}).catch((err) => {
-				console.log(err);
-				res.status(500).send(err);
+				const [lastSession] = await this.mongoStore.sessionsCollection
+					.find()
+					.sort(nameofSession("scheduledTime"), -1)
+					.limit(1)
+					.toArray();
+
+				const session = await this.mongoStore.sessionsCollection.insertOne(
+					{
+						scheduledTime: (lastSession?.scheduledTime ?? Date.now()) + (24 * 60 * 60 * 1000),
+						contestId,
+						plannedMatches: [],
+					},
+				);
+
+				res.send(session.ops[0]);
 			})
-		})
+		)
+
+		.patch('/sessions/:id',
+			param("id").isMongoId(),
+			body(nameofSession("scheduledTime")).not().isString().bail().isInt({min: 0}).optional(),
+			body(nameofSession("name")).isString().optional({nullable: true}),
+			body(nameofSession("isCancelled")).not().isString().bail().isBoolean().optional({nullable: true}),
+			body(nameofSession("plannedMatches")).not().isString().bail().isArray().optional(),
+			body(`${nameofSession("plannedMatches")}.*.teams`).not().isString().bail().isArray({max:4, min:4}),
+			body(`${nameofSession("plannedMatches")}.*.teams.*._id`).isMongoId(),
+			withData<{
+				id: string;
+			} & Partial<store.Session<string | ObjectId>>, any, store.Session<ObjectId>>(async (data, req, res) => {
+				if (data.plannedMatches && data.plannedMatches.length > 0) {
+					const teamIds = data.plannedMatches.map(match => match.teams.map(team => team._id as string)).flat();
+					const uniqueTeams = new Set(teamIds.map(id => id));
+
+					if (uniqueTeams.size !== teamIds.length) {
+						res.status(400).send("Teams cannot be in two matches at once!" as any);
+						return;
+					}
+
+					data.plannedMatches = data.plannedMatches.map(match => ({
+						teams: match.teams.map(team => ({
+							_id: new ObjectId(team._id)
+						}))
+					}));
+
+					const sessionId = new ObjectId(data.id);
+
+					const [session] = await this.mongoStore.sessionsCollection.find({
+						_id: sessionId
+					}).toArray();
+
+					if (!session) {
+						res.status(404).send();
+						return;
+					}
+
+					const [contest] = await this.mongoStore.contestCollection.find({
+						_id: session.contestId,
+						"teams._id": {
+							$all: teamIds.map(id => new ObjectId(id))
+						}
+					}).toArray();
+
+					if (!contest) {
+						res.status(400).send(`One of team ids ${teamIds.map(id => `#${id}`).join(", ")} doesn't exist.` as any);
+						return;
+					}
+				}
+
+				const update: {
+					$set?: {},
+					$unset?: {},
+				} = {};
+
+				for (const key in data) {
+					if (key === "id") {
+						continue;
+					}
+
+					if (data[key] === undefined) {
+						continue;
+					}
+
+					if (data[key] === null) {
+						update.$unset ??= {};
+						update.$unset[key] = true;
+						continue;
+					}
+
+					update.$set ??= {};
+					update.$set[key] = data[key];
+				}
+
+				if (update.$set == null && update.$unset == null) {
+					res.status(400).send("No operations requested" as any);
+					return;
+				}
+
+				const session = await this.mongoStore.sessionsCollection.findOneAndUpdate(
+					{ _id: new ObjectId(data.id) },
+					update,
+					{
+						returnOriginal: false,
+
+					}
+				);
+
+				if (!session.value) {
+					res.status(404).send();
+					return;
+				}
+
+				res.send(session.value);
+			})
+		)
+
+		.delete('/sessions/:id',
+			param("id").isMongoId(),
+			withData<{id: string}, any, store.Session<ObjectId>>(async (data, req, res) => {
+				const result = await this.mongoStore.sessionsCollection.deleteOne(
+					{
+						_id: new ObjectId(data.id)
+					}
+				);
+
+				if (result.deletedCount <= 0) {
+					res.sendStatus(404);
+				}
+				res.send();
+			})
+		)
 
 		.patch('/contests/:id/teams/:teamId',
 			param("id").isMongoId(),

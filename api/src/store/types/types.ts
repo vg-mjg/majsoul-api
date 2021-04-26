@@ -8,11 +8,12 @@ export interface GameResult<Id = any> extends Partial<majsoul.GameResult> {
 }
 
 export interface Session<Id = any> {
+	name?: string;
 	_id: Id;
 	contestId: Id;
 	scheduledTime: number;
 	plannedMatches: Match<Id>[];
-	isCancelled: boolean;
+	isCancelled?: boolean;
 }
 
 export interface Player<Id = any> extends majsoul.Player {
@@ -48,10 +49,12 @@ export interface ContestTeam<Id = any> {
 	anthem?: string;
 }
 
+export interface MatchTeam<Id = any> {
+	_id: Id;
+}
+
 export interface Match<Id = any> {
-	teams: {
-		_id: Id;
-	}[];
+	teams: MatchTeam<Id>[];
 }
 
 export interface User<Id = any> {
