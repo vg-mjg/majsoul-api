@@ -125,20 +125,22 @@ export function Session(props: {
 					onSelect={onAccordionSelect}
 					activeKey={detailsOpen ? "0" : null}
 				>
-					<Accordion.Collapse as={Row} eventKey="0">
+					<Accordion.Collapse eventKey="0">
 						<Container className="p-0">
-							<Row>
-								<Col>
-									<div className="h5"><u>Matches</u></div>
-								</Col>
-							</Row>
-							<Row>
-								{props.session.plannedMatches.map((match, index) => <Col className={`mr-2 mb-2 px-0 ${index > 0 ? "" : "ml-2"}`} key={index}>
-									<Match match={match} contestId={props.session.contestId} totals={props.session.totals}/>
-								</Col>)}
-							</Row>
-							<Row>
-								<Col>
+							{ props.session.plannedMatches?.length > 0 && <>
+								<Row className="no-gutters">
+									<Col className="px-2">
+										<div className="h5"><u>Matches</u></div>
+									</Col>
+								</Row>
+								<Row className="no-gutters">
+									{props.session.plannedMatches.map((match, index) => <Col key={index}>
+										<Match match={match} contestId={props.session.contestId} totals={props.session.totals}/>
+									</Col>)}
+								</Row>
+							</>}
+							<Row className="no-gutters">
+								<Col className="px-2">
 									<div className="h5"><u>Games</u></div>
 								</Col>
 							</Row>

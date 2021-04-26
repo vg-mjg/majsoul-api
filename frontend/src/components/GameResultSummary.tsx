@@ -80,6 +80,7 @@ function GameSeat(props: {
 					style={{
 						lineHeight: "initial",
 						display: "inline-block",
+
 						borderBottom: playerInformation?.team?.color ? `solid 3px #${playerInformation.team.color}` : "none"
 					}}
 				>

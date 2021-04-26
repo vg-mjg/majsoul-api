@@ -11,37 +11,49 @@ function Team(props : {
 	team: Store.ContestTeam,
 	score?: number,
 }): JSX.Element {
-	return <Container className="p-0">
-		<Row className={"align-items-center flex-nowrap"}>
-			<Col md="auto" className="mr-3">
-				<label
-					className="rounded"
-					style={{
-						display: "block",
-						margin: 0,
-						height: 64,
-						width: 64,
-						backgroundImage: `url(${props.team.image ?? defaultImage})`,
+	return <Container
+		className={`font-weight-bold p-0 rounded bg-primary text-dark`}
+		style={{
+			border: `3px solid #${props.team.color ?? 'fff'}`
+		}}
+	>
+		<Row className={`no-gutters`} style={{lineHeight: "40px", textAlign: "center"}}>
+			<Col
+				md="auto"
+				className={`rounded-left`}
+				style={{minWidth: "40px", boxSizing: "content-box"}}
+			>
+				<div className="rounded "style={{
+						height: 40,
+						width: 40,
+						backgroundImage: `url(${props?.team?.image})`,
 						backgroundRepeat: "no-repeat",
 						backgroundPosition: "center",
 						backgroundSize: "contain"
+					}}/>
+			</Col>
+			<Col
+				className="px-2"
+			>
+				<div
+					className="text-capitalize"
+					style={{
+						lineHeight: "40px",
+						overflow: "hidden",
+						whiteSpace: "nowrap",
+						textOverflow: "ellipsis",
 					}}
-				/>
+				>
+					{props.team.name?.toLowerCase()}
+				</div>
 			</Col>
-			<Col md="auto" className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
-				<Container className="p-0">
-					<Row className="no-gutters">
-						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid #${props.team.color}`}}>
-							{props.team.name?.toLocaleLowerCase() ?? `#${props.team._id}`}
-						</Col>
-					</Row>
-				</Container>
+			<Col md="auto" style={{minWidth: "4rem"}} className="rounded-right">
+				{props.score / 1000}
 			</Col>
-			<Col></Col>
-			{ isNaN(props.score) || <Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col> }
 		</Row>
-	</Container>
+	</Container>;
 }
+
 
 export function Match(props: {
 	match: Store.Match,
@@ -54,11 +66,14 @@ export function Match(props: {
 	}
 
 	const teamsArray = props.match.teams.map(team => teams[team._id]).sort((a, b) => props.totals[b._id] - props.totals[a._id]);
-	return <Container className="bg-primary pt-2 rounded text-dark">
+
+	const cellStyle = "mb-1 pl-0 pr-1";
+	const rowStyle = "pl-1 no-gutters";
+	return <Container className="px-1 py-2">
 		{teamsArray.map(team =>
-			<Row key={team._id} className="pl-1 no-gutters">
-				<Col className="mb-2 pl-0 pr-1">
-					<Team team={team} score={props.totals[team._id]}></Team>
+			<Row key={team._id} className={rowStyle}>
+				<Col className={cellStyle}>
+				<Team team={team} score={props.totals[team._id]}></Team>
 				</Col>
 			</Row>
 		)}
