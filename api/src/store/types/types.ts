@@ -1,6 +1,6 @@
 import * as majsoul from "../../majsoul";
 
-export interface GameResult<Id = any> extends Partial<majsoul.GameResult> {
+export interface GameResult<Id = any> extends Omit<Partial<majsoul.GameResult>, "players"> {
 	_id: Id;
 	contestId: Id;
 	players?: Player<Id>[];
@@ -16,9 +16,10 @@ export interface Session<Id = any> {
 	isCancelled?: boolean;
 }
 
-export interface Player<Id = any> extends majsoul.Player {
+export interface Player<Id = any> extends Partial<majsoul.Player> {
 	_id: Id;
-	displayName: string;
+	majsoulFriendlyId?: number;
+	displayName?: string;
 }
 
 export enum ContestType {

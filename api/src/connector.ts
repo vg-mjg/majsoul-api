@@ -86,6 +86,63 @@ async function main() {
 	// sub.unsubscribe();
 
 	merge(
+		mongoStore.PlayerChanges.pipe(
+			filter(change => change.operationType === "insert"
+				&& change.fullDocument.majsoulFriendlyId != null
+			),
+			map((insertEvent: ChangeEventCR<store.Player<ObjectId>>) => insertEvent.fullDocument)
+		),
+		defer(() => from(
+			mongoStore.playersCollection.find({
+				majsoulFriendlyId: {
+					$exists: true
+				}
+			}).toArray()
+		).pipe(mergeAll()))
+	).subscribe(player => {
+		api.findPlayerByFriendlyId(player.majsoulFriendlyId).then(async (apiPlayer) => {
+			if (apiPlayer == null) {
+				mongoStore.playersCollection.deleteOne({
+					_id: player._id
+				});
+				return;
+			}
+
+			const update = await mongoStore.playersCollection.findOneAndUpdate(
+				{
+					majsoulId: apiPlayer.majsoulId
+				},
+				{
+					$set: {
+						...apiPlayer
+					},
+				}
+			);
+
+			if (update.value) {
+				mongoStore.playersCollection.deleteOne({
+					_id: player._id
+				});
+				return;
+			}
+
+			mongoStore.playersCollection.findOneAndUpdate(
+				{
+					_id: player._id
+				},
+				{
+					$set: {
+						...apiPlayer
+					},
+					$unset: {
+						majsoulFriendlyId: true
+					}
+				}
+			);
+		})
+	})
+
+	merge(
 		mongoStore.GameChanges.pipe(
 			filter(change => change.operationType === "insert"
 				&& change.fullDocument.contestMajsoulId == null

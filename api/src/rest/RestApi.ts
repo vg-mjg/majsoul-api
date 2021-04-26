@@ -11,6 +11,7 @@ import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
 import { map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, param, query, validationResult } from 'express-validator';
+import { Store } from '..';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -262,6 +263,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
+const nameofPlayer = nameofFactory<store.Player<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
@@ -1395,6 +1397,16 @@ export class RestApi {
 				res.send();
 			}
 		))
+
+		.put('/players/',
+			body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
+			withData<Partial<store.Player<string | ObjectId>>, any, Store.Player<ObjectId>>(async (data, req, res) => {
+				const result = await this.mongoStore.playersCollection.insertOne({
+					majsoulFriendlyId: data.majsoulFriendlyId
+				});
+				res.send(result.ops[0]);
+			})
+		)
 
 		.get("/rigging/token", async (req, res) => {
 			const user = await this.mongoStore.userCollection.findOne({

@@ -3,7 +3,7 @@ import { Root } from "protobufjs";
 import fetch from "node-fetch";
 import { Observable, using } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import { GameResult, Contest } from "./types/types";
+import { GameResult, Contest, Player } from "./types/types";
 import { RoundResult, AgariInfo, RoundInfo } from "./types/types";
 import { DrawStatus } from "./types/DrawStatus";
 import { Han } from "./types/Han";
@@ -183,6 +183,24 @@ export class Api {
 				);
 			}
 		);
+	}
+
+	public async findPlayerByFriendlyId(majsoulFriendlyId: number): Promise<Player> {
+		try {
+			const resp = (await this.lobbyService.rpcCall("searchAccountByPattern", { pattern: majsoulFriendlyId.toString() }));
+			if (!resp.decode_id) {
+				return null;
+			}
+
+			const [player] = (await this.lobbyService.rpcCall("fetchMultiAccountBrief", { account_id_list: [resp.decode_id] })).players;
+			return {
+				majsoulId: player.account_id,
+				nickname: player.nickname
+			}
+		} catch (e) {
+			console.log(e);
+			return null;
+		}
 	}
 
 	public async getGame(id: string): Promise<GameResult> {
