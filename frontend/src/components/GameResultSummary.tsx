@@ -30,7 +30,6 @@ function GameSeat(props: {
 		}
 		: contest?.players?.find(p => p._id === playerId._id);
 
-
 	if (player == null) {
 		return null;
 	}

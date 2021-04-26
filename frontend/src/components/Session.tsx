@@ -13,30 +13,58 @@ import Button from "react-bootstrap/Button";
 import { Rest } from "majsoul-api";
 import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
+import Accordion from "react-bootstrap/Accordion";
+import { LoadingSpinner } from "./utils/LoadingSpinner";
+import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
+import clsx from "clsx";
+
+enum GamesFetchStatus {
+	None,
+	Fetching,
+	Fetched,
+}
 
 export function Session(props: {
 	session: Rest.Session<string>;
+	forceDetails?: boolean;
 }): JSX.Element{
+	const [viewDetails, setViewDetails] = React.useState(false);
+	const [gamesFetchedStatus, setGamesFetched] = React.useState(GamesFetchStatus.None);
+	const detailsOpen = viewDetails || props.forceDetails;
+
 	const token = useSelector((state: IState) => state.user?.token);
 	const games = useSelector((state: IState) =>
 		Object.values(state.games ?? {})
 			.filter(game =>
 				game.sessionId === props.session?._id
-				&& game.contestId === props.session?.contestId
+				&& game.contestId === ""//props.session?.contestId
 			)
 	);
 
 	const dispatch = useDispatch();
 	React.useEffect(() => {
+		if (!detailsOpen || gamesFetchedStatus !== GamesFetchStatus.None) {
+			return;
+		}
+
 		if (props.session?._id == null) {
 			return;
 		}
 
+		setGamesFetched(GamesFetchStatus.Fetching);
+
 		fetchGames({
 			sessionIds: [props.session._id],
 			contestIds: [props.session?.contestId],
-		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
-	}, [props.session?._id]);
+		}).then(games => {
+			setGamesFetched(GamesFetchStatus.Fetched);
+			dispatchGamesRetrievedAction(dispatch, games);
+		});
+	}, [props.session?._id, detailsOpen]);
+
+	const onAccordionSelect = React.useCallback((accordionKey: string) => {
+		setViewDetails(accordionKey === "0");
+	}, [setViewDetails])
 
 	const utcStartMoment = (props.session == null ? moment() : moment(props.session.scheduledTime)).tz("UTC");
 
@@ -89,16 +117,49 @@ export function Session(props: {
 			</Col>)}
 		</Row>
 		<Row>
-			<Container className="p-0">
-				<Row className="no-gutters">
-					{games.map((game, index) => <React.Fragment key={game._id}>
-						<Col style={{minWidth: "auto"}}>
-							<GameResultSummary game={game}/>
+			<Col>
+				<Accordion
+					as={Container}
+					className="p-0"
+					onSelect={onAccordionSelect}
+					activeKey={detailsOpen ? "0" : null}
+				>
+					<Accordion.Collapse as={Row} eventKey="0">
+						<Container className="p-0">
+							<Row className="no-gutters">
+								{ gamesFetchedStatus === GamesFetchStatus.Fetched
+									? games.length === 0
+										? <Col className="text-center">
+											<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
+										</Col>
+										: games.map((game, index) => <React.Fragment key={game._id}>
+											<Col style={{minWidth: "auto"}}>
+												<GameResultSummary game={game}/>
+											</Col>
+											{(index % 2 == 1) && <div className="w-100"/>}
+										</React.Fragment>)
+									: <Col className="text-center pb-2">
+										<LoadingSpinner/>
+									</Col>
+								}
+							</Row>
+						</Container>
+					</Accordion.Collapse>
+
+					{ props.forceDetails || <Accordion.Toggle
+						disabled as={Row}
+						eventKey="0"
+					>
+						<Col className="text-center py-1">
+							{
+								viewDetails
+									? <BsChevronCompactUp color="white" size="30px"/>
+									: <BsChevronCompactDown color="white" size="30px"/>
+							}
 						</Col>
-						{(index % 2 == 1) && <div className="w-100"/>}
-					</React.Fragment>)}
-				</Row>
-			</Container>
+					</Accordion.Toggle>}
+				</Accordion>
+			</Col>
 		</Row>
 		{ (token && !timeIsInvalid && !utcStartMoment.isSame(moment(utcMoment))) &&
 			<Row className="pb-3 px-3 justify-content-end">

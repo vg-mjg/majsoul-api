@@ -26,12 +26,18 @@ import { fetchContestSessions } from "src/api/Sessions";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 import { Link } from "react-router-dom";
 
-export function ContestSummary(props: {contestId: string}): JSX.Element {
+export function ContestSummary(props: {
+	contestId: string;
+}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
 		fetchContestSummary(props.contestId).then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
+
+		fetchContestPlayers({
+			contestId: props.contestId
+		}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);
@@ -111,10 +117,6 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			contestIds: [props.contestId],
 			last: 4,
 		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
-
-		fetchContestPlayers({
-			contestId: props.contestId
-		}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
 	}, [props.contestId]);
 
 	return <>
@@ -173,14 +175,14 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
 			</Row>
 			<Row>
-				<Session session={nextSession}/>
+				<Session session={nextSession} forceDetails/>
 			</Row>
 		</>}
 		<Row className="px-4 py-3 justify-content-end" >
 			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
 		</Row>
 		<Row>
-			<Session session={currentSession}/>
+			<Session session={currentSession} forceDetails/>
 		</Row>
 		<Row className="mt-4">
 			<Col className="text-center">

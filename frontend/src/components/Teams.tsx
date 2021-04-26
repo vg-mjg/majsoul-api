@@ -15,10 +15,10 @@ import { dispatchTeamDeletedAction } from "src/actions/teams/TeamDeletedAction";
 import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
 import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
 import { fetchContestPlayers, fetchPlayers } from "src/api/Players";
-import Spinner from "react-bootstrap/Spinner";
 import { css } from 'astroturf';
 import clsx from "clsx";
 import { BsX } from 'react-icons/bs';
+import { LoadingSpinner } from "./utils/LoadingSpinner";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -237,9 +237,7 @@ function Team(props: {
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
 				{ players == null
-					? <Spinner animation="border" role="status">
-						<span className="sr-only">Loading...</span>
-					</Spinner>
+					? <LoadingSpinner/>
 					: <Container className="p-0">
 						{[...players].sort((a, b) => a.tourneyRank - b.tourneyRank).map(player =>
 							<Row key={player._id} className="no-gutters py-1">

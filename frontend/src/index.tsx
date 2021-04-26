@@ -261,6 +261,7 @@ const store = createStore(
 			videoId: null
 		},
 	} as IState as any,
+	composeEnhancers(),
 )
 
 const persistor = persistStore(store);

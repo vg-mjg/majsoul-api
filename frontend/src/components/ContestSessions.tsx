@@ -4,8 +4,10 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import { useDispatch, useSelector } from "react-redux";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
+import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 import { fetchContestSummary } from "src/api/Contests";
+import { fetchContestPlayers } from "src/api/Players";
 import { fetchContestSessions } from "src/api/Sessions";
 import { IState } from "../State";
 import { Session } from "./Session";
@@ -28,14 +30,18 @@ export function ContestSessions(props: {
 
 		fetchContestSessions(contest._id)
 			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
-	}, [contest]);
+
+		fetchContestPlayers({
+			contestId: contest._id
+		}).then(players => dispatchContestPlayersRetrieved(dispatch, contest._id, players));
+	}, [contest?._id]);
 
 	if (contest?.sessions == null) {
 		return null;
 	}
 
 	return <Container>
-		{contest?.sessions.map(session => <Row id={session._id} className="mt-4">
+		{contest?.sessions.map(session => <Row key={session._id} className="mt-4">
 			<Col>
 				<Session session={session}/>
 			</Col>
