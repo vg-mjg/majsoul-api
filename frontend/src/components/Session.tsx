@@ -37,7 +37,7 @@ export function Session(props: {
 		Object.values(state.games ?? {})
 			.filter(game =>
 				game.sessionId === props.session?._id
-				&& game.contestId === ""//props.session?.contestId
+				&& game.contestId === props.session?.contestId
 			)
 	);
 
@@ -112,11 +112,6 @@ export function Session(props: {
 			</Col>
 		</Row>
 		<Row>
-			{props.session.plannedMatches.map((match, index) => <Col className={`mr-2 mb-2 px-0 ${index > 0 ? "" : "ml-2"}`} key={index}>
-				<Match match={match} totals={props.session.totals}/>
-			</Col>)}
-		</Row>
-		<Row>
 			<Col>
 				<Accordion
 					as={Container}
@@ -126,6 +121,21 @@ export function Session(props: {
 				>
 					<Accordion.Collapse as={Row} eventKey="0">
 						<Container className="p-0">
+							<Row>
+								<Col>
+									<div className="h5"><u>Matches</u></div>
+								</Col>
+							</Row>
+							<Row>
+								{props.session.plannedMatches.map((match, index) => <Col className={`mr-2 mb-2 px-0 ${index > 0 ? "" : "ml-2"}`} key={index}>
+									<Match match={match} contestId={props.session.contestId} totals={props.session.totals}/>
+								</Col>)}
+							</Row>
+							<Row>
+								<Col>
+									<div className="h5"><u>Games</u></div>
+								</Col>
+							</Row>
 							<Row className="no-gutters">
 								{ gamesFetchedStatus === GamesFetchStatus.Fetched
 									? games.length === 0
@@ -150,7 +160,7 @@ export function Session(props: {
 						disabled as={Row}
 						eventKey="0"
 					>
-						<Col className="text-center py-1">
+						<Col className="text-center pb-1">
 							{
 								viewDetails
 									? <BsChevronCompactUp color="white" size="30px"/>
