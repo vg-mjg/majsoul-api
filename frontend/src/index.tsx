@@ -25,6 +25,7 @@ import { ActionType, MajsoulAction } from "./actions";
 import { RiggingLogin } from "./components/rigging/RiggingLogin";
 import { fetchContestSummary } from "./api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "./actions/contests/ContestSummaryRetrievedAction";
+import { ContestSessions } from "./components/ContestSessions";
 
 const teamColors = [
 	"#980000",
@@ -287,6 +288,13 @@ function LatestContestSummary(): JSX.Element {
 	return <ContestSummary contestId={contestId}/>
 }
 
+function ContestSessionsFromRoute() {
+	const { id } = useParams<{
+		id: string;
+	}>();
+	return <ContestSessions contestId={id}/>
+}
+
 ReactDOM.render(
 	<Provider store={store}>
 		<PersistGate loading={null} persistor={persistor}>
@@ -300,6 +308,9 @@ ReactDOM.render(
 								</Route>
 								<Route path="/youtube">
 									<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
+								</Route>
+								<Route path="/contests/:id/sessions">
+									<ContestSessionsFromRoute/>
 								</Route>
 								<Route path="/contests/:id">
 									<ContestFromRoute/>

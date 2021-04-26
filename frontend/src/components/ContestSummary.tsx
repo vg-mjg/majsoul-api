@@ -24,6 +24,7 @@ import { fetchContestSummary } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { fetchContestSessions } from "src/api/Sessions";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
+import { Link } from "react-router-dom";
 
 export function ContestSummary(props: {contestId: string}): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
@@ -180,6 +181,11 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 		</Row>
 		<Row>
 			<Session session={currentSession}/>
+		</Row>
+		<Row className="mt-4">
+			<Col className="text-center">
+				<Link className="h5 text-dark" to={`/contests/${contest._id}/sessions`}><u>More Sessions</u></Link>
+			</Col>
 		</Row>
 	</>
 }
