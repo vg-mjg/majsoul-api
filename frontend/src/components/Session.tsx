@@ -17,6 +17,10 @@ import Accordion from "react-bootstrap/Accordion";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import clsx from "clsx";
+import { TextField } from "./utils/TextField";
+import { patchSession } from "src/api/Sessions";
+import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
+import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsRetrievedAction copy";
 
 enum GamesFetchStatus {
 	None,
@@ -67,8 +71,10 @@ export function Session(props: {
 	}, [setViewDetails])
 
 	const utcStartMoment = (props.session == null ? moment() : moment(props.session.scheduledTime)).tz("UTC");
+	const utcStartMomentText = utcStartMoment.format("LT l") + " UTC";
 
-	const [utcMoment, setUtcMoment] = React.useState(utcStartMoment.format("LT l") + " UTC");
+	const [name, setName] = React.useState<string>();
+	const [utcMoment, setUtcMoment] = React.useState<string>();
 	const [timeIsInvalid, setTimeIsValid] = React.useState(!utcStartMoment.isValid());
 	const [editTime, setEditTime] = React.useState(false);
 
@@ -86,7 +92,7 @@ export function Session(props: {
 							readOnly={!token || !editTime}
 							isInvalid={timeIsInvalid}
 							className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
-							value={`${utcMoment}`}
+							value={`${utcMoment ?? utcStartMomentText}`}
 							onChange={event => {
 								setUtcMoment(event.target.value)
 								setTimeIsValid(!moment(event.target.value).isValid())
@@ -108,7 +114,7 @@ export function Session(props: {
 				</Container>
 			</Col>
 			<Col className="text-right align-self-center">
-				<CountdownTimer targetTime={props.session.scheduledTime}></CountdownTimer>
+				<CountdownTimer targetTime={props.session.scheduledTime} prefix={props.session.name}></CountdownTimer>
 			</Col>
 		</Row>
 		<Row>
@@ -171,11 +177,32 @@ export function Session(props: {
 				</Accordion>
 			</Col>
 		</Row>
-		{ (token && !timeIsInvalid && !utcStartMoment.isSame(moment(utcMoment))) &&
+		{ token &&
 			<Row className="pb-3 px-3 justify-content-end">
-				<Button
-					variant="secondary"
-				>Save</Button>
+				<Col>
+				<TextField
+					id={`${props.session._id}-name-editor`}
+					fallbackValue={name ?? props.session.name}
+					placeholder="Session Name"
+					onChange={(oldValue, newValue) => {
+						setName(newValue);
+					}}
+				/>
+			</Col>
+				<Col md="auto">
+					<Button
+						disabled={
+							(utcMoment == null || timeIsInvalid)
+							&& (name === props.session.name || name === undefined)
+						}
+						variant="secondary"
+						onClick={() => patchSession(token, {
+							_id: props.session._id,
+							name,
+							scheduledTime: moment(utcMoment ?? utcStartMomentText).valueOf()
+						}).then(session => dispatchSessionPatchedAction(dispatch, session))}
+					>Save</Button>
+				</Col>
 			</Row>
 		}
 	</Container>;

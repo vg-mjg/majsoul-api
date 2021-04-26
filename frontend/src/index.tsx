@@ -171,7 +171,24 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					state,
 					action.contestId,
 					{
-						sessions: action.sessions
+						sessionsById: toRecord(action.sessions, "_id")
+					}
+				)
+			}
+		} case ActionType.SessionPatched: {
+			return {
+				...state,
+				...updatedContestRecord(
+					state,
+					action.session.contestId,
+					{
+						sessionsById: {
+							...(state.contestsById[action.session.contestId].sessionsById ?? {}),
+							[action.session._id]: {
+								...(state.contestsById[action.session.contestId].sessionsById[action.session._id] ?? {}),
+								...action.session,
+							}
+						}
 					}
 				)
 			}
@@ -207,7 +224,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						[action.contest._id]: {
 							...action.contest,
 							teams: originalContest.teams,
-							sessions: originalContest.sessions,
+							sessionsById: originalContest.sessionsById,
 						}
 					}
 				}

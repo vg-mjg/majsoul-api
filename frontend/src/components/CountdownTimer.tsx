@@ -3,6 +3,7 @@ import * as moment from "moment-timezone";
 
 interface TimerProps {
 	targetTime: number;
+	prefix?: string;
 }
 
 interface TimerState {
@@ -44,6 +45,7 @@ export class CountdownTimer extends React.Component<TimerProps, TimerState> {
 		}
 
 		return <h3 className="mb-0">
+			{this.props.prefix && `${this.props.prefix} `}
 			{future ? "Starts in " : "Started "}
 			{
 				difference.asMonths() >= 1

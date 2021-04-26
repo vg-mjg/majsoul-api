@@ -15,7 +15,7 @@ export function TextField(props: {
 	inline?: boolean;
 	type?: string;
 	className?: string;
-	onChange?: (oldValue: string, newValue: string) => { value: string; isValid: boolean; };
+	onChange?: (oldValue: string, newValue: string) => { value: string; isValid: boolean; } | void;
 	onCommit?: (value: string, isValid: boolean) => string;
 }): JSX.Element {
 	const {
@@ -52,8 +52,14 @@ export function TextField(props: {
 				placeholder={placeholder}
 				onChange={event => {
 					const changeResult = onChange(value, event.target.value);
-					setValue(changeResult.value);
-					setIsValid(changeResult.isValid);
+					if (changeResult == null){
+						setValue(event.target.value);
+						setIsValid(true);
+						return;
+					}
+
+					setValue((changeResult as any).value);
+					setIsValid((changeResult as any).isValid);
 				}}
 				onFocus={(event: any) => setIsEditing(true)}
 				onBlur={(event: any) => {

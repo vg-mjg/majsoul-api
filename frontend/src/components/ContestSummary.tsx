@@ -106,9 +106,6 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 	});
 
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
-	if (contest == null) {
-		return null;
-	}
 
 	const dispatch = useDispatch();
 
@@ -118,6 +115,10 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			last: 4,
 		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
 	}, [props.contestId]);
+
+	if (contest == null) {
+		return null;
+	}
 
 	return <>
 		<Row className="mt-3">
@@ -150,18 +151,21 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 
 	const { contest } = props;
 
-	const nextSessionIndex = contest?.sessions?.findIndex(session => session.scheduledTime > Date.now()) ?? -1;
-	const nextSession = contest?.sessions == null ? null : contest.sessions[nextSessionIndex];
-	const currentSession = contest?.sessions == null ? null : contest.sessions[(nextSessionIndex < 1 ? contest.sessions.length : nextSessionIndex) - 1];
-
 	React.useEffect(() => {
 		fetchContestSessions(contest._id)
 			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
 	}, [dispatch, contest._id]);
 
-	if (contest?.sessions == null) {
+	if (contest?.sessionsById == null) {
 		return null;
 	}
+
+	const sessions = Object.values(contest.sessionsById)
+		.sort((a, b) => a.scheduledTime - b.scheduledTime);
+
+	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
+	const nextSession = sessions[nextSessionIndex];
+	const currentSession = sessions[(nextSessionIndex < 1 ? sessions.length : nextSessionIndex) - 1];
 
 	return <>
 		<Row className="mt-3">

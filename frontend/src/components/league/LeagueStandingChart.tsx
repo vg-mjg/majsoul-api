@@ -57,16 +57,16 @@ function createData(sessions: Rest.Session[], teams: Record<string, Store.Contes
 export function LeagueStandingChart(props: {
 	contest: Contest;
 }): JSX.Element {
-	if (props.contest?.sessions == null) {
+	if (props.contest?.sessionsById == null) {
 		return;
 	}
 
 	const sessions = useSelector((state: IState) => {
 		const now = Date.now();
-		if (props.contest.sessions == null) {
+		if (props.contest.sessionsById == null) {
 			return [];
 		}
-		return props.contest.sessions.filter(session => session.scheduledTime < now);
+		return Object.values(props.contest.sessionsById).filter(session => session.scheduledTime < now);
 	});
 
 	const teams = useSelector((state: IState) => props.contest?.teams);

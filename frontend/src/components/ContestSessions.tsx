@@ -36,12 +36,12 @@ export function ContestSessions(props: {
 		}).then(players => dispatchContestPlayersRetrieved(dispatch, contest._id, players));
 	}, [contest?._id]);
 
-	if (contest?.sessions == null) {
+	if (contest?.sessionsById == null) {
 		return null;
 	}
 
 	return <Container>
-		{contest?.sessions.map(session => <Row key={session._id} className="mt-4">
+		{Object.values(contest.sessionsById).map(session => <Row key={session._id} className="mt-4">
 			<Col>
 				<Session session={session}/>
 			</Col>
