@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 function Team(props : {
 	team: Store.ContestTeam,
 	score?: number,
+	totalScore?: number,
 }): JSX.Element {
 	return <Container
 		className={`font-weight-bold p-0 rounded bg-primary text-dark`}
@@ -47,9 +48,11 @@ function Team(props : {
 					{props.team.name?.toLowerCase()}
 				</div>
 			</Col>
-			<Col md="auto" style={{minWidth: "4rem"}} className="rounded-right">
-				{props.score / 1000}
-			</Col>
+			{ props.totalScore != null &&
+				<Col md="auto" style={{minWidth: "6.5rem"}} className="rounded-right text-right pr-1">
+					{`${props.totalScore / 1000}(${props.score > 0 ? "+" : ""}${props.score / 1000})`}
+				</Col>
+			}
 		</Row>
 	</Container>;
 }
@@ -57,13 +60,16 @@ function Team(props : {
 
 export function Match(props: {
 	match: Store.Match,
-	totals: Record<string, number>,
+	totals?: Record<string, number>,
+	aggregateTotals?: Record<string, number>,
 	contestId: string,
 }): JSX.Element {
 	const teams = useSelector((state: IState) => state.contestsById[props.contestId].teams);
 	if (teams == null) {
 		return null;
 	}
+
+	const {totals = {}, aggregateTotals = {}} = props;
 
 	const teamsArray = props.match.teams.map(team => teams[team._id]).sort((a, b) => props.totals[b._id] - props.totals[a._id]);
 
@@ -73,7 +79,7 @@ export function Match(props: {
 		{teamsArray.map(team =>
 			<Row key={team._id} className={rowStyle}>
 				<Col className={cellStyle}>
-				<Team team={team} score={props.totals[team._id]}></Team>
+				<Team team={team} score={totals[team._id]} totalScore={aggregateTotals[team._id]}></Team>
 				</Col>
 			</Row>
 		)}

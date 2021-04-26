@@ -135,7 +135,7 @@ export function Session(props: {
 								</Row>
 								<Row className="no-gutters">
 									{props.session.plannedMatches.map((match, index) => <Col key={index}>
-										<Match match={match} contestId={props.session.contestId} totals={props.session.totals}/>
+										<Match match={match} contestId={props.session.contestId} totals={props.session.totals} aggregateTotals={props.session.aggregateTotals}/>
 									</Col>)}
 								</Row>
 							</>}
