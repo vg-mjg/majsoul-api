@@ -278,6 +278,10 @@ const seededPlayerNames: Record<string, string[]> = {
 	]
 }
 
+function escapeRegexp(str: string) {
+	return String(str).replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+};
+
 function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void) {
 	return async (request: express.Request, response: express.Response<ResponseType>) => {
 		try {
@@ -744,7 +748,7 @@ export class RestApi {
 							seeded: seededPlayersForContest.indexOf(player.nickname) >= 0,
 						}
 					}))
-					.filter(player => player.gamesPlayed > ignoredGames || player.team.seeded)
+					.filter(player => ignoredGames == 0 || player.gamesPlayed > ignoredGames || player.team.seeded)
 					.sort((a, b) => b.tourneyScore - a.tourneyScore)
 					.map((p, i) => ({...p, tourneyRank: i}))
 				);
@@ -757,14 +761,15 @@ export class RestApi {
 				name?: string;
 				limit?: string;
 			}, any, store.Player<ObjectId>[]>(async (data, req, res) => {
+				const regex = new RegExp(`^${escapeRegexp(data.name)}.*$`);
 				const cursor = this.mongoStore.playersCollection.find(
 					{
 						$or: [
 							{
-								displayName: { $regex: new RegExp(`^${data.name}.*$`), $options: "i" }
+								displayName: { $regex: regex, $options: "i" }
 							},
 							{
-								nickname: { $regex: new RegExp(`^${data.name}.*$`), $options: "i" }
+								nickname: { $regex: regex, $options: "i" }
 							}
 						],
 					},
