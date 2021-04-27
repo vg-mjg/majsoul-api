@@ -82,6 +82,8 @@ export function Session(props: {
 		return null;
 	}
 
+	const hasStarted = moment(utcMoment ?? utcStartMomentText).isBefore(moment());
+
 	return <Container fluid className="bg-dark rounded text-light">
 		<Row className="py-3 px-2">
 			<Col md="auto">
@@ -139,28 +141,30 @@ export function Session(props: {
 									</Col>)}
 								</Row>
 							</>}
-							<Row className="no-gutters">
-								<Col className="px-2">
-									<div className="h5"><u>Games</u></div>
-								</Col>
-							</Row>
-							<Row className="no-gutters">
-								{ gamesFetchedStatus === GamesFetchStatus.Fetched
-									? games.length === 0
-										? <Col className="text-center">
-											<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
-										</Col>
-										: games.map((game, index) => <React.Fragment key={game._id}>
-											<Col style={{minWidth: "auto"}}>
-												<GameResultSummary game={game}/>
-											</Col>
-											{(index % 2 == 1) && <div className="w-100"/>}
-										</React.Fragment>)
-									: <Col className="text-center pb-2">
-										<LoadingSpinner/>
+							{ hasStarted && <>
+								<Row className="no-gutters">
+									<Col className="px-2">
+										<div className="h5"><u>Games</u></div>
 									</Col>
-								}
-							</Row>
+								</Row>
+								<Row className="no-gutters">
+									{ gamesFetchedStatus === GamesFetchStatus.Fetched
+										? games.length === 0
+											? <Col className="text-center">
+												<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
+											</Col>
+											: games.map((game, index) => <React.Fragment key={game._id}>
+												<Col style={{minWidth: "auto"}}>
+													<GameResultSummary game={game}/>
+												</Col>
+												{(index % 2 == 1) && <div className="w-100"/>}
+											</React.Fragment>)
+										: <Col className="text-center pb-2">
+											<LoadingSpinner/>
+										</Col>
+									}
+								</Row>
+							</>}
 						</Container>
 					</Accordion.Collapse>
 

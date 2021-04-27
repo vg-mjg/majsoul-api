@@ -165,7 +165,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 
 	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = sessions[nextSessionIndex];
-	const currentSession = sessions[(nextSessionIndex < 1 ? sessions.length : nextSessionIndex) - 1];
+	const currentSession = sessions[nextSessionIndex - 1];
 
 	return <>
 		<Row className="mt-3">
@@ -174,7 +174,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 		<Row className="mt-3">
 			<LeagueStandingChart contest={contest}/>
 		</Row>
-		{ nextSession != null && <>
+		{ nextSession && <>
 			<Row className="px-4 py-3 justify-content-end" >
 				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
 			</Row>
@@ -182,12 +182,14 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 				<Session session={nextSession} forceDetails/>
 			</Row>
 		</>}
-		<Row className="px-4 py-3 justify-content-end" >
-			<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
-		</Row>
-		<Row>
-			<Session session={currentSession} forceDetails/>
-		</Row>
+		{ currentSession && <>
+			<Row className="px-4 py-3 justify-content-end" >
+				<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
+			</Row>
+			<Row>
+				<Session session={currentSession} forceDetails/>
+			</Row>
+		</>}
 		<Row className="mt-4">
 			<Col className="text-center">
 				<Link className="h5 text-dark" to={`/contests/${contest._id}/sessions`}><u>More Sessions</u></Link>
