@@ -13,6 +13,9 @@ chartjs.defaults.global.defaultFontColor = "white";
 function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData<chartjs.ChartData> {
 	return {
 		labels: ["Start"].concat(sessions.map(session => {
+			if (session.name) {
+				return session.name;
+			}
 			const time =  moment(session.scheduledTime).tz('UTC');
 			return `${time.hours() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
 		})),
