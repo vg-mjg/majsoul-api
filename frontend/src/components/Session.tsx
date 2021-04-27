@@ -128,7 +128,7 @@ export function Session(props: {
 					activeKey={detailsOpen ? "0" : null}
 				>
 					<Accordion.Collapse eventKey="0">
-						<Container className="p-0">
+						<Container className="p-0 pb-2">
 							{ props.session.plannedMatches?.length > 0 && <>
 								<Row className="no-gutters">
 									<Col className="px-2">
@@ -137,7 +137,7 @@ export function Session(props: {
 								</Row>
 								<Row className="no-gutters">
 									{props.session.plannedMatches.map((match, index) => <Col key={index}>
-										<Match match={match} contestId={props.session.contestId} totals={props.session.totals} aggregateTotals={props.session.aggregateTotals}/>
+										<Match match={match} contestId={props.session.contestId} totals={hasStarted ? props.session.totals : null} aggregateTotals={props.session.aggregateTotals}/>
 									</Col>)}
 								</Row>
 							</>}

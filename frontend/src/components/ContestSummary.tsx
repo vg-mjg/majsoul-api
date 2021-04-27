@@ -165,7 +165,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 
 	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = sessions[nextSessionIndex];
-	const currentSession = sessions[nextSessionIndex - 1];
+	const currentSession = nextSessionIndex < 0 ? sessions[sessions.length - 1] : sessions[nextSessionIndex - 1];
 
 	return <>
 		<Row className="mt-3">
