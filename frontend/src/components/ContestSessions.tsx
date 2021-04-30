@@ -1,12 +1,14 @@
+import { ContestType } from "majsoul-api/dist/store/types/types";
 import * as React from "react";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import { useDispatch, useSelector } from "react-redux";
+import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
-import { fetchContestSummary } from "src/api/Contests";
+import { fetchContestImages, fetchContestSummary } from "src/api/Contests";
 import { fetchContestPlayers } from "src/api/Players";
 import { fetchContestSessions } from "src/api/Sessions";
 import { IState } from "../State";
@@ -20,7 +22,13 @@ export function ContestSessions(props: {
 
 	React.useEffect(() => {
 		fetchContestSummary(props.contestId)
-			.then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
+			.then(contest => {
+				if (contest.type === ContestType.League) {
+					fetchContestImages(contest._id)
+						.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
+				}
+				dispatchContestSummaryRetrievedAction(dispatch, contest);
+			});
 	}, [props.contestId]);
 
 	React.useEffect(() => {
