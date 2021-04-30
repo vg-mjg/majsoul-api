@@ -8,6 +8,7 @@ import * as moment from "moment-timezone";
 import * as styles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { levelToString, pickColorGradient } from "./utils";
+import { TeamImage } from "./TeamImage";
 
 function GameSeat(props: {
 	seat: number,
@@ -57,19 +58,12 @@ function GameSeat(props: {
 			>
 				{props.game.finalScore.map((score, index) => ({ score, index })).sort((a, b) => b.score.uma - a.score.uma).findIndex(s => s.index === props.seat) + 1}
 			</Col>
-			{playerInformation?.team?.image &&
+			{playerInformation?.team &&
 				<Col
 					md="auto"
 					className="border-right border-2"
 				>
-					<div style={{
-						height: 40,
-						width: 40,
-						backgroundImage: `url(${playerInformation?.team?.image})`,
-						backgroundRepeat: "no-repeat",
-						backgroundPosition: "center",
-						backgroundSize: "contain"
-					}}/>
+					<TeamImage team={playerInformation?.team}/>
 				</Col>
 			}
 			<Col

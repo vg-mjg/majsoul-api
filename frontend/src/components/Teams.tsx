@@ -4,7 +4,6 @@ import { Store, Rest } from 'majsoul-api';
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import defaultImage from "../../assets/shamiko.jpg";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
@@ -19,6 +18,7 @@ import { css } from 'astroturf';
 import clsx from "clsx";
 import { BsX } from 'react-icons/bs';
 import { LoadingSpinner } from "./utils/LoadingSpinner";
+import { TeamImage } from "./TeamImage";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -67,6 +67,12 @@ const styles = css`
 		&:hover {
 			color: LightGray;
 		}
+	}
+
+	.teamImage {
+		height: 64px;
+		width: 64px;
+		overflow: hidden;
 	}
 `;
 
@@ -197,29 +203,23 @@ function Team(props: {
 		>
 			{props.placing != null && <Col md="auto" className="mr-3 text-right" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}}> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
 			<Col md="auto" className="mr-3">
-				<label
-					className="rounded"
-					style={{
-						display: "block",
-						margin: 0,
-						height: 64,
-						width: 64,
-						backgroundImage: `url(${image ?? props.team.image ?? defaultImage})`,
-						backgroundRepeat: "no-repeat",
-						backgroundPosition: "center",
-						backgroundSize: "contain"
-					}}
-				>
-					<input disabled={token == null} style={{display: "none"}} type="file" onChange={function (event){
-						const reader = new FileReader();
-						const input = event.target as HTMLInputElement;
-						if (input.files && input.files[0]) {
-							reader.onload = function(e) {
-								setImage(e.target.result.toString());
+				<label>
+					<input
+						disabled={token == null}
+						style={{display: "none"}}
+						type="file"
+						onChange={function (event){
+							const reader = new FileReader();
+							const input = event.target as HTMLInputElement;
+							if (input.files && input.files[0]) {
+								reader.onload = function(e) {
+									setImage(e.target.result.toString());
+								}
+								reader.readAsDataURL(input.files[0]);
 							}
-							reader.readAsDataURL(input.files[0]);
-						}
-					}}/>
+						}}
+					/>
+					<TeamImage className={clsx(styles.teamImage, "rounded")} team={props.team} />
 				</label>
 			</Col>
 			<Col md="auto" className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>

@@ -2,14 +2,14 @@ import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
 import { GameResult, Session, ContestPlayer } from './types/types';
-import { ObjectId, FilterQuery, Condition, FindOneOptions, UpdateQuery } from 'mongodb';
+import { ObjectId, FilterQuery, Condition, FindOneOptions } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
-import { map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
+import { map, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
 import { body, matchedData, param, query, validationResult } from 'express-validator';
 import { Store } from '..';
 
@@ -394,6 +394,7 @@ export class RestApi {
 				res.status(404).send();
 				return;
 			}
+
 			res.send(contest);
 		}));
 

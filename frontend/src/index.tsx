@@ -12,7 +12,7 @@ import { ContestList } from "./components/ContestList";
 import Container from 'react-bootstrap/Container';
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
-import { Rest } from "majsoul-api";
+import { Rest, Store } from "majsoul-api";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
@@ -61,7 +61,10 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					teams: toRecord(
 						action.contest.teams?.map(team => ({
 							...(state.contestsById[action.contest._id]?.teams[team._id] ?? {}),
-							...team
+							... {
+								...team,
+								image: team.image ?? null
+							}
 						})),
 						"_id"
 					)

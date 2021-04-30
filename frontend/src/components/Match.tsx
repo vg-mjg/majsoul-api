@@ -3,12 +3,12 @@ import { IState } from "../State";
 import { Store } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import defaultImage from "../../assets/shamiko.jpg";
 import Col from 'react-bootstrap/Col';
 import { useSelector } from "react-redux";
 import { css } from "astroturf";
 import clsx from "clsx";
-import { IndexLinkContainer } from "react-router-bootstrap";
+import { TeamImage } from "./TeamImage";
+
 
 const styles = css`
 	.teamScoreWide {
@@ -53,14 +53,7 @@ function Team(props : {
 				className={`rounded-left`}
 				style={{minWidth: "40px", boxSizing: "content-box"}}
 			>
-				<div style={{
-						height: 40,
-						width: 40,
-						backgroundImage: `url(${props?.team?.image ?? defaultImage})`,
-						backgroundRepeat: "no-repeat",
-						backgroundPosition: "center",
-						backgroundSize: "contain"
-					}}/>
+				<TeamImage team={props.team}/>
 			</Col>
 			<Col
 				className={clsx("px-2", styles.nameContainer)}
