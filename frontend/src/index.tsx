@@ -27,19 +27,6 @@ import { fetchContestSummary } from "./api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "./actions/contests/ContestSummaryRetrievedAction";
 import { ContestSessions } from "./components/ContestSessions";
 
-const teamColors = [
-	"#980000",
-	"#ff0000",
-	"#ff9900",
-	"#ffff00",
-	"#00ff00",
-	"#00ffff",
-	"#9900ff",
-	"#ff00ff",
-	"#4a86e8",
-	"#d9d9d9",
-];
-
 interface RGBColor {
 	r: number;
 	g: number;
