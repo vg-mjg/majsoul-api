@@ -226,7 +226,7 @@ function Team(props: {
 				<Container className="p-0">
 					<Row className="no-gutters">
 						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid #${props.team.color}`}}>
-							{props.team.name?.toLocaleLowerCase() ?? `#${props.team._id}`}
+							{props.team.name ?? `#${props.team._id}`}
 						</Col>
 					</Row>
 				</Container>
@@ -270,7 +270,7 @@ function Team(props: {
 									placeholder={`#${props.team._id}`}
 									fallbackValue={props.team.name}
 									onChange={(_, newValue) => {
-										setName(newValue.toLocaleLowerCase());
+										setName(newValue);
 										return {
 											value: newValue,
 											isValid: true,

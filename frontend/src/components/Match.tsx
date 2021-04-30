@@ -75,7 +75,7 @@ function Team(props : {
 						borderBottom: `3px solid #${props.team.color ?? 'fff'}`
 					}}
 				>
-					{props.team.name?.toLowerCase()}
+					{props.team.name}
 				</div>
 			</Col>
 			{ props.totalScore != null &&
