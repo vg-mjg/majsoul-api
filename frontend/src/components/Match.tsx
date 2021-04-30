@@ -3,7 +3,7 @@ import { IState } from "../State";
 import { Store } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import defaultImage from "../../assets/hatsu.png";
+import defaultImage from "../../assets/shamiko.jpg";
 import Col from 'react-bootstrap/Col';
 import { useSelector } from "react-redux";
 import { css } from "astroturf";

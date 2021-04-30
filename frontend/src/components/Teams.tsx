@@ -4,7 +4,7 @@ import { Store, Rest } from 'majsoul-api';
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import defaultImage from "../../assets/hatsu.png";
+import defaultImage from "../../assets/shamiko.jpg";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";

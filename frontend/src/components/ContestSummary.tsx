@@ -20,11 +20,12 @@ import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import { fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
-import { fetchContestSummary } from "src/api/Contests";
+import { fetchContestImages, fetchContestSummary } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { fetchContestSessions } from "src/api/Sessions";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 import { Link } from "react-router-dom";
+import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -33,11 +34,12 @@ export function ContestSummary(props: {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
-		fetchContestSummary(props.contestId).then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
-
-		fetchContestPlayers({
-			contestId: props.contestId
-		}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
+		fetchContestSummary(props.contestId).then(contest => {
+			fetchContestPlayers({
+				contestId: props.contestId
+			}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
+			dispatchContestSummaryRetrievedAction(dispatch, contest)
+		});
 	}, [props.contestId]);
 
 	const [secret, setSecret] = React.useState(false);
@@ -56,7 +58,7 @@ export function ContestSummary(props: {
 			return;
 		}
 
-		document.title = `/mjg/ competitions - ${contest.name ?? `#${contest._id}`}`;
+		document.title = `/mjg/ competitions - ${contestName(contest)}`;
 		return () => {
 			document.title = "/mjg/ competitions";
 		}
@@ -152,6 +154,8 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const { contest } = props;
 
 	React.useEffect(() => {
+		fetchContestImages(contest._id)
+			.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
 		fetchContestSessions(contest._id)
 			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
 	}, [dispatch, contest._id]);

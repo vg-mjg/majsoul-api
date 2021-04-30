@@ -366,13 +366,7 @@ export class RestApi {
 		}));
 
 		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
-			this.findContest(req.params.id,
-				{
-					projection: {
-						sessions: 0
-					}
-				}
-			).then((contest) => {
+			this.findContest(req.params.id).then((contest) => {
 				if (contest === null) {
 					res.status(404).send();
 					return;
@@ -384,6 +378,24 @@ export class RestApi {
 				res.status(500).send(error)
 			});
 		});
+
+		this.app.get('/contests/:id/images',
+			param("id").isMongoId(),
+			withData<{id: string}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			 const contest = await this.findContest(data.id, {
+				projection: {
+					_id: true,
+					"teams._id": true,
+					"teams.image": true
+				}
+			});
+
+			if (contest === null) {
+				res.status(404).send();
+				return;
+			}
+			res.send(contest);
+		}));
 
 		this.app.get<any, store.GameResult<ObjectId>>('/games/:id',
 			param("id").isMongoId(),

@@ -2,6 +2,7 @@ export enum ActionType {
 	ContestCreated = "ContestCreated",
 	ContestsIndexRetrieved = "ContestsIndexRetrieved",
 	ContestSummaryRetrieved = "ContestSummaryRetrieved",
+	ContestImagesFetched = "ContestImagesFetched",
 	ContestPatched = "ContestPatched",
 
 	ContestPlayersRetrieved = "ContestPlayersRetrieved",

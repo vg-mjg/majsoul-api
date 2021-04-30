@@ -6,6 +6,11 @@ export function fetchContestSummary(contestId: string): Promise<Store.Contest<st
 		.then(response => response.json());
 }
 
+export function fetchContestImages(contestId: string): Promise<Store.Contest<string>> {
+	return fetch(buildApiUrl(`contests/${contestId}/images`).toString())
+		.then(response => response.json());
+}
+
 export function fetchContests(): Promise<Store.Contest<string>[]> {
 	return fetch(buildApiUrl(`contests`).toString())
 		.then(response => response.json())

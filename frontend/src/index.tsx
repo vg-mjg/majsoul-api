@@ -53,6 +53,20 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					teams: toRecord(action.contest.teams, "_id")
 				})
 			};
+		} case ActionType.ContestImagesFetched: {
+			return {
+				...state,
+				...updatedContestRecord(state, action.contest._id, {
+					...action.contest,
+					teams: toRecord(
+						action.contest.teams?.map(team => ({
+							...(state.contestsById[action.contest._id]?.teams[team._id] ?? {}),
+							...team
+						})),
+						"_id"
+					)
+				})
+			};
 		} case ActionType.GamesRetrieved: {
 			const gamesRetrievedAction = action as GamesRetrievedAction;
 
