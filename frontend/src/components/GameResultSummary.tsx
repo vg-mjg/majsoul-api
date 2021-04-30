@@ -6,9 +6,8 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import * as moment from "moment-timezone";
 import * as styles from "./styles.sass";
-import { pickColorGradient } from "..";
 import { useSelector } from "react-redux";
-import { levelToString } from "./utils";
+import { levelToString, pickColorGradient } from "./utils";
 
 function GameSeat(props: {
 	seat: number,
