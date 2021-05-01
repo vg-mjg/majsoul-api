@@ -50,7 +50,7 @@ export class CountdownTimer extends React.Component<TimerProps, TimerState> {
 			{
 				difference.asMonths() >= 1
 					? difference.humanize(false)
-					: `${difference.days() != 0 && `${difference.days()}d`} ${difference.hours()}:${difference.minutes()}:${difference.seconds()}`
+					: `${difference.days() != 0 ? `${difference.days()}d` : ""} ${difference.hours()}:${difference.minutes()}:${difference.seconds()}`
 			}
 			{!future && " ago"}
 		</h3>;
