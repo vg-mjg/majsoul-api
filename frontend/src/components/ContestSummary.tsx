@@ -34,6 +34,8 @@ export function ContestSummary(props: {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
+		fetchContestImages(props.contestId)
+			.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
 		fetchContestSummary(props.contestId).then(contest => {
 			fetchContestPlayers({
 				contestId: props.contestId
@@ -154,8 +156,6 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const { contest } = props;
 
 	React.useEffect(() => {
-		fetchContestImages(contest._id)
-			.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
 		fetchContestSessions(contest._id)
 			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
 	}, [dispatch, contest._id]);

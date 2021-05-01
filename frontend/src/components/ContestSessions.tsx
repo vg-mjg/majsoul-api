@@ -21,14 +21,10 @@ export function ContestSessions(props: {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
+		fetchContestImages(contest._id)
+			.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
 		fetchContestSummary(props.contestId)
-			.then(contest => {
-				if (contest.type === ContestType.League) {
-					fetchContestImages(contest._id)
-						.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
-				}
-				dispatchContestSummaryRetrievedAction(dispatch, contest);
-			});
+			.then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
 	}, [props.contestId]);
 
 	React.useEffect(() => {

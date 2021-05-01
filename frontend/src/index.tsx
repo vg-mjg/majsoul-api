@@ -16,6 +16,7 @@ import { Rest, Store } from "majsoul-api";
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage';
 import { PersistGate } from 'redux-persist/integration/react'
+import * as _ from "lodash";
 
 import YouTube from 'react-youtube';
 import Row from "react-bootstrap/Row";
@@ -46,13 +47,14 @@ function updatedContestRecord(state: IState, contestId: string, contest: Partial
 function contestReducer(state: IState, action: MajsoulAction): IState {
 	switch (action.type) {
 		case ActionType.ContestSummaryRetrieved: {
-			return {
-				...state,
-				...updatedContestRecord(state, action.contest._id, {
+			return _.merge(
+				{},
+				state,
+				updatedContestRecord(state, action.contest._id, {
 					...action.contest,
 					teams: toRecord(action.contest.teams, "_id")
 				})
-			};
+			);
 		} case ActionType.ContestImagesFetched: {
 			return {
 				...state,
