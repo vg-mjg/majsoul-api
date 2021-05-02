@@ -19,7 +19,6 @@ import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import clsx from "clsx";
 import { TextField } from "./utils/TextField";
 import { patchSession } from "src/api/Sessions";
-import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsRetrievedAction copy";
 
 enum GamesFetchStatus {
@@ -46,6 +45,9 @@ export function Session(props: {
 	);
 
 	const dispatch = useDispatch();
+
+	const date = new Date();
+
 	React.useEffect(() => {
 		if (!detailsOpen || gamesFetchedStatus !== GamesFetchStatus.None) {
 			return;
@@ -55,6 +57,7 @@ export function Session(props: {
 			return;
 		}
 
+		console.log("effect");
 		setGamesFetched(GamesFetchStatus.Fetching);
 
 		fetchGames({
@@ -129,41 +132,43 @@ export function Session(props: {
 				>
 					<Accordion.Collapse eventKey="0">
 						<Container className="p-0 pb-2">
-							{ props.session.plannedMatches?.length > 0 && <>
-								<Row className="no-gutters">
-									<Col className="px-2">
-										<div className="h5"><u>Matches</u></div>
-									</Col>
-								</Row>
-								<Row className="no-gutters">
-									{props.session.plannedMatches.map((match, index) => <Col key={index}>
-										<Match match={match} contestId={props.session.contestId} totals={hasStarted ? props.session.totals : null} aggregateTotals={props.session.aggregateTotals}/>
-									</Col>)}
-								</Row>
-							</>}
-							{ hasStarted && <>
-								<Row className="no-gutters">
-									<Col className="px-2">
-										<div className="h5"><u>Games</u></div>
-									</Col>
-								</Row>
-								<Row className="no-gutters">
-									{ gamesFetchedStatus === GamesFetchStatus.Fetched
-										? games.length === 0
-											? <Col className="text-center">
-												<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
-											</Col>
-											: games.map((game, index) => <React.Fragment key={game._id}>
-												<Col style={{minWidth: "auto"}}>
-													<GameResultSummary game={game}/>
-												</Col>
-												{(index % 2 == 1) && <div className="w-100"/>}
-											</React.Fragment>)
-										: <Col className="text-center pb-2">
-											<LoadingSpinner/>
+							{ detailsOpen && <>
+								{ props.session.plannedMatches?.length > 0 && <>
+									<Row className="no-gutters">
+										<Col className="px-2">
+											<div className="h5"><u>Matches</u></div>
 										</Col>
-									}
-								</Row>
+									</Row>
+									<Row className="no-gutters">
+										{props.session.plannedMatches.map((match, index) => <Col key={index}>
+											<Match match={match} contestId={props.session.contestId} totals={hasStarted ? props.session.totals : null} aggregateTotals={props.session.aggregateTotals}/>
+										</Col>)}
+									</Row>
+								</>}
+								{ hasStarted && <>
+									<Row className="no-gutters">
+										<Col className="px-2">
+											<div className="h5"><u>Games</u></div>
+										</Col>
+									</Row>
+									<Row className="no-gutters">
+										{ gamesFetchedStatus === GamesFetchStatus.Fetched
+											? games.length === 0
+												? <Col className="text-center">
+													<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
+												</Col>
+												: games.map((game, index) => <React.Fragment key={game._id}>
+													<Col style={{minWidth: "auto"}}>
+														<GameResultSummary game={game}/>
+													</Col>
+													{(index % 2 == 1) && <div className="w-100"/>}
+												</React.Fragment>)
+											: <Col className="text-center pb-2">
+												<LoadingSpinner/>
+											</Col>
+										}
+									</Row>
+								</>}
 							</>}
 						</Container>
 					</Accordion.Collapse>
