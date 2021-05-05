@@ -1,9 +1,9 @@
-import * as readline from 'readline';
 import { google, sheets_v4 } from 'googleapis';
-import { Credentials } from 'google-auth-library';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { ObjectId } from 'mongodb';
+import { OAuth2Client } from 'google-auth-library';
+import { Observable, of, Subject } from 'rxjs';
 
 interface IHandDescription {
 	round: majsoul.RoundInfo;
@@ -12,74 +12,122 @@ interface IHandDescription {
 	loser?: number;
 }
 
-export interface IGoogleAppInformation {
-	clientId: string;
-	clientSecret: string;
-	redirectUri: string;
-	authToken: Credentials;
+class DelayedChunkBuffer<T> {
+	private queue: T[] = [];
+	private timeOutId: NodeJS.Timeout;
+	private readonly chunkSubject = new Subject<T[]>();
+
+	constructor(
+		private readonly capacity: number,
+		private readonly delay: number
+	) {}
+
+	public get Chunks$(): Observable<T[]> {
+		return this.chunkSubject;
+	}
+
+	public send(requests: T[]) {
+		this.queue = this.queue.concat(requests);
+
+		if (this.queue.length >= this.capacity) {
+			const chunk = this.queue.slice(0, this.capacity);
+			this.queue = this.queue.slice(this.capacity);
+			this.chunkSubject.next(chunk);
+		}
+
+		if (this.timeOutId) {
+			clearTimeout(this.timeOutId);
+		}
+
+		this.timeOutId = setTimeout(() => {
+			this.timeOutId = null;
+			const chunk = this.queue;
+			this.queue = [];
+			this.chunkSubject.next(chunk);
+		}, this.delay);
+	}
 }
 
 export class Spreadsheet {
-	private static readonly spreadsheetId = '13C5gq2Duf82M1UUX76cUhAjlyL_ogzNkgQjqMbF6TRs';
-	private static readonly gameResultsSheetName = "Robots";
-	private static readonly gameDetailsSheetName = "Details";
-
-	public static getAuthTokenInteractive(appInformation: IGoogleAppInformation): Promise<Credentials> {
-		return new Promise<Credentials>(resolve => {
-			const oAuth2Client = new google.auth.OAuth2(
-				appInformation.clientId,
-				appInformation.clientSecret,
-				appInformation.redirectUri
-			);
-
-			const authUrl = oAuth2Client.generateAuthUrl({
-				access_type: 'offline',
-				scope: ['https://www.googleapis.com/auth/spreadsheets'],
-			});
-
-			console.log('Authorize this app by visiting this url:', authUrl);
-			const rl = readline.createInterface({
-				input: process.stdin,
-				output: process.stdout,
-			});
-
-			rl.question('Enter the code from that page here: ', (code) => {
-				rl.close();
-				oAuth2Client.getToken(code, (err, token) => {
-					if (err) return console.error('Error while trying to retrieve access token', err);
-					resolve(token as any);
-				});
-			});
-		});
+	private static readonly blackBorderStyle = {
+		style: "SOLID",
+		color: {
+			red: 0,
+			green: 0,
+			blue: 0,
+			alpha: 1,
+		}
 	}
 
+	private static readonly gameResultsSheetName = "Riichi Robots Games";
+	private static readonly gameDetailsSheetName = "Riichi Robots Game Details";
+	private static readonly teamsSheetName = "Riichi Robots Teams";
+
 	private readonly sheets: sheets_v4.Sheets;
-	private spreadsheet: sheets_v4.Schema$Spreadsheet;
 	private resultsSheetId: number;
 	private detailsSheetId: number;
+	private teamSheetId: number;
 	private recordedGameIds: string[];
 	private recordedGameDetailIds: string[];
 
-	constructor(appInformation: IGoogleAppInformation) {
-		const oAuth2Client = new google.auth.OAuth2(
-			appInformation.clientId,
-			appInformation.clientSecret,
-			appInformation.redirectUri
-		);
+	private readonly buffer = new DelayedChunkBuffer<sheets_v4.Schema$Request>(100, 2000);
 
-		oAuth2Client.setCredentials(appInformation.authToken);
+	private uploadTask = Promise.resolve();
+
+	constructor(
+		public readonly spreadsheetId: string,
+		oAuth2Client: OAuth2Client,
+	) {
 		this.sheets = google.sheets({version: 'v4', auth: oAuth2Client});
+		this.buffer.Chunks$.subscribe((chunk) => {
+			this.uploadTask = this.uploadTask
+				.then(async () => {
+					await this.sheets.spreadsheets.batchUpdate({
+						spreadsheetId: this.spreadsheetId,
+						requestBody: {
+							requests: chunk
+						}
+					});
+				})
+				.catch();
+		});
+	}
+
+	private async getSheetId(spreadsheet: sheets_v4.Schema$Spreadsheet, title: string): Promise<number> {
+		const id = spreadsheet.sheets.find(s => s.properties.title === title)?.properties.sheetId;
+
+		if (id != null) {
+			return id;
+		}
+
+		const result = await this.sheets.spreadsheets.batchUpdate({
+			spreadsheetId: this.spreadsheetId,
+			requestBody: {
+				requests: [
+					{
+						addSheet: {
+							properties: {
+								title: title
+							}
+						}
+					}
+				]
+			}
+		});
+		return result.data.replies[0]?.addSheet?.properties?.sheetId;
 	}
 
 	public async init(): Promise<void>{
-		this.spreadsheet = (await (this.sheets.spreadsheets.get({
-			spreadsheetId: Spreadsheet.spreadsheetId,
+		const spreadsheet = (await (this.sheets.spreadsheets.get({
+			spreadsheetId: this.spreadsheetId,
 		}) as any as Promise<sheets_v4.Schema$Spreadsheet>) as any).data;
-		this.resultsSheetId = this.spreadsheet.sheets.find(s => s.properties.title === Spreadsheet.gameResultsSheetName).properties.sheetId;
-		this.detailsSheetId = this.spreadsheet.sheets.find(s => s.properties.title === Spreadsheet.gameDetailsSheetName).properties.sheetId;
+		this.resultsSheetId = await this.getSheetId(spreadsheet, Spreadsheet.gameResultsSheetName);
+		this.detailsSheetId = await this.getSheetId(spreadsheet, Spreadsheet.gameDetailsSheetName);
+		this.teamSheetId = await this.getSheetId(spreadsheet, Spreadsheet.teamsSheetName);
+
 		const gameResultsIds = (await this.sheets.spreadsheets.values.get(
 			{
-				spreadsheetId: Spreadsheet.spreadsheetId,
+				spreadsheetId: this.spreadsheetId,
 				range: `${Spreadsheet.gameResultsSheetName}!A:A`,
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
@@ -87,97 +135,12 @@ export class Spreadsheet {
 		this.recordedGameIds = gameResultsIds.values?.slice(1).map(v => v[0]).filter(v => isNaN(v)) ?? [];
 		const gameDetailsIds = (await this.sheets.spreadsheets.values.get(
 			{
-				spreadsheetId: Spreadsheet.spreadsheetId,
+				spreadsheetId: this.spreadsheetId,
 				range: `${Spreadsheet.gameDetailsSheetName}!A:A`,
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
 		)).data;
 		this.recordedGameDetailIds = gameDetailsIds.values?.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0) ?? [];
-	}
-
-	public async getTeamInformation(): Promise<store.ContestTeam<ObjectId>[]> {
-		const players = (await this.sheets.spreadsheets.values.get(
-			{
-				spreadsheetId: Spreadsheet.spreadsheetId,
-				range: `'Ind. Ranking'!A:C`
-			}
-		)).data;
-		const teams: store.ContestTeam<ObjectId>[] = [];
-		for(const row of players.values.slice(1)) {
-			if (row[0] === "") {
-				if (row[2] === "T#") {
-					continue;
-				}
-				teams.push({
-					anthem: undefined,
-					image: undefined,
-					name: row[2],
-					players: [],
-					_id: undefined,
-					color: undefined
-				});
-				continue;
-			}
-			teams[teams.length - 1].players.push({
-				_id: undefined,
-				majsoulId: undefined,
-				displayName: row[1],
-				nickname: row[0],
-			});
-		}
-		return teams;
-	}
-
-	public async getMatchInformation(teams: store.ContestTeam<ObjectId>[]): Promise<store.Session<ObjectId>[]> {
-		const teamsArray = (await this.sheets.spreadsheets.values.get(
-			{
-				spreadsheetId: Spreadsheet.spreadsheetId,
-				majorDimension: "COLUMNS",
-				range: `'Team Score Graph'!C39:C48`
-			}
-		)).data.values[0].map(name => ({
-			_id: teams.find(team => team.name === name)._id,
-		}));
-
-		const schedule = (await this.sheets.spreadsheets.values.get(
-			{
-				spreadsheetId: Spreadsheet.spreadsheetId,
-				majorDimension: "COLUMNS",
-				range: `'Schedule'!B17:O76`
-			}
-		)).data.values;
-
-		let date = Date.UTC(2020, 4, 26, 18);
-		const matches: store.Session<ObjectId>[] = [];
-		const day = 1000 * 60 * 60 * 24;
-		const sixHours = 1000 * 60 * 60 * 6;
-		const intervals = [day, day, day + sixHours, day - sixHours, sixHours, day - sixHours, day * 2]
-		for(let week = 0; week < 5; week++) {
-			for(let slot = 0; slot < 7; slot++) {
-				matches.push({
-					_id: undefined,
-					contestId: undefined,
-					scheduledTime: matches.length === 14 ? date + day * 6 : date,
-					isCancelled: schedule[slot * 2][13 * week] === "Cancelled",
-					plannedMatches: [
-						{
-							teams: schedule[slot * 2]
-								.slice(4 + 13 * week, 4 + 13 * week + 4)
-								.map(index => teamsArray[index - 1]),
-						},
-						{
-							teams: schedule[slot * 2 + 1]
-								.slice(4 + 13 * week, 4 + 13 * week + 4)
-								.map(index => teamsArray[index - 1]),
-						}
-					]
-				})
-				date += intervals[0];
-				intervals.push(intervals.shift());
-			}
-		}
-
-		return matches.sort((a, b) => b.scheduledTime - a.scheduledTime);
 	}
 
 	public isGameRecorded(id: string): boolean {
@@ -188,7 +151,7 @@ export class Spreadsheet {
 		return this.recordedGameDetailIds.indexOf(id) >= 0;
 	}
 
-	public async addGame(game: majsoul.GameResult) {
+	public addGame(game: store.GameResult<ObjectId>) {
 		if (this.isGameRecorded(game.majsoulId)) {
 			console.log(`Game ${game.majsoulId} already recorded`);
 			return;
@@ -196,16 +159,6 @@ export class Spreadsheet {
 
 		this.recordedGameIds.push(game.majsoulId);
 		console.log(`Recording game result for game ${game.majsoulId}`);
-
-		const blackBorderStyle = {
-			style: "SOLID",
-			color: {
-				red: 0,
-				green: 0,
-				blue: 0,
-				alpha: 1,
-			}
-		}
 
 		const requests = [
 			{
@@ -267,12 +220,10 @@ export class Spreadsheet {
 								numberValue: game.end_time / (60*60*24*1000) + 25569 },
 								userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
 							},
-							{ userEnteredValue: { formulaValue: `=VLOOKUP(C${3 + i}; 'Ind. Ranking'!A:C; 3; FALSE)` } },
-							{ userEnteredValue: { stringValue: game.players[i].nickname } },
+							{ userEnteredValue: { formulaValue: `=VLOOKUP("${game.players[i]._id.toHexString()}"; 'Riichi Robots Teams'!A:C; 3; FALSE)` } },
 							{ userEnteredValue: { numberValue: player.score } },
 							{ userEnteredValue: { numberValue: player.uma / 1000} },
-							{ userEnteredValue: { formulaValue: `=RANK(E${3 + i}; E3:E6)` } },
-							{ userEnteredValue: { formulaValue: `=COUNTIFS(C${4 + i}:C,C${3 + i})` } },
+							{ userEnteredValue: { formulaValue: `=RANK(D${3 + i}; D3:D6)` } },
 						]
 					}))
 				}
@@ -286,10 +237,10 @@ export class Spreadsheet {
 						startRowIndex: 1,
 						endRowIndex: 6,
 					},
-					top: blackBorderStyle,
-					right: blackBorderStyle,
-					left: blackBorderStyle,
-					bottom: blackBorderStyle,
+					top: Spreadsheet.blackBorderStyle,
+					right: Spreadsheet.blackBorderStyle,
+					left: Spreadsheet.blackBorderStyle,
+					bottom: Spreadsheet.blackBorderStyle,
 				}
 			},
 			{
@@ -301,20 +252,15 @@ export class Spreadsheet {
 						startRowIndex: 1,
 						endRowIndex: 2,
 					},
-					bottom: blackBorderStyle,
+					bottom: Spreadsheet.blackBorderStyle,
 				}
 			}
 		];
 
-		await this.sheets.spreadsheets.batchUpdate({
-			spreadsheetId: Spreadsheet.spreadsheetId,
-			requestBody: {
-				requests
-			}
-		});
+		this.buffer.send(requests);
 	}
 
-	public async addGameDetails(game: majsoul.GameResult) {
+	public addGameDetails(game: store.GameResult<ObjectId>) {
 		if (this.isGameDetailRecorded(game.majsoulId)) {
 			console.log(`Game ${game.majsoulId} already recorded`);
 			return;
@@ -322,16 +268,6 @@ export class Spreadsheet {
 
 		this.recordedGameDetailIds.push(game.majsoulId);
 		console.log(`Recording game details for game ${game.majsoulId}`);
-
-		const blackBorderStyle = {
-			style: "SOLID",
-			color: {
-				red: 0,
-				green: 0,
-				blue: 0,
-				alpha: 1,
-			}
-		}
 
 		const hands: IHandDescription[] = game.rounds.filter(g => !g.draw || g.draw.playerDrawStatus.indexOf(majsoul.DrawStatus.Nagashi_Mangan) >= 0)
 			.map(hand => {
@@ -406,7 +342,7 @@ export class Spreadsheet {
 								userEnteredValue: { stringValue: game.majsoulId },
 							},
 							{
-								userEnteredValue: { stringValue: game.players.map(p => p.nickname).join(", ") },
+								userEnteredValue: { stringValue: game.players.map(p => p._id.toHexString()).join(", ") },
 								userEnteredFormat: {
 									horizontalAlignment: "CENTER",
 									textFormat: {
@@ -454,10 +390,16 @@ export class Spreadsheet {
 							{ userEnteredValue: { numberValue: hand.round.dealership + 1 } },
 							{ userEnteredValue: { numberValue: hand.round.repeat } },
 							{ userEnteredValue: { stringValue: hand.result } },
-							{ userEnteredValue: { stringValue: game.players[hand.agari.winner].nickname } },
+							{ userEnteredValue: {
+								formulaValue: `=VLOOKUP("${game.players[hand.agari.winner]._id}"; 'Riichi Robots Teams'!A:C; 3; FALSE)`
+							} },
 							{ userEnteredValue: { numberValue: hand.agari.value + hand.agari.extras } },
 							{ userEnteredValue: { numberValue: hand.agari.value + hand.round.repeat * 300 } },
-							{ userEnteredValue: { stringValue: hand.loser == null ? "" : game.players[hand.loser].nickname } },
+							{ userEnteredValue: {
+								formulaValue: hand.loser == null
+									? null
+									: `=VLOOKUP("${game.players[hand.loser]._id}"; 'Riichi Robots Teams'!A:C; 3; FALSE)`
+							} },
 							{ userEnteredValue: {
 								stringValue: Object.entries(hand.agari.han.reduce((map, next) => {
 										map[next] = (map[next] || 0) + 1;
@@ -481,10 +423,10 @@ export class Spreadsheet {
 						startRowIndex: 1,
 						endRowIndex: 1 + 1 + hands.length,
 					},
-					top: blackBorderStyle,
-					right: blackBorderStyle,
-					left: blackBorderStyle,
-					bottom: blackBorderStyle,
+					top: Spreadsheet.blackBorderStyle,
+					right: Spreadsheet.blackBorderStyle,
+					left: Spreadsheet.blackBorderStyle,
+					bottom: Spreadsheet.blackBorderStyle,
 				}
 			},
 			{
@@ -496,16 +438,70 @@ export class Spreadsheet {
 						startRowIndex: 1,
 						endRowIndex: 2,
 					},
-					bottom: blackBorderStyle,
+					bottom: Spreadsheet.blackBorderStyle,
 				}
 			}
 		];
 
-		await this.sheets.spreadsheets.batchUpdate({
-			spreadsheetId: Spreadsheet.spreadsheetId,
-			requestBody: {
-				requests
-			}
-		});
+		this.buffer.send(requests);
+	}
+
+	public updateTeams(teams: store.ContestTeam<ObjectId>[], players: Record<string, store.Player<ObjectId>>) {
+		const requests: sheets_v4.Schema$Request[] = [
+			{
+				insertDimension: {
+					range: {
+						sheetId: this.teamSheetId,
+						dimension: "ROWS",
+						startIndex: 0,
+						endIndex: 1,
+					}
+				},
+			},
+			{
+				deleteDimension: {
+					range: {
+						sheetId: this.teamSheetId,
+						dimension: "ROWS",
+						startIndex: 1,
+					}
+				},
+			},
+			...teams.map<sheets_v4.Schema$Request[]>(team => [
+				{
+					insertDimension: {
+						range: {
+							sheetId: this.teamSheetId,
+							dimension: "ROWS",
+							startIndex: 0,
+							endIndex: team.players.length,
+						}
+					},
+				},
+				{
+					updateCells: {
+						fields: "*",
+						start: {
+							sheetId: this.teamSheetId,
+							columnIndex: 0,
+							rowIndex: 0,
+						},
+						rows: team.players.map((player) => {
+							const id = player._id.toHexString();
+							const playerRecord = players[id];
+							return {
+								values: [
+									{ userEnteredValue: { stringValue: id } },
+									{ userEnteredValue: { stringValue: team.name } },
+									{ userEnteredValue: { stringValue: playerRecord.displayName ?? playerRecord.nickname } },
+								]
+							};
+						})
+					}
+				}
+			]).flat()
+		];
+
+		this.buffer.send(requests);
 	}
 }

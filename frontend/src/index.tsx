@@ -1,8 +1,8 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { createStore, compose } from "redux";
-import { Provider, useDispatch } from "react-redux";
-import { BrowserRouter, Route, Switch, useParams, Link } from "react-router-dom";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { BrowserRouter, Route, Switch, useParams, Link, useLocation, Redirect } from "react-router-dom";
 import { IState, Contest } from "./State";
 import { ContestPlayersRetrievedAction } from "./actions/players/ContestPlayersRetrievedAction";
 import { GamesRetrievedAction } from "./actions/games/GamesRetrievedAction";
@@ -26,6 +26,7 @@ import { ActionType, MajsoulAction } from "./actions";
 import { RiggingLogin } from "./components/rigging/RiggingLogin";
 import { fetchContestSummary } from "./api/Contests";
 import { ContestSessions } from "./components/ContestSessions";
+import { writeGoogleAuthCode } from "./api/Rigging";
 
 function updatedContestRecord(state: IState, contestId: string, contest: Partial<Contest>): {
 	contestsById: Record<string, Contest>,
@@ -256,6 +257,19 @@ function ContestSessionsFromRoute() {
 	return <ContestSessions contestId={id}/>
 }
 
+function GoogleAuthReceiver(): JSX.Element {
+	const location = useLocation();
+	const token = useSelector((state: IState) => state.user?.token);
+	const params = new URLSearchParams(location.search);
+	const code = params.get("code");
+	React.useEffect(() => {
+		if (token && code) {
+			writeGoogleAuthCode(token, code);
+		}
+	}, [token, code]);
+	return <Redirect to="/"/>
+}
+
 ReactDOM.render(
 	<Provider store={store}>
 		<PersistGate loading={null} persistor={persistor}>
@@ -264,6 +278,9 @@ ReactDOM.render(
 					<Container className={`${styles.feed} bg-primary px-3 pb-3`} style={{display:"flex", flexDirection:"column"}}>
 						<Row className="no-gutters">
 							<Switch>
+								<Route path="/rigging/google">
+									<GoogleAuthReceiver/>
+								</Route>
 								<Route path="/rigging">
 									<RiggingLogin/>
 								</Route>

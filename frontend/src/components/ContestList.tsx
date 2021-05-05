@@ -13,6 +13,7 @@ import { fetchConfig, updateConfig } from "src/api/Config";
 import { createContest, fetchContests } from "src/api/Contests";
 import { dispatchContestsIndexRetrievedAction } from "src/actions/contests/ContestsIndexRetrievedAction";
 import { dispatchContestCreatedAction } from "src/actions/contests/ContestCreatedAction";
+import { fetchGoogleAuthUrl } from "src/api/Rigging";
 
 export function ContestList(): JSX.Element {
 	const dispatch = useDispatch();
@@ -21,6 +22,13 @@ export function ContestList(): JSX.Element {
 	const addContestFunc = useCallback(() =>
 		createContest(token).then(contest => dispatchContestCreatedAction(dispatch, contest))
 	, [dispatch, token]);
+
+	const redirectForAuth = useCallback(
+		() => fetchGoogleAuthUrl(token).then(response => {
+			window.location.href = response.authUrl;
+		}),
+		[dispatch, token]
+	);
 
 	React.useEffect(() => {
 		fetchContests().then(index => dispatchContestsIndexRetrievedAction(dispatch, index));
@@ -54,7 +62,12 @@ export function ContestList(): JSX.Element {
 					</Form.Control>
 				</Form>
 			</Col>
-			<Col>
+			<Col sm="auto">
+				<Button variant="dark" onClick={redirectForAuth}>
+					Add Token
+				</Button>
+			</Col>
+			<Col sm="auto">
 				<Button variant="dark" onClick={addContestFunc}>
 					Add Contest
 				</Button>

@@ -1,4 +1,5 @@
 import * as majsoul from "../../majsoul";
+import { Credentials as GoogleCredentials } from 'google-auth-library';
 
 export interface GameResult<Id = any> extends Omit<Partial<majsoul.GameResult>, "players"> {
 	_id: Id;
@@ -39,6 +40,7 @@ export interface Contest<Id = any> extends Partial<majsoul.Contest> {
 	notFoundOnMajsoul?: boolean;
 	bonusPerGame?: number;
 	track?: boolean;
+	spreadsheetId?: string;
 }
 
 export interface ContestTeam<Id = any> {
@@ -71,4 +73,5 @@ export interface User<Id = any> {
 export interface Config<Id = any> {
 	_id: Id;
 	featuredContest?: Id;
+	googleRefreshToken?: string;
 }

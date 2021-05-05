@@ -7,14 +7,10 @@ export interface ISecrets {
 		uid: string;
 		accessToken: string;
 	};
-	googleCreds: {
-		installed: {
-			client_id: string;
-			client_secret: string;
-			redirect_uris: string[];
-		}
+	google: {
+		clientId: string;
+		clientSecret: string;
 	}
-	googleAuthToken: Credentials;
 	mongo: {
 		username: string;
 		password: string;

@@ -39,15 +39,7 @@ export function patchContest(token: string, id: string, contest: Partial<Store.C
 				...authHeader(token),
 			},
 			body: JSON.stringify({
-				anthem: contest.anthem,
-				tagline: contest.tagline,
-				taglineAlternate: contest.taglineAlternate,
-				majsoulFriendlyId: contest.majsoulFriendlyId,
-				type: contest.type,
-				displayName: contest.displayName,
-				maxGames: contest.maxGames,
-				bonusPerGame: contest.bonusPerGame,
-				track: contest.track,
+				...contest,
 			})
 		})
 		.then(response => response.json())

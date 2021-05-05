@@ -12,6 +12,9 @@ import { concat, defer, from, Observable, of } from 'rxjs';
 import { map, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
 import { body, matchedData, param, query, validationResult } from 'express-validator';
 import { Store } from '..';
+import { google } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
+import { getSecrets } from '../secrets';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -328,6 +331,8 @@ export class RestApi {
 
 	private app: express.Express;
 
+	private oauth2Client: OAuth2Client;
+
 	constructor(private readonly mongoStore: store.Store) {
 		this.app = express();
 		this.app.use(cors());
@@ -347,7 +352,11 @@ export class RestApi {
 		});
 
 		this.app.get<any, store.Contest<ObjectId>>('/contests/featured', logError(async (req, res) => {
-			const [config] = await this.mongoStore.configCollection.find().limit(1).toArray();
+			const [config] = await this.mongoStore.configCollection.find()
+				.project({
+					googleRefreshToken: false
+				}).limit(1)
+				.toArray();
 			const query: FilterQuery<store.Contest<ObjectId>> = {};
 			if (config.featuredContest != null) {
 				query._id = config.featuredContest;
@@ -453,7 +462,10 @@ export class RestApi {
 		);
 
 		this.app.get<any, store.Config<ObjectId>>('/config', (req, res) => {
-			this.mongoStore.configCollection.find().toArray()
+			this.mongoStore.configCollection.find()
+			.project({
+				googleRefreshToken: false
+			}).toArray()
 			.then((config) => {
 				if (config[0] == null) {
 					res.sendStatus(404);
@@ -827,6 +839,13 @@ export class RestApi {
 	}
 
 	public async init(root: {username: string, password: string}) {
+		const secrets = getSecrets();
+		this.oauth2Client = new google.auth.OAuth2(
+			secrets.google.clientId,
+			secrets.google.clientSecret,
+			`${process.env.NODE_ENV === "production" ? "https": `http`}://${process.env.NODE_ENV === "production" ? "riichi.moe": `localhost:8080`}/rigging/google`
+		);
+
 		if (root?.username != null && root?.password != null) {
 			const salt = crypto.randomBytes(24).toString("hex");
 			const sha = crypto.createHash("sha256");
@@ -876,11 +895,41 @@ export class RestApi {
 			next();
 		})
 
+		.get('/rigging/google',
+			query("state").optional(),
+			withData<{state?: string}, any, { authUrl: string }>(async (data, req, res) => {
+				const authUrl = this.oauth2Client.generateAuthUrl({
+					access_type: 'offline',
+					scope: [
+						'https://www.googleapis.com/auth/spreadsheets'
+					],
+					state: data.state
+				});
+				res.send({
+					authUrl
+				})
+			})
+		)
+
+		.patch('/rigging/google',
+			body("code").isString().isLength({min: 1}),
+			withData<{code: string}, any, void>(async (data, req, res) => {
+				const { tokens } = await this.oauth2Client.getToken(data.code);
+				this.mongoStore.configCollection.updateMany({}, {
+					$set: {
+						googleRefreshToken: tokens.refresh_token
+					}
+				})
+				res.send();
+			})
+		)
+
 		.patch<any, store.Contest<ObjectId>>('/contests/:id',
 			param("id").isMongoId(),
 			body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({min: 100000, lt: 1000000}).optional({nullable: true}),
 			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
 			body(nameofContest('anthem')).isString().bail().isLength({max: 50}).optional({nullable: true}),
+			body(nameofContest('spreadsheetId')).isString().bail().optional({nullable: true}),
 			body(nameofContest('tagline')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			body(nameofContest('taglineAlternate')).isString().bail().isLength({max: 200}).optional({nullable: true}),
 			body(nameofContest('displayName')).isString().bail().isLength({max: 100}).optional({nullable: true}),
@@ -1101,6 +1150,9 @@ export class RestApi {
 					update,
 					{
 						returnOriginal: false,
+						projection: {
+							googleRefreshToken: false
+						}
 					}
 				);
 

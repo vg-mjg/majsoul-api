@@ -1,65 +1,23 @@
 import { Spreadsheet } from "./google";
-import * as fs from "fs";
-import * as util from "util";
-
 import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as majsoul from "./majsoul";
 import * as store from "./store";
-import { getSecrets, getSecretsFilePath } from "./secrets";
-import { combineLatest, concat, defer, EMPTY,  from,  merge,  Observable, of, timer } from "rxjs";
-import { distinctUntilChanged, filter, first, map, mapTo, mergeAll, pairwise, share, switchAll, takeUntil, tap } from 'rxjs/operators';
+import { Credentials } from 'google-auth-library';
+import { getSecrets } from "./secrets";
+import { combineLatest, concat, defer, from,  fromEvent,  merge,  Observable, of } from "rxjs";
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
+import { google } from "googleapis";
+import { ContestTracker } from "./ContestTracker";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
-const nameofContest = nameofFactory<store.Contest<ObjectId>>();
+export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 
 async function main() {
-	async function addToSpreadSheet(gameId): Promise<void> {
-		return;
-		if (process.env.NODE_ENV !== "production" || process.env.MAJSOUL_ENV === "staging") {
-			console.log("skipping spreadsheet write");
-			return;
-		}
-
-		if(spreadsheet.isGameRecorded(gameId) && spreadsheet.isGameDetailRecorded(gameId)) {
-			console.log(`Already written game ${gameId} to spreadsheet`);
-			return;
-		}
-
-		const gameResult = await api.getGame(gameId);
-
-		if (gameResult == null){
-			console.log(`Unable to retrieve game ${gameId}, skipping spreadsheet add`);
-			return;
-		}
-
-		if (gameResult.players.length < 4 || !gameResult.players.every(p => p.nickname)) {
-			return;
-		}
-
-		spreadsheet.addGame(gameResult);
-		spreadsheet.addGameDetails(gameResult);
-	};
-
 	const secrets = getSecrets();
-
-	const googleAppInfo = {
-		clientId: secrets.googleCreds.installed.client_id,
-		clientSecret: secrets.googleCreds.installed.client_secret,
-		redirectUri: secrets.googleCreds.installed.redirect_uris[0],
-		authToken: secrets.googleAuthToken
-	}
-
-	if (!googleAppInfo.authToken && process.env.NODE_ENV !== "production") {
-		googleAppInfo.authToken = secrets.googleAuthToken = await Spreadsheet.getAuthTokenInteractive(googleAppInfo);
-		fs.writeFileSync(getSecretsFilePath(), JSON.stringify(secrets));
-	}
-
-	const spreadsheet = new Spreadsheet(googleAppInfo);
-	await spreadsheet.init();
-
 	const api = new majsoul.Api(await majsoul.Api.retrieveApiResources());
+
 	api.notifications.subscribe(n => console.log(n));
 	await api.init();
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
@@ -75,16 +33,61 @@ async function main() {
 
 	// api.getGame("210314-15e1b14f-2eb0-41fe-b161-4fc5812b792c").then(game => console.log(game));
 
-	// return;
-
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 
-	// const sub = api.subscribeToContestChatSystemMessages(4832).subscribe(m => console.log(m));
-	// api.subscribeToContestChatSystemMessages(4832).subscribe(m => console.log(m)).unsubscribe();
-	// api.subscribeToContestChatSystemMessages(4623).subscribe(m => console.log(m));
-	// sub.unsubscribe();
+	const googleAuth = new google.auth.OAuth2(
+		secrets.google.clientId,
+		secrets.google.clientSecret,
+	);
 
+	const googleTokenValid$ =
+		concat(
+			defer(() => googleAuth.getAccessToken()).pipe(
+				map(response => response.token),
+				catchError(() => of(null))
+			),
+			fromEvent<Credentials>(googleAuth, "tokens").pipe(
+				map((tokens) => tokens?.access_token),
+			)
+		).pipe(
+			map(token => token != null),
+			distinctUntilChanged(),
+			shareReplay(1),
+		);
+
+	googleTokenValid$.subscribe(tokenIsValid => {
+		console.log(`google token is ${tokenIsValid ? "" : "in"}valid`);
+	})
+
+	// oauth token
+	merge(
+		mongoStore.ConfigChanges.pipe(
+			filter(change => change.operationType === "update"
+				&& change.updateDescription.updatedFields.googleRefreshToken !== undefined
+			),
+			map((updateEvent: ChangeEventUpdate<store.Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
+		),
+		defer(
+			() => from(
+				mongoStore.configCollection.find().toArray()
+			).pipe(
+				mergeAll(),
+				map(config => config.googleRefreshToken)
+			)
+		)
+	).subscribe(refresh_token => {
+		if (googleAuth.credentials.refresh_token === refresh_token || refresh_token == null) {
+			return;
+		}
+
+		googleAuth.setCredentials({
+			refresh_token
+		});
+		googleAuth.getRequestHeaders();
+	});
+
+	// player search
 	merge(
 		mongoStore.PlayerChanges.pipe(
 			filter(change => change.operationType === "insert"
@@ -142,6 +145,7 @@ async function main() {
 		})
 	})
 
+	// custom game id search
 	merge(
 		mongoStore.GameChanges.pipe(
 			filter(change => change.operationType === "insert"
@@ -203,164 +207,76 @@ async function main() {
 			);
 		});
 
-		tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
-			const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
-			if (majsoulContest == null) {
-				mongoStore.contestCollection.findOneAndUpdate(
-					{ _id: contestId },
-					{ $set: { notFoundOnMajsoul: true } },
-				);
+		// tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
+		// 	const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
+		// 	if (majsoulContest == null) {
+		// 		mongoStore.contestCollection.findOneAndUpdate(
+		// 			{ _id: contestId },
+		// 			{ $set: { notFoundOnMajsoul: true } },
+		// 		);
 
-				console.log(`contest ${majsoulFriendlyId} not found on majsoul`);
+		// 		console.log(`contest ${majsoulFriendlyId} not found on majsoul`);
+		// 		return;
+		// 	}
+
+		// 	console.log(`updating contest ${majsoulFriendlyId}`);
+
+		// 	mongoStore.contestCollection.findOneAndUpdate(
+		// 		{ _id: contestId },
+		// 		{ $set: { ...majsoulContest } },
+		// 	);
+
+		// 	console.log(`updating contest ${majsoulFriendlyId} games`);
+		// 	for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)){
+		// 		await recordGame(contestId, gameId.majsoulId, mongoStore, api);
+		// 	}
+		// });
+
+		tracker.LiveGames$.subscribe(gameId => {
+			recordGame(contestId, gameId, mongoStore, api);
+		});
+
+		const spreadsheet$ = combineLatest([
+			tracker.SpreadsheetId$,
+			googleTokenValid$,
+		]).pipe(
+			filter(([spreadsheetId, tokenIsValid]) => tokenIsValid && spreadsheetId != null),
+			share(),
+		);
+
+		spreadsheet$.subscribe(async ([spreadsheetId]) => {
+			const spreadsheet = new Spreadsheet(spreadsheetId, googleAuth);
+			try {
+				await spreadsheet.init();
+			} catch (error) {
+				console.log(`Spreadsheet #${spreadsheetId} failed to initialise.`, error);
 				return;
 			}
 
-			console.log(`updating contest ${majsoulFriendlyId}`);
+			console.log(`Tracking [${spreadsheetId}]`);
+			tracker.RecordedGames$.pipe(
+				takeUntil(spreadsheet$),
+			).subscribe(game => {
+				spreadsheet.addGame(game);
+				spreadsheet.addGameDetails(game);
+			})
 
-			mongoStore.contestCollection.findOneAndUpdate(
-				{ _id: contestId },
-				{ $set: { ...majsoulContest } },
-			);
+			tracker.Teams$.pipe(
+				takeUntil(spreadsheet$),
+			).subscribe(async (teams) => {
+				const players = await mongoStore.playersCollection.find({
+					_id: {
+						$in: teams.map(team => team.players).flat().map(team => team._id)
+					}
+				}).toArray();
 
-			console.log(`updating contest ${majsoulFriendlyId} games`);
-			for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)){
-				await recordGame(contestId, gameId.majsoulId, mongoStore, api);
-			}
-		});
-
-		tracker.LiveGames$.subscribe(gameId => {
-			// Delay game recording because production is too fast and tries to fetch game before it is saved.
-			setTimeout(() => recordGame(contestId, gameId, mongoStore, api), 2000);
+				spreadsheet.updateTeams(
+					teams,
+					players.reduce((total, next) => (total[next._id.toHexString()] = next, total), {})
+				);
+			});
 		})
 	});
-}
-
-class ContestTracker {
-	private contestDeleted$: Observable<any>;
-	private contestUpdates$: Observable<ChangeEventUpdate<store.Contest<ObjectId>>>;
-	constructor(
-		public readonly id: ObjectId,
-		private readonly mongoStore: Store.Store,
-		private readonly api: Majsoul.Api,
-	){}
-
-	public get ContestDeleted$(): Observable<any> {
-		return this.contestDeleted$ ??= merge(
-			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id}))).pipe(
-				filter(contest => contest == null)
-			),
-			this.mongoStore.ContestChanges.pipe(
-				filter(changeEvent => changeEvent.operationType === "delete"
-					&& changeEvent.documentKey._id.equals(this.id)),
-			)
-		).pipe(first(), share());
-	}
-
-	private get ContestUpdates$(): Observable<ChangeEventUpdate<store.Contest<ObjectId>>> {
-		return this.contestUpdates$ ??= this.mongoStore.ContestChanges.pipe(
-			filter(changeEvent =>
-				changeEvent.operationType === "update"
-				&& changeEvent.documentKey._id.equals(this.id)
-			),
-			share()
-		) as Observable<ChangeEventUpdate<store.Contest<ObjectId>>>;
-	}
-
-	public get NotFoundOnMajsoul$(): Observable<boolean> {
-		return merge(
-			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
-				.pipe(map(contest => contest.notFoundOnMajsoul ?? false)),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("notFoundOnMajsoul")) >= 0),
-				mapTo(false),
-			),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.updatedFields?.notFoundOnMajsoul !== undefined),
-				map(event => event.updateDescription.updatedFields.notFoundOnMajsoul)
-			)
-		).pipe(
-			takeUntil(this.ContestDeleted$)
-		);
-	}
-
-	public get MajsoulId$(): Observable<number> {
-		return merge(
-			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
-				.pipe(map(contest => contest.majsoulId)),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulId")) >= 0),
-				mapTo(null as number),
-			),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.updatedFields?.majsoulId !== undefined),
-				map(event => event.updateDescription.updatedFields.majsoulId)
-			)
-		).pipe(
-			takeUntil(this.ContestDeleted$)
-		);
-	}
-
-	public get MajsoulFriendlyId$(): Observable<number> {
-		return merge(
-			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
-				.pipe(map(contest => contest.notFoundOnMajsoul ? null as number : contest.majsoulFriendlyId)),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulFriendlyId")) >= 0
-					|| event.updateDescription.updatedFields?.notFoundOnMajsoul === true),
-				mapTo(null as number),
-			),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.updatedFields?.majsoulFriendlyId !== undefined),
-				map(event => event.updateDescription.updatedFields.majsoulFriendlyId)
-			)
-		).pipe(
-			takeUntil(this.ContestDeleted$)
-		);
-	}
-
-	public get UpdateRequest$() {
-		return this.MajsoulFriendlyId$.pipe(
-			map(majsoulFriendlyId => majsoulFriendlyId == null
-				? EMPTY
-				: timer(0, 86400000).pipe(
-					mapTo(majsoulFriendlyId),
-					takeUntil(this.ContestDeleted$)
-				)
-			),
-			switchAll(),
-		)
-	}
-
-	public get Track$(): Observable<boolean> {
-		return merge(
-			defer(() => from(this.mongoStore.contestCollection.findOne({_id: this.id})))
-				.pipe(map(contest => contest.track ?? false)),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("track")) >= 0),
-				mapTo(false),
-			),
-			this.ContestUpdates$.pipe(
-				filter(event => event.updateDescription.updatedFields?.track !== undefined),
-				map(event => event.updateDescription.updatedFields.track ?? false)
-			)
-		).pipe(
-			takeUntil(this.ContestDeleted$)
-		);
-	}
-
-	public get LiveGames$() {
-		return combineLatest([this.MajsoulId$, this.NotFoundOnMajsoul$, this.Track$]).pipe(
-			map(([majsoulId, notFoundOnMajsoul, track]) => (majsoulId == null || notFoundOnMajsoul || !track)
-				? EMPTY
-				: this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
-					filter(notification => notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd"),
-					map(notification => notification.uuid as string),
-					takeUntil(this.ContestDeleted$)
-				),
-			),
-			switchAll(),
-		)
-	}
 }
 
 async function recordGame(
