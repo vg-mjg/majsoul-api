@@ -51,8 +51,8 @@ async function main() {
 				map((tokens) => tokens?.access_token),
 			)
 		).pipe(
-			map(token => token != null),
 			distinctUntilChanged(),
+			map(token => token != null),
 			shareReplay(1),
 		);
 
@@ -78,6 +78,7 @@ async function main() {
 		)
 	).subscribe(refresh_token => {
 		if (googleAuth.credentials.refresh_token === refresh_token || refresh_token == null) {
+			console.log(`refresh token not valid in database`);
 			return;
 		}
 
@@ -207,30 +208,30 @@ async function main() {
 			);
 		});
 
-		// tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
-		// 	const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
-		// 	if (majsoulContest == null) {
-		// 		mongoStore.contestCollection.findOneAndUpdate(
-		// 			{ _id: contestId },
-		// 			{ $set: { notFoundOnMajsoul: true } },
-		// 		);
+		tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
+			const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
+			if (majsoulContest == null) {
+				mongoStore.contestCollection.findOneAndUpdate(
+					{ _id: contestId },
+					{ $set: { notFoundOnMajsoul: true } },
+				);
 
-		// 		console.log(`contest ${majsoulFriendlyId} not found on majsoul`);
-		// 		return;
-		// 	}
+				console.log(`contest ${majsoulFriendlyId} not found on majsoul`);
+				return;
+			}
 
-		// 	console.log(`updating contest ${majsoulFriendlyId}`);
+			console.log(`updating contest ${majsoulFriendlyId}`);
 
-		// 	mongoStore.contestCollection.findOneAndUpdate(
-		// 		{ _id: contestId },
-		// 		{ $set: { ...majsoulContest } },
-		// 	);
+			mongoStore.contestCollection.findOneAndUpdate(
+				{ _id: contestId },
+				{ $set: { ...majsoulContest } },
+			);
 
-		// 	console.log(`updating contest ${majsoulFriendlyId} games`);
-		// 	for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)){
-		// 		await recordGame(contestId, gameId.majsoulId, mongoStore, api);
-		// 	}
-		// });
+			console.log(`updating contest ${majsoulFriendlyId} games`);
+			for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)){
+				await recordGame(contestId, gameId.majsoulId, mongoStore, api);
+			}
+		});
 
 		tracker.LiveGames$.subscribe(gameId => {
 			recordGame(contestId, gameId, mongoStore, api);
