@@ -1,6 +1,7 @@
 import { Han } from "./Han";
 import { Wind } from "./Wind";
 import { DrawStatus } from "./DrawStatus";
+import { PlayerGameStats } from "./Stats";
 
 export enum AILevel {
 	Easy = 1,
@@ -38,6 +39,7 @@ export interface GameResult {
 	players: Player[];
 	finalScore: FinalScore[];
 	rounds: RoundResult[];
+    stats?: PlayerGameStats[];
 }
 
 interface DrawRecord {
