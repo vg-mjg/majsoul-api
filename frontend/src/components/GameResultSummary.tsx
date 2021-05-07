@@ -4,11 +4,11 @@ import { Rest } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import * as moment from "moment-timezone";
 import * as styles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { levelToString, pickColorGradient } from "./utils";
 import { TeamImage } from "./TeamImage";
+import dayjs = require("dayjs");
 
 function GameSeat(props: {
 	seat: number,
@@ -105,12 +105,13 @@ export function getSeatCharacter(seat: number): string {
 export function GameResultSummary(props: {
 	game: Rest.GameResult,
 }): JSX.Element {
+	const endTime = React.useMemo(() => dayjs(props.game.end_time).calendar(), [props.game?.end_time]);
 	const cellStyle = "mb-1 pl-0 pr-1";
 	const rowStyle = "pl-1 no-gutters";
 	return <Container className="px-1 py-2">
 		<Row className={`${rowStyle} px-2 pb-2`}>
 			<Col className="">
-				{moment(props.game.end_time).calendar()}
+				{ endTime }
 			</Col>
 			<Col md="auto" className="">
 				<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${props.game.majsoulId}`} rel="noreferrer" target="_blank">View on Majsoul</a>

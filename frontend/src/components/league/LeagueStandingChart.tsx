@@ -5,8 +5,8 @@ import { Store, Rest } from "majsoul-api";
 import { IState, Contest } from "../../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import * as moment from "moment";
 import { useSelector } from "react-redux";
+import * as dayjs from 'dayjs';
 
 chartjs.defaults.global.defaultFontColor = "white";
 
@@ -16,8 +16,8 @@ function createData(sessions: Rest.Session[], teams: Record<string, Store.Contes
 			if (session.name) {
 				return session.name;
 			}
-			const time =  moment(session.scheduledTime).tz('UTC');
-			return `${time.hours() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
+			const time =  dayjs(session.scheduledTime).tz('UTC');
+			return `${time.hour() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
 		})),
 
 		datasets: Object.values(teams ?? {}).map(team => {

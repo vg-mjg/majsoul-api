@@ -552,6 +552,10 @@ export class RestApi {
 
 			const cursor = this.mongoStore.gamesCollection.find(filter);
 
+			cursor.project({
+				rounds: false,
+			});
+
 			if (req.query?.last) {
 				const last = parseInt(req.query.last as string);
 				if (last) {

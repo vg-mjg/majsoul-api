@@ -5,12 +5,12 @@ import Col from 'react-bootstrap/Col';
 import { Rest } from "majsoul-api";
 import { useDispatch, useSelector } from "react-redux";
 import Accordion from "react-bootstrap/Accordion";
-import moment = require("moment");
 import { TeamIcon } from "./TeamIcon";
 import { IState } from "src/State";
 import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
+import * as dayjs from "dayjs";
 
 export function ContestPlayerDisplay(props: {
 	contestId: string;
@@ -87,7 +87,7 @@ export function ContestPlayerDisplay(props: {
 							</Col>
 
 							<Col md="auto">
-								{moment(game.start_time).calendar()}
+								{dayjs(game.start_time).calendar()}
 							</Col>
 
 							<Col md="auto">

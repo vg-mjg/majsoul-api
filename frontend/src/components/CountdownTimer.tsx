@@ -1,58 +1,41 @@
 import * as React from "react";
-import * as moment from "moment-timezone";
+import * as dayjs from "dayjs";
+import { withLocale } from "src/api/utils";
 
-interface TimerProps {
-	targetTime: number;
-	prefix?: string;
-}
+const calendarSetting = {
+	sameDay: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
+		return dayjs.duration(this.diff(now)).locale("en").format('[Starts] [in] H:mm:ss');
+	},
+	nextDay: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
+		return dayjs.duration(this.diff(now)).locale("en").format('[Starts] [in] D [day] [and] H:mm:ss');
+	},
+	nextWeek: withLocale("en", '[Starts] [on] dddd [at] LT'),
+	lastDay: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
+		return dayjs.duration(now.diff(this)).locale("en").format('[Started] H:mm:ss [ago]');
+	},
+	lastWeek: withLocale("en", '[Started] [Last] dddd'),
+	sameElse: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
+		return `${now.isAfter(this) ? "Started" : "Starts"} ${this.format('[on] l')}`;
+	},
+};
 
-interface TimerState {
-	time: number;
-}
+export function CountdownTimer(props: {
+	targetTime: number,
+	prefix?: string,
+}): JSX.Element {
+	const [timeNow, setTimeNow] = React.useState(Date.now());
+	const targetTime = React.useMemo(() => dayjs(props.targetTime), [props.targetTime]);
 
-export class CountdownTimer extends React.Component<TimerProps, TimerState> {
-	private interval: any;
-	public componentDidMount(): void {
-		this.interval = setInterval(() => {
-			this.setState(
-				{
-					...this.state,
-					...{
-						time: Date.now()
-					}
-				}
-			);
+	React.useEffect(() => {
+		const interval = setInterval(() => {
+			setTimeNow(Date.now());
 		}, 1000);
-	}
+		return () => {
+			clearInterval(interval);
+		};
+	}, [setTimeNow]);
 
-	public componentWillUnmount(): void {
-		clearInterval(this.interval);
-	}
-
-	public render(): JSX.Element {
-		if (this.state?.time == null) {
-			return null;
-		}
-
-		const targetMoment = moment(this.props.targetTime);
-		const nowMoment = moment(this.state.time);
-		let difference: moment.Duration;
-		const future = nowMoment.isBefore(targetMoment);
-		if (future){
-			difference = moment.duration(targetMoment.diff(nowMoment));
-		} else {
-			difference = moment.duration(nowMoment.diff(targetMoment));
-		}
-
-		return <h3 className="mb-0">
-			{this.props.prefix && `${this.props.prefix} `}
-			{future ? "Starts in " : "Started "}
-			{
-				difference.asMonths() >= 1
-					? difference.humanize(false)
-					: `${difference.days() != 0 ? `${difference.days()}d` : ""} ${difference.hours()}:${difference.minutes()}:${difference.seconds()}`
-			}
-			{!future && " ago"}
-		</h3>;
-	}
+	return <h3 className="mb-0">
+		{props.prefix == null ? "" : `${props.prefix} `}{targetTime.calendar(null, calendarSetting)}
+	</h3>;
 }

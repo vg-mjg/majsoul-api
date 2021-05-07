@@ -1,3 +1,5 @@
+import * as dayjs from "dayjs";
+
 export function buildApiUrl(path: string): URL {
 	if (process.env.NODE_ENV === "production") {
 		return new URL(`${location.protocol}//${location.host}/api/${path}`);
@@ -20,5 +22,11 @@ export function authHeader(token: string): {
 } {
 	return {
 		'Authorization': `Bearer ${token}`
+	}
+}
+
+export function withLocale(locale: string, format: string): (this: dayjs.Dayjs, now: dayjs.Dayjs) => string {
+	return function(this: dayjs.Dayjs, now: dayjs.Dayjs) {
+		return this.locale(locale).format(format);
 	}
 }

@@ -3,7 +3,6 @@ import { IState } from "../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import * as moment from "moment-timezone";
 import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
 import { useSelector, useDispatch } from "react-redux";
@@ -20,6 +19,7 @@ import clsx from "clsx";
 import { TextField } from "./utils/TextField";
 import { patchSession } from "src/api/Sessions";
 import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsRetrievedAction copy";
+import * as dayjs from "dayjs";
 
 enum GamesFetchStatus {
 	None,
@@ -30,7 +30,7 @@ enum GamesFetchStatus {
 export function Session(props: {
 	session: Rest.Session<string>;
 	forceDetails?: boolean;
-}): JSX.Element{
+}): JSX.Element {
 	const [viewDetails, setViewDetails] = React.useState(false);
 	const [gamesFetchedStatus, setGamesFetched] = React.useState(GamesFetchStatus.None);
 	const detailsOpen = viewDetails || props.forceDetails;
@@ -46,8 +46,6 @@ export function Session(props: {
 
 	const dispatch = useDispatch();
 
-	const date = new Date();
-
 	React.useEffect(() => {
 		if (!detailsOpen || gamesFetchedStatus !== GamesFetchStatus.None) {
 			return;
@@ -57,7 +55,6 @@ export function Session(props: {
 			return;
 		}
 
-		console.log("effect");
 		setGamesFetched(GamesFetchStatus.Fetching);
 
 		fetchGames({
@@ -71,21 +68,26 @@ export function Session(props: {
 
 	const onAccordionSelect = React.useCallback((accordionKey: string) => {
 		setViewDetails(accordionKey === "0");
-	}, [setViewDetails])
+	}, [setViewDetails]);
 
-	const utcStartMoment = (props.session == null ? moment() : moment(props.session.scheduledTime)).tz("UTC");
-	const utcStartMomentText = utcStartMoment.format("LT l") + " UTC";
+	const utcScheduledTime = React.useMemo(() => {
+		if (props.session?.scheduledTime == null) {
+			return dayjs().tz("UTC");
+		}
+		return dayjs(props.session.scheduledTime).tz("UTC");
+	}, [props.session?.scheduledTime]);
+
+	const utcStartMomentText = React.useMemo(() => utcScheduledTime.format("LT l z"), [utcScheduledTime]);
+	const hasStarted = React.useMemo(() => utcScheduledTime.isBefore(dayjs().tz("UTC")), [utcScheduledTime]);
 
 	const [name, setName] = React.useState<string>();
 	const [utcMoment, setUtcMoment] = React.useState<string>();
-	const [timeIsInvalid, setTimeIsValid] = React.useState(!utcStartMoment.isValid());
+	const [timeIsInvalid, setTimeIsValid] = React.useState(!utcScheduledTime.isValid());
 	const [editTime, setEditTime] = React.useState(false);
 
 	if (props.session == null) {
 		return null;
 	}
-
-	const hasStarted = moment(utcMoment ?? utcStartMomentText).isBefore(moment());
 
 	return <Container fluid className="bg-dark rounded text-light">
 		<Row className="py-3 px-2">
@@ -100,21 +102,21 @@ export function Session(props: {
 							value={`${utcMoment ?? utcStartMomentText}`}
 							onChange={event => {
 								setUtcMoment(event.target.value)
-								setTimeIsValid(!moment(event.target.value).isValid())
+								setTimeIsValid(!dayjs(event.target.value).isValid())
 							}}
 							onFocus={(event: any) => setEditTime(true)}
 							onBlur={(event: any) => {
 								if (timeIsInvalid) {
-									setUtcMoment(moment(props.session.scheduledTime).tz("UTC").format("LT l") + " UTC")
+									setUtcMoment(null)
 								} else {
-									setUtcMoment(moment(event.target.value).tz("UTC").format("LT l") + " UTC")
+									setUtcMoment(dayjs(event.target.value).tz("UTC").format("LT l z"))
 								}
 								setEditTime(false);
 							}}
 						/>
 					</Row>
 					<Row>
-						{moment(props.session.scheduledTime).calendar()} in {moment.tz.guess()}
+						{dayjs(props.session.scheduledTime).calendar()} in {dayjs.tz.guess()}
 					</Row>
 				</Container>
 			</Col>
@@ -210,7 +212,7 @@ export function Session(props: {
 						onClick={() => patchSession(token, {
 							_id: props.session._id,
 							name,
-							scheduledTime: moment(utcMoment ?? utcStartMomentText).valueOf()
+							scheduledTime: dayjs(utcMoment ?? utcStartMomentText).valueOf()
 						}).then(session => dispatchSessionPatchedAction(dispatch, session))}
 					>Save</Button>
 				</Col>

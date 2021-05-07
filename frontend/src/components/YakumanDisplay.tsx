@@ -5,9 +5,9 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Han, RoundResult, AgariInfo } from "majsoul-api/dist/majsoul/types";
-import moment = require("moment");
 import { fetchYakuman } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
+import * as dayjs from "dayjs";
 
 function getYakumanName(han: Han[]): string {
 	const names = han.map(h => {
@@ -86,7 +86,7 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 
 	const games = useSelector((state: IState) => Object.values(state.games ?? {})
 		.filter(game => game.contestId === props.contestId
-			&& game.rounds.find(round => getYakumanAgari(round).length > 0))
+			&& game.rounds?.find(round => getYakumanAgari(round).length > 0))
 	);
 	return <>
 		<Row className="px-4 py-3 justify-content-end">
@@ -105,7 +105,7 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 						</Col>
 
 						<Col md="auto" className="mr-3">
-							{moment(game.start_time).calendar()}
+							{dayjs(game.start_time).calendar()}
 						</Col>
 
 						<Col md="auto">
