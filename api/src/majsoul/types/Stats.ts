@@ -20,7 +20,7 @@ class RiichiStats {
     	this.chase       = 0;
     	this.chased      = 0;
     	this.ippatsu     = 0;
-        this.ura_hit     = 0;
+	this.ura_hit     = 0;
     	this.immediate_dealin = 0;
     }
 }
