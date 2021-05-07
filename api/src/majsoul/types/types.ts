@@ -39,7 +39,7 @@ export interface GameResult {
 	players: Player[];
 	finalScore: FinalScore[];
 	rounds: RoundResult[];
-    stats?: PlayerGameStats[];
+	stats?: PlayerGameStats[];
 }
 
 interface DrawRecord {
