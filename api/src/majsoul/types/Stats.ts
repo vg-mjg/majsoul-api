@@ -136,7 +136,7 @@ export class PlayerGameStats {
     draws:   DrawStats;
     turns:   TurnStats;
     constructor() {
-	this.nhands  = 0;
+        this.nhands  = 0;
         this.shanten = 0;
         this.riichi  = new RiichiStats;
         this.dealer  = new DealerStats;
