@@ -597,7 +597,6 @@ export class Api {
 			stats: stats
 		};
 	}
-    }
 
 	public dispose() {
 		this.connection.close();
