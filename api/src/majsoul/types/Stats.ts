@@ -10,7 +10,7 @@ class RiichiStats {
     ippatsu:     number;
     ura_hit: number;
     immediate_dealin: number;
-	constructor() {
+    constructor() {
     	this.total       = 0;
     	this.daburiichi  = 0;
     	this.furiten     = 0;
@@ -22,7 +22,7 @@ class RiichiStats {
     	this.ippatsu     = 0;
         this.ura_hit     = 0;
     	this.immediate_dealin = 0;
-	}
+    }
 }
 
 class DealerStats {
@@ -41,7 +41,7 @@ class DealerStats {
     	this.tsumo_hit_mangan_points = 0;
     	this.repeats          = 0;
     	this.max_repeats      = 0;
-	}
+    }
 }
 
 class CallStats {
@@ -54,7 +54,7 @@ class CallStats {
     	this.total        = 0;
     	this.opps         = 0;
     	this.opps_all     = 0;
-	}
+    }
 }
 
 class AgariStatsBreakdown {
