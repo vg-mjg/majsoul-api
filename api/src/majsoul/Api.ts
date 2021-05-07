@@ -563,11 +563,10 @@ export class Api {
                 }
             }
 		}
-
-        if (!resp.data_url && !(resp.data && resp.data.length)) {
-            console.log(`No data in response: ${id}`);
-            return;
-        }
+		
+		if (!resp.data_url && !(resp.data && resp.data.length)) {
+			console.log(`No data in response: ${id}`);
+			return;
 
 		const players = resp.head.result.players.sort((a, b) => a.seat - b.seat);
 
