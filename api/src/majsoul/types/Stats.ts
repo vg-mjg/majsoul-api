@@ -81,15 +81,15 @@ class AgariStats {
     akadora: number;
     dora:    number;
     constructor() {
-        this.total    = 0;
-        this.points   = 0;
-        this.yakuman  = 0;
-        this.open     = new AgariStatsBreakdown; //state of the winning hand; not the player's; in the scope of deal-ins
-        this.riichi   = new AgariStatsBreakdown;
-        this.dama     = new AgariStatsBreakdown;
-    	this.uradora  = 0;
-    	this.akadora  = 0;
-    	this.dora     = 0;
+		this.total    = 0;
+		this.points   = 0;
+		this.yakuman  = 0;
+		this.open     = new AgariStatsBreakdown; //state of the winning hand; not the player's; in the scope of deal-ins
+		this.riichi   = new AgariStatsBreakdown;
+		this.dama     = new AgariStatsBreakdown;
+		this.uradora  = 0;
+		this.akadora  = 0;
+		this.dora     = 0;
     }
 }
 
