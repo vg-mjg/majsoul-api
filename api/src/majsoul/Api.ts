@@ -13,7 +13,7 @@ import { Connection } from "./Connection";
 import { RpcImplementation } from "./RpcImplementation";
 import { RpcService } from "./Service";
 import { ApiResources } from "./ApiResources";
-import { PlayerGameStats } from "./types/Stats";
+import { createStats, PlayerGameStats } from "./types/Stats";
 import { HaiArr, syanten, syanten7, syanten13 } from "syanten";
 
 export class Api {
@@ -231,14 +231,62 @@ export class Api {
 
 		hand.forEach(t =>  {
 			let num: number  = parseInt(t[0]);
-			if (0 == num)
-			num = 5;
+			if (0 == num) {
+				num = 5;
+			}
+
 			let suit = t[1];
 			tiles++;
 			hai[tcon[suit]][num - 1]++;
 		});
 
 		return Math.min(syanten(hai), syanten7(hai), syanten13(hai));
+	}
+
+	private count_hand(ron_tsumo, counter, hule, active_riichis, uradora, akadora, dora, pts) {
+		if (hule.yiman){
+			counter.yakuman++;
+		}
+
+		counter.total++;
+		counter.uradora += uradora;
+		counter.akadora += akadora;
+		counter.dora    += dora;
+		counter.points  += pts;
+		if (active_riichis.has(hule.seat)) {
+			counter.riichi.total++;
+			counter.riichi.points += pts;
+		} else if ("ming" in hule) {
+			counter.open.total++;
+			counter.open.points += pts;
+		} else {
+			counter.dama.total++;
+			counter.dama.points += pts;
+		}
+
+		if (!ron_tsumo) {
+			return;
+		}
+
+		if (hule.zimo) {
+			if (active_riichis.has(hule.seat)) {
+				counter.riichi.tsumo++;
+			} else if ("ming" in hule) {
+				counter.open.tsumo++;
+			} else {
+				counter.dama.tsumo++;
+			}
+		} else {
+			if (active_riichis.has(hule.seat)) {
+				counter.riichi.ron++;
+			} else if ("ming" in hule) {
+				counter.open.ron++;
+			} else {
+				counter.dama.ron++;
+			}
+		}
+
+		return;
 	}
 
 	public async getGame(id: string): Promise<GameResult> {
@@ -259,14 +307,15 @@ export class Api {
 		let round: RoundInfo;
 		let lastDiscardSeat: number;
 		let leftover_riichi_sticks: number;
-		let active_riichis    = null;
-		let kan_lock          = null;
+		let active_riichis = null;
+		let kan_lock = null;
 		let active_open_hands = null;
-		let turn_counters     = null;
+		let turn_counters = null;
 		let repeat_series = 0;
 
-		for (let p = 0; p < np; p++)
-		stats.push(new PlayerGameStats());
+		for (let p = 0; p < np; p++) {
+			stats.push(createStats());
+		}
 
 		if (!records ||  "RecordNewRound" != records[0].constructor.name) {
 			console.log("Game record does not start with RecordNewRound");
@@ -275,17 +324,19 @@ export class Api {
 
 		for (const i in records) {
 			const record = records[i];
-			let record_next = (records.length <= i) ? records[i+1] : null;
+			let record_next = (records.length <= i) ? records[i + 1] : null;
 			switch (record.constructor.name) {
 				case "RecordNewRound": {
 					//repeat streaks
 					if (round && round.dealership == record.ju) {
 						stats[round.dealership].dealer.repeats++;
 						repeat_series++;
-						if (repeat_series > stats[round.dealership].dealer.max_repeats)
-						stats[round.dealership].dealer.max_repeats = repeat_series;
-					} else
-					repeat_series = 0;
+						if (repeat_series > stats[round.dealership].dealer.max_repeats) {
+							stats[round.dealership].dealer.max_repeats = repeat_series;
+						}
+					} else {
+						repeat_series = 0;
+					}
 
 					round = {
 						round: record.chang,
@@ -302,37 +353,46 @@ export class Api {
 					stats[round.dealership].turns.total++; //dealer's 'draw'
 					stats[round.dealership].dealer.rounds++;
 					turn_counters[round.dealership]++;
-					for (let p = 0; p < np; p++)
-					stats[p].shanten += this.handShanten(record['tiles'+p]);
+					for (let p = 0; p < np; p++) {
+						stats[p].shanten += this.handShanten(record['tiles' + p]);
+					}
 					break;
 				}
 				case "RecordDiscardTile": {
 					lastDiscardSeat = record.seat;
+
 					//riichis
-					if (record.is_wliqi)
-					stats[record.seat].riichi.daburiichi++;
+					if (record.is_wliqi) {
+						stats[record.seat].riichi.daburiichi++;
+					}
+
 					if (record.is_wliqi || record.is_liqi) {
 						stats[record.seat].riichi.total++;
 						stats[record.seat].turns.riichi += turn_counters[record.seat];
 						//furiten
-						if (record.zhenting[record.seat])
-						stats[record.seat].riichi.furiten++;
+						if (record.zhenting[record.seat]) {
+							stats[record.seat].riichi.furiten++;
+						}
 						//chase
 						if (active_riichis.size) {
 							stats[record.seat].riichi.chase++;
 							active_riichis.forEach((p:number)  => stats[p].riichi.chased++);
-						} else
-						stats[record.seat].riichi.first++;
+						} else {
+							stats[record.seat].riichi.first++;
+						}
 						active_riichis.add(record.seat);
 						//check immediate deal-in
-						if (record_next && "RecordHule" == record_next.constructor.name)
-						stats[record.seat].riichi.immediate_dealin++;
+						if (record_next && "RecordHule" == record_next.constructor.name) {
+							stats[record.seat].riichi.immediate_dealin++;
+						}
 					}
+
 					//calls
 					if (records.length <= i) {
 						console.log("Game record ends with Discard event");
 						break;
 					}
+
 					if ("operations" in record) { //somebody can call this discard
 						//ignoring ron calls, get list of seats that can call
 						const calloppsp = new Set();
@@ -341,8 +401,7 @@ export class Api {
 						switch (record_next && record_next.constructor.name) {
 							case "RecordHule": { //somebody ronned. nobody could call anyways
 								break;
-							}
-							case "RecordChiPengGang": {
+							} case "RecordChiPengGang": {
 								//somebody called
 								if (0 == records[i+1].type) { //somebody chii'd. count all
 									calloppsp.forEach((p: number) => {
@@ -365,8 +424,7 @@ export class Api {
 						}
 					}
 					break;
-				}
-				case "RecordDealTile": {
+				} case "RecordDealTile": {
 					turn_counters[record.seat]++;
 					stats[record.seat].turns.total++;
 					//shouminkan/ankan opportunity (types 4/6)
@@ -381,12 +439,10 @@ export class Api {
 						}
 					}
 					break;
-				}
-				case "RecordAnGangAddGang": {
+				} case "RecordAnGangAddGang": {
 					stats[record.seat].calls.total++;
 					break;
-				}
-				case "RecordChiPengGang": {
+				} case "RecordChiPengGang": {
 					stats[record.seat].turns.total++;
 					turn_counters[record.seat]++;
 					stats[record.seat].calls.total++;
@@ -395,12 +451,10 @@ export class Api {
 						active_open_hands.add(record.seat);
 					}
 					break;
-				}
-				case "RecordLiuJu": {
+				} case "RecordLiuJu": {
 					lastDiscardSeat = null;
 					break;
-				}
-				case "RecordNoTile": {
+				} case "RecordNoTile": {
 					if (!round) {
 						console.log("Missing hand for NoTile event");
 						continue;
@@ -410,18 +464,22 @@ export class Api {
 					active_open_hands.forEach((p: number) => stats[p].draws.open++);
 					for (const p in record.players) {
 						stats[p].draws.total++;
-						if (record.players[p].tingpai)
-						stats[p].draws.ten++;
-					}
-					for (const scores of record.scores)
-					if ("delta_scores" in scores) {
-						for (const p in scores.delta_scores) {
-							stats[p].draws.points += scores.delta_scores[p];
-							if (record.liujumanguan && 0 < scores.delta_scores[p])
-							stats[p].draws.nagashi++;
+						if (record.players[p].tingpai) {
+							stats[p].draws.ten++;
 						}
-					};
-					//
+					}
+
+					for (const scores of record.scores) {
+						if ("delta_scores" in scores) {
+							for (const p in scores.delta_scores) {
+								stats[p].draws.points += scores.delta_scores[p];
+								if (record.liujumanguan && 0 < scores.delta_scores[p]) {
+									stats[p].draws.nagashi++;
+								}
+							}
+						};
+					}
+
 					hands.push({
 						round,
 						draw: {
@@ -436,16 +494,16 @@ export class Api {
 					lastDiscardSeat = null;
 					//round = null;
 					break;
-				}
-				case "RecordHule": {
+				} case "RecordHule": {
 					if (!round) {
 						console.log("Missing hand for Hule event");
 						continue;
 					}
 					//sticks
 					let riichi_sticks = active_riichis.size + leftover_riichi_sticks;
-					if (active_riichis.has(record.hules[0].seat))
-					stats[record.hules[0].seat].riichi.sticks_kept++;
+					if (active_riichis.has(record.hules[0].seat)) {
+						stats[record.hules[0].seat].riichi.sticks_kept++;
+					}
 					stats[record.hules[0].seat].riichi.sticks_won += riichi_sticks;
 					//categorize win
 					let honba = round.repeat;
@@ -456,73 +514,44 @@ export class Api {
 						let akadora = 0;
 						let dora    = 0;
 						let ippatsu = false;
+
 						for (const yaku of hule.fans) {
-							if (Han.Ura_Dora == yaku.id)
-							uradora += yaku.val;
-							else if (Han.Red_Five == yaku.id)
-							akadora += yaku.val;
-							else if (Han.Dora == yaku.id)
-							dora += yaku.val;
-							else if (Han.Ippatsu == yaku.id)
-							ippatsu = true;
+							if (Han.Ura_Dora == yaku.id){
+								uradora += yaku.val;
+							} else if (Han.Red_Five == yaku.id) {
+								akadora += yaku.val;
+							} else if (Han.Dora == yaku.id) {
+								dora += yaku.val;
+							} else if (Han.Ippatsu == yaku.id) {
+								ippatsu = true;
+							}
 						}
-						if (ippatsu)
-						stats[hule.seat].riichi.ippatsu++;
+
+						if (ippatsu) {
+							stats[hule.seat].riichi.ippatsu++;
+						}
+
 						//turn counters
 						stats[hule.seat].turns.win += turn_counters[hule.seat];
-						if (!hule.zimo)
-						stats[lastDiscardSeat].turns.dealin += turn_counters[lastDiscardSeat];
-
-						const count_hand = function (ron_tsumo, counter, hule, active_riichis, uradora, akadora, dora, pts) {
-							if (hule.yiman)
-							counter.yakuman++;
-							counter.total++;
-							counter.uradora += uradora;
-							counter.akadora += akadora;
-							counter.dora    += dora;
-							counter.points  += pts;
-							if (active_riichis.has(hule.seat)) {
-								counter.riichi.total++;
-								counter.riichi.points += pts;
-							} else if ("ming" in hule) {
-								counter.open.total++;
-								counter.open.points += pts;
-							} else {
-								counter.dama.total++;
-								counter.dama.points += pts;
-							}
-							if (!ron_tsumo)
-							return;
-							if (hule.zimo) {
-								if (active_riichis.has(hule.seat))
-								counter.riichi.tsumo++;
-								else if ("ming" in hule)
-								counter.open.tsumo++;
-								else
-								counter.dama.tsumo++;
-							} else {
-								if (active_riichis.has(hule.seat))
-								counter.riichi.ron++;
-								else if ("ming" in hule)
-								counter.open.ron++;
-								else
-								counter.dama.ron++;
-							}
-
-							return;
+						if (!hule.zimo) {
+							stats[lastDiscardSeat].turns.dealin += turn_counters[lastDiscardSeat];
 						}
 						//categorize win
-						if (uradora)
-						stats[hule.seat].riichi.ura_hit++;
-
-						count_hand(true, stats[hule.seat].wins, hule, active_riichis, uradora, akadora, dora, pts + 1000 * riichi_sticks);
-						if (!hule.zimo) {
-							count_hand(false, stats[lastDiscardSeat].dealins, hule, active_riichis, uradora, akadora, dora, pts);
-							if (active_riichis.has(lastDiscardSeat))
-							count_hand(false, stats[lastDiscardSeat].dealins_while_riichi, hule, active_riichis, uradora, akadora, dora, pts);
-							if (active_open_hands.has(lastDiscardSeat))
-							count_hand(false, stats[lastDiscardSeat].dealins_while_open, hule, active_riichis, uradora, akadora, dora, pts);
+						if (uradora) {
+							stats[hule.seat].riichi.ura_hit++;
 						}
+
+						this.count_hand(true, stats[hule.seat].wins, hule, active_riichis, uradora, akadora, dora, pts + 1000 * riichi_sticks);
+						if (!hule.zimo) {
+							this.count_hand(false, stats[lastDiscardSeat].dealins, hule, active_riichis, uradora, akadora, dora, pts);
+							if (active_riichis.has(lastDiscardSeat)) {
+								this.count_hand(false, stats[lastDiscardSeat].dealins_while_riichi, hule, active_riichis, uradora, akadora, dora, pts);
+							}
+							if (active_open_hands.has(lastDiscardSeat)) {
+								this.count_hand(false, stats[lastDiscardSeat].dealins_while_open, hule, active_riichis, uradora, akadora, dora, pts);
+							}
+						}
+
 						//categorize thit
 						if (hule.zimo && hule.seat != round.dealership) {
 							stats[round.dealership].dealer.tsumo_hit++;
