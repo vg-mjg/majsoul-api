@@ -594,7 +594,7 @@ export class Api {
 				uma: playerItem.total_point,
 			})),
 			rounds: hands,
-            stats: stats
+                        stats: stats
 		};
 	}
     }
