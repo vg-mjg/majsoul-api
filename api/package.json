@@ -22,6 +22,7 @@
 		"mongodb": "^3.5.8",
 		"node-fetch": "^2.6.1",
 		"protobufjs": "^6.8.8",
+		"syanten":"^1.5.0",
 		"rxjs": "^6.5.5",
 		"uuid": "^3.3.3",
 		"ws": "^7.1.2"
