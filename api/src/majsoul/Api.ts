@@ -562,7 +562,7 @@ export class Api {
                     break;
                 }
             }
-        }
+		}
 
         if (!resp.data_url && !(resp.data && resp.data.length)) {
             console.log(`No data in response: ${id}`);
@@ -592,9 +592,9 @@ export class Api {
 			finalScore: players.map(playerItem => ({
 				score: playerItem.part_point_1,
 				uma: playerItem.total_point,
-			})),
+		    })),
 			rounds: hands,
-                        stats: stats
+			stats: stats
 		};
 	}
     }
