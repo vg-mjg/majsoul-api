@@ -592,7 +592,7 @@ export class Api {
 			finalScore: players.map(playerItem => ({
 				score: playerItem.part_point_1,
 				uma: playerItem.total_point,
-		    })),
+			})),
 			rounds: hands,
 			stats: stats
 		};
