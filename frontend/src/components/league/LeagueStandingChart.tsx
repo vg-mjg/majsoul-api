@@ -61,7 +61,7 @@ export function LeagueStandingChart(props: {
 	contest: Contest;
 }): JSX.Element {
 	if (props.contest?.sessionsById == null) {
-		return;
+		return null;
 	}
 
 	const sessions = useSelector((state: IState) => {

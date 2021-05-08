@@ -20,12 +20,29 @@ import { TextField } from "./utils/TextField";
 import { patchSession } from "src/api/Sessions";
 import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsRetrievedAction copy";
 import * as dayjs from "dayjs";
+import { css } from "astroturf";
 
 enum GamesFetchStatus {
 	None,
 	Fetching,
 	Fetched,
 }
+
+const styles = css`
+	@import 'src/bootstrap-vars.sass';
+
+	.previousSession {
+		background-color: $dark;
+	}
+
+	.currentSession {
+		background-color: $secondary;
+	}
+
+	.nextSession {
+		background-color: $secondary;
+	}
+`;
 
 export function Session(props: {
 	session: Rest.Session<string>;
@@ -89,7 +106,17 @@ export function Session(props: {
 		return null;
 	}
 
-	return <Container fluid className="bg-dark rounded text-light">
+	return <Container
+		fluid
+		className={clsx(
+			"rounded text-light",
+			hasStarted
+				? gamesFetchedStatus === GamesFetchStatus.Fetched && games.length === 0
+					? styles.currentSession
+					: styles.previousSession
+				: styles.nextSession
+		)}
+	>
 		<Row className="py-3 px-2">
 			<Col md="auto">
 				<Container>

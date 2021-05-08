@@ -26,6 +26,7 @@ import { fetchContestSessions } from "src/api/Sessions";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 import { Link } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
+import { Rest } from "majsoul-api";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -149,8 +150,25 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 	</>
 }
 
+function SessionSection(props: {
+	session: Rest.Session<string>;
+	title: string;
+}): JSX.Element {
+	if	(!props.session) {
+		return null;
+	}
+
+	return <>
+		<Row className="px-4 py-3 justify-content-end" >
+			<Col md="auto" className="h4 mb-0"><u>{props.title}</u></Col>
+		</Row>
+		<Row>
+			<Session session={props.session} forceDetails/>
+		</Row>
+	</>
+}
+
 function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
-	const games = useSelector((state: IState) => Object.values(state.games ?? [])?.sort((a, b) => b.end_time - a.end_time));
 	const dispatch = useDispatch();
 
 	const { contest } = props;
@@ -160,16 +178,22 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
 	}, [dispatch, contest._id]);
 
-	if (contest?.sessionsById == null) {
-		return null;
-	}
-
-	const sessions = Object.values(contest.sessionsById)
+	const sessions = Object.values(contest.sessionsById ?? {})
 		.sort((a, b) => a.scheduledTime - b.scheduledTime);
 
 	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = sessions[nextSessionIndex];
 	const currentSession = nextSessionIndex < 0 ? sessions[sessions.length - 1] : sessions[nextSessionIndex - 1];
+
+	const currentSessionGames = useSelector((state: IState) =>
+		Object.entries(state.games ?? {})
+			.filter(([key, game]) =>
+				game.contestId === contest?._id
+				&& game.sessionId === currentSession?._id
+			)
+	);
+
+	const currentSessionComplete = currentSessionGames.length >= 4;
 
 	return <>
 		<Row className="mt-3">
@@ -178,22 +202,9 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 		<Row className="mt-3">
 			<LeagueStandingChart contest={contest}/>
 		</Row>
-		{ nextSession && <>
-			<Row className="px-4 py-3 justify-content-end" >
-				<Col md="auto" className="h4 mb-0"><u>Next Session</u></Col>
-			</Row>
-			<Row>
-				<Session session={nextSession} forceDetails/>
-			</Row>
-		</>}
-		{ currentSession && <>
-			<Row className="px-4 py-3 justify-content-end" >
-				<Col md="auto" className="h4 mb-0"><u>Recent Session</u></Col>
-			</Row>
-			<Row>
-				<Session session={currentSession} forceDetails/>
-			</Row>
-		</>}
+		<SessionSection session={currentSessionComplete ? null : currentSession} title="Current Session" />
+		<SessionSection session={nextSession} title="Next Session" />
+		<SessionSection session={currentSessionComplete ? currentSession : null} title="Recent Session" />
 		<Row className="mt-4">
 			<Col className="text-center">
 				<Link className="h5 text-dark" to={`/contests/${contest._id}/sessions`}><u>More Sessions</u></Link>
