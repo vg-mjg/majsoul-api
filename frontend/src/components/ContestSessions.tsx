@@ -6,6 +6,7 @@ import Container from "react-bootstrap/Container";
 import Pagination from "react-bootstrap/Pagination";
 import Row from "react-bootstrap/Row";
 import { useDispatch, useSelector } from "react-redux";
+import { useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
@@ -75,13 +76,17 @@ function SessionsPagination(props: {
 export function ContestSessions(props: {
 	contestId: string;
 }): JSX.Element {
+	const history = useHistory();
+	const hash = useLocation().hash.toLowerCase().substr(1);
+
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const dispatch = useDispatch();
 
-	const [activePage, setActivePage] = React.useState(0);
 	const setActivePageCallback = React.useCallback((selectedPage: number) => {
-		setActivePage(selectedPage);
-	}, [setActivePage]);
+		history.push({
+			hash: `#${selectedPage + 1}`,
+		});
+	}, [history]);
 
 	React.useEffect(() => {
 		fetchContestImages(props.contestId)
@@ -108,6 +113,10 @@ export function ContestSessions(props: {
 	}
 
 	const sessions = Object.values(contest.sessionsById);
+	const parsedHash = parseInt(hash) ?? 0;
+	const now = Date.now();
+	const activePage = isNaN(parsedHash) ? Math.floor(sessions.findIndex(session => session.scheduledTime >= now) / 10) : parsedHash - 1;
+
 	const numberOfPages = Math.floor(sessions.length / 10) + 1;
 	return <Container className="mt-4">
 		<Row>
