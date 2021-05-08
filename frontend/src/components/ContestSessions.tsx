@@ -6,7 +6,7 @@ import Container from "react-bootstrap/Container";
 import Pagination from "react-bootstrap/Pagination";
 import Row from "react-bootstrap/Row";
 import { useDispatch, useSelector } from "react-redux";
-import { useHistory, useLocation } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
@@ -15,6 +15,7 @@ import { fetchContestImages, fetchContestSummary } from "src/api/Contests";
 import { fetchContestPlayers } from "src/api/Players";
 import { fetchContestSessions } from "src/api/Sessions";
 import { IState } from "../State";
+import { ContestHeader } from "./ContestHeader";
 import { Session } from "./Session";
 
 const styles = css`
@@ -23,6 +24,7 @@ const styles = css`
 	.pagination {
 		display: flex;
 		justify-content: center;
+		align-items: center;
 		margin: 0;
 	}
 
@@ -39,9 +41,18 @@ const styles = css`
 			background-color: $dark;
 		}
 	}
+
+	.spacer {
+		flex: 1;
+	}
+
+	.backLink {
+		color: $dark;
+	}
 `;
 
 function SessionsPagination(props: {
+	contestId: string;
 	numberOfPages: number;
 	activePage?: number;
 	onActivePageChanged?: (page: number) => void;
@@ -59,6 +70,10 @@ function SessionsPagination(props: {
 	}, [props.onActivePageChanged])
 
 	return <Pagination className={styles.pagination}>
+		<Link className={styles.backLink} to={`/contests/${props.contestId}/`}>
+			Back to Summary
+		</Link>
+		<div className={styles.spacer}/>
 		{ [...Array(props.numberOfPages).keys()].map(pageNumber =>
 			<Pagination.Item
 				className={clsx(styles.paginationIcon)}
@@ -119,9 +134,11 @@ export function ContestSessions(props: {
 
 	const numberOfPages = Math.floor(sessions.length / 10) + 1;
 	return <Container className="mt-4">
-		<Row>
+		<ContestHeader contest={contest}/>
+		<Row className="mt-2">
 			<Col>
 				<SessionsPagination
+					contestId={props.contestId}
 					numberOfPages={numberOfPages}
 					activePage={activePage}
 					onActivePageChanged={setActivePageCallback}
@@ -133,9 +150,10 @@ export function ContestSessions(props: {
 				<Session session={session}/>
 			</Col>
 		</Row>)}
-		<Row className="mt-4">
+		<Row className="mt-4 mb-2">
 			<Col>
 				<SessionsPagination
+					contestId={props.contestId}
 					numberOfPages={numberOfPages}
 					activePage={activePage}
 					onActivePageChanged={setActivePageCallback}

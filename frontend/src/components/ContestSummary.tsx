@@ -10,11 +10,9 @@ import { Teams } from "./Teams";
 import { GameResultSummary } from "./GameResultSummary";
 import { ContestType } from "majsoul-api/dist/store/types/types";
 import { ContestMetadataEditor } from "./ContestMetadataEditor";
-import { SongPlayer } from "./utils/SongPlayer";
 import { PlayerStandings } from "./PlayerStandings";
 import { YakumanDisplay } from "./YakumanDisplay";
 import { BracketPlayerStandings } from "./BracketPlayerStandings";
-import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { contestName } from "./utils";
 import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
@@ -27,6 +25,7 @@ import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/Con
 import { Link } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 import { Rest } from "majsoul-api";
+import { ContestHeader } from "./ContestHeader";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -44,17 +43,6 @@ export function ContestSummary(props: {
 			dispatchContestSummaryRetrievedAction(dispatch, contest)
 		});
 	}, [props.contestId]);
-
-	const [secret, setSecret] = React.useState(false);
-	React.useEffect(() => {
-		if (!secret) {
-			return;
-		}
-
-		if (contest.majsoulFriendlyId === 866709) {
-			new Audio(nantoka_nare as any).play()
-		}
-	}, [secret]);
 
 	React.useEffect(() => {
 		if (contest == null) {
@@ -76,19 +64,7 @@ export function ContestSummary(props: {
 	}
 
 	return <Container>
-		{contest.anthem == null ? null : <SongPlayer videoId={contest.anthem} play={secret}/>}
-		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
-			<Col>
-				<h1 onClick={() => setSecret(true)}><u style={{cursor: "pointer"}}>{contestName(contest)}</u></h1>
-			</Col>
-			<Col md="auto">
-				<i>
-					{!secret
-						? (contest.tagline ?? "")
-						: (contest.taglineAlternate ?? "")}
-					</i>
-				</Col>
-		</Row>
+		<ContestHeader contest={contest}/>
 		<ContestMetadataEditor contestId={contest._id}/>
 		{ contest.type === ContestType.League
 			? <LeagueContestSummary contest={contest}/>
