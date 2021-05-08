@@ -16,7 +16,7 @@ import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
 import { fetchContestPlayers, fetchPlayers } from "src/api/Players";
 import { css } from 'astroturf';
 import clsx from "clsx";
-import { BsX } from 'react-icons/bs';
+import { BsChevronCompactDown, BsChevronCompactUp, BsX } from 'react-icons/bs';
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 
@@ -373,10 +373,33 @@ function TeamRow(props: {
 	</Row>
 }
 
+function TeamList(props: {
+	teams: Store.ContestTeam<any>[];
+	maxPlaceLength: number;
+	session: Rest.Session;
+	contest: Contest;
+}): JSX.Element {
+	return <>
+		{ props.teams.map((team, placing) =>
+			<TeamRow key={team._id} first={placing === 0}>
+				<Team
+					contestId={props.contest?._id}
+					team={team}
+					score={props.session?.aggregateTotals[team._id]}
+					placing={placing + 1}
+					maxPlaceLength={props.maxPlaceLength}
+				/>
+			</TeamRow>
+		) }
+	</>
+}
+
 export function Teams(props: {
 	contest?: Contest;
 	session?: Rest.Session;
+	teamLimit?: number;
 }): JSX.Element {
+	const { teamLimit = 8 } = props;
 	const token = useSelector((state: IState) => state.user?.token);
 
 	const teams = props.contest?.teams;
@@ -401,19 +424,46 @@ export function Teams(props: {
 	}, []);
 
 	const maxPlaceLength = jpNumeral(teamsArray.length).length;
+	const [viewDetails, setViewDetails] = React.useState(false);
+
+	const onAccordionSelect = React.useCallback((accordionKey: string) => {
+		setViewDetails(accordionKey === "0");
+	}, [setViewDetails]);
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">
-		{teamsArray.map((team, placing) =>
-			<TeamRow key={team._id} first={placing === 0}>
-				<Team
-					contestId={props.contest?._id}
-					team={team}
-					score={props.session?.aggregateTotals[team._id]}
-					placing={placing + 1}
+		<TeamList
+			contest={props.contest}
+			session={props.session}
+			maxPlaceLength={maxPlaceLength}
+			teams={teamsArray.slice(0, teamLimit)}
+		/>
+		{ teamsArray.length > teamLimit && <Accordion
+			as={Container}
+			className="p-0"
+			onSelect={onAccordionSelect}
+			activeKey={viewDetails ? "0" : null}
+		>
+			<Accordion.Collapse eventKey="0">
+				<TeamList
+					contest={props.contest}
+					session={props.session}
 					maxPlaceLength={maxPlaceLength}
+					teams={teamsArray.slice(teamLimit)}
 				/>
-			</TeamRow>
-		)}
+			</Accordion.Collapse>
+			<Accordion.Toggle
+				disabled as={Row}
+				eventKey="0"
+			>
+				<Col className="text-center pb-1">
+					{
+						viewDetails
+							? <BsChevronCompactUp color="white" size="30px"/>
+							: <BsChevronCompactDown color="white" size="30px"/>
+					}
+				</Col>
+			</Accordion.Toggle>
+		</Accordion> }
 		{token && <TeamRow>
 			<Button onClick={addTeamOnClick}>Add Team</Button>
 		</TeamRow>}
