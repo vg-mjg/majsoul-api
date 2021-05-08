@@ -239,7 +239,7 @@ function Team(props: {
 				{ players == null
 					? <LoadingSpinner/>
 					: <Container className="p-0">
-						{[...players].sort((a, b) => a.tourneyRank - b.tourneyRank).map(player =>
+						{[...players].sort((a, b) => (b.tourneyScore ?? 0) - (a.tourneyScore ?? 0)).map(player =>
 							<Row key={player._id} className="no-gutters py-1">
 								<Col md="auto" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}} className="mr-3"/>
 								<Col md="auto" style={{minWidth: 64}} className="mr-3">
