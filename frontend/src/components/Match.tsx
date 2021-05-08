@@ -94,7 +94,13 @@ export function Match(props: {
 
 	const totals = props.totals ?? {};
 
-	const teamsArray = props.match.teams.map(team => teams[team._id]).sort((a, b) => props.aggregateTotals[b._id] - props.aggregateTotals[a._id]);
+	const teamsArray = props.match.teams.map(team => teams[team._id]);
+
+	if (props.totals) {
+		teamsArray.sort((a, b) => props.totals[b._id] - props.totals[a._id]);
+	} else {
+		teamsArray.sort((a, b) => props.aggregateTotals[b._id] - props.aggregateTotals[a._id]);
+	}
 
 	const cellStyle = "mb-1 pl-0 pr-1";
 	const rowStyle = "pl-1 no-gutters";
