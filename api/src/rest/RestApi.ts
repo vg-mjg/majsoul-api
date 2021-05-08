@@ -883,6 +883,7 @@ export class RestApi {
 				secret: publicKey,
 				audience: "riichi.moe",
 				issuer: "riichi.moe",
+				algorithms: ["RS256"],
 				credentialsRequired: true,
 			}).unless({
 				method: "GET"
