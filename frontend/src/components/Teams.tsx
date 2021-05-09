@@ -19,6 +19,7 @@ import clsx from "clsx";
 import { BsChevronCompactDown, BsChevronCompactUp, BsX } from 'react-icons/bs';
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
+import Badge from "react-bootstrap/Badge";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -201,7 +202,20 @@ function Team(props: {
 			eventKey="0"
 			className={clsx("no-gutters align-items-center flex-nowrap", styles.teamDetailsToggle)}
 		>
-			{props.placing != null && <Col md="auto" className="mr-3 text-right" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}}> <h5><b>{jpNumeral(props.placing)}位</b></h5></Col>}
+			{props.placing != null
+				&& <Col
+					md="auto"
+					className="mr-3 text-right"
+					style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}}>
+						<h3>
+							<Badge variant={props.placing === 1 ? "danger" : props.placing > 4 ? "secondary" : "success"}>
+								<b>
+									{jpNumeral(props.placing)}位
+								</b>
+							</Badge>
+						</h3>
+				</Col>
+			}
 			<Col md="auto" className="mr-3">
 				<label>
 					<input
@@ -374,24 +388,28 @@ function TeamRow(props: {
 }
 
 function TeamList(props: {
-	teams: Store.ContestTeam<any>[];
+	teams: TeamData[];
 	maxPlaceLength: number;
-	session: Rest.Session;
-	contest: Contest;
+	contestId: string;
 }): JSX.Element {
 	return <>
-		{ props.teams.map((team, placing) =>
-			<TeamRow key={team._id} first={placing === 0}>
+		{ props.teams.map((team) =>
+			<TeamRow key={team._id} first={team.placing === 0}>
 				<Team
-					contestId={props.contest?._id}
+					contestId={props.contestId}
 					team={team}
-					score={props.session?.aggregateTotals[team._id]}
-					placing={placing + 1}
+					score={team.total}
+					placing={team.placing + 1}
 					maxPlaceLength={props.maxPlaceLength}
 				/>
 			</TeamRow>
 		) }
 	</>
+}
+
+interface TeamData extends Store.ContestTeam<string> {
+	placing: number;
+	total: number;
 }
 
 export function Teams(props: {
@@ -401,16 +419,6 @@ export function Teams(props: {
 }): JSX.Element {
 	const { teamLimit = 8 } = props;
 	const token = useSelector((state: IState) => state.user?.token);
-
-	const teams = props.contest?.teams;
-	if (!teams) {
-		return null;
-	}
-
-	let teamsArray = Object.values(teams);
-	if (props.session != null) {
-		teamsArray = teamsArray.map(team => ({...team, total: props.session.aggregateTotals[team._id]})).sort((a, b) => b.total - a.total);
-	}
 
 	const dispatch = useDispatch();
 
@@ -423,17 +431,34 @@ export function Teams(props: {
 		createTeam(token, id).then(team => dispatchTeamCreatedAction(dispatch, id, team));
 	}, []);
 
-	const maxPlaceLength = jpNumeral(teamsArray.length).length;
 	const [viewDetails, setViewDetails] = React.useState(false);
 
 	const onAccordionSelect = React.useCallback((accordionKey: string) => {
 		setViewDetails(accordionKey === "0");
 	}, [setViewDetails]);
 
+	const teams = props.contest?.teams;
+	if (!teams || !props.session) {
+		return <Container className="rounded bg-dark text-light px-3 py-4">
+			<Row>
+				<Col className="text-center">
+					<LoadingSpinner/>
+				</Col>
+			</Row>
+		</Container>
+	}
+
+	const teamsArray: TeamData[] =
+		Object.values(teams)
+			.map(team => ({...team, total: props.session.aggregateTotals[team._id]}))
+			.sort((a, b) => b.total - a.total)
+			.map((team, placing) => ({...team, placing}));
+
+	const maxPlaceLength = jpNumeral(teamsArray.length).length;
+
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		<TeamList
-			contest={props.contest}
-			session={props.session}
+			contestId={props.contest._id}
 			maxPlaceLength={maxPlaceLength}
 			teams={teamsArray.slice(0, teamLimit)}
 		/>
@@ -445,8 +470,7 @@ export function Teams(props: {
 		>
 			<Accordion.Collapse eventKey="0">
 				<TeamList
-					contest={props.contest}
-					session={props.session}
+					contestId={props.contest._id}
 					maxPlaceLength={maxPlaceLength}
 					teams={teamsArray.slice(teamLimit)}
 				/>
