@@ -4,14 +4,19 @@ import { withLocale } from "src/api/utils";
 
 const calendarSetting = {
 	sameDay: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
-		return dayjs.duration(this.diff(now)).locale("en").format('[Starts] [in] H:mm:ss');
+		if (this.isAfter(now)) {
+			return dayjs.duration(this.diff(now)).locale("en").format('[Starts] [in] H:mm:ss');
+		}
+		return dayjs.duration(now.diff(this)).locale("en").format('[Started] H:mm:ss [ago]');
 	},
 	nextDay: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
-		return dayjs.duration(this.diff(now)).locale("en").format('[Starts] [in] D [day] [and] H:mm:ss');
+		const diff = dayjs.duration(this.diff(now)).locale("en");
+		return diff.format(`[Starts] [in] ${diff.days() >= 1 ? "D [day] [and] " : ""}H:mm:ss`);
 	},
 	nextWeek: withLocale("en", '[Starts] [on] dddd [at] LT'),
 	lastDay: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
-		return dayjs.duration(now.diff(this)).locale("en").format('[Started] H:mm:ss [ago]');
+		const diff = dayjs.duration(now.diff(this)).locale("en");
+		return diff.format(`[Started] ${diff.days() >= 1 ? "D [day] [and] " : ""}H:mm:ss [ago]`);
 	},
 	lastWeek: withLocale("en", '[Started] [Last] dddd'),
 	sameElse: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
