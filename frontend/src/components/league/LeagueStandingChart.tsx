@@ -1,6 +1,5 @@
 import * as React from "react";
-import { Line, ChartData } from "react-chartjs-2";
-import * as chartjs from "chart.js";
+import { Line, defaults } from "react-chartjs-2";
 import { Store, Rest } from "majsoul-api";
 import { IState, Contest } from "../../State";
 import Container from 'react-bootstrap/Container';
@@ -8,9 +7,9 @@ import Row from 'react-bootstrap/Row';
 import { useSelector } from "react-redux";
 import * as dayjs from 'dayjs';
 
-chartjs.defaults.global.defaultFontColor = "white";
+defaults.color = "white";
 
-function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData<chartjs.ChartData> {
+function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): any {
 	return {
 		labels: ["Start"].concat(sessions.map(session => {
 			if (session.name) {

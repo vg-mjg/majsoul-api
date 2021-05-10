@@ -26,7 +26,7 @@ module.exports = env => {
 					exclude: /node_modules/,
 					use: [
 						{
-							loader: "awesome-typescript-loader"
+							loader: "ts-loader"
 						},
 						{
 							loader: "astroturf/loader",
