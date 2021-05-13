@@ -40,7 +40,6 @@ interface RGBColor {
 	b: number;
 }
 
-
 function hslStyle(hsl: {h: number, s: number, l: number}) {
 	return `hsl(${Math.round(hsl.h * 360)}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`;
 }

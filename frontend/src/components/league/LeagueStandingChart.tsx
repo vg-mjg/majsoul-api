@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Line, defaults } from "react-chartjs-2";
+import { Line } from "../utils/Chart";
+import { defaults, ChartData } from "chart.js";
 import { Store, Rest } from "majsoul-api";
 import { IState, Contest } from "../../State";
 import Container from 'react-bootstrap/Container';
@@ -8,8 +9,9 @@ import { useSelector } from "react-redux";
 import * as dayjs from 'dayjs';
 
 defaults.color = "white";
+defaults.borderColor = "#666666";
 
-function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): any {
+function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData {
 	return {
 		labels: ["Start"].concat(sessions.map(session => {
 			if (session.name) {
@@ -41,8 +43,8 @@ function createData(sessions: Rest.Session[], teams: Record<string, Store.Contes
 				pointRadius: 3,
 				pointHitRadius: 10,
 				data: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
-				yAxisID: "uma",
-				xAxisID: "sessions",
+				// yAxisID: "uma",
+				// xAxisID: "sessions",
 			}
 		})
 	}
@@ -80,27 +82,25 @@ export function LeagueStandingChart(props: {
 				options={{
 					// onClick: this.onClick,
 					scales: {
-						yAxes: [
-							{
-								id: "uma",
-								position: "right",
-								gridLines: {
-									color: "#666666",
-									zeroLineColor: "#666666"
-								}
-							},
-						],
-						xAxes: [
-							{
-								id: "sessions",
-								gridLines: {
-									display: false
-								}
-							},
-						]
+						y: {
+							// id: "uma",
+							position: "right",
+							// gridLines: {
+							// 	color: "#666666",
+							// 	zeroLineColor: "#666666"
+							// }
+						},
+						x: {
+								// id: "sessions",
+							grid: {
+								display: false
+							}
+						},
 					},
-					legend: {
-						display: false
+					plugins: {
+						legend: {
+							display: false
+						}
 					}
 				}}
 				// onElementsClick={this.onElementsClick}

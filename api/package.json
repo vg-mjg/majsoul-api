@@ -5,6 +5,7 @@
 	"typings": "dist/index.d.ts",
 	"module": "dist/index.js",
 	"scripts": {
+		"dev": "tsc --watch",
 		"connect": "node -r source-map-support/register ./dist/connector.js",
 		"rest": "node -r source-map-support/register ./dist/rest-api.js"
 	},

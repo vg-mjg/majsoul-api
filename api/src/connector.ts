@@ -41,8 +41,8 @@ async function main() {
 		secrets.google.clientSecret,
 	);
 
-	const googleTokenValid$ =
-		concat(
+	const googleTokenValid$ = process.env.NODE_ENV === "production"
+		? concat(
 			defer(() => googleAuth.getAccessToken()).pipe(
 				map(response => response.token),
 				catchError(() => of(null))
@@ -54,7 +54,8 @@ async function main() {
 			distinctUntilChanged(),
 			map(token => token != null),
 			shareReplay(1),
-		);
+		)
+		: of(false);
 
 	googleTokenValid$.subscribe(tokenIsValid => {
 		console.log(`google token is ${tokenIsValid ? "" : "in"}valid`);
