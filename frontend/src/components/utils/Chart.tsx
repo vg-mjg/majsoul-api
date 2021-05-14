@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Chart, ChartType, ChartData, ChartOptions, Plugin, registerables } from 'chart.js';
+import { Chart, ChartType, ChartData, ChartOptions, Plugin, registerables, InteractionItem } from 'chart.js';
 import { merge, assign, find } from 'lodash';
 import { forwardRef } from 'react';
 
@@ -17,15 +17,15 @@ export interface ChartProps extends React.CanvasHTMLAttributes<HTMLCanvasElement
 	plugins?: Plugin[];
 	fallbackContent?: React.ReactNode;
 	getDatasetAtEvent?: (
-	  dataset: Array<{}>,
+	  dataset: Array<InteractionItem>,
 	  event: React.MouseEvent<HTMLCanvasElement>
 	) => void;
 	getElementAtEvent?: (
-	  element: [{}],
+	  element: InteractionItem | undefined,
 	  event: React.MouseEvent<HTMLCanvasElement>
 	) => void;
 	getElementsAtEvent?: (
-	  elements: Array<{}>,
+	  elements: Array<InteractionItem>,
 	  event: React.MouseEvent<HTMLCanvasElement>
 	) => void;
 }
@@ -94,18 +94,18 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 			),
 			event
 		);
+
 		getElementAtEvent &&
 			getElementAtEvent(
-			[
 				chart.getElementsAtEventForMode(
 					event.nativeEvent,
 					'nearest',
-					{ intersect: true },
+					{ intersect: false },
 					false
-				)[0]
-			],
-			event
-		);
+				)[0],
+				event
+			);
+
 		getElementsAtEvent &&
 			getElementsAtEvent(
 			chart.getElementsAtEventForMode(event.nativeEvent, 'index', { intersect: true }, false),

@@ -64,6 +64,10 @@ export function Session(props: {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
+		setGamesFetched(GamesFetchStatus.None);
+	}, [props.session?._id]);
+
+	React.useEffect(() => {
 		if (!detailsOpen || gamesFetchedStatus !== GamesFetchStatus.None) {
 			return;
 		}
@@ -81,7 +85,7 @@ export function Session(props: {
 			setGamesFetched(GamesFetchStatus.Fetched);
 			dispatchGamesRetrievedAction(dispatch, games);
 		});
-	}, [props.session?._id, detailsOpen]);
+	}, [props.session?._id, detailsOpen, gamesFetchedStatus]);
 
 	const onAccordionSelect = React.useCallback((accordionKey: string) => {
 		setViewDetails(accordionKey === "0");

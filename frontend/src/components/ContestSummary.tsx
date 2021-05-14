@@ -146,7 +146,6 @@ function SessionSection(props: {
 
 function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 	const dispatch = useDispatch();
-
 	const { contest } = props;
 
 	React.useEffect(() => {
@@ -154,8 +153,10 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
 	}, [dispatch, contest._id]);
 
-	const sessions = Object.values(contest.sessionsById ?? {})
-		.sort((a, b) => a.scheduledTime - b.scheduledTime);
+	const sessions = React.useMemo(() =>
+		Object.values(contest.sessionsById ?? {})
+			.sort((a, b) => a.scheduledTime - b.scheduledTime)
+	, [contest.sessionsById]);
 
 	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = sessions[nextSessionIndex];
@@ -171,13 +172,20 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 
 	const currentSessionComplete = currentSessionGames.length >= 4;
 
+	const [selectedSessionIndex, setSelectedSessionIndex] = React.useState<number>();
+
+	const onSessionSelect = React.useCallback((index: number) => {
+		setSelectedSessionIndex(index - 1)
+	}, [setSelectedSessionIndex]);
+
 	return <>
 		<Row className="mt-3">
 			<Teams contest={contest} session={currentSession} />
 		</Row>
 		<Row className="mt-3">
-			<LeagueStandingChart contest={contest}/>
+			<LeagueStandingChart contest={contest} onSessionSelect={onSessionSelect}/>
 		</Row>
+		<SessionSection session={sessions[selectedSessionIndex]} title="Selected Session" />
 		<SessionSection session={currentSessionComplete ? null : currentSession} title="Current Session" />
 		<SessionSection session={nextSession} title="Next Session" />
 		<SessionSection session={currentSessionComplete ? currentSession : null} title="Recent Session" />
