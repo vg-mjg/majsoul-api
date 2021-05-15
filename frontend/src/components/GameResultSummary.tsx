@@ -105,9 +105,14 @@ export function getSeatCharacter(seat: number): string {
 export function GameResultSummary(props: {
 	game: Rest.GameResult,
 }): JSX.Element {
-	const endTime = React.useMemo(() => dayjs(props.game.end_time).calendar(), [props.game?.end_time]);
+	const endTime = React.useMemo(() => dayjs(props.game?.end_time).calendar(), [props.game?.end_time]);
 	const cellStyle = "mb-1 pl-0 pr-1";
 	const rowStyle = "pl-1 no-gutters";
+
+	if (!props.game) {
+		return null
+	}
+
 	return <Container className="px-1 py-2">
 		<Row className={`${rowStyle} px-2 pb-2`}>
 			<Col className="">

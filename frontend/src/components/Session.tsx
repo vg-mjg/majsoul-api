@@ -1,5 +1,5 @@
 import * as React from "react";
-import { IState } from "../State";
+import { findPlayerInformation, IState } from "../State";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -28,6 +28,12 @@ enum GamesFetchStatus {
 	Fetched,
 }
 
+enum SessionState {
+	Completed,
+	Current,
+	Future,
+}
+
 const styles = css`
 	@import 'src/bootstrap-vars.sass';
 
@@ -50,6 +56,7 @@ export function Session(props: {
 }): JSX.Element {
 	const [viewDetails, setViewDetails] = React.useState(false);
 	const [gamesFetchedStatus, setGamesFetched] = React.useState(GamesFetchStatus.None);
+	const teams = useSelector((state: IState) => state.contestsById[props.session.contestId].teams);
 	const detailsOpen = viewDetails || props.forceDetails;
 
 	const token = useSelector((state: IState) => state.user?.token);
@@ -60,6 +67,38 @@ export function Session(props: {
 				&& game.contestId === props.session?.contestId
 			)
 	);
+
+	const orderedGames = React.useMemo(() => {
+		const matchMap: Record<number, number> = [];
+		const indexedGames = games.map((game) => {
+			const info = findPlayerInformation(game.players[0]._id, teams);
+			const matchIndex = props.session.plannedMatches
+				.findIndex(match => match.teams.find(team => team._id === info.team._id) != null);
+
+			matchMap[matchIndex] ??= 0;
+
+			return {
+				...game,
+				matchIndex,
+				index: matchMap[matchIndex]++
+			}
+		});
+
+		const mostGames = Object.entries(matchMap)
+			.filter(([key, value]) => key !== "-1")
+			.reduce((prev, next) => Math.max(prev, next.length), 0);
+
+		return indexedGames.reduce((total, next, index)=> (
+			total[
+				next.matchIndex < 0
+					? mostGames * 2
+					: next.index * 2 + next.matchIndex
+			] = next,
+			total
+		), new Array<Rest.GameResult<string>>(mostGames * 2).fill(null))
+	}, [teams, games]);
+
+	console.log(orderedGames);
 
 	const dispatch = useDispatch();
 
@@ -110,15 +149,22 @@ export function Session(props: {
 		return null;
 	}
 
+	const sessionState =
+		hasStarted
+			? gamesFetchedStatus === GamesFetchStatus.Fetched && games.length === 0
+				? SessionState.Current
+				: SessionState.Completed
+			: SessionState.Future
+
 	return <Container
 		fluid
 		className={clsx(
 			"rounded text-light",
-			hasStarted
-				? gamesFetchedStatus === GamesFetchStatus.Fetched && games.length === 0
-					? styles.currentSession
-					: styles.previousSession
-				: styles.nextSession
+			sessionState === SessionState.Future
+				? styles.nextSession
+				: sessionState === SessionState.Completed
+					? styles.previousSession
+					: styles.currentSession
 		)}
 	>
 		<Row className="py-3 px-2">
@@ -190,10 +236,27 @@ export function Session(props: {
 												? <Col className="text-center">
 													<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
 												</Col>
-												: games.map((game, index) => <React.Fragment key={game._id}>
-													<Col style={{minWidth: "auto"}}>
-														<GameResultSummary game={game}/>
-													</Col>
+												: orderedGames.map((game, index) => <React.Fragment key={index}>
+													{ game == null
+														? <Col style={{minWidth: "auto"}} className="d-flex align-items-stretch">
+															<div
+																className={clsx(
+																	"mt-5 mx-2 mb-3 rounded d-flex align-items-center justify-content-center",
+																	sessionState === SessionState.Completed
+																		? "bg-secondary"
+																		: "bg-dark"
+																)}
+																style={{flex: 1}}
+															>
+																<div className="h4 font-weight-bold m-0">
+																	試合未決
+																</div>
+															</div>
+														</Col>
+														: <Col style={{minWidth: "auto"}}>
+															<GameResultSummary game={game}/>
+														</Col>
+													}
 													{(index % 2 == 1) && <div className="w-100"/>}
 												</React.Fragment>)
 											: <Col className="text-center pb-2">
