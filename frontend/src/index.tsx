@@ -144,7 +144,10 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				games: {
 					...(state.games ?? {}),
 					...gamesRetrievedAction.games.reduce<Record<string, Rest.GameResult<string>>>(
-						(record, next) => { record[next._id] = next; return record; }, {}
+						(record, next) => { record[next._id] = {
+							...(state?.games?.[next._id] ?? {}),
+							...next
+						}; return record; }, {}
 					)
 				},
 			}

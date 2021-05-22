@@ -98,8 +98,6 @@ export function Session(props: {
 		), new Array<Rest.GameResult<string>>(mostGames * 2).fill(null))
 	}, [teams, games]);
 
-	console.log(orderedGames);
-
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
