@@ -8,13 +8,17 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
-import { concat, defer, from, Observable, of } from 'rxjs';
+import { concat, defer, from, merge, Observable, of } from 'rxjs';
 import { map, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
-import { body, matchedData, param, query, validationResult } from 'express-validator';
+import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Store } from '..';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { getSecrets } from '../secrets';
+import { StatsVersion } from './types/stats/StatsVersion';
+import { GameResultVersion } from '../store/types/types';
+import { Stats } from './types/stats';
+import { BaseStats } from './types/stats/BaseStats';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -312,6 +316,76 @@ function withData<DataType, RequestType, ResponseType>(
 		)
 	});
 }
+
+function minimumVersion(game: Store.GameResult<ObjectId>): StatsVersion {
+	if (game.version == null) {
+		return StatsVersion.None;
+	}
+
+	switch (game.version) {
+		case GameResultVersion.None:
+			return StatsVersion.None;
+		case GameResultVersion.First:
+			return StatsVersion.First;
+	}
+}
+
+interface GamePlayerIds {
+	playerId: ObjectId,
+	teamId: ObjectId,
+}
+
+function collectStats(
+	game: Store.GameResult<ObjectId>,
+	version: StatsVersion,
+	players?: Record<string, ObjectId | boolean>,
+): (Stats & GamePlayerIds)[] {
+	switch (version) {
+		case StatsVersion.Undefined: {
+			return null;
+		} case StatsVersion.None: {
+			const standings = game.finalScore
+				.map((score, index) => ({...score, playerId: game.players[index]._id}))
+				.sort((a, b) => b.score - a.score)
+				.reduce((total, next, index) => (total[next.playerId.toHexString()] = index + 1, total), {} as Record<string, number>);
+			return game.players.filter(player => players == null || players[player._id.toHexString()] != null)
+				.map((player) => (
+					{
+						playerId: player._id,
+						teamId: players?.[player._id.toHexString()],
+						version: StatsVersion.None,
+						stats: {
+							gamesPlayed: 1,
+							totalHands: game.rounds.length,
+							averageRank: standings[player._id.toHexString()]
+						}
+					} as BaseStats & GamePlayerIds
+				))
+		}
+	}
+	return null;
+}
+
+function mergeStats(stats: Stats[],	version: StatsVersion,): Stats {
+	switch (version) {
+		case StatsVersion.Undefined: {
+			return null;
+		} case StatsVersion.None: {
+			const gamesPlayed = stats.reduce((total, next) => total + next.stats.gamesPlayed, 0);
+			return {
+				version: StatsVersion.None,
+				stats: {
+					averageRank: stats.reduce((total, next) => total + next.stats.averageRank * next.stats.gamesPlayed, 0) / gamesPlayed,
+					gamesPlayed,
+					totalHands: stats.reduce((total, next) => total + next.stats.totalHands, 0),
+				}
+			} as BaseStats;
+		}
+	}
+	return null;
+}
+
+const latestStatsVersion: StatsVersion = Object.values(StatsVersion).length / 2;
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -783,6 +857,95 @@ export class RestApi {
 				);
 		}));
 
+		this.app.get('/contests/:id/stats',
+			param("id").isMongoId(),
+			oneOf([
+				query("team").isMongoId(),
+				query("player").isMongoId(),
+				query("players").isEmpty(),
+			]),
+			withData<{
+				id?: string;
+				team?: string;
+				player?: string;
+				players?: "";
+			}, any, Record<string, Stats>>(async (data, req, res) => {
+				const contest = await this.findContest(data.id);
+				if (!contest) {
+					res.sendStatus(404);
+					return;
+				}
+
+				if ([data.team, data.player, data.players].filter(option => option != null).length !== 1) {
+					res.status(401).send("Only one query allowed at a time." as any);
+					return;
+				}
+
+				const query: FilterQuery<Store.GameResult<ObjectId>> = {
+					contestId: contest._id,
+				};
+
+				let playerMap: Record<string, ObjectId | boolean> = null;
+
+				if (data.team) {
+					const teamId = new ObjectId(data.team);
+					const team = contest.teams.find(team => team._id.equals(teamId));
+					if (team == null) {
+						res.status(401).send(`Team #${teamId} not found` as any);
+						return;
+					}
+
+					playerMap = team.players.reduce((total, next) => (total[next._id.toHexString()] = teamId, total) , {} as Record<string, ObjectId | boolean>)
+				} else if (data.player != null) {
+					const playerId = new ObjectId(data.player);
+					const [ player ] = await this.mongoStore.playersCollection.find({
+						_id: playerId
+					}).toArray();
+
+					if (player === null) {
+						res.status(401).send(`Player #${playerId} not found!` as any);
+						return;
+					}
+
+					playerMap = {
+						[data.player]: true
+					}
+				}
+
+				if (playerMap) {
+					query.players = {
+						$elemMatch: {
+							_id: {
+								$in: Object.keys(playerMap).map(ObjectId.createFromHexString)
+							}
+						}
+					}
+				}
+
+				const games = await this.mongoStore.gamesCollection.find(query).toArray();
+				const commonVersion = games.reduce((total, next) => Math.min(total, minimumVersion(next)) as StatsVersion, latestStatsVersion)
+				const gameStats = games.map(game => collectStats(game, commonVersion, playerMap));
+
+				if (data.team != null) {
+					res.send({
+						[data.team]: mergeStats(gameStats.flat(), commonVersion)
+					});
+					return;
+				}
+
+				const gamesByPlayer = gameStats.reduce((total, next) => {
+					for (const stats of next) {
+						const id = stats.playerId.toHexString();
+						total[id] ??= [];
+						total[id].push(stats);
+					}
+					return total;
+				}, {} as Record<string, Stats[]>);
+
+				res.send(Object.entries(gamesByPlayer).reduce((total, [key, value]) => (total[key] = mergeStats(value, commonVersion), total), {}));
+			})
+		);
+
 		this.app.get('/players',
 			query("name").optional(),
 			query("limit").isInt({gt: 0}).optional(),
@@ -820,7 +983,7 @@ export class RestApi {
 
 				res.send(await cursor.toArray());
 			})
-		)
+		);
 	}
 
 	private findContest(contestId: string, options?: FindOneOptions): Promise<store.Contest<ObjectId>> {

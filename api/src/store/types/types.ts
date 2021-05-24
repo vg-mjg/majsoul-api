@@ -1,11 +1,16 @@
 import * as majsoul from "../../majsoul";
-import { Credentials as GoogleCredentials } from 'google-auth-library';
+
+export enum GameResultVersion {
+	None,
+	First,
+}
 
 export interface GameResult<Id = any> extends Omit<Partial<majsoul.GameResult>, "players"> {
 	_id: Id;
 	contestId: Id;
 	players?: Player<Id>[];
 	notFoundOnMajsoul?: boolean;
+	version?: GameResultVersion;
 }
 
 export interface Session<Id = any> {
