@@ -9,6 +9,7 @@ import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, shar
 import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
+import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
@@ -31,7 +32,7 @@ async function main() {
 	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
-	// api.getGame("210314-15e1b14f-2eb0-41fe-b161-4fc5812b792c").then(game => console.log(game));
+	// api.getGame("200527-186932f2-b595-41bb-991a-c0c6c27dae8d").then(game => console.log(game));
 
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
@@ -293,8 +294,8 @@ async function recordGame(
 		return;
 	}
 
-	const gameResult = await api.getGame(gameId);
-	if (gameResult == null) {
+	const gameRecord = await api.getGame(gameId);
+	if (gameRecord == null) {
 		console.log(`game #${gameId} not found!`)
 
 		mongoStore.gamesCollection.updateOne(
@@ -302,6 +303,11 @@ async function recordGame(
 			{ $set: { notFoundOnMajsoul: true }}
 		);
 		return;
+	}
+
+	const gameResult = parseGameRecordResponse(gameRecord);
+	if (gameResult == null) {
+		console.log(`game #${gameId} couldn't be parsed!`)
 	}
 
 	mongoStore.recordGame(contestId, gameResult);

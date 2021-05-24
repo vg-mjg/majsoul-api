@@ -8,7 +8,7 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
-import { concat, defer, from, merge, Observable, of } from 'rxjs';
+import { concat, defer, from, Observable, of } from 'rxjs';
 import { map, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Store } from '..';

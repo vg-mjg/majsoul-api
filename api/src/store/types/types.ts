@@ -5,7 +5,17 @@ export enum GameResultVersion {
 	First,
 }
 
-export interface GameResult<Id = any> extends Omit<Partial<majsoul.GameResult>, "players"> {
+export interface GameResult<Id = any> {
+	config?: {
+		aiLevel: number;
+	}
+	contestMajsoulId?: number;
+	majsoulId: string;
+	start_time?: number;
+	end_time?: number;
+	finalScore?: majsoul.FinalScore[];
+	rounds?: majsoul.RoundResult[];
+	stats?: any;
 	_id: Id;
 	contestId: Id;
 	players?: Player<Id>[];

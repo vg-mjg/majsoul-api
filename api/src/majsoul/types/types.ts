@@ -1,7 +1,6 @@
 import { Han } from "./Han";
 import { Wind } from "./Wind";
 import { DrawStatus } from "./DrawStatus";
-import { PlayerGameStats } from "./Stats";
 
 export enum AILevel {
 	Easy = 1,
@@ -26,20 +25,6 @@ export interface Contest {
 	createdTime: number;
 	startTime: number;
 	finishTime: number;
-}
-
-export interface GameResult {
-	config: {
-		aiLevel: number;
-	}
-	contestMajsoulId: number;
-	majsoulId: string;
-	start_time: number;
-	end_time: number;
-	players: Player[];
-	finalScore: FinalScore[];
-	rounds: RoundResult[];
-	stats?: PlayerGameStats[];
 }
 
 interface DrawRecord {

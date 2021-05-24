@@ -1,7 +1,10 @@
 import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session, Config } from "./types/types";
+import { Contest, GameResult, Player, User, Session, Config, GameResultVersion } from "./types/types";
 import { Majsoul } from "..";
 import { Observable, Subject } from "rxjs";
+import { GameRecordResponse } from "../majsoul/types/GameRecordResponse";
+
+const latestVersion = Object.values(GameResultVersion).length / 2 as GameResultVersion;
 
 interface Migration {
 	perform(store: Store): Promise<void>;
@@ -73,6 +76,7 @@ export class Store {
 		return await this.gamesCollection.countDocuments(
 			{
 				majsoulId,
+				version: latestVersion,
 				$or: [
 					{
 						notFoundOnMajsoul: { $exists: true },
@@ -86,21 +90,12 @@ export class Store {
 		) === 1;
 	}
 
-	public async recordGame(contestId: ObjectId, gameResult: Majsoul.GameResult): Promise<void> {
-		// if (gameResult.players.length !== 4) {
-		// 	console.log(`Game id ${gameResult.majsoulId} doesn't have enough players, skipping`);
-		// 	return;
-		// }
-
-		const session = (await this.contestCollection.findOne(
-			{ _id: contestId, 'sessions.scheduledTime': { $lte: gameResult.end_time } },
-			{ projection: { "sessions.$.games": true, total: true } }
-		));
-
+	public async recordGame(contestId: ObjectId, gameResult: GameResult): Promise<void> {
 		console.log(`Recording game id ${gameResult.majsoulId}`);
+		delete gameResult._id;
 		const gameRecord: Omit<GameResult<ObjectId>, "_id"> = {
-			contestId,
 			...gameResult,
+			contestId,
 			notFoundOnMajsoul: false,
 			players: (await Promise.all(gameResult.players
 				.map(player =>
