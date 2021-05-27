@@ -15,10 +15,14 @@ import { Store } from '..';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { getSecrets } from '../secrets';
-import { StatsVersion } from './types/stats/StatsVersion';
-import { GameResultVersion } from '../store/types/types';
+import { latestStatsVersion, StatsVersion } from './types/stats/StatsVersion';
 import { Stats } from './types/stats';
-import { BaseStats } from './types/stats/BaseStats';
+import { collectStats } from './stats/collectStats';
+import { mergeStats } from './stats/mergeStats';
+import { logError } from './utils.ts/logError';
+import { withData } from './utils.ts/withData';
+import { minimumVersion } from './stats/minimumVersion';
+import { escapeRegexp } from './utils.ts/escapeRegexp';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -284,108 +288,6 @@ const seededPlayerNames: Record<string, string[]> = {
 		"amegumo",
 	]
 }
-
-function escapeRegexp(str: string) {
-	return String(str).replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-};
-
-function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void) {
-	return async (request: express.Request, response: express.Response<ResponseType>) => {
-		try {
-			await callback(request, response);
-		} catch (error) {
-			console.log(error);
-			response.status(500).send(error);
-		}
-	};
-}
-
-function withData<DataType, RequestType, ResponseType>(
-	callback: (data: DataType, request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void
-) {
-	return logError(async (request, response) => {
-		const errors = validationResult(request);
-		if (!errors.isEmpty()) {
-			response.status(400).json({ errors: errors.array() } as any);
-			return;
-		}
-		await callback(
-			matchedData(request, {includeOptionals: true}) as DataType,
-			request,
-			response
-		)
-	});
-}
-
-function minimumVersion(game: Store.GameResult<ObjectId>): StatsVersion {
-	if (game.version == null) {
-		return StatsVersion.None;
-	}
-
-	switch (game.version) {
-		case GameResultVersion.None:
-			return StatsVersion.None;
-		case GameResultVersion.First:
-			return StatsVersion.First;
-	}
-}
-
-interface GamePlayerIds {
-	playerId: ObjectId,
-	teamId: ObjectId,
-}
-
-function collectStats(
-	game: Store.GameResult<ObjectId>,
-	version: StatsVersion,
-	players?: Record<string, ObjectId | boolean>,
-): (Stats & GamePlayerIds)[] {
-	switch (version) {
-		case StatsVersion.Undefined: {
-			return null;
-		} case StatsVersion.None: {
-			const standings = game.finalScore
-				.map((score, index) => ({...score, playerId: game.players[index]._id}))
-				.sort((a, b) => b.score - a.score)
-				.reduce((total, next, index) => (total[next.playerId.toHexString()] = index + 1, total), {} as Record<string, number>);
-			return game.players.filter(player => players == null || players[player._id.toHexString()] != null)
-				.map((player) => (
-					{
-						playerId: player._id,
-						teamId: players?.[player._id.toHexString()],
-						version: StatsVersion.None,
-						stats: {
-							gamesPlayed: 1,
-							totalHands: game.rounds.length,
-							averageRank: standings[player._id.toHexString()]
-						}
-					} as BaseStats & GamePlayerIds
-				))
-		}
-	}
-	return null;
-}
-
-function mergeStats(stats: Stats[],	version: StatsVersion,): Stats {
-	switch (version) {
-		case StatsVersion.Undefined: {
-			return null;
-		} case StatsVersion.None: {
-			const gamesPlayed = stats.reduce((total, next) => total + next.stats.gamesPlayed, 0);
-			return {
-				version: StatsVersion.None,
-				stats: {
-					averageRank: stats.reduce((total, next) => total + next.stats.averageRank * next.stats.gamesPlayed, 0) / gamesPlayed,
-					gamesPlayed,
-					totalHands: stats.reduce((total, next) => total + next.stats.totalHands, 0),
-				}
-			} as BaseStats;
-		}
-	}
-	return null;
-}
-
-const latestStatsVersion: StatsVersion = Object.values(StatsVersion).length / 2;
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
