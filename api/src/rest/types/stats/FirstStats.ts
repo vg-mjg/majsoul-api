@@ -9,7 +9,6 @@ export interface RiichiStats {
 	chased: number; //player is chased
 	ippatsu: number;
 	uraHit: number;
-	immediateDealins: number;
 }
 
 export interface DealerStats {
@@ -20,9 +19,9 @@ export interface DealerStats {
 
 export interface CallStats {
 	openedHands: number; //hands opened
-	totalCalls: number; //chinponyas
+	total: number; //chinponyas
 	opportunities: number; //opportunities
-	allOpportunities: number; //'' including subsequent shouminkan/ankan chances
+	repeatOpportunities: number; //'' including subsequent shouminkan/ankan chances
 }
 
 export interface AgariStatsBase {
@@ -62,7 +61,7 @@ export interface FirstStats {
 		riichi: RiichiStats;
 		dealer: DealerStats;
 		calls: CallStats;
-		wins: AgariStats;
+		wins: SelfAgariStats;
 		dealins: {
 			open: AgariStats;
 			riichi: AgariStats;

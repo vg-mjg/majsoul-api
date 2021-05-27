@@ -4,10 +4,11 @@ import * as store from "./store";
 import { ObjectId } from 'mongodb';
 import { OAuth2Client } from 'google-auth-library';
 import { Observable, of, Subject } from 'rxjs';
+import { AgariInfo, DrawStatus, RoundInfo, Wind } from './store';
 
 interface IHandDescription {
-	round: majsoul.RoundInfo;
-	agari: majsoul.AgariInfo;
+	round: RoundInfo;
+	agari: AgariInfo;
 	result: string;
 	loser?: number;
 }
@@ -140,7 +141,7 @@ export class Spreadsheet {
 				valueRenderOption: 'UNFORMATTED_VALUE',
 			}
 		)).data;
-		this.recordedGameDetailIds = gameDetailsIds.values?.slice(1).map(v => v[0]).filter(v => Object.values(majsoul.Wind).indexOf(v) < 0) ?? [];
+		this.recordedGameDetailIds = gameDetailsIds.values?.slice(1).map(v => v[0]).filter(v => Object.values(Wind).indexOf(v) < 0) ?? [];
 	}
 
 	public isGameRecorded(id: string): boolean {
@@ -357,7 +358,7 @@ export class Spreadsheet {
 		this.recordedGameDetailIds.push(game.majsoulId);
 		console.log(`Recording game details for game ${game.majsoulId}`);
 
-		const hands: IHandDescription[] = game.rounds.filter(g => !g.draw || g.draw.playerDrawStatus.indexOf(majsoul.DrawStatus.Nagashi_Mangan) >= 0)
+		const hands: IHandDescription[] = game.rounds.filter(g => !g.draw || g.draw.playerDrawStatus.indexOf(DrawStatus.Nagashi_Mangan) >= 0)
 			.map(hand => {
 				if (hand.rons) {
 					return hand.rons.map(r => (
@@ -370,7 +371,7 @@ export class Spreadsheet {
 					));
 				}
 				if (hand.draw) {
-					const winner = hand.draw.playerDrawStatus.indexOf(majsoul.DrawStatus.Nagashi_Mangan);
+					const winner = hand.draw.playerDrawStatus.indexOf(DrawStatus.Nagashi_Mangan);
 					return [{
 						round: hand.round,
 						agari: {
@@ -474,7 +475,7 @@ export class Spreadsheet {
 					},
 					rows: hands.map((hand) => ({
 						values: [
-							{ userEnteredValue: { stringValue: majsoul.Wind[hand.round.round] } },
+							{ userEnteredValue: { stringValue: Wind[hand.round.round] } },
 							{ userEnteredValue: { numberValue: hand.round.dealership + 1 } },
 							{ userEnteredValue: { numberValue: hand.round.repeat } },
 							{ userEnteredValue: { stringValue: hand.result } },

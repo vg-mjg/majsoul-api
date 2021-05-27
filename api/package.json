@@ -7,7 +7,9 @@
 	"scripts": {
 		"dev": "tsc --watch",
 		"connect": "node -r source-map-support/register ./dist/connector.js",
-		"rest": "node -r source-map-support/register ./dist/rest-api.js"
+		"rest": "node -r source-map-support/register ./dist/rest-api.js",
+		"fetch-proto": "curl https://mahjongsoul.game.yo-star.com/v0.9.130.w/res/proto/liqi.json > /srx/majsoul/types/liqi.json",
+		"proto": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-convert src/majsoul/types/liqi.json | pbts -o --no-comments src/majsoul/types/liqi.d.ts -"
 	},
 	"author": "",
 	"license": "MIT",
@@ -21,9 +23,8 @@
 		"jsonwebtoken": "^8.5.1",
 		"mongodb": "^3.5.8",
 		"node-fetch": "^2.6.1",
-		"protobufjs": "^6.8.8",
-		"syanten":"^1.5.0",
 		"rxjs": "^6.5.5",
+		"syanten": "^1.5.0",
 		"uuid": "^3.3.3",
 		"ws": "^7.1.2"
 	},
@@ -36,6 +37,7 @@
 		"@types/node-fetch": "^2.5.7",
 		"@types/ws": "^7.2.4",
 		"eslint": "^6.5.1",
+		"protobufjs": "^6.11.2",
 		"source-map-support": "^0.5.19",
 		"typescript": "^4.2.3"
 	}

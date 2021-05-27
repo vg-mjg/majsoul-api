@@ -34,6 +34,7 @@ export class Api {
 		}
 		return {
 			version: versionInfo.version,
+			pbVersion,
 			serverList: serverList,
 			protobufDefinition: pbDef
 		};
@@ -206,7 +207,7 @@ export class Api {
 		try {
 			resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
 			resp.data = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
-			return;
+			return resp;
 		}
 		catch (e) {
 			console.log(`Couldn't find game ${id}`);
