@@ -7,6 +7,8 @@ COPY ./api/package.json ./api/yarn.lock ./
 RUN yarn --frozen-lockfile
 RUN yarn link
 COPY ./api/ ./
+RUN yarn run proto:fetch
+RUN yarn run proto:generate
 RUN yarn run tsc
 
 WORKDIR /build/frontend

@@ -1,8 +1,6 @@
 import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
 import { Contest, GameResult, Player, User, Session, Config, GameResultVersion } from "./types/types";
-import { Majsoul } from "..";
 import { Observable, Subject } from "rxjs";
-import { GameRecordResponse } from "../majsoul/types/GameRecordResponse";
 
 const latestVersion = Object.values(GameResultVersion).length / 2 as GameResultVersion;
 

@@ -8,8 +8,8 @@
 		"dev": "tsc --watch",
 		"connect": "node -r source-map-support/register ./dist/connector.js",
 		"rest": "node -r source-map-support/register ./dist/rest-api.js",
-		"fetch-proto": "curl https://mahjongsoul.game.yo-star.com/v0.9.130.w/res/proto/liqi.json > /srx/majsoul/types/liqi.json",
-		"proto": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-convert src/majsoul/types/liqi.json | pbts -o --no-comments src/majsoul/types/liqi.d.ts -"
+		"proto:fetch": "curl https://mahjongsoul.game.yo-star.com/v0.9.130.w/res/proto/liqi.json > src/majsoul/types/liqi.json",
+		"proto:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/majsoul/types/liqi.json | pbts --no-comments -o src/majsoul/types/liqi.d.ts -"
 	},
 	"author": "",
 	"license": "MIT",

@@ -10,7 +10,7 @@ import { Connection } from "./Connection";
 import { RpcImplementation } from "./RpcImplementation";
 import { RpcService } from "./Service";
 import { ApiResources } from "./ApiResources";
-import { GameRecordResponse } from "./types/GameRecordResponse";
+import { GameRecord } from "./types/GameRecordResponse";
 
 export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
@@ -202,11 +202,11 @@ export class Api {
 		}
 	}
 
-	public async getGame(id: string): Promise<GameRecordResponse> {
+	public async getGame(id: string): Promise<GameRecord> {
 		let resp;
 		try {
 			resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
-			resp.data = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
+			resp.records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
 			return resp;
 		}
 		catch (e) {

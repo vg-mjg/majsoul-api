@@ -1,8 +1,8 @@
 import { DrawStatus, GameResult } from "../../store";
 import { AgariInfo, GameResultVersion, HandStatus, PlayerStats, RoundInfo, RoundResult } from "../../store/types/types";
-import { GameRecordResponse, RecordNewRound, RecordDiscardTile, RecordChiPengGang, RecordDealTile, RecordAnGangAddGang, RecordNoTile, RecordHule, HuleInfo } from "./GameRecordResponse";
 import * as syanten from "syanten";
-import { Han } from ".";
+import { GameRecord, Han } from ".";
+import { lq } from "./liqi";
 
 const latestVersion = Object.values(GameResultVersion).length / 2 as GameResultVersion;
 
@@ -41,7 +41,7 @@ function handShanten(hand: string[]): number {
 	return syanten(hai);
 }
 
-function getAgariRecord(record: any, hule: HuleInfo, round: RoundInfo): AgariInfo {
+function getAgariRecord(record: any, hule: lq.IHuleInfo, round: RoundInfo): AgariInfo {
 	const value = hule.zimo
 		? (hule.seat === round.dealership
 			? hule.point_zimo_xian * 3
@@ -60,8 +60,8 @@ function getAgariRecord(record: any, hule: HuleInfo, round: RoundInfo): AgariInf
 	};
 }
 
-export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
-	if (!game?.data_url && !(game?.data && game?.data?.length)) {
+export function parseGameRecordResponse(game: GameRecord): GameResult {
+	if (!game?.data_url && !game?.data?.length) {
 		console.log(`No data in response`);
 		return null;
 	}
@@ -75,16 +75,16 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 	let kan_lock = null;
 	let playerStats: PlayerStats[];
 
-	if (!game.data || game.data[0].constructor.name !== "RecordNewRound") {
+	if (game.records?.[0]?.constructor?.name !== "RecordNewRound") {
 		console.log("Game record does not start with RecordNewRound");
 		return null;
 	}
 
-	for (let i = 0; i < game.data.length; i++) {
-		const record = game.data[i];
+	for (let i = 0; i < game.records.length; i++) {
+		const record = game.records[i];
 		switch (record.constructor.name) {
 			case "RecordNewRound": {
-				const recordNewRound = record as RecordNewRound;
+				const recordNewRound = record as lq.RecordNewRound;
 
 				round = {
 					round: recordNewRound.chang,
@@ -112,7 +112,7 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 				break;
 			}
 			case "RecordDiscardTile": {
-				const recordDiscardTile = record as RecordDiscardTile;
+				const recordDiscardTile = record as lq.RecordDiscardTile;
 				losingSeat = recordDiscardTile.seat;
 
 				if (recordDiscardTile.is_wliqi || recordDiscardTile.is_liqi) {
@@ -133,7 +133,7 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 					break;
 				}
 
-				const recordNext = game.data[i + 1];
+				const recordNext = game.records[i + 1];
 				if (!recordNext) {
 					break;
 				}
@@ -144,7 +144,7 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 				}
 
 				if (recordNext.constructor.name === "RecordChiPengGang") {
-					const nextRecordChiPengGang = recordNext as RecordChiPengGang;
+					const nextRecordChiPengGang = recordNext as lq.RecordChiPengGang;
 					//somebody called
 					if (nextRecordChiPengGang.type !== 0) {//somebody chii'd. count all
 						playerStats[nextRecordChiPengGang.seat].calls.opportunities++;
@@ -163,7 +163,7 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 
 				break;
 			} case "RecordDealTile": {
-				const recordDealTile = record as RecordDealTile;
+				const recordDealTile = record as lq.RecordDealTile;
 				//shouminkan/ankan opportunity (types 4/6)
 				if (!recordDealTile.operation?.operation_list) {
 					break;
@@ -171,21 +171,21 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 
 				const kans = recordDealTile.operation.operation_list.filter(e => (4 == e.type || 6 == e.type));
 				for (const kan of kans) {
-					playerStats[recordDealTile.seat].calls.opportunities++;
-					console.log(kan.combination);
-					if (!kan_lock.has(kan.combination[0])) {
+					if (kan_lock.has(kan.combination[0])) {
 						playerStats[recordDealTile.seat].calls.repeatOpportunities++;
-						kan_lock.add(kan.combination[0]);
+						continue;
 					}
+					playerStats[recordDealTile.seat].calls.opportunities++;
+					kan_lock.add(kan.combination[0]);
 				}
 				break;
 			} case "RecordAnGangAddGang": {
-				const recordAnGangAddGang = record as RecordAnGangAddGang;
+				const recordAnGangAddGang = record as lq.RecordAnGangAddGang;
 				playerStats[recordAnGangAddGang.seat].calls.total++;
 				losingSeat = recordAnGangAddGang.seat;
 				break;
 			} case "RecordChiPengGang": {
-				const recordChiPengGang = record as RecordChiPengGang;
+				const recordChiPengGang = record as lq.RecordChiPengGang;
 				playerStats[recordChiPengGang.seat].calls.total++;
 				if (playerStats[recordChiPengGang.seat].finalHandState.status === HandStatus.Open) {
 					break;
@@ -196,7 +196,7 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 				}
 				break;
 			} case "RecordNoTile": {
-				const recordNoTile = record as RecordNoTile;
+				const recordNoTile = record as lq.RecordNoTile;
 
 				rounds.push({
 					round,
@@ -212,7 +212,7 @@ export function parseGameRecordResponse(game: GameRecordResponse): GameResult {
 				});
 				break;
 			} case "RecordHule": {
-				const recordHule = record as RecordHule;
+				const recordHule = record as lq.RecordHule;
 
 				if (recordHule.hules[0].zimo) {
 					const hule = recordHule.hules[0];
