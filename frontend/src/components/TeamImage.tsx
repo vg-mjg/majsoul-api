@@ -36,7 +36,7 @@ export function TeamImage(props: {
 	>
 		{props.team.image === undefined
 			? <LoadingSpinner />
-			: <img  src={props.team.image ?? defaultImage} className={clsx(props.imageClassName, styles.image)} />
+			: <img src={props.team.image ?? defaultImage} className={clsx(props.imageClassName, styles.image)} />
 		}
 	</div>;
 }

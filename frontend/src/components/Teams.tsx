@@ -20,10 +20,12 @@ import { BsChevronCompactDown, BsChevronCompactUp, BsX } from 'react-icons/bs';
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
+import { Stats } from "./Stats";
+import { fetchStats } from "src/api/Contests";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
-	if (value < 0){
+	if (value < 0) {
 		value *= -1;
 		rep += "-";
 	}
@@ -159,6 +161,7 @@ function Team(props: {
 	const [apiPlayers, setApiPlayers] = React.useState<Rest.ContestPlayer<string>[]>(null);
 	const [editedPlayers, setEditedPlayers] = React.useState<Partial<Rest.ContestPlayer<string>>[]>(null);
 	const [color, setColor] = React.useState<string>();
+	const [stats, setStats] = React.useState<Rest.Stats>(null);
 	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
 		const isValid = colorRegex.test(newValue);
 		const value = isValid ? newValue : oldValue;
@@ -180,6 +183,15 @@ function Team(props: {
 			teamId: props.team._id,
 		}).then(players => {
 			setApiPlayers(players);
+		})
+
+		fetchStats(
+			props.contestId,
+			{
+				team: props.team._id
+			}
+		).then(stats => {
+			setStats(stats[props.team._id]);
 		})
 	}, [props.team._id, props.contestId, viewDetails]);
 
@@ -206,27 +218,27 @@ function Team(props: {
 				&& <Col
 					md="auto"
 					className="mr-3 text-right"
-					style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}}>
-						<h3>
-							<Badge variant={props.placing === 1 ? "danger" : props.placing > 4 ? "secondary" : "success"}>
-								<b>
-									{jpNumeral(props.placing)}位
+					style={{ minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem` }}>
+					<h3>
+						<Badge variant={props.placing === 1 ? "danger" : props.placing > 4 ? "secondary" : "success"}>
+							<b>
+								{jpNumeral(props.placing)}位
 								</b>
-							</Badge>
-						</h3>
+						</Badge>
+					</h3>
 				</Col>
 			}
 			<Col md="auto" className="mr-3">
 				<label>
 					<input
 						disabled={token == null}
-						style={{display: "none"}}
+						style={{ display: "none" }}
 						type="file"
-						onChange={function (event){
+						onChange={function (event) {
 							const reader = new FileReader();
 							const input = event.target as HTMLInputElement;
 							if (input.files && input.files[0]) {
-								reader.onload = function(e) {
+								reader.onload = function (e) {
 									setImage(e.target.result.toString());
 								}
 								reader.readAsDataURL(input.files[0]);
@@ -236,27 +248,28 @@ function Team(props: {
 					<TeamImage className={clsx(styles.teamImage, "rounded")} team={props.team} />
 				</label>
 			</Col>
-			<Col md="auto" className="text-nowrap" style={{flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis"}}>
+			<Col md="auto" className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
 					<Row className="no-gutters">
-						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{borderBottom: `3px solid #${props.team.color}`}}>
+						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{ borderBottom: `3px solid #${props.team.color}` }}>
 							{props.team.name ?? `#${props.team._id}`}
 						</Col>
 					</Row>
 				</Container>
 			</Col>
 			<Col></Col>
-			{ isNaN(props.score) || <Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col> }
+			{isNaN(props.score) || <Col md="auto" className="ml-3"> <h5><b>{props.score / 1000}</b></h5></Col>}
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
-				{ players == null
-					? <LoadingSpinner/>
+				<Stats stats={stats} />
+				{players == null
+					? <LoadingSpinner />
 					: <Container className="p-0">
 						{[...players].sort((a, b) => (b.tourneyScore ?? 0) - (a.tourneyScore ?? 0)).map(player =>
 							<Row key={player._id} className="no-gutters py-1">
-								<Col md="auto" style={{minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem`}} className="mr-3"/>
-								<Col md="auto" style={{minWidth: 64}} className="mr-3">
+								<Col md="auto" style={{ minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem` }} className="mr-3" />
+								<Col md="auto" style={{ minWidth: 64 }} className="mr-3">
 									{token && <BsX
 										className={styles.removePlayerIcon}
 										onClick={() => setEditedPlayers(players.filter(p => p._id !== player._id))}
@@ -272,9 +285,9 @@ function Team(props: {
 						)}
 					</Container>
 				}
-				{ token &&
+				{token &&
 					<Container>
-						{(teamAnthem?.length > 0) && <SongPlayer videoId={teamAnthem} play={playAnthem}/> }
+						{(teamAnthem?.length > 0) && <SongPlayer videoId={teamAnthem} play={playAnthem} />}
 						<Row>
 							<Col>
 								<TextField
@@ -306,8 +319,8 @@ function Team(props: {
 								<Button
 									variant="secondary"
 									disabled={
-										(name === props.team.name  || name === undefined)
-										&& (image === props.team.image  || image === undefined)
+										(name === props.team.name || name === undefined)
+										&& (image === props.team.image || image === undefined)
 										&& (color === props.team.anthem || color === undefined)
 										&& (anthem === props.team.anthem || anthem === undefined)
 										&& (editedPlayers == null)
@@ -380,7 +393,7 @@ function TeamRow(props: {
 	first?: boolean,
 	children: React.ReactNode,
 }): JSX.Element {
-	return <Row className={`${props.first ? "" : "mt-3"} no-gutters text-center`} style={{maxWidth: 640, margin: "auto"}}>
+	return <Row className={`${props.first ? "" : "mt-3"} no-gutters text-center`} style={{ maxWidth: 640, margin: "auto" }}>
 		<Col>
 			{props.children}
 		</Col>
@@ -403,7 +416,7 @@ function TeamList(props: {
 					maxPlaceLength={props.maxPlaceLength}
 				/>
 			</TeamRow>
-		) }
+		)}
 	</>
 }
 
@@ -442,7 +455,7 @@ export function Teams(props: {
 		return <Container className="rounded bg-dark text-light px-3 py-4">
 			<Row>
 				<Col className="text-center">
-					<LoadingSpinner/>
+					<LoadingSpinner />
 				</Col>
 			</Row>
 		</Container>
@@ -450,9 +463,9 @@ export function Teams(props: {
 
 	const teamsArray: TeamData[] =
 		Object.values(teams)
-			.map(team => ({...team, total: props.session.aggregateTotals[team._id]}))
+			.map(team => ({ ...team, total: props.session.aggregateTotals[team._id] }))
 			.sort((a, b) => b.total - a.total)
-			.map((team, placing) => ({...team, placing}));
+			.map((team, placing) => ({ ...team, placing }));
 
 	const maxPlaceLength = jpNumeral(teamsArray.length).length;
 
@@ -462,7 +475,7 @@ export function Teams(props: {
 			maxPlaceLength={maxPlaceLength}
 			teams={teamsArray.slice(0, teamLimit)}
 		/>
-		{ teamsArray.length > teamLimit && <Accordion
+		{teamsArray.length > teamLimit && <Accordion
 			as={Container}
 			className="p-0"
 			onSelect={onAccordionSelect}
@@ -482,12 +495,12 @@ export function Teams(props: {
 				<Col className="text-center pb-1">
 					{
 						viewDetails
-							? <BsChevronCompactUp color="white" size="30px"/>
-							: <BsChevronCompactDown color="white" size="30px"/>
+							? <BsChevronCompactUp color="white" size="30px" />
+							: <BsChevronCompactDown color="white" size="30px" />
 					}
 				</Col>
 			</Accordion.Toggle>
-		</Accordion> }
+		</Accordion>}
 		{token && <TeamRow>
 			<Button onClick={addTeamOnClick}>Add Team</Button>
 		</TeamRow>}
