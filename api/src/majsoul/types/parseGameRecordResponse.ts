@@ -1,21 +1,19 @@
 import { DrawStatus, GameResult } from "../../store";
-import { AgariInfo, GameResultVersion, HandStatus, PlayerStats, RoundInfo, RoundResult } from "../../store/types/types";
+import { AgariInfo, GameResultVersion, HandStatus, latestGameResultVersion, PlayerStats, RoundInfo, RoundResult } from "../../store/types/types";
 import * as syanten from "syanten";
 import { GameRecord, Han } from ".";
 import { lq } from "./liqi";
 
-const latestVersion = Object.values(GameResultVersion).length / 2 as GameResultVersion;
-
-function handValue(hule: any, dealer_seat:number, honba: number, np: number): number {
+function handValue(hule: any, dealer_seat: number, honba: number, np: number): number {
 	//won't work with pao
 	let val = (np - 1) * 100 * honba;
 	if (hule.zimo) {
 		if (dealer_seat == hule.seat)
-		val += (np - 1) * hule.point_zimo_xian;
+			val += (np - 1) * hule.point_zimo_xian;
 		else
-		val += hule.point_zimo_qin + (np - 2) * hule.point_zimo_xian;
+			val += hule.point_zimo_qin + (np - 2) * hule.point_zimo_xian;
 	} else
-	val += (np - 2) * hule.point_rong;
+		val += (np - 2) * hule.point_rong;
 
 	return val;
 }
@@ -30,7 +28,7 @@ function handShanten(hand: string[]): number {
 	];
 
 	for (const t of hand) {
-		let num: number  = parseInt(t[0]);
+		let num: number = parseInt(t[0]);
 		if (0 === num) {
 			num = 5;
 		}
@@ -247,7 +245,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 	return {
 		_id: null,
 		contestId: null,
-		version: latestVersion,
+		version: latestGameResultVersion,
 		config: {
 			aiLevel: game.head.config.mode.detail_rule.ai_level
 		},

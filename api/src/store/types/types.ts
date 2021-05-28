@@ -7,6 +7,7 @@ export enum GameResultVersion {
 	First,
 }
 
+export const latestGameResultVersion = Object.values(GameResultVersion).length / 2 - 1 as GameResultVersion;
 export interface FinalScore {
 	uma: number;
 	score: number;
@@ -90,7 +91,6 @@ export interface GameResult<Id = any> {
 	end_time?: number;
 	finalScore?: FinalScore[];
 	rounds?: RoundResult[];
-	stats?: any;
 	_id: Id;
 	contestId: Id;
 	players?: Player<Id>[];

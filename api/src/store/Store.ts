@@ -1,8 +1,6 @@
 import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session, Config, GameResultVersion } from "./types/types";
+import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion } from "./types/types";
 import { Observable, Subject } from "rxjs";
-
-const latestVersion = Object.values(GameResultVersion).length / 2 as GameResultVersion;
 
 interface Migration {
 	perform(store: Store): Promise<void>;
@@ -53,7 +51,7 @@ export class Store {
 		this.contestCollection = await majsoulDb.createCollection("contests", {});
 		this.gamesCollection = await majsoulDb.createCollection("games", {});
 		this.sessionsCollection = await majsoulDb.createCollection("sessions", {});
-		this.sessionsCollection.createIndex({scheduledTime: -1});
+		this.sessionsCollection.createIndex({ scheduledTime: -1 });
 		this.playersCollection = await majsoulDb.createCollection("players", {});
 		this.configCollection = await majsoulDb.createCollection("config", {});
 
@@ -62,7 +60,7 @@ export class Store {
 		this.gameStream = this.gamesCollection.watch().on("change", change => this.gameChangesSubject.next(change));
 		this.playerStream = this.playersCollection.watch().on("change", change => this.playerChangesSubject.next(change));
 
-		if ((await this.configCollection.countDocuments()) < 1 ){
+		if ((await this.configCollection.countDocuments()) < 1) {
 			this.configCollection.insertOne({});
 		}
 
@@ -74,7 +72,9 @@ export class Store {
 		return await this.gamesCollection.countDocuments(
 			{
 				majsoulId,
-				version: latestVersion,
+				version: {
+					$gte: latestGameResultVersion,
+				},
 				$or: [
 					{
 						notFoundOnMajsoul: { $exists: true },
@@ -98,12 +98,12 @@ export class Store {
 			players: (await Promise.all(gameResult.players
 				.map(player =>
 					player == null
-					? Promise.resolve(null)
-					: this.playersCollection.findOneAndUpdate(
-						{ $or: [ { majsoulId: player.majsoulId }, { nickname: player.nickname } ] },
-						{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
-						{ upsert: true, returnOriginal: false, projection: { _id: true } }
-					)
+						? Promise.resolve(null)
+						: this.playersCollection.findOneAndUpdate(
+							{ $or: [{ majsoulId: player.majsoulId }, { nickname: player.nickname }] },
+							{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
+							{ upsert: true, returnOriginal: false, projection: { _id: true } }
+						)
 				)
 			)).map(p => p?.value),
 		};

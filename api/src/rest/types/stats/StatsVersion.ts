@@ -4,4 +4,4 @@ export enum StatsVersion {
 	First
 }
 
-export const latestStatsVersion: StatsVersion = Object.values(StatsVersion).length / 2;
+export const latestStatsVersion: StatsVersion = Object.values(StatsVersion).length / 2 - 1;

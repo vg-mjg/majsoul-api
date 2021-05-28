@@ -5,6 +5,6 @@ export interface BaseStats {
 	stats: {
 		gamesPlayed: number;
 		totalHands: number;
-		averageRank: number;
+		totalRank: number;
 	}
 }
