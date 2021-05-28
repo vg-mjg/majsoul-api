@@ -12,7 +12,7 @@ export interface RiichiStats {
 
 export interface DealerStats {
 	tsumoHit: number; //someone else tsumos
-	tsumoHitAveragePoints: number;
+	tsumoHitPoints: number;
 	tsumoHitMangan: number; //'' with mangan or above
 }
 
@@ -23,18 +23,18 @@ export interface CallStats {
 	repeatOpportunities: number; //'' including subsequent shouminkan/ankan chances
 }
 
-export interface AgariStatsBase {
+export interface AgariStats {
 	total: number;
 	points: number;
 }
 
-export interface AgariStats extends AgariStatsBase {
-	open: AgariStatsBase; //state of the winning hand; not the player's; in the scope of deal-ins
-	riichi: AgariStatsBase;
-	dama: AgariStatsBase;
+export interface AgariCategories<T> {
+	open: T;
+	dama: T;
+	riichi: T;
 }
 
-export interface SelfAgariStats extends AgariStats {
+export interface SelfAgariStats extends AgariCategories<AgariStats> {
 	tsumo: number;
 }
 
@@ -60,19 +60,13 @@ export interface FirstStats {
 		dealer: DealerStats;
 		calls: CallStats;
 		wins: SelfAgariStats;
-		dealins: {
-			open: AgariStats;
-			riichi: AgariStats;
-			dama: AgariStats;
-		}
+		dealins: AgariCategories<AgariCategories<AgariStats>>;
 		draws: DrawStats;
 	}
 }
 
-function createAgariStats(): AgariStats {
+function createAgariStats(): AgariCategories<AgariStats> {
 	return {
-		total: 0,
-		points: 0,
 		dama: {
 			points: 0,
 			total: 0,
@@ -107,7 +101,7 @@ export function createStats(): FirstStats['stats'] {
 		},
 		dealer: {
 			tsumoHit: 0,
-			tsumoHitAveragePoints: 0,
+			tsumoHitPoints: 0,
 			tsumoHitMangan: 0,
 		},
 		calls: {

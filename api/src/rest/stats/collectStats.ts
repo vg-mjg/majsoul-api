@@ -3,9 +3,9 @@ import { Store } from '../..';
 import { StatsVersion } from '../types/stats/StatsVersion';
 import { Stats } from '../types/stats';
 import { BaseStats } from '../types/stats/BaseStats';
-import { createStats, FirstStats } from '../types/stats/FirstStats';
+import { AgariCategories, createStats, FirstStats } from '../types/stats/FirstStats';
 import { Han } from '../../majsoul';
-import { HandStatus } from '../../store';
+import { DrawStatus, HandStatus } from '../../store';
 
 interface PlayerData {
 	playerId: ObjectId;
@@ -81,6 +81,14 @@ function collectBaseStats(game: Store.GameResult<ObjectId>, player: PlayerData, 
 	};
 }
 
+function selectCategory<T>(handStatus: HandStatus, agariStats: AgariCategories<T>): T {
+	return handStatus === HandStatus.Open
+		? agariStats.open
+		: handStatus === HandStatus.Closed
+			? agariStats.dama
+			: agariStats.riichi;
+}
+
 function collectFirstStats(
 	game: Store.GameResult<ObjectId>,
 	player: PlayerData,
@@ -91,14 +99,45 @@ function collectFirstStats(
 			const stats = round.playerStats[player.seat];
 			total.totalHaipaiShanten += stats.haipaiShanten;
 
-			const agari = [...(round.rons ?? []), round.tsumo]?.find(ron => ron?.winner === player.seat);
-			if (agari) {
-				total.akaDora += agari.han.filter(han => han === Han.Dora).length;
+			total.calls.total += stats.calls.total;
+			total.calls.opportunities += stats.calls.opportunities;
+			total.calls.repeatOpportunities += stats.calls.repeatOpportunities;
+
+			const win = [...(round.rons ?? []), round.tsumo]?.find(ron => ron?.winner === player.seat);
+
+			if (win) {
+				total.akaDora += win.han.filter(han => han === Han.Dora).length;
+				if (round.tsumo) {
+					total.wins.tsumo++;
+				}
+
+				const category = selectCategory(stats.finalHandState.status, total.wins);
+				category.total++;
+				category.points += win.value;
+			} else if (round.draw) {
+				total.draws.total++;
+				if (round.draw.playerDrawStatus[player.seat] === DrawStatus.Tenpai) {
+					total.draws.tenpai++;
+				}
+			} else if (round.tsumo && round.round.dealership === player.seat) {
+				total.dealer.tsumoHit++;
+				total.dealer.tsumoHitPoints += round.tsumo.dealerValue;
+				if (round.tsumo.dealerValue > 4000) {
+					total.dealer.tsumoHitMangan++;
+				}
+			} else if (round.rons?.[0]?.loser === player.seat) {
+				const dealinCategory = selectCategory(stats.finalHandState.status, total.dealins);
+				for (const loss of round.rons) {
+					const opponentCategory = selectCategory(round.playerStats[loss.winner].finalHandState.status, dealinCategory);
+					opponentCategory.total++;
+					opponentCategory.points += loss.value;
+				}
 			}
 
 			switch (stats.finalHandState.status) {
 				case HandStatus.Riichi: {
 					total.riichi.total++;
+
 					if (stats.finalHandState.furiten) {
 						total.riichi.furiten++;
 					}
@@ -118,15 +157,24 @@ function collectFirstStats(
 						total.riichi.chased++;
 					}
 
-					if (agari) {
-						const uraDora = agari.han.filter(han => han === Han.Ura_Dora).length;
+					if (win) {
+						const uraDora = win.han.filter(han => han === Han.Ura_Dora).length;
 						total.uraDora += uraDora;
 						total.riichi.uraHit++;
-						if (agari.han.find(han => han === Han.Ippatsu)) {
+						if (win.han.find(han => han === Han.Ippatsu)) {
 							total.riichi.ippatsu++;
 						}
+					} else if (round.draw) {
+						total.draws.riichi++;
 					}
 
+					break;
+				} case HandStatus.Open: {
+					total.calls.openedHands++;
+
+					if (round.draw) {
+						total.draws.open++;
+					}
 					break;
 				}
 			}
