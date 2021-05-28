@@ -4,14 +4,15 @@ import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { Han, RoundResult, AgariInfo } from "majsoul-api/dist/majsoul/types";
+import { Han } from "majsoul-api/dist/majsoul/types";
 import { fetchYakuman } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import * as dayjs from "dayjs";
+import { AgariInfo, RoundResult } from "majsoul-api/dist/store/types";
 
 function getYakumanName(han: Han[]): string {
 	const names = han.map(h => {
-		switch(h) {
+		switch (h) {
 			case Han.Blessing_of_Heaven:
 				return "天和";
 			case Han.Blessing_of_Earth:
