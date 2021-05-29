@@ -441,6 +441,7 @@ export class Api {
 					break;
 				} case "RecordAnGangAddGang": {
 					stats[record.seat].calls.total++;
+					lastDiscardSeat = record.seat; //ronnable
 					break;
 				} case "RecordChiPengGang": {
 					stats[record.seat].turns.total++;
