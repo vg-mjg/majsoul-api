@@ -7,6 +7,8 @@ import Col from "react-bootstrap/Col";
 import { StatsVersion } from "majsoul-api/dist/rest/types/stats/StatsVersion";
 import { BaseStats } from "majsoul-api/dist/rest/types/stats/BaseStats";
 import { AgariCategories, AgariStats, FirstStats } from "majsoul-api/dist/rest/types/stats/FirstStats";
+import { css } from "astroturf";
+import clsx from "clsx";
 
 function StatField(props: { label: string, value: string }): JSX.Element {
 	return <Container>
@@ -89,8 +91,30 @@ enum StatsPageType {
 	Dealins,
 }
 
+const styles = css`
+	@import 'src/bootstrap-vars.sass';
+
+	.swapPageButton {
+		cursor: pointer;
+		&:hover {
+			color: $gray-500;
+			text-decoration: underline;
+		}
+	}
+`;
+
+function SwapPageButton(props: {
+	onClick: () => void;
+	children?: React.ReactNode
+	isSelected?: boolean;
+}): JSX.Element {
+	return <div className={clsx(styles.swapPageButton, "h5", props.isSelected && "font-weight-bold")} onClick={props.onClick}>
+		{props.children}
+	</div>
+}
+
 function FirstStatsDisplay({ stats }: { stats: FirstStats['stats'] }): JSX.Element {
-	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Wins);
+	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 	const statsPagesByType = React.useMemo<Record<StatsPageType, StatsPageProps>>(() => {
 		const totalWins = getAgariCategories(stats.wins).reduce((total, next) => total + next.total, 0);
 		const totalWinsPercent = twoDecimalPlaceRound(
@@ -186,12 +210,13 @@ function FirstStatsDisplay({ stats }: { stats: FirstStats['stats'] }): JSX.Eleme
 	return <Container>
 		<FirstStatsPage {...statsPagesByType[selectedPageType]} />
 		<Row>
-			<Col> Overall </Col>
-			<Col> Calls </Col>
-			<Col> Riichi </Col>
-			<Col> Draws </Col>
-			<Col> Dealins </Col>
-			<Col> Wins </Col>
+			{Object.keys(statsPagesByType).map(type => parseInt(type)).map((type: StatsPageType) =>
+				<Col>
+					<SwapPageButton key={type} onClick={() => setSelectedPageType(type)} isSelected={type === selectedPageType}>
+						{StatsPageType[type]}
+					</SwapPageButton>
+				</Col>
+			)}
 		</Row>
 	</Container>
 }
