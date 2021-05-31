@@ -829,9 +829,7 @@ export class RestApi {
 
 				const games = await this.mongoStore.gamesCollection.find(query).toArray();
 				const commonVersion = games.reduce((total, next) => Math.min(total, minimumVersion(next)) as StatsVersion, latestStatsVersion)
-				// console.log(games.reduce((total, next) => (total[next.version] ??= 0, total[next.version]++, total), {}));
 				const gameStats = games.map(game => collectStats(game, commonVersion, playerMap));
-				// console.log(util.inspect(gameStats, { colors: true, depth: null }));
 
 				if (data.team != null) {
 					res.send({

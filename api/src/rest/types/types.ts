@@ -1,5 +1,7 @@
 import { Session as StoreSession, GameResult as StoreGameResult, Player } from "../../store/types/types";
 
+export * from "./stats";
+
 export interface GameResult<Id = any> extends StoreGameResult<Id> {
 	sessionId?: Id;
 	contestId: Id;

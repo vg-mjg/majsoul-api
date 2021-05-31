@@ -49,9 +49,7 @@ function mergeFirstStats(stats: FirstStats[]): FirstStats['stats'] {
 					nextChildren.push(nextChild[key]);
 					continue;
 				}
-				// console.log(key, totalChildren[key], nextChild[key]);
 				totalChild[key] += nextChild[key];
-				// console.log(totalChildren[key]);
 			}
 		}
 		return total;

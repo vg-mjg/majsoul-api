@@ -175,6 +175,7 @@ function Team(props: {
 	const teamAnthem = anthem ?? props.team.anthem ?? "";
 
 	React.useEffect(() => {
+		console.log("viewDetails", viewDetails);
 		if (!viewDetails) {
 			return;
 		}
@@ -185,6 +186,7 @@ function Team(props: {
 			setApiPlayers(players);
 		})
 
+		console.log("fetchStats");
 		fetchStats(
 			props.contestId,
 			{

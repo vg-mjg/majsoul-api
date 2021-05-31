@@ -1,1 +1,1 @@
-export { GameResult, Session, ContestPlayer } from "./types/types";
+export * from "./types/types";
