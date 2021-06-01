@@ -16,7 +16,7 @@ function createData(sessions: Rest.Session[], teams: Record<string, Store.Contes
 			if (session.name) {
 				return session.name;
 			}
-			const time =  dayjs(session.scheduledTime).tz('UTC');
+			const time = dayjs(session.scheduledTime).tz('UTC');
 			return `${time.hour() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
 		})),
 

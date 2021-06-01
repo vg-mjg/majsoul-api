@@ -21,7 +21,7 @@ import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
 import { Stats } from "./Stats";
-import { fetchStats } from "src/api/Contests";
+import { fetchStats, StatsRequest } from "src/api/Contests";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -50,10 +50,19 @@ export function jpNumeral(value: number): string {
 const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
 const styles = css`
+	@import 'src/bootstrap-vars.sass';
+
 	.teamDetailsToggle {
 		cursor: pointer;
 		&:hover {
-			color: LightGray;
+			color: $gray-500;
+		}
+	}
+
+	.teamPlayerName {
+		cursor: pointer;
+		&:hover {
+			color: $gray-500;
 		}
 	}
 
@@ -162,6 +171,7 @@ function Team(props: {
 	const [editedPlayers, setEditedPlayers] = React.useState<Partial<Rest.ContestPlayer<string>>[]>(null);
 	const [color, setColor] = React.useState<string>();
 	const [stats, setStats] = React.useState<Rest.Stats>(null);
+	const [statsRequest, setStatsRequest] = React.useState<StatsRequest>(null);
 	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
 		const isValid = colorRegex.test(newValue);
 		const value = isValid ? newValue : oldValue;
@@ -175,7 +185,6 @@ function Team(props: {
 	const teamAnthem = anthem ?? props.team.anthem ?? "";
 
 	React.useEffect(() => {
-		console.log("viewDetails", viewDetails);
 		if (!viewDetails) {
 			return;
 		}
@@ -184,18 +193,30 @@ function Team(props: {
 			teamId: props.team._id,
 		}).then(players => {
 			setApiPlayers(players);
-		})
+		});
 
-		console.log("fetchStats");
+		setStatsRequest({
+			team: props.team._id
+		});
+	}, [props.team._id, props.contestId, viewDetails]);
+
+	React.useEffect(() => {
+		if (!viewDetails || !statsRequest) {
+			return;
+		}
+
+		const targetId = "team" in statsRequest ? statsRequest.team : "player" in statsRequest ? statsRequest.player : null;
+		if (targetId === null) {
+			return;
+		}
+
 		fetchStats(
 			props.contestId,
-			{
-				team: props.team._id
-			}
+			statsRequest
 		).then(stats => {
-			setStats(stats[props.team._id]);
+			setStats(stats[targetId]);
 		})
-	}, [props.team._id, props.contestId, viewDetails]);
+	}, [statsRequest, viewDetails])
 
 	const onAccordionSelect = React.useCallback((selectedKey: string) => {
 		setViewDetails(selectedKey === "0");
@@ -277,7 +298,7 @@ function Team(props: {
 										onClick={() => setEditedPlayers(players.filter(p => p._id !== player._id))}
 									/>}
 								</Col>
-								<Col className="text-left">
+								<Col className={clsx("text-left", styles.teamPlayerName)} onClick={() => setStatsRequest({ player: player._id })}>
 									{player.displayName ?? player.nickname}
 								</Col>
 								<Col className="text-right">

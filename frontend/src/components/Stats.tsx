@@ -10,9 +10,33 @@ import { AgariCategories, AgariStats, FirstStats } from "majsoul-api/dist/rest/t
 import { css } from "astroturf";
 import clsx from "clsx";
 
-function StatField(props: { label: string, value: string }): JSX.Element {
+
+const styles = css`
+	@import 'src/bootstrap-vars.sass';
+
+	.colorBlip {
+		border-radius: 50%;
+		width: 1em;
+		height: 1em;
+	}
+
+	.swapPageButton {
+		cursor: pointer;
+		&:hover {
+			color: $gray-500;
+			text-decoration: underline;
+		}
+	}
+`;
+
+function StatField(props: {
+	label: string,
+	value: string,
+	color?: string
+}): JSX.Element {
 	return <Container>
-		<Row className="no-gutters">
+		<Row className="no-gutters align-items-center">
+			{props.color && <Col sm="auto" className="mr-2"><div className={styles.colorBlip} style={{ backgroundColor: props.color }} /></Col>}
 			<Col className="font-weight-bold text-left">{props.label}</Col>
 			<Col sm="auto">{props.value}</Col>
 		</Row>
@@ -28,7 +52,7 @@ interface StatDisplayProps {
 interface GraphSection {
 	label: string;
 	value: number;
-	color: GraphColor;
+	color?: GraphColor;
 }
 
 interface StatsPageProps {
@@ -45,6 +69,7 @@ enum GraphColor {
 }
 
 function FirstStatsPage(props: StatsPageProps): JSX.Element {
+	console.log("Test");
 	return <Row className="no-gutters">
 		<Col>
 			<Pie
@@ -65,8 +90,11 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 			/>
 		</Col>
 		<Col>
-			{props.centerColumn.map((stat, index) =>
-				<StatField key={index} label={stat.label} value={stat.value} />
+			{props.graphData.map((stat) =>
+				<StatField key={stat.label} label={stat.label} value={stat.value.toString() + "%"} color={stat.color} />
+			)}
+			{props.centerColumn.map((stat) =>
+				<StatField key={stat.label} label={stat.label} value={stat.value} />
 			)}
 		</Col>
 		<Col>
@@ -91,18 +119,6 @@ enum StatsPageType {
 	Dealins,
 }
 
-const styles = css`
-	@import 'src/bootstrap-vars.sass';
-
-	.swapPageButton {
-		cursor: pointer;
-		&:hover {
-			color: $gray-500;
-			text-decoration: underline;
-		}
-	}
-`;
-
 function SwapPageButton(props: {
 	onClick: () => void;
 	children?: React.ReactNode
@@ -113,7 +129,11 @@ function SwapPageButton(props: {
 	</div>
 }
 
-function FirstStatsDisplay({ stats }: { stats: FirstStats['stats'] }): JSX.Element {
+const FirstStatsDisplay = React.memo(function ({ stats }: { stats: FirstStats['stats'] }): JSX.Element {
+	React.useEffect(() => {
+		console.log("mount");
+		return () => console.log("unmount");
+	}, [])
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 	const statsPagesByType = React.useMemo<Record<StatsPageType, StatsPageProps>>(() => {
 		const totalWins = getAgariCategories(stats.wins).reduce((total, next) => total + next.total, 0);
@@ -148,8 +168,8 @@ function FirstStatsDisplay({ stats }: { stats: FirstStats['stats'] }): JSX.Eleme
 					},
 
 					{
-						label: "Opponent Tsumo / Other",
-						value: 100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent,
+						label: "Other",
+						value: twoDecimalPlaceRound(100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent),
 						color: GraphColor.White,
 					},
 				],
@@ -175,7 +195,7 @@ function FirstStatsDisplay({ stats }: { stats: FirstStats['stats'] }): JSX.Eleme
 					},
 
 					{
-						label: "Opponent Tsumo / Other",
+						label: "Other",
 						value: 100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent,
 						color: GraphColor.White,
 					},
@@ -219,7 +239,7 @@ function FirstStatsDisplay({ stats }: { stats: FirstStats['stats'] }): JSX.Eleme
 			)}
 		</Row>
 	</Container>
-}
+});
 
 function BaseStatsDisplay(props: { stats: BaseStats['stats'] }): JSX.Element {
 	if (!props.stats) {
