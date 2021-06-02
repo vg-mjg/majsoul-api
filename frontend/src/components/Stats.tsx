@@ -42,19 +42,25 @@ interface StatDisplayProps {
 	value: string;
 }
 
+interface GraphData {
+	value: number;
+	color?: GraphColor;
+}
 
 interface GraphSection {
 	label: string;
-	data: {
-		value: number;
-		color?: GraphColor;
-	}[];
+	data: GraphData[];
+}
+
+interface StatsGroup {
+	title?: string;
+	fields?: StatDisplayProps[];
 }
 
 interface StatsPageProps {
 	graphData: GraphSection[],
-	centerColumn: StatDisplayProps[];
-	rightColumn: StatDisplayProps[];
+	centerColumn?: StatsGroup;
+	rightColumn?: StatsGroup;
 }
 
 enum GraphColor {
@@ -62,6 +68,25 @@ enum GraphColor {
 	Black = "#161616",
 	Green = "#006B24",
 	White = "#DDDCDC",
+	AltRed = "#F42600",
+	AltBlack = "#756C6C",
+	AltGreen = "#00B33D",
+	AltWhite = "#F5F5F5",
+}
+
+function StatsColumn(props: StatsGroup & {
+	graphData: (GraphData & { label: string })[]
+}): JSX.Element {
+	console.log(props);
+	return <Container>
+		{props.title && <Row><Col className="font-weight-bold">{props.title}</Col></Row>}
+		{props.graphData.map((stat) =>
+			stat.value && <StatField key={stat.label} label={stat.label} value={stat.value.toString() + "%"} color={stat.color} />
+		)}
+		{props.fields?.map((stat) =>
+			<StatField key={stat.label} label={stat.label} value={stat.value} />
+		)}
+	</Container>
 }
 
 function FirstStatsPage(props: StatsPageProps): JSX.Element {
@@ -71,11 +96,12 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 				total.data.push(next.value);
 				total.backgroundColor.push(next.color);
 				return total;
-			}, { data: [], backgroundColor: [], label: index.toString() })
+			}, { data: [] as number[], backgroundColor: [] as string[], label: index.toString() })
 		);
+
 	return <Row className="no-gutters py-3">
 		<Col className={styles.statsContainer}>
-			<div className="pr-4">
+			<div className="pr-2">
 				<Pie
 					data={{
 						labels: props.graphData.map(dataSet => dataSet.label),
@@ -93,20 +119,16 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 			</div>
 		</Col>
 		<Col>
-			{props.graphData.filter(stat => stat.data[0]).map((stat) =>
-				<StatField key={stat.label} label={stat.label} value={stat.data[0].value.toString() + "%"} color={stat.data[0].color} />
-			)}
-			{props.centerColumn.map((stat) =>
-				<StatField key={stat.label} label={stat.label} value={stat.value} />
-			)}
+			<StatsColumn
+				{...(props.centerColumn ?? {})}
+				graphData={props.graphData.map(({ label, data }) => ({ label, ...data[0] }))}
+			/>
 		</Col>
 		<Col>
-			{props.graphData.filter(stat => stat.data[1]).map((stat) =>
-				<StatField key={stat.label} label={stat.label} value={stat.data[1].value.toString() + "%"} color={stat.data[0].color} />
-			)}
-			{props.rightColumn.map((stat, index) =>
-				<StatField key={index} label={stat.label} value={stat.value} />
-			)}
+			<StatsColumn
+				{...(props.rightColumn ?? {})}
+				graphData={props.graphData.map(({ label, data }) => ({ label, ...data[1] }))}
+			/>
 		</Col>
 	</Row>
 }
@@ -206,8 +228,8 @@ const FirstStatsDisplay = React.memo(function ({
 						}]
 					},
 				],
-				centerColumn: [],
-				rightColumn: []
+				centerColumn: {},
+				rightColumn: {}
 			},
 			[StatsPageType.Dealins]: {
 				graphData: [
@@ -220,7 +242,7 @@ const FirstStatsDisplay = React.memo(function ({
 							},
 							{
 								value: twoDecimalPlaceRound(100 * dealingOpponentStats.riichi / totalDealins),
-								color: GraphColor.Green,
+								color: GraphColor.AltGreen,
 							},
 						]
 					},
@@ -233,7 +255,7 @@ const FirstStatsDisplay = React.memo(function ({
 							},
 							{
 								value: twoDecimalPlaceRound(100 * dealingOpponentStats.open / totalDealins),
-								color: GraphColor.Red,
+								color: GraphColor.AltRed,
 							},
 						]
 					},
@@ -246,13 +268,17 @@ const FirstStatsDisplay = React.memo(function ({
 							},
 							{
 								value: twoDecimalPlaceRound(100 * dealingOpponentStats.dama / totalDealins),
-								color: GraphColor.Black,
+								color: GraphColor.AltBlack,
 							},
 						]
 					},
 				],
-				centerColumn: [],
-				rightColumn: []
+				centerColumn: {
+					title: "Own Hand"
+				},
+				rightColumn: {
+					title: "Opponent's Hand"
+				}
 			},
 			[StatsPageType.Wins]: {
 				graphData: [
@@ -278,8 +304,8 @@ const FirstStatsDisplay = React.memo(function ({
 						}]
 					},
 				],
-				centerColumn: [],
-				rightColumn: []
+				centerColumn: {},
+				rightColumn: {}
 			}
 		};
 	}, [stats]);
