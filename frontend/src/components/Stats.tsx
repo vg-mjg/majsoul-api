@@ -6,26 +6,20 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { StatsVersion } from "majsoul-api/dist/rest/types/stats/StatsVersion";
 import { BaseStats } from "majsoul-api/dist/rest/types/stats/BaseStats";
-import { AgariCategories, AgariStats, FirstStats } from "majsoul-api/dist/rest/types/stats/FirstStats";
+import { AgariCategories, FirstStats } from "majsoul-api/dist/rest/types/stats/FirstStats";
 import { css } from "astroturf";
 import clsx from "clsx";
-
+import * as globalStyles from "./styles.sass";
 
 const styles = css`
-	@import 'src/bootstrap-vars.sass';
+	.chartContainer {
+		box-sizing: border-box;
+	}
 
 	.colorBlip {
 		border-radius: 50%;
 		width: 1em;
 		height: 1em;
-	}
-
-	.swapPageButton {
-		cursor: pointer;
-		&:hover {
-			color: $gray-500;
-			text-decoration: underline;
-		}
 	}
 `;
 
@@ -34,7 +28,7 @@ function StatField(props: {
 	value: string,
 	color?: string
 }): JSX.Element {
-	return <Container>
+	return <Container className="p-0">
 		<Row className="no-gutters align-items-center">
 			{props.color && <Col sm="auto" className="mr-2"><div className={styles.colorBlip} style={{ backgroundColor: props.color }} /></Col>}
 			<Col className="font-weight-bold text-left">{props.label}</Col>
@@ -58,7 +52,9 @@ interface GraphSection {
 interface StatsPageProps {
 	graphData: GraphSection[],
 	centerColumn: StatDisplayProps[];
-	rightColumn: StatDisplayProps[];
+	rightColumn: {
+		fields: StatDisplayProps[];
+	} & StatsPlayerProps
 }
 
 enum GraphColor {
@@ -69,25 +65,27 @@ enum GraphColor {
 }
 
 function FirstStatsPage(props: StatsPageProps): JSX.Element {
-	console.log("Test");
-	return <Row className="no-gutters">
-		<Col>
-			<Pie
-				data={{
-					labels: props.graphData.map(data => data.label),
-					datasets: [{
-						data: props.graphData.map(data => data.value),
-						backgroundColor: props.graphData.map(data => data.color),
-					}]
-				}}
-				options={{
-					plugins: {
-						legend: {
-							display: false
+	return <Row className="no-gutters py-3">
+		<Col className={styles.statsContainer}>
+			<div className="pr-4">
+				<Pie
+					data={{
+						labels: props.graphData.map(data => data.label),
+						datasets: [{
+							data: props.graphData.map(data => data.value),
+							backgroundColor: props.graphData.map(data => data.color),
+						}]
+					}}
+					options={{
+						aspectRatio: 1,
+						plugins: {
+							legend: {
+								display: false
+							}
 						}
-					}
-				}}
-			/>
+					}}
+				/>
+			</div>
 		</Col>
 		<Col>
 			{props.graphData.map((stat) =>
@@ -98,7 +96,9 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 			)}
 		</Col>
 		<Col>
-			{props.rightColumn.map((stat, index) =>
+			{props.rightColumn.teamName && <div>{props.rightColumn.teamName}</div>}
+			<div>{props.rightColumn.playerName}</div>
+			{props.rightColumn.fields.map((stat, index) =>
 				<StatField key={index} label={stat.label} value={stat.value} />
 			)}
 		</Col>
@@ -124,16 +124,18 @@ function SwapPageButton(props: {
 	children?: React.ReactNode
 	isSelected?: boolean;
 }): JSX.Element {
-	return <div className={clsx(styles.swapPageButton, "h5", props.isSelected && "font-weight-bold")} onClick={props.onClick}>
+	return <div className={clsx(globalStyles.linkDark, "h5", props.isSelected && "font-weight-bold")} onClick={props.onClick}>
 		{props.children}
 	</div>
 }
 
-const FirstStatsDisplay = React.memo(function ({ stats }: { stats: FirstStats['stats'] }): JSX.Element {
-	React.useEffect(() => {
-		console.log("mount");
-		return () => console.log("unmount");
-	}, [])
+const FirstStatsDisplay = React.memo(function ({
+	stats,
+	teamName,
+	playerName,
+}: {
+	stats: FirstStats['stats'];
+} & StatsPlayerProps): JSX.Element {
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 	const statsPagesByType = React.useMemo<Record<StatsPageType, StatsPageProps>>(() => {
 		const totalWins = getAgariCategories(stats.wins).reduce((total, next) => total + next.total, 0);
@@ -141,11 +143,19 @@ const FirstStatsDisplay = React.memo(function ({ stats }: { stats: FirstStats['s
 			100 * totalWins / stats.totalHands
 		);
 		const totalDrawsPercent = twoDecimalPlaceRound(100 * stats.draws.total / stats.totalHands);
+		const dealinStats = {
+			dama: getAgariCategories(stats.dealins.dama).reduce((total, next) => total + next.total, 0),
+			open: getAgariCategories(stats.dealins.open).reduce((total, next) => total + next.total, 0),
+			riichi: getAgariCategories(stats.dealins.riichi).reduce((total, next) => total + next.total, 0),
+		}
+
+		const totalDealins = getAgariCategories(stats.dealins).reduce(
+			(total, next) => total + getAgariCategories(next).reduce((total, next) => total + next.total, 0),
+			0
+		);
+
 		const totalDealinsPercent = twoDecimalPlaceRound(
-			100 * getAgariCategories(stats.dealins).reduce(
-				(total, next) => total + getAgariCategories(next).reduce((total, next) => total + next.total, 0),
-				0
-			) / stats.totalHands
+			100 * totalDealins / stats.totalHands
 		);
 
 		return {
@@ -174,34 +184,28 @@ const FirstStatsDisplay = React.memo(function ({ stats }: { stats: FirstStats['s
 					},
 				],
 				centerColumn: [],
-				rightColumn: []
+				rightColumn: {} as any
 			},
 			[StatsPageType.Dealins]: {
 				graphData: [
 					{
-						label: "Wins",
-						value: totalWinsPercent,
+						label: "Riichi",
+						value: twoDecimalPlaceRound(100 * dealinStats.riichi / totalDealins),
 						color: GraphColor.Green,
 					},
 					{
-						label: "Draws",
-						value: totalDrawsPercent,
-						color: GraphColor.Black,
-					},
-					{
-						label: "Deal Ins",
-						value: totalDealinsPercent,
+						label: "Open",
+						value: twoDecimalPlaceRound(100 * dealinStats.open / totalDealins),
 						color: GraphColor.Red,
 					},
-
 					{
-						label: "Other",
-						value: 100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent,
-						color: GraphColor.White,
+						label: "Dama",
+						value: twoDecimalPlaceRound(100 * dealinStats.dama / totalDealins),
+						color: GraphColor.Black,
 					},
 				],
 				centerColumn: [],
-				rightColumn: []
+				rightColumn: {} as any
 			},
 			[StatsPageType.Wins]: {
 				graphData: [
@@ -222,13 +226,13 @@ const FirstStatsDisplay = React.memo(function ({ stats }: { stats: FirstStats['s
 					},
 				],
 				centerColumn: [],
-				rightColumn: []
+				rightColumn: {} as any
 			}
 		};
 	}, [stats]);
 
-	return <Container>
-		<FirstStatsPage {...statsPagesByType[selectedPageType]} />
+	return <Container className={clsx("p-0")}>
+		<FirstStatsPage {...statsPagesByType[selectedPageType]} rightColumn={{ teamName, playerName, fields: [] }} />
 		<Row>
 			{Object.keys(statsPagesByType).map(type => parseInt(type)).map((type: StatsPageType) =>
 				<Col>
@@ -249,7 +253,12 @@ function BaseStatsDisplay(props: { stats: BaseStats['stats'] }): JSX.Element {
 	return null;
 }
 
-export function Stats(props: { stats: Rest.Stats }): JSX.Element {
+interface StatsPlayerProps {
+	teamName?: string;
+	playerName?: string;
+}
+
+export function VersionedStatsDisplay(props: { stats: Rest.Stats }) {
 	if (props?.stats?.stats == null) {
 		return null;
 	}
@@ -262,4 +271,21 @@ export function Stats(props: { stats: Rest.Stats }): JSX.Element {
 	}
 
 	return null;
+}
+
+export function Stats(props: { stats: Rest.Stats, onSelectTeam?: () => void } & StatsPlayerProps): JSX.Element {
+	return <Container className={clsx("p-0")}>
+		<Row>
+			<Col className="text-center">
+				<span
+					className={clsx("h5 font-weight-bold", globalStyles.linkDark)}
+					onClick={() => props.onSelectTeam()}
+				>{props.teamName}</span>&nbsp;
+				<span className="h5">{props.playerName}</span>
+			</Col>
+		</Row>
+		<Row>
+			<VersionedStatsDisplay stats={props.stats} />
+		</Row>
+	</Container>
 }

@@ -22,6 +22,7 @@ import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
 import { Stats } from "./Stats";
 import { fetchStats, StatsRequest } from "src/api/Contests";
+import * as globalStyles from "./styles.sass";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -50,37 +51,6 @@ export function jpNumeral(value: number): string {
 const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
 const styles = css`
-	@import 'src/bootstrap-vars.sass';
-
-	.teamDetailsToggle {
-		cursor: pointer;
-		&:hover {
-			color: $gray-500;
-		}
-	}
-
-	.teamPlayerName {
-		cursor: pointer;
-		&:hover {
-			color: $gray-500;
-		}
-	}
-
-	.searchResult {
-		cursor: pointer;
-		&:hover {
-			color: LightGray;
-			text-decoration: underline;
-		}
-	}
-
-	.removePlayerIcon {
-		cursor: pointer;
-		&:hover {
-			color: LightGray;
-		}
-	}
-
 	.teamImage {
 		height: 64px;
 		width: 64px;
@@ -134,7 +104,7 @@ function PlayerSearch(props: {
 			players.map(player =>
 				<Row
 					key={player._id}
-					className={clsx("py-1", styles.searchResult)}
+					className={clsx("py-1", globalStyles.linkDark, globalStyles.linkUnderline)}
 					onClick={() => {
 						setSearchString("");
 						if (props.onSelect) {
@@ -172,6 +142,7 @@ function Team(props: {
 	const [color, setColor] = React.useState<string>();
 	const [stats, setStats] = React.useState<Rest.Stats>(null);
 	const [statsRequest, setStatsRequest] = React.useState<StatsRequest>(null);
+	const [selectedPlayerName, setSelectedPlayerName] = React.useState<string>();
 	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
 		const isValid = colorRegex.test(newValue);
 		const value = isValid ? newValue : oldValue;
@@ -235,7 +206,7 @@ function Team(props: {
 		<Accordion.Toggle
 			disabled as={Row}
 			eventKey="0"
-			className={clsx("no-gutters align-items-center flex-nowrap", styles.teamDetailsToggle)}
+			className={clsx("no-gutters align-items-center flex-nowrap", globalStyles.linkDark)}
 		>
 			{props.placing != null
 				&& <Col
@@ -285,7 +256,15 @@ function Team(props: {
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
-				<Stats stats={stats} />
+				<Stats
+					stats={stats}
+					teamName={props.team.name}
+					playerName={selectedPlayerName}
+					onSelectTeam={() => {
+						setSelectedPlayerName(null);
+						setStatsRequest({ team: props.team._id });
+					}}
+				/>
 				{players == null
 					? <LoadingSpinner />
 					: <Container className="p-0">
@@ -294,11 +273,17 @@ function Team(props: {
 								<Col md="auto" style={{ minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem` }} className="mr-3" />
 								<Col md="auto" style={{ minWidth: 64 }} className="mr-3">
 									{token && <BsX
-										className={styles.removePlayerIcon}
+										className={globalStyles.linkDark}
 										onClick={() => setEditedPlayers(players.filter(p => p._id !== player._id))}
 									/>}
 								</Col>
-								<Col className={clsx("text-left", styles.teamPlayerName)} onClick={() => setStatsRequest({ player: player._id })}>
+								<Col
+									className={clsx("text-left", globalStyles.linkDark)}
+									onClick={() => {
+										setStatsRequest({ player: player._id });
+										setSelectedPlayerName(player.displayName ?? player.nickname);
+									}}
+								>
 									{player.displayName ?? player.nickname}
 								</Col>
 								<Col className="text-right">
@@ -429,7 +414,7 @@ function TeamList(props: {
 	contestId: string;
 }): JSX.Element {
 	return <>
-		{ props.teams.map((team) =>
+		{props.teams.map((team) =>
 			<TeamRow key={team._id} first={team.placing === 0}>
 				<Team
 					contestId={props.contestId}
