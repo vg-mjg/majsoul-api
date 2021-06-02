@@ -81,7 +81,7 @@ function StatsColumn(props: StatsGroup & {
 	return <Container>
 		{props.title && <Row><Col className="font-weight-bold">{props.title}</Col></Row>}
 		{props.graphData.map((stat) =>
-			stat.value && <StatField key={stat.label} label={stat.label} value={stat.value.toString() + "%"} color={stat.color} />
+			(stat.value != null) && <StatField key={stat.label} label={stat.label} value={stat.value.toString() + "%"} color={stat.color} />
 		)}
 		{props.fields?.map((stat) =>
 			<StatField key={stat.label} label={stat.label} value={stat.value} />
