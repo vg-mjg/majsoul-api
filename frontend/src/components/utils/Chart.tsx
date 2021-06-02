@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Chart, ChartType, ChartData, ChartOptions, Plugin, registerables, InteractionItem } from 'chart.js';
-import { merge, assign, find } from 'lodash';
+import { cloneDeep, assign, find } from 'lodash';
 import { forwardRef } from 'react';
 
 Chart.register(...registerables);
@@ -17,16 +17,16 @@ export interface ChartProps extends React.CanvasHTMLAttributes<HTMLCanvasElement
 	plugins?: Plugin[];
 	fallbackContent?: React.ReactNode;
 	getDatasetAtEvent?: (
-	  dataset: Array<InteractionItem>,
-	  event: React.MouseEvent<HTMLCanvasElement>
+		dataset: Array<InteractionItem>,
+		event: React.MouseEvent<HTMLCanvasElement>
 	) => void;
 	getElementAtEvent?: (
-	  element: InteractionItem | undefined,
-	  event: React.MouseEvent<HTMLCanvasElement>
+		element: InteractionItem | undefined,
+		event: React.MouseEvent<HTMLCanvasElement>
 	) => void;
 	getElementsAtEvent?: (
-	  elements: Array<InteractionItem>,
-	  event: React.MouseEvent<HTMLCanvasElement>
+		elements: Array<InteractionItem>,
+		event: React.MouseEvent<HTMLCanvasElement>
 	) => void;
 }
 
@@ -54,7 +54,7 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 		if (typeof data === 'function') {
 			return canvas.current ? data(canvas.current) : {} as ChartData;
 		} else {
-			return merge({} as ChartData, data);
+			return { ...data };
 		}
 	}, [data, canvas.current]);
 
@@ -71,10 +71,10 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 
 		setChart(
 			new Chart(canvas.current, {
-			type,
-			data: computedData,
-			options,
-			plugins,
+				type,
+				data: computedData,
+				options,
+				plugins,
 			})
 		);
 	};
@@ -86,14 +86,14 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 
 		getDatasetAtEvent &&
 			getDatasetAtEvent(
-			chart.getElementsAtEventForMode(
-				event.nativeEvent,
-				'dataset',
-				{ intersect: true },
-				false
-			),
-			event
-		);
+				chart.getElementsAtEventForMode(
+					event.nativeEvent,
+					'dataset',
+					{ intersect: true },
+					false
+				),
+				event
+			);
 
 		getElementAtEvent &&
 			getElementAtEvent(
@@ -108,9 +108,9 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 
 		getElementsAtEvent &&
 			getElementsAtEvent(
-			chart.getElementsAtEventForMode(event.nativeEvent, 'index', { intersect: true }, false),
-			event
-		);
+				chart.getElementsAtEventForMode(event.nativeEvent, 'index', { intersect: true }, false),
+				event
+			);
 	};
 
 	const updateChart = () => {

@@ -45,16 +45,16 @@ interface StatDisplayProps {
 
 interface GraphSection {
 	label: string;
-	value: number;
-	color?: GraphColor;
+	data: {
+		value: number;
+		color?: GraphColor;
+	}[];
 }
 
 interface StatsPageProps {
 	graphData: GraphSection[],
 	centerColumn: StatDisplayProps[];
-	rightColumn: {
-		fields: StatDisplayProps[];
-	} & StatsPlayerProps
+	rightColumn: StatDisplayProps[];
 }
 
 enum GraphColor {
@@ -65,16 +65,21 @@ enum GraphColor {
 }
 
 function FirstStatsPage(props: StatsPageProps): JSX.Element {
+	const datasets = props.graphData[0].data
+		.map((_, index) => props.graphData.map(data => data.data[index])
+			.reduce((total, next) => {
+				total.data.push(next.value);
+				total.backgroundColor.push(next.color);
+				return total;
+			}, { data: [], backgroundColor: [], label: index.toString() })
+		);
 	return <Row className="no-gutters py-3">
 		<Col className={styles.statsContainer}>
 			<div className="pr-4">
 				<Pie
 					data={{
-						labels: props.graphData.map(data => data.label),
-						datasets: [{
-							data: props.graphData.map(data => data.value),
-							backgroundColor: props.graphData.map(data => data.color),
-						}]
+						labels: props.graphData.map(dataSet => dataSet.label),
+						datasets
 					}}
 					options={{
 						aspectRatio: 1,
@@ -88,17 +93,18 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 			</div>
 		</Col>
 		<Col>
-			{props.graphData.map((stat) =>
-				<StatField key={stat.label} label={stat.label} value={stat.value.toString() + "%"} color={stat.color} />
+			{props.graphData.filter(stat => stat.data[0]).map((stat) =>
+				<StatField key={stat.label} label={stat.label} value={stat.data[0].value.toString() + "%"} color={stat.data[0].color} />
 			)}
 			{props.centerColumn.map((stat) =>
 				<StatField key={stat.label} label={stat.label} value={stat.value} />
 			)}
 		</Col>
 		<Col>
-			{props.rightColumn.teamName && <div>{props.rightColumn.teamName}</div>}
-			<div>{props.rightColumn.playerName}</div>
-			{props.rightColumn.fields.map((stat, index) =>
+			{props.graphData.filter(stat => stat.data[1]).map((stat) =>
+				<StatField key={stat.label} label={stat.label} value={stat.data[1].value.toString() + "%"} color={stat.data[0].color} />
+			)}
+			{props.rightColumn.map((stat, index) =>
 				<StatField key={index} label={stat.label} value={stat.value} />
 			)}
 		</Col>
@@ -131,11 +137,9 @@ function SwapPageButton(props: {
 
 const FirstStatsDisplay = React.memo(function ({
 	stats,
-	teamName,
-	playerName,
 }: {
 	stats: FirstStats['stats'];
-} & StatsPlayerProps): JSX.Element {
+}): JSX.Element {
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 	const statsPagesByType = React.useMemo<Record<StatsPageType, StatsPageProps>>(() => {
 		const totalWins = getAgariCategories(stats.wins).reduce((total, next) => total + next.total, 0);
@@ -148,6 +152,17 @@ const FirstStatsDisplay = React.memo(function ({
 			open: getAgariCategories(stats.dealins.open).reduce((total, next) => total + next.total, 0),
 			riichi: getAgariCategories(stats.dealins.riichi).reduce((total, next) => total + next.total, 0),
 		}
+
+		const dealingOpponentStats = getAgariCategories(stats.dealins).reduce((total, next) => {
+			total.dama += next.dama.total;
+			total.riichi += next.riichi.total;
+			total.open += next.open.total;
+			return total;
+		}, {
+			dama: 0,
+			riichi: 0,
+			open: 0,
+		})
 
 		const totalDealins = getAgariCategories(stats.dealins).reduce(
 			(total, next) => total + getAgariCategories(next).reduce((total, next) => total + next.total, 0),
@@ -163,79 +178,117 @@ const FirstStatsDisplay = React.memo(function ({
 				graphData: [
 					{
 						label: "Wins",
-						value: totalWinsPercent,
-						color: GraphColor.Green,
+						data: [{
+							value: totalWinsPercent,
+							color: GraphColor.Green,
+						}]
 					},
 					{
 						label: "Draws",
-						value: totalDrawsPercent,
-						color: GraphColor.Black,
+						data: [{
+							value: totalDrawsPercent,
+							color: GraphColor.Black,
+						}]
 					},
 					{
 						label: "Deal Ins",
-						value: totalDealinsPercent,
-						color: GraphColor.Red,
+						data: [{
+							value: totalDealinsPercent,
+							color: GraphColor.Red,
+						}]
 					},
 
 					{
 						label: "Other",
-						value: twoDecimalPlaceRound(100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent),
-						color: GraphColor.White,
+						data: [{
+							value: twoDecimalPlaceRound(100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent),
+							color: GraphColor.White,
+						}]
 					},
 				],
 				centerColumn: [],
-				rightColumn: {} as any
+				rightColumn: []
 			},
 			[StatsPageType.Dealins]: {
 				graphData: [
 					{
 						label: "Riichi",
-						value: twoDecimalPlaceRound(100 * dealinStats.riichi / totalDealins),
-						color: GraphColor.Green,
+						data: [
+							{
+								value: twoDecimalPlaceRound(100 * dealinStats.riichi / totalDealins),
+								color: GraphColor.Green,
+							},
+							{
+								value: twoDecimalPlaceRound(100 * dealingOpponentStats.riichi / totalDealins),
+								color: GraphColor.Green,
+							},
+						]
 					},
 					{
 						label: "Open",
-						value: twoDecimalPlaceRound(100 * dealinStats.open / totalDealins),
-						color: GraphColor.Red,
+						data: [
+							{
+								value: twoDecimalPlaceRound(100 * dealinStats.open / totalDealins),
+								color: GraphColor.Red,
+							},
+							{
+								value: twoDecimalPlaceRound(100 * dealingOpponentStats.open / totalDealins),
+								color: GraphColor.Red,
+							},
+						]
 					},
 					{
 						label: "Dama",
-						value: twoDecimalPlaceRound(100 * dealinStats.dama / totalDealins),
-						color: GraphColor.Black,
+						data: [
+							{
+								value: twoDecimalPlaceRound(100 * dealinStats.dama / totalDealins),
+								color: GraphColor.Black,
+							},
+							{
+								value: twoDecimalPlaceRound(100 * dealingOpponentStats.dama / totalDealins),
+								color: GraphColor.Black,
+							},
+						]
 					},
 				],
 				centerColumn: [],
-				rightColumn: {} as any
+				rightColumn: []
 			},
 			[StatsPageType.Wins]: {
 				graphData: [
 					{
 						label: "Riichi",
-						value: twoDecimalPlaceRound(100 * stats.wins.riichi.total / totalWins),
-						color: GraphColor.Green,
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.wins.riichi.total / totalWins),
+							color: GraphColor.Green,
+						}]
 					},
 					{
 						label: "Open",
-						value: twoDecimalPlaceRound(100 * stats.wins.open.total / totalWins),
-						color: GraphColor.Red,
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.wins.open.total / totalWins),
+							color: GraphColor.Red,
+						}]
 					},
 					{
 						label: "Dama",
-						value: twoDecimalPlaceRound(100 * stats.wins.dama.total / totalWins),
-						color: GraphColor.Black,
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.wins.dama.total / totalWins),
+							color: GraphColor.Black,
+						}]
 					},
 				],
 				centerColumn: [],
-				rightColumn: {} as any
+				rightColumn: []
 			}
 		};
 	}, [stats]);
 
 	return <Container className={clsx("p-0")}>
-		<FirstStatsPage {...statsPagesByType[selectedPageType]} rightColumn={{ teamName, playerName, fields: [] }} />
+		<FirstStatsPage {...statsPagesByType[selectedPageType]} />
 		<Row>
 			{Object.keys(statsPagesByType).map(type => parseInt(type)).map((type: StatsPageType) =>
-				<Col>
+				<Col key={type}>
 					<SwapPageButton key={type} onClick={() => setSelectedPageType(type)} isSelected={type === selectedPageType}>
 						{StatsPageType[type]}
 					</SwapPageButton>
