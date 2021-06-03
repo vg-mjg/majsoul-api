@@ -469,8 +469,12 @@ export function Teams(props: {
 		</Container>
 	}
 
+	const activePhase = [...(props.contest.phases ?? [])].sort((a, b) => b.startTime - a.startTime)[0];
+	const activeTeams = Object.keys(activePhase?.aggregateTotals ?? {});
+
 	const teamsArray: TeamData[] =
 		Object.values(teams)
+			.filter(team => activeTeams.indexOf(team._id) >= 0)
 			.map(team => ({ ...team, total: props.session.aggregateTotals[team._id] }))
 			.sort((a, b) => b.total - a.total)
 			.map((team, placing) => ({ ...team, placing }));
