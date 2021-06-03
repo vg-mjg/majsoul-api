@@ -64,17 +64,17 @@ export function ContestSummary(props: {
 	}
 
 	return <Container>
-		<ContestHeader contest={contest}/>
-		<ContestMetadataEditor contestId={contest._id}/>
-		{ contest.type === ContestType.League
-			? <LeagueContestSummary contest={contest}/>
-			: <TourneyContestSummary contestId={contest._id}/>
+		<ContestHeader contest={contest} />
+		<ContestMetadataEditor contestId={contest._id} />
+		{contest.type === ContestType.League
+			? <LeagueContestSummary contest={contest} />
+			: <TourneyContestSummary contestId={contest._id} />
 		}
-		<YakumanDisplay contestId={contest._id}/>
+		<YakumanDisplay contestId={contest._id} />
 	</Container>
 }
 
-function TourneyContestSummary(props: {contestId: string}): JSX.Element {
+function TourneyContestSummary(props: { contestId: string }): JSX.Element {
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];
@@ -103,7 +103,7 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 
 	return <>
 		<Row className="mt-3">
-			{ contest.majsoulFriendlyId === 236728
+			{contest.majsoulFriendlyId === 236728
 				? <BracketPlayerStandings contestId={props.contestId} />
 				: <PlayerStandings contestId={props.contestId} />
 			}
@@ -115,10 +115,10 @@ function TourneyContestSummary(props: {contestId: string}): JSX.Element {
 			<Container className="p-0 rounded bg-dark text-light px-1 py-2">
 				<Row className="no-gutters">
 					{games?.map((game, index) => <React.Fragment key={game._id}>
-						<Col style={{minWidth: "auto"}}>
-							<GameResultSummary game={game}/>
+						<Col style={{ minWidth: "auto" }}>
+							<GameResultSummary game={game} />
 						</Col>
-						{(index % 2 == 1) && <div className="w-100"/>}
+						{(index % 2 == 1) && <div className="w-100" />}
 					</React.Fragment>)}
 				</Row>
 			</Container>
@@ -130,7 +130,7 @@ function SessionSection(props: {
 	session: Rest.Session<string>;
 	title: string;
 }): JSX.Element {
-	if	(!props.session) {
+	if (!props.session) {
 		return null;
 	}
 
@@ -139,7 +139,7 @@ function SessionSection(props: {
 			<Col md="auto" className="h4 mb-0"><u>{props.title}</u></Col>
 		</Row>
 		<Row>
-			<Session session={props.session} forceDetails/>
+			<Session session={props.session} forceDetails />
 		</Row>
 	</>
 }
@@ -150,13 +150,17 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 
 	React.useEffect(() => {
 		fetchContestSessions(contest._id)
-			.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
+			.then(phases => dispatchContestSessionsRetrievedAction(
+				dispatch,
+				contest._id,
+				phases,
+			));
 	}, [dispatch, contest._id]);
 
 	const sessions = React.useMemo(() =>
 		Object.values(contest.sessionsById ?? {})
 			.sort((a, b) => a.scheduledTime - b.scheduledTime)
-	, [contest.sessionsById]);
+		, [contest.sessionsById]);
 
 	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = sessions[nextSessionIndex];
@@ -183,7 +187,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 			<Teams contest={contest} session={currentSession} />
 		</Row>
 		<Row className="mt-3">
-			<LeagueStandingChart contest={contest} onSessionSelect={onSessionSelect}/>
+			<LeagueStandingChart contest={contest} onSessionSelect={onSessionSelect} />
 		</Row>
 		<SessionSection session={sessions[selectedSessionIndex]} title="Selected Session" />
 		<SessionSection session={currentSessionComplete ? null : currentSession} title="Current Session" />

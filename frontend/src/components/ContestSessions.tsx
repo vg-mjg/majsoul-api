@@ -1,5 +1,6 @@
 import { css } from "astroturf";
 import clsx from "clsx";
+import { Rest } from "majsoul-api";
 import * as React from "react";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
@@ -73,18 +74,18 @@ function SessionsPagination(props: {
 		<Link className={styles.backLink} to={`/contests/${props.contestId}/`}>
 			Back to Summary
 		</Link>
-		<div className={styles.spacer}/>
-		{ [...Array(props.numberOfPages).keys()].map(pageNumber =>
+		<div className={styles.spacer} />
+		{[...Array(props.numberOfPages).keys()].map(pageNumber =>
 			<Pagination.Item
 				className={clsx(styles.paginationIcon)}
 				key={pageNumber}
-				active={pageNumber === (props.activePage ?? activePage) }
+				active={pageNumber === (props.activePage ?? activePage)}
 				onClick={onChange}
 				data-page-number={pageNumber}
 			>
 				{pageNumber + 1}
 			</Pagination.Item>,
-		) }
+		)}
 	</Pagination>
 }
 
@@ -105,9 +106,9 @@ export function ContestSessions(props: {
 
 	React.useEffect(() => {
 		fetchContestImages(props.contestId)
-		.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
+			.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
 		fetchContestSummary(props.contestId)
-		.then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
+			.then(contest => dispatchContestSummaryRetrievedAction(dispatch, contest));
 	}, [props.contestId]);
 
 	React.useEffect(() => {
@@ -116,7 +117,11 @@ export function ContestSessions(props: {
 		}
 
 		fetchContestSessions(contest._id)
-		.then(sessions => dispatchContestSessionsRetrievedAction(dispatch, contest._id, sessions));
+			.then(phases => dispatchContestSessionsRetrievedAction(
+				dispatch,
+				contest._id,
+				phases
+			));
 
 		fetchContestPlayers({
 			contestId: contest._id
@@ -127,14 +132,14 @@ export function ContestSessions(props: {
 		return null;
 	}
 
-	const sessions = Object.values(contest.sessionsById);
+	const sessions = Object.values(contest.sessionsById).sort((a, b) => a.scheduledTime - b.scheduledTime);
 	const parsedHash = parseInt(hash) ?? 0;
 	const now = Date.now();
 	const activePage = isNaN(parsedHash) ? Math.floor(sessions.findIndex(session => session.scheduledTime >= now) / 10) : parsedHash - 1;
 
 	const numberOfPages = Math.floor(sessions.length / 10) + 1;
 	return <Container className="mt-4">
-		<ContestHeader contest={contest}/>
+		<ContestHeader contest={contest} />
 		<Row className="mt-2">
 			<Col>
 				<SessionsPagination
@@ -147,7 +152,7 @@ export function ContestSessions(props: {
 		</Row>
 		{sessions.slice(activePage * 10, activePage * 10 + 10).map(session => <Row key={session._id} className="mt-4">
 			<Col>
-				<Session session={session}/>
+				<Session session={session} />
 			</Col>
 		</Row>)}
 		<Row className="mt-4 mb-2">

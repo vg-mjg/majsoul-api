@@ -93,7 +93,7 @@ dayjs.updateLocale(loc, {
 
 function updatedContestRecord(state: IState, contestId: string, contest: Partial<Contest>): {
 	contestsById: Record<string, Contest>,
- } {
+} {
 	const originalContest = state.contestsById[contestId] ?? {};
 
 	return {
@@ -144,10 +144,12 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				games: {
 					...(state.games ?? {}),
 					...gamesRetrievedAction.games.reduce<Record<string, Rest.GameResult<string>>>(
-						(record, next) => { record[next._id] = {
-							...(state?.games?.[next._id] ?? {}),
-							...next
-						}; return record; }, {}
+						(record, next) => {
+							record[next._id] = {
+								...(state?.games?.[next._id] ?? {}),
+								...next
+							}; return record;
+						}, {}
 					)
 				},
 			}
@@ -161,7 +163,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 			}
 		} case ActionType.LoggedOut: {
 			if (state.user) {
-				return {...state, user: undefined};
+				return { ...state, user: undefined };
 			}
 			break;
 		} case ActionType.TeamPatched: {
@@ -181,7 +183,8 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					state,
 					action.contestId,
 					{
-						sessionsById: toRecord(action.sessions, "_id")
+						sessionsById: toRecord(action.phases.reduce((total, next) => total.concat(next.sessions), [] as Rest.Session[]), "_id"),
+						phases: action.phases,
 					}
 				)
 			}
@@ -297,7 +300,7 @@ function ContestFromRoute(): JSX.Element {
 	const { id } = useParams<{
 		id: string;
 	}>();
-	return <ContestSummary contestId={id}/>
+	return <ContestSummary contestId={id} />
 }
 
 function LatestContestSummary(): JSX.Element {
@@ -313,14 +316,14 @@ function LatestContestSummary(): JSX.Element {
 		return <div>Loading...</div>;
 	}
 
-	return <ContestSummary contestId={contestId}/>
+	return <ContestSummary contestId={contestId} />
 }
 
 function ContestSessionsFromRoute() {
 	const { id } = useParams<{
 		id: string;
 	}>();
-	return <ContestSessions contestId={id}/>
+	return <ContestSessions contestId={id} />
 }
 
 function GoogleAuthReceiver(): JSX.Element {
@@ -333,7 +336,7 @@ function GoogleAuthReceiver(): JSX.Element {
 			writeGoogleAuthCode(token, code);
 		}
 	}, [token, code]);
-	return <Redirect to="/"/>
+	return <Redirect to="/" />
 }
 
 ReactDOM.render(
@@ -341,33 +344,33 @@ ReactDOM.render(
 		<PersistGate loading={null} persistor={persistor}>
 			<BrowserRouter>
 				<Container className={`${styles.feed} bg-dark px-5`}>
-					<Container className={`${styles.feed} bg-primary px-3 pb-3`} style={{display:"flex", flexDirection:"column"}}>
+					<Container className={`${styles.feed} bg-primary px-3 pb-3`} style={{ display: "flex", flexDirection: "column" }}>
 						<Row className="no-gutters">
 							<Switch>
 								<Route path="/rigging/google">
-									<GoogleAuthReceiver/>
+									<GoogleAuthReceiver />
 								</Route>
 								<Route path="/rigging">
-									<RiggingLogin/>
+									<RiggingLogin />
 								</Route>
 								<Route path="/youtube">
-									<YouTube videoId="Ag7W4SSl3fc" opts={{autoplay: 1} as any}></YouTube>
+									<YouTube videoId="Ag7W4SSl3fc" opts={{ autoplay: 1 } as any}></YouTube>
 								</Route>
 								<Route path="/contests/:id/sessions">
-									<ContestSessionsFromRoute/>
+									<ContestSessionsFromRoute />
 								</Route>
 								<Route path="/contests/:id">
-									<ContestFromRoute/>
+									<ContestFromRoute />
 								</Route>
 								<Route path="/contests">
-									<ContestList/>
+									<ContestList />
 								</Route>
 								<Route path="/">
-									<LatestContestSummary/>
+									<LatestContestSummary />
 								</Route>
 							</Switch>
 						</Row>
-						<Row style={{flex:"1"}}></Row>
+						<Row style={{ flex: "1" }}></Row>
 						<Row className="mt-3 justify-content-center">
 							<Col md="auto"><Link className="text-dark" to="/" >Home</Link></Col>
 							<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>

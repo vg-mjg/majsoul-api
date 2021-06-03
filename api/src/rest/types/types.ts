@@ -21,3 +21,10 @@ export interface ContestPlayer<Id = any> extends Player<Id> {
 		seeded: boolean;
 	}
 }
+
+export interface Phase<Id> {
+	startTime: number;
+	name: string;
+	sessions: Session<Id>[];
+	aggregateTotals?: Record<string, number>;
+}

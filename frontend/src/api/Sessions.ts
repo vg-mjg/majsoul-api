@@ -20,7 +20,7 @@ export async function createSession(token: string, contestId: string): Promise<S
 }
 
 
-export function fetchContestSessions(contestId: string): Promise<Rest.Session[]> {
+export function fetchContestSessions(contestId: string): Promise<Rest.Phase[]> {
 	return fetch(buildApiUrl(`contests/${contestId}/sessions`).toString())
 		.then(response => response.json());
 }

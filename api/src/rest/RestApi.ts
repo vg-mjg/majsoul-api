@@ -2,15 +2,15 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer } from './types/types';
-import { ObjectId, FilterQuery, Condition, FindOneOptions } from 'mongodb';
+import { GameResult, Session, ContestPlayer, Phase } from './types/types';
+import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
-import { map, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
+import { groupBy, map, mergeAll, mergeMap, mergeScan, pairwise, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Store } from '..';
 import { google } from 'googleapis';
@@ -24,6 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
+import { ContestPhaseTransition } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -277,6 +278,7 @@ const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofPlayer = nameofFactory<store.Player<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
+const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>();
 const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
@@ -410,31 +412,103 @@ export class RestApi {
 				}).toArray();
 				res.send(games);
 			})
-		)
+		);
 
 		this.app.get('/contests/:id/sessions',
 			param("id").isMongoId(),
-			withData<{ id: string }, any, Session<ObjectId>[]>(async (data, req, res) => {
+			withData<{ id: string }, any, Phase<ObjectId>[]>(async (data, req, res) => {
 				const contest = await this.findContest(data.id, {
 					projection: {
 						_id: true,
 						'teams._id': true,
 						'teams.players._id': true,
+						transitions: true,
 					}
 				});
+
 				if (contest == null) {
 					res.sendStatus(404);
 					return;
 				}
 
-				this.getSessions(contest).pipe(toArray())
-					.subscribe(
-						sessions => res.send(sessions),
-						error => {
-							console.log(error);
-							res.status(500).send(error)
+				const transitions = [
+					{
+						name: "Main Phase",
+						startTime: 0,
+					} as ContestPhaseTransition<ObjectID>,
+					...(contest.transitions ?? [])
+				].sort((a, b) => b.startTime - a.startTime);
+
+				concat(
+					of(null as never),
+					this.getSessions(contest).pipe(
+						groupBy(session => transitions.findIndex(transition => session.scheduledTime > transition.startTime)),
+						mergeMap(phase => phase.pipe(
+							toArray(),
+							map(sessions => {
+								const transition = transitions[phase.key];
+								return {
+									transition,
+									data: {
+										startTime: transition.startTime,
+										name: transition.name,
+										sessions: sessions.sort((a, b) => a.scheduledTime - b.scheduledTime)
+									}
+								}
+							}),
+						))
+					),
+				).pipe(
+					pairwise(),
+					mergeScan((completePhase, [phase, next]) => {
+						const startingTotals = completePhase.sessions[completePhase.sessions.length - 1]?.aggregateTotals;
+						const rankedTeams = Object.entries(startingTotals)
+							.map(([team, score]) => ({ team, score }))
+							.sort((a, b) => b.score - a.score);
+
+						const allowedTeams = next.transition.teams?.top
+							? rankedTeams.slice(0, next.transition.teams.top)
+								.reduce((total, next) => (total[next.team] = true, total), {} as Record<string, true>)
+							: null;
+
+						for (const team of Object.keys(startingTotals)) {
+							if (allowedTeams && !(team in allowedTeams)) {
+								delete startingTotals[team];
+								continue;
+							}
+
+							if (next.transition.score?.half) {
+								startingTotals[team] = Math.floor(startingTotals[team] / 2);
+							}
 						}
-					);
+
+						return of({
+							...next.data,
+							sessions: next.data.sessions.reduce((total, next) => {
+								const aggregateTotals = { ...(total[total.length - 1]?.aggregateTotals ?? startingTotals) };
+								const filteredTotals = Object.entries(next.totals)
+									.filter(([key]) => !allowedTeams || key in allowedTeams)
+									.reduce((total, [key, value]) => (total[key] = value, total), {} as Record<string, number>);
+
+								for (const team in filteredTotals) {
+									if (aggregateTotals[team] == null) {
+										aggregateTotals[team] = 0;
+									}
+									aggregateTotals[team] += filteredTotals[team];
+								}
+
+								total.push({
+									...next,
+									totals: filteredTotals,
+									aggregateTotals,
+								})
+								return total;
+							}, [] as Session<ObjectID>[]),
+							aggregateTotals: startingTotals,
+						} as Phase<ObjectID>);
+					}, { sessions: [{ aggregateTotals: {} }] } as Phase<ObjectID>, 1),
+					toArray(),
+				).subscribe(phases => res.send(phases));
 			})
 		);
 
@@ -1544,6 +1618,80 @@ export class RestApi {
 				}
 				))
 
+			.put("/contests/:id/transitions",
+				param("id").isMongoId(),
+				body(nameofTransition("startTime")).isInt({ min: 0 }).not().isString(),
+				body(nameofTransition("name")).isString(),
+				body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
+				body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
+				withData<
+					Partial<store.ContestPhaseTransition> & {
+						id: string,
+					},
+					any,
+					Pick<store.ContestPhaseTransition<ObjectId>, "_id">
+				>(async (data, req, res) => {
+					const contest = await this.findContest(data.id);
+					if (!contest) {
+						res.status(404).send();
+						return;
+					}
+
+					const transition: ContestPhaseTransition<ObjectId> = {
+						_id: new ObjectId(),
+						startTime: data.startTime,
+						name: data.name,
+						score: data.score,
+						teams: data.teams,
+					}
+
+					if (contest.transitions) {
+						this.mongoStore.contestCollection.findOneAndUpdate(
+							{ _id: new ObjectId(data.id) },
+							{
+								$push: {
+									transitions: transition,
+								}
+							}
+						);
+					} else {
+						this.mongoStore.contestCollection.findOneAndUpdate(
+							{ _id: new ObjectId(data.id) },
+							{
+								$set: {
+									transitions: [transition],
+								}
+							}
+						);
+					}
+					res.send({ _id: transition._id });
+				})
+			)
+
+			.delete("/contests/:contestId/transitions/:id",
+				param("contestId").isMongoId(),
+				param("id").isMongoId(),
+				withData<{ contestId: string; id: string }, any, void>(async (data, req, res) => {
+					const contest = await this.findContest(data.contestId);
+					if (!contest) {
+						res.sendStatus(404);
+						return;
+					}
+
+					this.mongoStore.contestCollection.findOneAndUpdate({ _id: ObjectId.createFromHexString(data.contestId) },
+						{
+							$pull: {
+								transitions: {
+									_id: ObjectId.createFromHexString(data.id)
+								}
+							}
+						}
+					);
+
+					res.send();
+				})
+			)
+
 			.put('/players/',
 				body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
 				withData<Partial<store.Player<string | ObjectId>>, any, Store.Player<ObjectId>>(async (data, req, res) => {
@@ -1633,27 +1781,15 @@ export class RestApi {
 			of<store.Session<ObjectId>>(null)
 		).pipe(
 			pairwise(),
-			mergeScan((total, [session, nextSession]) =>
+			map(([session, nextSession]) =>
 				defer(() => from(this.getSessionSummary(contest, session, nextSession)))
 					.pipe(
 						map(totals => {
-							const aggregateTotals = { ...total.aggregateTotals };
-
-							for (const team in totals) {
-								if (aggregateTotals[team] == null) {
-									aggregateTotals[team] = 0;
-								}
-								aggregateTotals[team] += totals[team];
-							}
-
-							return {
-								...session,
-								totals,
-								aggregateTotals
-							};
+							return { ...session, totals, aggregateTotals: totals };
 						})
 					)
-				, { aggregateTotals: {} } as Session, 1),
+			),
+			mergeAll(),
 		);
 	}
 }

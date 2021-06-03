@@ -1,4 +1,5 @@
 import * as majsoul from "../../majsoul";
+import { ContestPhaseTransition } from "./ContestPhaseTransition";
 import { DrawStatus } from "./DrawStatus";
 import { Wind } from "./Wind";
 
@@ -121,6 +122,7 @@ export enum ContestType {
 export interface Contest<Id = any> extends Partial<majsoul.Contest> {
 	type?: ContestType;
 	_id: Id;
+	transitions?: ContestPhaseTransition<Id>[];
 	teams?: ContestTeam<Id>[];
 	anthem?: string;
 	tagline?: string;

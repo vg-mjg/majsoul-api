@@ -1,8 +1,9 @@
 import { Rest, Store } from "majsoul-api";
 
-export interface Contest extends Omit<Store.Contest<string>, "teams" > {
+export interface Contest extends Omit<Store.Contest<string>, "teams"> {
 	teams?: Record<string, Store.ContestTeam>;
 	sessionsById: Record<string, Rest.Session<string>>;
+	phases?: Rest.Phase[];
 	players?: Rest.ContestPlayer[];
 }
 

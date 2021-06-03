@@ -10,7 +10,7 @@ import * as dayjs from 'dayjs';
 defaults.color = "white";
 defaults.borderColor = "#666666";
 
-function createData(sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData {
+function createData(phase: Rest.Phase, sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData {
 	return {
 		labels: ["Start"].concat(sessions.map(session => {
 			if (session.name) {
@@ -27,7 +27,7 @@ function createData(sessions: Rest.Session[], teams: Record<string, Store.Contes
 				lineTension: 0.1,
 				backgroundColor: color,
 				borderColor: color,
-				data: [0].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
+				data: [(phase.aggregateTotals[team._id] ?? 0) / 1000].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
 				yAxisID: "y",
 			}
 		})
@@ -38,20 +38,24 @@ export function LeagueStandingChart(props: {
 	contest: Contest;
 	onSessionSelect?: (index: number) => void;
 }): JSX.Element {
-	if (props.contest?.sessionsById == null) {
+	if (props.contest?.phases == null) {
 		return null;
 	}
 
 	const now = Date.now();
 
-	const sessions = Object.values(props.contest.sessionsById ?? {}).filter(session => session.scheduledTime < now);
+	const activePhase = [...props.contest.phases]
+		.sort((a, b) => b.startTime - a.startTime)
+		.find(phase => phase.startTime < Date.now());
+
+	const sessions = activePhase?.sessions?.filter(session => session.scheduledTime < now);
 
 	const teams = props.contest?.teams;
 
 	return <Container className="bg-dark rounded text-white">
 		<Row className="px-2 pb-3 pt-4">
 			<Line
-				data={createData(sessions, teams)}
+				data={createData(activePhase, sessions, teams)}
 				options={{
 					animation: {
 						duration: 0
