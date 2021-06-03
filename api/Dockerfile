@@ -6,6 +6,8 @@ WORKDIR /build
 COPY ./package.json ./yarn.lock ./
 RUN yarn --frozen-lockfile
 COPY . ./
+RUN yarn run proto:fetch
+RUN yarn run proto:generate
 RUN yarn run tsc
 
 FROM base
