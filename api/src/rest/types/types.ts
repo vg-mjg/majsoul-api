@@ -22,7 +22,7 @@ export interface ContestPlayer<Id = any> extends Player<Id> {
 	}
 }
 
-export interface Phase<Id> {
+export interface Phase<Id = string> {
 	startTime: number;
 	name: string;
 	sessions: Session<Id>[];
