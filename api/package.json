@@ -26,7 +26,7 @@
 		"rxjs": "^6.5.5",
 		"syanten": "^1.5.0",
 		"uuid": "^3.3.3",
-		"ws": "^7.1.2"
+		"ws": "^7.4.6"
 	},
 	"devDependencies": {
 		"@types/cors": "^2.8.6",
