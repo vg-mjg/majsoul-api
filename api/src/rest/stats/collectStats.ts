@@ -160,7 +160,9 @@ function collectFirstStats(
 					if (win) {
 						const uraDora = win.han.filter(han => han === Han.Ura_Dora).length;
 						total.uraDora += uraDora;
-						total.riichi.uraHit++;
+						if (uraDora > 0) {
+							total.riichi.uraHit++;
+						}
 						if (win.han.find(han => han === Han.Ippatsu)) {
 							total.riichi.ippatsu++;
 						}
