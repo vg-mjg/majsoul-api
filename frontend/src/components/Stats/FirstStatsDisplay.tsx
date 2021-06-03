@@ -1,15 +1,12 @@
 import * as React from "react";
-import { Rest } from "majsoul-api";
-import { Pie } from "./utils/Chart";
+import { Pie } from "../utils/Chart";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { StatsVersion } from "majsoul-api/dist/rest/types/stats/StatsVersion";
-import { BaseStats } from "majsoul-api/dist/rest/types/stats/BaseStats";
 import { AgariCategories, FirstStats } from "majsoul-api/dist/rest/types/stats/FirstStats";
 import { css } from "astroturf";
 import clsx from "clsx";
-import * as globalStyles from "./styles.sass";
+import * as globalStyles from "../styles.sass";
 
 const styles = css`
 	.chartContainer {
@@ -145,6 +142,8 @@ enum StatsPageType {
 	Overall,
 	Wins,
 	Dealins,
+	Riichi,
+	Calls,
 }
 
 function SwapPageButton(props: {
@@ -157,7 +156,7 @@ function SwapPageButton(props: {
 	</div>
 }
 
-const FirstStatsDisplay = React.memo(function ({
+export const FirstStatsDisplay = React.memo(function ({
 	stats,
 }: {
 	stats: FirstStats['stats'];
@@ -174,6 +173,11 @@ const FirstStatsDisplay = React.memo(function ({
 			open: getAgariCategories(stats.dealins.open).reduce((total, next) => total + next.total, 0),
 			riichi: getAgariCategories(stats.dealins.riichi).reduce((total, next) => total + next.total, 0),
 		}
+
+		// const riichi = {
+		// 	won: stats.wins.riichi.total,
+		// 	draw:
+		// }
 
 		const dealingOpponentStats = getAgariCategories(stats.dealins).reduce((total, next) => {
 			total.dama += next.dama.total;
@@ -229,7 +233,22 @@ const FirstStatsDisplay = React.memo(function ({
 					},
 				],
 				centerColumn: {},
-				rightColumn: {}
+				rightColumn: {
+					fields: [
+						{
+							label: "Total Games",
+							value: stats.gamesPlayed.toString(),
+						},
+						{
+							label: "Average Rank",
+							value: twoDecimalPlaceRound(stats.totalRank / stats.gamesPlayed).toString(),
+						},
+						{
+							label: "Average Shanten",
+							value: twoDecimalPlaceRound(stats.totalHaipaiShanten / stats.totalHands).toString()
+						}
+					]
+				}
 			},
 			[StatsPageType.Dealins]: {
 				graphData: [
@@ -306,6 +325,117 @@ const FirstStatsDisplay = React.memo(function ({
 				],
 				centerColumn: {},
 				rightColumn: {}
+			},
+			[StatsPageType.Riichi]: {
+				graphData: [
+					{
+						label: "Won",
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.wins.riichi.total / stats.riichi.total),
+							color: GraphColor.Green,
+						}]
+					},
+					{
+						label: "Dealt In",
+						data: [{
+							value: twoDecimalPlaceRound(100 * dealinStats.riichi / stats.riichi.total),
+							color: GraphColor.Red,
+						}]
+					},
+					{
+						label: "Outskilled",
+						data: [{
+							value: twoDecimalPlaceRound(100 * (
+								stats.riichi.total
+								- stats.draws.riichi
+								- stats.wins.riichi.total
+								- dealinStats.riichi
+							) / stats.riichi.total),
+							color: GraphColor.Black,
+						}]
+					},
+					{
+						label: "Draw",
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.draws.riichi / stats.riichi.total),
+							color: GraphColor.White,
+						}]
+					},
+				],
+				centerColumn: {
+					title: "Riichi Result",
+					fields: [
+						{
+							label: "Riichi Rate",
+							value: twoDecimalPlaceRound(100 * stats.riichi.total / stats.totalHands).toString() + "%",
+						},
+					]
+				},
+				rightColumn: {
+					fields: [
+						{
+							label: "Ura Per Riichi Won",
+							value: twoDecimalPlaceRound(stats.uraDora / stats.wins.riichi.total).toString(),
+						},
+						{
+							label: "Riichi Won With Ura",
+							value: twoDecimalPlaceRound(100 * stats.riichi.uraHit / stats.wins.riichi.total).toString() + "%",
+						},
+						{
+							label: "Ippatsu Rate",
+							value: twoDecimalPlaceRound(100 * stats.riichi.ippatsu / stats.riichi.total).toString() + "%",
+						},
+						{
+							label: "First Riichi",
+							value: twoDecimalPlaceRound(100 * stats.riichi.first / stats.riichi.total).toString() + "%",
+						},
+						{
+							label: "Chased",
+							value: twoDecimalPlaceRound(100 * stats.riichi.chase / stats.riichi.total).toString() + "%",
+						},
+						{
+							label: "Was Chased",
+							value: twoDecimalPlaceRound(100 * stats.riichi.chased / stats.riichi.total).toString() + "%",
+						},
+					]
+				}
+			},
+			[StatsPageType.Calls]: {
+				graphData: [
+					{
+						label: "Call Rate",
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.calls.openedHands / stats.totalHands),
+							color: GraphColor.Red,
+						}]
+					},
+					{
+						label: "Riichi Rate",
+						data: [{
+							value: twoDecimalPlaceRound(100 * stats.riichi.total / stats.totalHands),
+							color: GraphColor.Green,
+						}]
+					},
+					{
+						label: "Closed",
+						data: [{
+							value: twoDecimalPlaceRound(100 * (
+								stats.totalHands
+								- stats.riichi.total
+								- stats.calls.openedHands
+							) / stats.totalHands),
+							color: GraphColor.Black,
+						}]
+					},
+				],
+				rightColumn: {
+					fields: [
+						{
+							label: "Calls / Opportunities",
+							value: twoDecimalPlaceRound(100 * stats.calls.total / stats.calls.opportunities).toString() + "%",
+						},
+					]
+				},
 			}
 		};
 	}, [stats]);
@@ -323,48 +453,3 @@ const FirstStatsDisplay = React.memo(function ({
 		</Row>
 	</Container>
 });
-
-function BaseStatsDisplay(props: { stats: BaseStats['stats'] }): JSX.Element {
-	if (!props.stats) {
-		return null;
-	}
-
-	return null;
-}
-
-interface StatsPlayerProps {
-	teamName?: string;
-	playerName?: string;
-}
-
-export function VersionedStatsDisplay(props: { stats: Rest.Stats }) {
-	if (props?.stats?.stats == null) {
-		return null;
-	}
-
-	switch (props.stats.version) {
-		case StatsVersion.None:
-			return <BaseStatsDisplay stats={props.stats.stats} />
-		case StatsVersion.First:
-			return <FirstStatsDisplay stats={props.stats.stats} />
-	}
-
-	return null;
-}
-
-export function Stats(props: { stats: Rest.Stats, onSelectTeam?: () => void } & StatsPlayerProps): JSX.Element {
-	return <Container className={clsx("p-0")}>
-		<Row>
-			<Col className="text-center">
-				<span
-					className={clsx("h5 font-weight-bold", globalStyles.linkDark)}
-					onClick={() => props.onSelectTeam()}
-				>{props.teamName}</span>&nbsp;
-				<span className="h5">{props.playerName}</span>
-			</Col>
-		</Row>
-		<Row>
-			<VersionedStatsDisplay stats={props.stats} />
-		</Row>
-	</Container>
-}

@@ -20,7 +20,7 @@ import { BsChevronCompactDown, BsChevronCompactUp, BsX } from 'react-icons/bs';
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
-import { Stats } from "./Stats";
+import { Stats } from "./Stats/Stats";
 import { fetchStats, StatsRequest } from "src/api/Contests";
 import * as globalStyles from "./styles.sass";
 
