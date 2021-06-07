@@ -1,3 +1,4 @@
+import { Store } from "../..";
 import { Session as StoreSession, GameResult as StoreGameResult, Player } from "../../store/types/types";
 
 export * from "./stats";
@@ -22,9 +23,17 @@ export interface ContestPlayer<Id = any> extends Player<Id> {
 	}
 }
 
-export interface Phase<Id = string> {
+export interface PhaseMetadata<Id = string> {
+	index: number;
 	startTime: number;
 	name: string;
+}
+
+export interface Phase<Id = string> extends PhaseMetadata<Id> {
 	sessions: Session<Id>[];
 	aggregateTotals?: Record<string, number>;
+}
+
+export interface Contest<Id = any> extends Store.Contest<Id> {
+	phases: PhaseMetadata[];
 }

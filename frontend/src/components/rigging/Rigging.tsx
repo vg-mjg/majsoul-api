@@ -9,7 +9,6 @@ import Col from "react-bootstrap/Col";
 import { LinkContainer } from 'react-router-bootstrap';
 import { Route, Switch, useRouteMatch } from "react-router-dom";
 import { Session } from "../Session";
-import { Teams } from "../Teams";
 import { dispatchLoggedOutAction } from "src/actions/rigging/LoggedOutAction";
 
 function RiggingSessions(props: {}): JSX.Element {
@@ -22,7 +21,7 @@ function RiggingSessions(props: {}): JSX.Element {
 
 	return <Container>
 		{sessions.map(session => <Row key={session._id} className="mt-2">
-			<Session session={session}/>
+			<Session session={session} />
 		</Row>)}
 	</Container>
 }
@@ -63,10 +62,7 @@ export function Rigging(): JSX.Element {
 		<Row>
 			<Switch>
 				<Route path={`${routeMatch.url}/sessions`}>
-					<RiggingSessions/>
-				</Route>
-				<Route path={`${routeMatch.url}/teams`}>
-					<Teams/>
+					<RiggingSessions />
 				</Route>
 			</Switch>
 		</Row>

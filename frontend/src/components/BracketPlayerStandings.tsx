@@ -1,17 +1,17 @@
 import * as React from "react";
 import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
 import { useHistory, useLocation } from "react-router-dom";
 import { PlayerStandings } from "./PlayerStandings";
+import { TabNavigator } from "./TabNavigator";
 
-const brackets: Record<string, Array<string>> = {
+export const brackets: Record<string, Array<string>> = {
 	"achiga": [
 		"Achiga",
 		"Shiraitodai",
 		"Senriyama",
 		"Shindouji",
 	],
-	"kiyosumi":	[
+	"kiyosumi": [
 		"Kiyosumi",
 		"Eisui",
 		"Miyamori",
@@ -23,29 +23,29 @@ export function BracketPlayerStandings(props: { contestId: string; }): JSX.Eleme
 	const history = useHistory();
 	const hash = useLocation().hash.toLowerCase().substr(1);
 	const activeSide = hash in brackets ? hash : "achiga";
-
 	return <Container>
-		<Nav
-			justify
-			variant="tabs"
-			activeKey={activeSide}
-			className="rounded-top text-light"
-			style={{
-				backgroundColor: "black"
-			}}
-			onSelect={(key: string) => {
+		<TabNavigator
+			tabs={[
+				{
+					key: "achiga",
+					title: "阿知賀側"
+				},
+				{
+					key: "kiyosumi",
+					title: "清澄側"
+				},
+			]}
+			activeTab={activeSide}
+			onTabChanged={(key) => {
 				history.push({
 					hash: `#${key}`,
 				});
 			}}
-		>
-			<Nav.Item className="rounded-0">
-				<Nav.Link eventKey="achiga" className="h3 m-0 rounded-0">阿知賀側</Nav.Link>
-			</Nav.Item>
-			<Nav.Item className="rounded-0">
-				<Nav.Link eventKey="kiyosumi" className="h3 m-0 rounded-0">清澄側</Nav.Link>
-			</Nav.Item>
-		</Nav>
-		<PlayerStandings contestId={props.contestId} allowedTeams={brackets[activeSide]} ignoredGames={activeSide === "achiga" ? 0 : 4} />
+		/>
+		<PlayerStandings
+			contestId={props.contestId}
+			allowedTeams={brackets[activeSide]}
+			ignoredGames={activeSide === "achiga" ? 0 : 4}
+		/>
 	</Container>;
 }

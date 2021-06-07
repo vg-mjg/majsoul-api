@@ -183,8 +183,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 					state,
 					action.contestId,
 					{
-						sessionsById: toRecord(action.phases.reduce((total, next) => total.concat(next.sessions), [] as Rest.Session[]), "_id"),
-						phases: action.phases,
+						sessionsById: toRecord(action.sessions, "_id"),
 					}
 				)
 			}

@@ -1,6 +1,5 @@
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
-
 export interface GetRiggingTokenOptions {
 	username: string;
 	password: string;
@@ -20,7 +19,7 @@ export async function getRiggingToken(params: GetRiggingTokenOptions): Promise<s
 	return (response.status !== 200) ? null : await response.text();
 }
 
-export async function fetchGoogleAuthUrl(token: string, state?: string): Promise<{authUrl: string}> {
+export async function fetchGoogleAuthUrl(token: string, state?: string): Promise<{ authUrl: string }> {
 	const url = buildApiUrl(`rigging/google`);
 
 	const queryParameters: Record<string, string> = {};

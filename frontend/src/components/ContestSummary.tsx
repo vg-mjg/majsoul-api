@@ -18,14 +18,16 @@ import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import { fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
-import { fetchContestImages, fetchContestSummary } from "src/api/Contests";
+import { fetchContestImages, fetchContestSummary, getPhase } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { fetchContestSessions } from "src/api/Sessions";
 import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
-import { Link } from "react-router-dom";
+import { Link, useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 import { Rest } from "majsoul-api";
 import { ContestHeader } from "./ContestHeader";
+import Nav from "react-bootstrap/Nav";
+import { TabNavigator } from "./TabNavigator";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -144,9 +146,30 @@ function SessionSection(props: {
 	</>
 }
 
-function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
+function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 	const dispatch = useDispatch();
-	const { contest } = props;
+
+	const history = useHistory();
+	const hash = parseInt(useLocation().hash.toLowerCase().substr(1));
+	const selectedPhaseIndex = Math.max(
+		0,
+		Math.min(
+			(contest.phases?.length ?? 1) - 1,
+			Number.isNaN(hash)
+				? [...contest.phases ?? []].reverse().find(phase => phase.startTime < Date.now()).index ?? 0
+				: hash
+		)
+	);
+
+	const [selectedPhase, setSelectedPhase] = React.useState<Rest.Phase>();
+
+	React.useEffect(() => {
+		if (!contest.phases) {
+			return;
+		}
+
+		getPhase(contest._id, selectedPhaseIndex).then(phase => setSelectedPhase(phase));
+	}, [contest.phases, selectedPhaseIndex]);
 
 	React.useEffect(() => {
 		fetchContestSessions(contest._id)
@@ -157,10 +180,7 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 			));
 	}, [dispatch, contest._id]);
 
-	const sessions = React.useMemo(() =>
-		Object.values(contest.sessionsById ?? {})
-			.sort((a, b) => a.scheduledTime - b.scheduledTime)
-		, [contest.sessionsById]);
+	const sessions = selectedPhase?.sessions ?? [];
 
 	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
 	const nextSession = sessions[nextSessionIndex];
@@ -182,12 +202,32 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 		setSelectedSessionIndex(index - 1)
 	}, [setSelectedSessionIndex]);
 
+	console.log(contest.phases);
+
 	return <>
+		{ contest.phases && contest.phases.length > 1 &&
+			<Row>
+				<Col className="p-0 overflow-hidden rounded">
+					<TabNavigator
+						tabs={contest.phases.map(phase => ({
+							key: phase.index.toString(),
+							title: phase.name,
+						}))}
+						onTabChanged={(key) => {
+							history.push({
+								hash: `#${key}`,
+							});
+						}}
+						activeTab={selectedPhaseIndex.toString()}
+					/>
+				</Col>
+			</Row>
+		}
 		<Row className="mt-3">
-			<Teams contest={contest} session={currentSession} />
+			<Teams contestId={contest._id} teams={contest.teams} teamScores={currentSession?.aggregateTotals} />
 		</Row>
 		<Row className="mt-3">
-			<LeagueStandingChart contest={contest} onSessionSelect={onSessionSelect} />
+			<LeagueStandingChart phase={selectedPhase} teams={contest.teams} onSessionSelect={onSessionSelect} />
 		</Row>
 		<SessionSection session={sessions[selectedSessionIndex]} title="Selected Session" />
 		<SessionSection session={currentSessionComplete ? null : currentSession} title="Current Session" />
@@ -200,5 +240,3 @@ function LeagueContestSummary(props: { contest: Contest }): JSX.Element {
 		</Row>
 	</>
 }
-
-

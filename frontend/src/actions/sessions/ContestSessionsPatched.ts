@@ -6,7 +6,7 @@ export interface SessionPatchedAction extends Action<ActionType.SessionPatched> 
 	session: Store.Session;
 }
 
-export function  dispatchSessionPatchedAction(dispatch: Dispatch<SessionPatchedAction>, session: Store.Session): void {
+export function dispatchSessionPatchedAction(dispatch: Dispatch<SessionPatchedAction>, session: Store.Session): void {
 	dispatch({
 		type: ActionType.SessionPatched,
 		session

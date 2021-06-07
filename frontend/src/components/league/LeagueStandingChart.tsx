@@ -35,27 +35,24 @@ function createData(phase: Rest.Phase, sessions: Rest.Session[], teams: Record<s
 }
 
 export function LeagueStandingChart(props: {
-	contest: Contest;
+	phase: Rest.Phase;
+	teams: Record<string, Store.ContestTeam>;
 	onSessionSelect?: (index: number) => void;
 }): JSX.Element {
-	if (props.contest?.phases == null) {
+	if (!props.phase) {
 		return null;
 	}
 
 	const now = Date.now();
 
-	const activePhase = [...props.contest.phases]
-		.sort((a, b) => b.startTime - a.startTime)
-		.find(phase => phase.startTime < Date.now());
+	const sessions = props.phase.sessions?.filter(session => session.scheduledTime < now);
 
-	const sessions = activePhase?.sessions?.filter(session => session.scheduledTime < now);
-
-	const teams = props.contest?.teams;
+	const teams = props.teams;
 
 	return <Container className="bg-dark rounded text-white">
 		<Row className="px-2 pb-3 pt-4">
 			<Line
-				data={createData(activePhase, sessions, teams)}
+				data={createData(props.phase, sessions, teams)}
 				options={{
 					animation: {
 						duration: 0

@@ -28,7 +28,7 @@ export function createContest(token: string): Promise<Pick<Store.Contest<string>
 	).then(response => response.json())
 }
 
-export function patchContest(token: string, id: string, contest: Partial<Store.Contest<string>>): Promise<Omit<Store.Contest, "teams" | "session">> {
+export function patchContest(token: string, id: string, contest: Partial<Rest.Contest<string>>): Promise<Omit<Rest.Contest, "teams" | "session">> {
 	const url = buildApiUrl(`contests/${id}`);
 	return fetch(
 		url.toString(),
@@ -41,6 +41,36 @@ export function patchContest(token: string, id: string, contest: Partial<Store.C
 			body: JSON.stringify({
 				...contest,
 			})
+		})
+		.then(response => response.json())
+}
+
+export function getPhases(id: string): Promise<Rest.Phase[]> {
+	const url = buildApiUrl(`contests/${id}/phases`);
+	return fetch(
+		url.toString(),
+		{
+			method: "GET",
+		})
+		.then(response => response.json())
+}
+
+export function getPhase(id: string, phaseIndex: number): Promise<Rest.Phase> {
+	const url = buildApiUrl(`contests/${id}/phases/${phaseIndex}`);
+	return fetch(
+		url.toString(),
+		{
+			method: "GET",
+		})
+		.then(response => response.json())
+}
+
+export function getActivePhase(id: string): Promise<Rest.Phase> {
+	const url = buildApiUrl(`contests/${id}/phases/active`);
+	return fetch(
+		url.toString(),
+		{
+			method: "GET",
 		})
 		.then(response => response.json())
 }

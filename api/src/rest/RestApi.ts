@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -292,6 +292,12 @@ const seededPlayerNames: Record<string, string[]> = {
 	]
 }
 
+interface PhaseInfo {
+	contest: store.Contest<ObjectID>,
+	transitions: ContestPhaseTransition<ObjectID>[],
+	phases: PhaseMetadata<ObjectID>[]
+}
+
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
 		return new Promise<Buffer>((res, rej) => fs.readFile(path.join(RestApi.keyLocation, keyName), (err, key) => {
@@ -353,19 +359,20 @@ export class RestApi {
 				.catch(error => res.status(500).send(error));
 		}));
 
-		this.app.get<any, store.Contest<ObjectId>>('/contests/:id', (req, res) => {
-			this.findContest(req.params.id).then((contest) => {
+		this.app.get('/contests/:id',
+			param("id").isMongoId(),
+			withData<{ id: string }, any, Contest<ObjectId>>(async (data, req, res) => {
+				const contest = await this.findContest(data.id);
 				if (contest === null) {
 					res.status(404).send();
 					return;
 				}
-				res.send(contest);
+
+				const { phases } = await this.getPhases(data.id);
+
+				res.send({ ...contest, phases });
 			})
-				.catch(error => {
-					console.log(error);
-					res.status(500).send(error)
-				});
-		});
+		);
 
 		this.app.get('/contests/:id/images',
 			param("id").isMongoId(),
@@ -414,101 +421,74 @@ export class RestApi {
 			})
 		);
 
-		this.app.get('/contests/:id/sessions',
+		this.app.get('/contests/:id/phases',
 			param("id").isMongoId(),
 			withData<{ id: string }, any, Phase<ObjectId>[]>(async (data, req, res) => {
-				const contest = await this.findContest(data.id, {
-					projection: {
-						_id: true,
-						'teams._id': true,
-						'teams.players._id': true,
-						transitions: true,
-					}
-				});
+				const phaseInfo = await this.getPhases(data.id);
 
-				if (contest == null) {
+				if (!phaseInfo.contest) {
 					res.sendStatus(404);
 					return;
 				}
 
-				const transitions = [
-					{
-						name: "Main Phase",
-						startTime: 0,
-					} as ContestPhaseTransition<ObjectID>,
-					...(contest.transitions ?? [])
-				].sort((a, b) => b.startTime - a.startTime);
+				const phases = await this.getPhaseData(phaseInfo);
+				res.send(phases);
+			})
+		);
 
-				concat(
-					of(null as never),
-					this.getSessions(contest).pipe(
-						groupBy(session => transitions.findIndex(transition => session.scheduledTime > transition.startTime)),
-						mergeMap(phase => phase.pipe(
-							toArray(),
-							map(sessions => {
-								const transition = transitions[phase.key];
-								return {
-									transition,
-									data: {
-										startTime: transition.startTime,
-										name: transition.name,
-										sessions: sessions.sort((a, b) => a.scheduledTime - b.scheduledTime)
-									}
-								}
-							}),
-						))
-					),
-				).pipe(
-					pairwise(),
-					mergeScan((completePhase, [phase, next]) => {
-						const startingTotals = completePhase.sessions[completePhase.sessions.length - 1]?.aggregateTotals;
-						const rankedTeams = Object.entries(startingTotals)
-							.map(([team, score]) => ({ team, score }))
-							.sort((a, b) => b.score - a.score);
+		this.app.get('/contests/:id/phases/active',
+			param("id").isMongoId(),
+			withData<{ id: string, phaseIndex: string }, any, Phase<ObjectId>>(async (data, req, res) => {
+				const phaseInfo = await this.getPhases(data.id);
 
-						const allowedTeams = next.transition.teams?.top
-							? rankedTeams.slice(0, next.transition.teams.top)
-								.reduce((total, next) => (total[next.team] = true, total), {} as Record<string, true>)
-							: null;
+				if (!phaseInfo.contest) {
+					res.sendStatus(404);
+					return;
+				}
 
-						for (const team of Object.keys(startingTotals)) {
-							if (allowedTeams && !(team in allowedTeams)) {
-								delete startingTotals[team];
-								continue;
-							}
+				const now = Date.now();
 
-							if (next.transition.score?.half) {
-								startingTotals[team] = Math.floor(startingTotals[team] / 2);
-							}
-						}
+				const phases = await this.getPhaseData(phaseInfo);
+				res.send(phases.reverse().find(phase => phase.startTime < now));
+			})
+		);
 
-						return of({
-							...next.data,
-							sessions: next.data.sessions.reduce((total, next) => {
-								const aggregateTotals = { ...(total[total.length - 1]?.aggregateTotals ?? startingTotals) };
-								const filteredTotals = Object.entries(next.totals)
-									.filter(([key]) => !allowedTeams || key in allowedTeams)
-									.reduce((total, [key, value]) => (total[key] = value, total), {} as Record<string, number>);
+		this.app.get('/contests/:id/phases/:phaseIndex',
+			param("id").isMongoId(),
+			param("phaseIndex").isInt({ min: 0 }),
+			withData<{ id: string, phaseIndex: string }, any, Phase<ObjectId>>(async (data, req, res) => {
+				const phaseInfo = await this.getPhases(data.id);
 
-								for (const team in filteredTotals) {
-									if (aggregateTotals[team] == null) {
-										aggregateTotals[team] = 0;
-									}
-									aggregateTotals[team] += filteredTotals[team];
-								}
+				if (!phaseInfo.contest) {
+					res.sendStatus(404);
+					return;
+				}
 
-								total.push({
-									...next,
-									totals: filteredTotals,
-									aggregateTotals,
-								})
-								return total;
-							}, [] as Session<ObjectID>[]),
-							aggregateTotals: startingTotals,
-						} as Phase<ObjectID>);
-					}, { sessions: [{ aggregateTotals: {} }] } as Phase<ObjectID>, 1),
-					toArray(),
-				).subscribe(phases => res.send(phases));
+				const index = parseInt(data.phaseIndex);
+				if (index >= phaseInfo.phases.length) {
+					res.sendStatus(400);
+					return;
+				}
+
+				const phases = await this.getPhaseData(phaseInfo);
+				res.send(phases.find(phase => phase.index === index));
+			})
+		);
+
+		this.app.get('/contests/:id/sessions',
+			param("id").isMongoId(),
+			withData<{ id: string }, any, Session<ObjectId>[]>(async (data, req, res) => {
+				const phaseInfo = await this.getPhases(data.id);
+
+				if (!phaseInfo.contest) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const phases = await this.getPhaseData(phaseInfo);
+				res.send(phases.reduce((total, next) =>
+					total.concat(next.sessions), [])
+				);
 			})
 		);
 
@@ -1791,5 +1771,116 @@ export class RestApi {
 			),
 			mergeAll(),
 		);
+	}
+
+	private async getPhases(contestId: string): Promise<PhaseInfo> {
+		const contest = await this.findContest(contestId, {
+			projection: {
+				_id: true,
+				'teams._id': true,
+				'teams.players._id': true,
+				transitions: true,
+			}
+		});
+
+		if (contest == null) {
+			return null;
+		}
+
+		const transitions = [
+			{
+				name: "Main Phase",
+				startTime: 0,
+			} as ContestPhaseTransition<ObjectID>,
+			...(contest.transitions ?? [])
+		].sort((a, b) => a.startTime - b.startTime);
+
+		return {
+			contest,
+			transitions,
+			phases: transitions.map(({ startTime, name }, index) => ({
+				index,
+				name,
+				startTime
+			}))
+		};
+	}
+
+	private async getPhaseData({
+		contest,
+		transitions,
+		phases
+	}: PhaseInfo): Promise<Phase<ObjectID>[]> {
+		const phasesReverseChronological = [...phases].reverse();
+		return this.getSessions(contest).pipe(
+			groupBy(
+				session => phasesReverseChronological
+					.find(transition => session.scheduledTime > transition.startTime)?.index
+					?? phasesReverseChronological.length - 1
+			),
+			map(phase => phase.pipe(
+				toArray(),
+				map(sessions => ({
+					transition: transitions[phase.key],
+					phase: phases[phase.key],
+					sessions: sessions.sort((a, b) => a.scheduledTime - b.scheduledTime),
+				})),
+			)),
+			mergeAll(),
+			toArray(),
+			map(phases => phases.sort((a, b) => a.phase.index - b.phase.index)),
+			mergeAll(),
+			mergeScan((completePhase, phase) => {
+				const startingTotals = {
+					...completePhase.sessions[completePhase.sessions.length - 1]?.aggregateTotals ?? {}
+				};
+
+				const rankedTeams = Object.entries(startingTotals)
+					.map(([team, score]) => ({ team, score }))
+					.sort((a, b) => b.score - a.score);
+
+				const allowedTeams = phase.transition.teams?.top
+					? rankedTeams.slice(0, phase.transition.teams.top)
+						.reduce((total, next) => (total[next.team] = true, total), {} as Record<string, true>)
+					: null;
+
+				for (const team of Object.keys(startingTotals)) {
+					if (allowedTeams && !(team in allowedTeams)) {
+						delete startingTotals[team];
+						continue;
+					}
+
+					if (phase.transition.score?.half) {
+						startingTotals[team] = Math.floor(startingTotals[team] / 2);
+					}
+				}
+
+				return of({
+					...phase.phase,
+					sessions: phase.sessions.reduce((total, next) => {
+						const aggregateTotals = { ...(total[total.length - 1]?.aggregateTotals ?? startingTotals) };
+						const filteredTotals = Object.entries(next.totals)
+							.filter(([key]) => !allowedTeams || key in allowedTeams)
+							.reduce((total, [key, value]) => (total[key] = value, total), {} as Record<string, number>);
+
+						for (const team in filteredTotals) {
+							if (aggregateTotals[team] == null) {
+								aggregateTotals[team] = 0;
+							}
+							aggregateTotals[team] += filteredTotals[team];
+						}
+
+						total.push({
+							...next,
+							totals: filteredTotals,
+							aggregateTotals,
+						})
+						return total;
+					}, [] as Session<ObjectID>[]),
+					aggregateTotals: startingTotals,
+				} as Phase<ObjectID>);
+			}, { sessions: [{ aggregateTotals: {} }] } as Phase<ObjectID>, 1),
+			toArray(),
+		).toPromise();
 	}
 }

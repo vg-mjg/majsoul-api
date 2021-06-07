@@ -4,13 +4,13 @@ import { ActionType } from "../ActionType";
 
 export interface ContestSessionsRetrievedAction extends Action<ActionType.ContestSessionsRetrieved> {
 	contestId: string;
-	phases: Rest.Phase[];
+	sessions: Rest.Session[];
 }
 
-export function dispatchContestSessionsRetrievedAction(dispatch: Dispatch<ContestSessionsRetrievedAction>, contestId: string, phases: Rest.Phase[]): void {
+export function dispatchContestSessionsRetrievedAction(dispatch: Dispatch<ContestSessionsRetrievedAction>, contestId: string, sessions: Rest.Session[]): void {
 	dispatch({
 		contestId,
 		type: ActionType.ContestSessionsRetrieved,
-		phases
+		sessions
 	});
 }

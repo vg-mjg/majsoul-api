@@ -20,7 +20,7 @@ export async function createSession(token: string, contestId: string): Promise<S
 }
 
 
-export function fetchContestSessions(contestId: string): Promise<Rest.Phase[]> {
+export function fetchContestSessions(contestId: string): Promise<Rest.Session[]> {
 	return fetch(buildApiUrl(`contests/${contestId}/sessions`).toString())
 		.then(response => response.json());
 }
@@ -40,7 +40,7 @@ export function patchSession(token: string, session: Partial<Store.Session>): Pr
 		.then(response => response.json());
 }
 
-export async function deleteTeam(token: string, sessionId: string): Promise<void> {
+export async function deleteSession(token: string, sessionId: string): Promise<void> {
 	const url = buildApiUrl(`sessions/${sessionId}/`);
 	const response = await fetch(
 		url.toString(),

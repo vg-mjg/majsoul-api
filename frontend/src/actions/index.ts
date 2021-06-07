@@ -8,7 +8,7 @@ import { ContestPlayersRetrievedAction } from "./players/ContestPlayersRetrieved
 import { LogOutAction } from "./rigging/LoggedOutAction";
 import { RiggingTokenAcquired } from "./rigging/RiggingTokenAcquired";
 import { ContestSessionsRetrievedAction } from "./sessions/ContestSessionsRetrievedAction";
-import { SessionPatchedAction } from "./sessions/ContestSessionsRetrievedAction copy";
+import { SessionPatchedAction } from "./sessions/ContestSessionsPatched";
 import { TeamCreatedAction } from "./teams/TeamCreatedAction";
 import { TeamDeletedAction } from "./teams/TeamDeletedAction";
 import { TeamPatchedAction } from "./teams/TeamPatchedAction";

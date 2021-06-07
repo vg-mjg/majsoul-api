@@ -434,8 +434,9 @@ interface TeamData extends Store.ContestTeam<string> {
 }
 
 export function Teams(props: {
-	contest?: Contest;
-	session?: Rest.Session;
+	contestId: string;
+	teams: Record<string, Store.ContestTeam>;
+	teamScores: Record<string, number>;
 	teamLimit?: number;
 }): JSX.Element {
 	const { teamLimit = 8 } = props;
@@ -444,7 +445,7 @@ export function Teams(props: {
 	const dispatch = useDispatch();
 
 	const addTeamOnClick = React.useCallback(() => {
-		const id = props.contest._id;
+		const id = props.contestId;
 		if (id == null) {
 			return;
 		}
@@ -458,8 +459,8 @@ export function Teams(props: {
 		setViewDetails(accordionKey === "0");
 	}, [setViewDetails]);
 
-	const teams = props.contest?.teams;
-	if (!teams || !props.session) {
+	const teams = props.teams;
+	if (!teams || !props.teamScores) {
 		return <Container className="rounded bg-dark text-light px-3 py-4">
 			<Row>
 				<Col className="text-center">
@@ -469,13 +470,10 @@ export function Teams(props: {
 		</Container>
 	}
 
-	const activePhase = [...(props.contest.phases ?? [])].sort((a, b) => b.startTime - a.startTime)[0];
-	const activeTeams = Object.keys(activePhase?.aggregateTotals ?? {});
-
 	const teamsArray: TeamData[] =
 		Object.values(teams)
-			.filter(team => activeTeams.indexOf(team._id) >= 0)
-			.map(team => ({ ...team, total: props.session.aggregateTotals[team._id] }))
+			.filter(team => team._id in props.teamScores)
+			.map(team => ({ ...team, total: props.teamScores[team._id] }))
 			.sort((a, b) => b.total - a.total)
 			.map((team, placing) => ({ ...team, placing }));
 
@@ -483,7 +481,7 @@ export function Teams(props: {
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		<TeamList
-			contestId={props.contest._id}
+			contestId={props.contestId}
 			maxPlaceLength={maxPlaceLength}
 			teams={teamsArray.slice(0, teamLimit)}
 		/>
@@ -495,7 +493,7 @@ export function Teams(props: {
 		>
 			<Accordion.Collapse eventKey="0">
 				<TeamList
-					contestId={props.contest._id}
+					contestId={props.contestId}
 					maxPlaceLength={maxPlaceLength}
 					teams={teamsArray.slice(teamLimit)}
 				/>

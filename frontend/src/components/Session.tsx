@@ -18,7 +18,7 @@ import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import clsx from "clsx";
 import { TextField } from "./utils/TextField";
 import { patchSession } from "src/api/Sessions";
-import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsRetrievedAction copy";
+import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsPatched";
 import * as dayjs from "dayjs";
 import { css } from "astroturf";
 
@@ -88,11 +88,11 @@ export function Session(props: {
 			.filter(([key, value]) => key !== "-1")
 			.reduce((prev, next) => Math.max(prev, next.length), 0);
 
-		return indexedGames.reduce((total, next, index)=> (
+		return indexedGames.reduce((total, next, index) => (
 			total[
-				next.matchIndex < 0
-					? mostGames * 2
-					: next.index * 2 + next.matchIndex
+			next.matchIndex < 0
+				? mostGames * 2
+				: next.index * 2 + next.matchIndex
 			] = next,
 			total
 		), new Array<Rest.GameResult<string>>(mostGames * 2).fill(null))
@@ -209,8 +209,8 @@ export function Session(props: {
 				>
 					<Accordion.Collapse eventKey="0">
 						<Container className="p-0 pb-2">
-							{ detailsOpen && <>
-								{ props.session.plannedMatches?.length > 0 && <>
+							{detailsOpen && <>
+								{props.session.plannedMatches?.length > 0 && <>
 									<Row className="no-gutters">
 										<Col className="px-2">
 											<div className="h5"><u>Matches</u></div>
@@ -218,25 +218,25 @@ export function Session(props: {
 									</Row>
 									<Row className="no-gutters">
 										{props.session.plannedMatches.map((match, index) => <Col key={index}>
-											<Match match={match} contestId={props.session.contestId} totals={hasStarted ? props.session.totals : null} aggregateTotals={props.session.aggregateTotals}/>
+											<Match match={match} contestId={props.session.contestId} totals={hasStarted ? props.session.totals : null} aggregateTotals={props.session.aggregateTotals} />
 										</Col>)}
 									</Row>
 								</>}
-								{ hasStarted && <>
+								{hasStarted && <>
 									<Row className="no-gutters">
 										<Col className="px-2">
 											<div className="h5"><u>Games</u></div>
 										</Col>
 									</Row>
 									<Row className="no-gutters">
-										{ gamesFetchedStatus === GamesFetchStatus.Fetched
+										{gamesFetchedStatus === GamesFetchStatus.Fetched
 											? games.length === 0
 												? <Col className="text-center">
 													<div className={clsx("h4 font-weight-bold m-0", props.forceDetails ? "pb-4" : "pb-1")}>未だ無し</div>
 												</Col>
 												: orderedGames.map((game, index) => <React.Fragment key={index}>
-													{ game == null
-														? <Col style={{minWidth: "auto"}} className="d-flex align-items-stretch">
+													{game == null
+														? <Col style={{ minWidth: "auto" }} className="d-flex align-items-stretch">
 															<div
 																className={clsx(
 																	"mt-5 mx-2 mb-3 rounded d-flex align-items-center justify-content-center",
@@ -244,21 +244,21 @@ export function Session(props: {
 																		? "bg-secondary"
 																		: "bg-dark"
 																)}
-																style={{flex: 1}}
+																style={{ flex: 1 }}
 															>
 																<div className="h4 font-weight-bold m-0">
 																	試合未決
 																</div>
 															</div>
 														</Col>
-														: <Col style={{minWidth: "auto"}}>
-															<GameResultSummary game={game}/>
+														: <Col style={{ minWidth: "auto" }}>
+															<GameResultSummary game={game} />
 														</Col>
 													}
-													{(index % 2 == 1) && <div className="w-100"/>}
+													{(index % 2 == 1) && <div className="w-100" />}
 												</React.Fragment>)
 											: <Col className="text-center pb-2">
-												<LoadingSpinner/>
+												<LoadingSpinner />
 											</Col>
 										}
 									</Row>
@@ -267,33 +267,33 @@ export function Session(props: {
 						</Container>
 					</Accordion.Collapse>
 
-					{ props.forceDetails || <Accordion.Toggle
+					{props.forceDetails || <Accordion.Toggle
 						disabled as={Row}
 						eventKey="0"
 					>
 						<Col className="text-center pb-1">
 							{
 								viewDetails
-									? <BsChevronCompactUp color="white" size="30px"/>
-									: <BsChevronCompactDown color="white" size="30px"/>
+									? <BsChevronCompactUp color="white" size="30px" />
+									: <BsChevronCompactDown color="white" size="30px" />
 							}
 						</Col>
 					</Accordion.Toggle>}
 				</Accordion>
 			</Col>
 		</Row>
-		{ token &&
+		{token &&
 			<Row className="pb-3 px-3 justify-content-end">
 				<Col>
-				<TextField
-					id={`${props.session._id}-name-editor`}
-					fallbackValue={name ?? props.session.name}
-					placeholder="Session Name"
-					onChange={(oldValue, newValue) => {
-						setName(newValue);
-					}}
-				/>
-			</Col>
+					<TextField
+						id={`${props.session._id}-name-editor`}
+						fallbackValue={name ?? props.session.name}
+						placeholder="Session Name"
+						onChange={(oldValue, newValue) => {
+							setName(newValue);
+						}}
+					/>
+				</Col>
 				<Col md="auto">
 					<Button
 						disabled={
