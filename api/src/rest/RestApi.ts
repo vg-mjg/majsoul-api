@@ -1879,7 +1879,14 @@ export class RestApi {
 					}, [] as Session<ObjectID>[]),
 					aggregateTotals: startingTotals,
 				} as Phase<ObjectID>);
-			}, { sessions: [{ aggregateTotals: {} }] } as Phase<ObjectID>, 1),
+			}, {
+				sessions: [{
+					aggregateTotals: contest.teams.reduce(
+						(total, next) => (total[next._id.toHexString()] = 0, total),
+						{} as Record<string, number>
+					)
+				}]
+			} as Phase<ObjectID>, 1),
 			toArray(),
 		).toPromise();
 	}
