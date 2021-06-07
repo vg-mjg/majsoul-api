@@ -69,6 +69,7 @@ export function Session(props: {
 	);
 
 	const orderedGames = React.useMemo(() => {
+		const numberOfMatches = props.session.plannedMatches.length;
 		const matchMap: Record<number, number> = [];
 		const indexedGames = games.map((game) => {
 			const info = findPlayerInformation(game.players[0]._id, teams);
@@ -91,11 +92,11 @@ export function Session(props: {
 		return indexedGames.reduce((total, next, index) => (
 			total[
 			next.matchIndex < 0
-				? mostGames * 2
-				: next.index * 2 + next.matchIndex
+				? mostGames * numberOfMatches
+				: next.index * numberOfMatches + next.matchIndex
 			] = next,
 			total
-		), new Array<Rest.GameResult<string>>(mostGames * 2).fill(null))
+		), new Array<Rest.GameResult<string>>(mostGames * numberOfMatches).fill(null))
 	}, [teams, games]);
 
 	const dispatch = useDispatch();
