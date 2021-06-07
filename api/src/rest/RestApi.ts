@@ -1789,7 +1789,7 @@ export class RestApi {
 
 		const transitions = [
 			{
-				name: "決勝",
+				name: "予選",
 				startTime: 0,
 			} as ContestPhaseTransition<ObjectID>,
 			...(contest.transitions ?? [])
