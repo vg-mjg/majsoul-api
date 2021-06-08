@@ -71,7 +71,7 @@ export function ContestSummary(props: {
 	}, [contest?.name, i18n.language]);
 
 
-	if (imageRequestState !== RequestState.Complete || contestRequestState !== RequestState.Complete) {
+	if (imageRequestState !== RequestState.Complete && contestRequestState !== RequestState.Complete) {
 		return <Container className="text-center pt-4">
 			<LoadingSpinner color="black" />
 		</Container>;
