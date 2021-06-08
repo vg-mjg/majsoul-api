@@ -28,7 +28,7 @@ import "dayjs/locale/zh";
 import "dayjs/locale/es";
 import "dayjs/locale/nl";
 import { withLocale } from "../api/utils";
-import i18n from "./i18n";
+import { i18n } from "./i18n";
 dayjs.extend(advancedFormat);
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -55,8 +55,8 @@ function findSupportedLocale(): string {
 	return loc;
 }
 
-export function setDayjsLocale(locale?: "ja" | null) {
-	const loc = locale == null ? findSupportedLocale() : dayjs.locale("ja");
+export function setDayjsLocale(locale?: "ja" | "en") {
+	const loc = locale == "en" ? findSupportedLocale() : dayjs.locale("ja");
 	const calendarLocale = loc === "ja" ? "ja" : "en";
 
 	dayjs.updateLocale(loc, {

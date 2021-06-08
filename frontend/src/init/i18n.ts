@@ -3,6 +3,11 @@ import { initReactI18next } from 'react-i18next';
 import * as en from 'assets/i18n/en.json';
 import * as ja from 'assets/i18n/ja.json';
 
+const localeKey = "__riichi_locale";
+
+const savedLocale = localStorage.getItem(localeKey);
+const urlLocale = window.location.host.startsWith("jp.") ? "ja" : "en";
+
 i18n
 	.use(initReactI18next)
 	.init({
@@ -10,7 +15,7 @@ i18n
 			en: { translation: en },
 			ja: { translation: ja },
 		},
-		fallbackLng: "ja",
+		fallbackLng: savedLocale ?? urlLocale,
 		supportedLngs: ["en", "ja"],
 		debug: process.env.NODE_ENV !== "production",
 		interpolation: {
@@ -18,4 +23,9 @@ i18n
 		}
 	});
 
-export default i18n;
+
+export function saveLocale(locale: string) {
+	localStorage.setItem(localeKey, locale);
+}
+
+export { i18n };
