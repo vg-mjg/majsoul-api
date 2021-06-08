@@ -14,6 +14,7 @@ import { createContest, fetchContests } from "src/api/Contests";
 import { dispatchContestsIndexRetrievedAction } from "src/actions/contests/ContestsIndexRetrievedAction";
 import { dispatchContestCreatedAction } from "src/actions/contests/ContestCreatedAction";
 import { fetchGoogleAuthUrl } from "src/api/Rigging";
+import { useTranslation } from "react-i18next";
 
 export function ContestList(): JSX.Element {
 	const dispatch = useDispatch();
@@ -21,7 +22,7 @@ export function ContestList(): JSX.Element {
 	const [featuredContest, setFeaturedContest] = React.useState<string>(undefined);
 	const addContestFunc = useCallback(() =>
 		createContest(token).then(contest => dispatchContestCreatedAction(dispatch, contest))
-	, [dispatch, token]);
+		, [dispatch, token]);
 
 	const redirectForAuth = useCallback(
 		() => fetchGoogleAuthUrl(token).then(response => {
@@ -35,6 +36,12 @@ export function ContestList(): JSX.Element {
 		fetchConfig().then((config) => setFeaturedContest(config.featuredContest ?? ""));
 	}, [dispatch]);
 	const contests = useSelector((state: IState) => Object.values(state.contestsById));
+
+	const { t, i18n } = useTranslation();
+
+	React.useEffect(() => {
+		document.title = t("contestListTitle");
+	}, [i18n.language]);
 
 	const onFeaturedContestChanged = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
 		setFeaturedContest(event.target.value);

@@ -28,68 +28,10 @@ import { fetchContestSummary } from "./api/Contests";
 import { ContestSessions } from "./components/ContestSessions";
 import { writeGoogleAuthCode } from "./api/Rigging";
 
-import * as dayjs from "dayjs";
-import * as relativeTime from "dayjs/plugin/relativeTime";
-import * as utc from "dayjs/plugin/utc";
-import * as timezone from "dayjs/plugin/timezone";
-import * as calendar from "dayjs/plugin/calendar";
-import * as duration from "dayjs/plugin/duration";
-import * as localizedFormat from "dayjs/plugin/localizedFormat";
-import * as localeData from "dayjs/plugin/localeData";
-import * as updateLocale from "dayjs/plugin/updateLocale";
-import * as advancedFormat from "dayjs/plugin/advancedFormat";
-import "dayjs/locale/en";
-import "dayjs/locale/en-nz";
-import "dayjs/locale/en-ca";
-import "dayjs/locale/en-au";
-import "dayjs/locale/en-gb";
-import "dayjs/locale/ru";
-import "dayjs/locale/it";
-import "dayjs/locale/fr";
-import "dayjs/locale/fr-ca";
-import "dayjs/locale/fi";
-import "dayjs/locale/sv";
-import "dayjs/locale/pt-br";
-import "dayjs/locale/pt";
-import "dayjs/locale/de";
-import "dayjs/locale/tl-ph";
-import "dayjs/locale/ja";
-import "dayjs/locale/zh";
-import "dayjs/locale/es";
-import "dayjs/locale/nl";
-import { withLocale } from "./api/utils";
-dayjs.extend(advancedFormat);
-dayjs.extend(relativeTime);
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(calendar);
-dayjs.extend(duration);
-dayjs.extend(localizedFormat);
-dayjs.extend(localeData);
-dayjs.extend(updateLocale);
-
-let loc;
-for (const locale of navigator.languages) {
-	loc = locale.toLowerCase();
-	if (loc === dayjs.locale(loc)) {
-		break;
-	}
-}
-
-if (loc === "en" && !dayjs.tz.guess().startsWith("America")) {
-	loc = dayjs.locale("en-gb");
-}
-
-dayjs.updateLocale(loc, {
-	calendar: {
-		lastDay: withLocale("en", "[Yesterday at] LT"),
-		sameDay: withLocale("en", "[Today at] LT"),
-		nextDay: withLocale("en", "[Tomorrow at] LT"),
-		lastWeek: withLocale("en", "[Last] dddd [at] LT"),
-		nextWeek: withLocale("en", "dddd [at] LT"),
-		sameElse: 'L'
-	}
-});
+import "./init/dayjs";
+import "./init/i18n";
+import { useTranslation } from "react-i18next";
+import clsx from "clsx";
 
 function updatedContestRecord(state: IState, contestId: string, contest: Partial<Contest>): {
 	contestsById: Record<string, Contest>,
@@ -311,10 +253,6 @@ function LatestContestSummary(): JSX.Element {
 		});
 	}, [dispatch]);
 
-	if (contestId == null) {
-		return <div>Loading...</div>;
-	}
-
 	return <ContestSummary contestId={contestId} />
 }
 
@@ -336,6 +274,15 @@ function GoogleAuthReceiver(): JSX.Element {
 		}
 	}, [token, code]);
 	return <Redirect to="/" />
+}
+
+function LanguageSelector(): JSX.Element {
+	const { i18n } = useTranslation();
+	return <div className={clsx("text-dark", styles.linkDark, styles.linkUnderline)} onClick={() => {
+		i18n.changeLanguage(i18n.language === "jp" ? "en" : "jp");
+	}}>
+		{i18n.language === "jp" ? "English" : "日本語"}
+	</div>;
 }
 
 ReactDOM.render(
@@ -376,6 +323,7 @@ ReactDOM.render(
 							<Col md="auto"><a className="text-dark" href="https://repo.riichi.moe/">Repo</a></Col>
 							<Col md="auto"><a className="text-dark" href="https://github.com/riichinomics/majsoul-api">Source Code/Report Issue</a></Col>
 							<Col md="auto"><Link className="text-dark" to="/contests" >Contests</Link></Col>
+							<Col md="auto"><LanguageSelector /></Col>
 						</Row>
 					</Container>
 				</Container>

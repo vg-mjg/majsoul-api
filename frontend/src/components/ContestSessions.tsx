@@ -6,6 +6,7 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Pagination from "react-bootstrap/Pagination";
 import Row from "react-bootstrap/Row";
+import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
@@ -18,6 +19,7 @@ import { fetchContestSessions } from "src/api/Sessions";
 import { IState } from "../State";
 import { ContestHeader } from "./ContestHeader";
 import { Session } from "./Session";
+import { contestName } from "./utils";
 
 const styles = css`
 	@import 'src/bootstrap-vars.sass';
@@ -127,6 +129,17 @@ export function ContestSessions(props: {
 			contestId: contest._id
 		}).then(players => dispatchContestPlayersRetrieved(dispatch, contest._id, players));
 	}, [contest?._id]);
+
+	const { t, i18n } = useTranslation();
+
+	React.useEffect(() => {
+		if (contest?.name == null) {
+			document.title = t("contestSessionsNoTitle");
+			return;
+		}
+
+		document.title = t("contestSessionsTitle", { title: contestName(contest) });
+	}, [contest?.name, i18n.language]);
 
 	if (contest?.sessionsById == null) {
 		return null;

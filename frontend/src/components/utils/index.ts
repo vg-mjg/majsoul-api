@@ -2,13 +2,13 @@ import { AILevel } from "majsoul-api/dist/majsoul/types";
 import { Contest } from "src/State";
 
 export function levelToString(aiLevel: AILevel): string {
-	switch(aiLevel) {
+	switch (aiLevel) {
 		case AILevel.Easy:
-		return "Easy";
+			return "Easy";
 		case AILevel.Normal:
-		return "Normal";
+			return "Normal";
 		case AILevel.Hard:
-		return "Hard";
+			return "Hard";
 	}
 }
 
@@ -24,8 +24,8 @@ type RecordableKeys<T> = {
 }[keyof T]
 
 export function toRecord<
-T extends Partial<{ [P in RecordableKeys<T>]: string }>,
-K extends RecordableKeys<T>
+	T extends Partial<{ [P in RecordableKeys<T>]: string }>,
+	K extends RecordableKeys<T>
 >(array: T[], selector: K): Record<string, T> {
 	if (array == null) {
 		return {};
@@ -40,7 +40,7 @@ interface RGBColor {
 	b: number;
 }
 
-function hslStyle(hsl: {h: number, s: number, l: number}) {
+function hslStyle(hsl: { h: number, s: number, l: number }) {
 	return `hsl(${Math.round(hsl.h * 360)}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`;
 }
 
@@ -57,8 +57,8 @@ export function hexToRgb(hex: string): RGBColor {
 	} : null;
 }
 
-export  function rgbToHsl(color: string) {
-	let {r, g, b} = hexToRgb(color);
+export function rgbToHsl(color: string) {
+	let { r, g, b } = hexToRgb(color);
 	r /= 255, g /= 255, b /= 255;
 
 	const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -80,14 +80,14 @@ export  function rgbToHsl(color: string) {
 		h /= 6;
 	}
 
-	return {h, s, l};
+	return { h, s, l };
 }
 
 export function pickColorGradient(color1: string, color2: string, weight: number) {
 	const c1 = hexToRgb(color1);
 	const c2 = hexToRgb(color2);
 	const w = weight * 2 - 1;
-	const w1 = (w/1+1) / 2;
+	const w1 = (w / 1 + 1) / 2;
 	const w2 = 1 - w1;
 	return {
 		r: Math.round(c1.r * w1 + c2.r * w2),

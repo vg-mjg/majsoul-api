@@ -27,6 +27,7 @@ import { ContestHeader } from "./ContestHeader";
 import { TabNavigator } from "./TabNavigator";
 import { RequestState } from "./utils/RequestState";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
+import { useTranslation } from "react-i18next";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -37,6 +38,10 @@ export function ContestSummary(props: {
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
+		if (!props.contestId) {
+			return;
+		}
+
 		setImageRequestState(RequestState.Started);
 		setContestRequestState(RequestState.Started);
 
@@ -54,16 +59,17 @@ export function ContestSummary(props: {
 		});
 	}, [props.contestId]);
 
+	const { t, i18n } = useTranslation();
+
 	React.useEffect(() => {
-		if (contest == null) {
+		if (contest?.name == null) {
+			document.title = t("contestNoPageTitle");
 			return;
 		}
 
-		document.title = `/mjg/ competitions - ${contestName(contest)}`;
-		return () => {
-			document.title = "/mjg/ competitions";
-		}
-	}, [contest?.name, contest?._id]);
+		document.title = t("contestPageTitle", { title: contestName(contest) });
+	}, [contest?.name, i18n.language]);
+
 
 	if (imageRequestState !== RequestState.Complete || contestRequestState !== RequestState.Complete) {
 		return <Container className="text-center pt-4">

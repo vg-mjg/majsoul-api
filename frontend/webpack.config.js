@@ -22,7 +22,7 @@ module.exports = env => {
 		module: {
 			rules: [
 				{
-					test: /\.tsx?$/,
+					test: /\.(tsx?)$/,
 					exclude: /node_modules/,
 					use: [
 						{
@@ -101,7 +101,7 @@ module.exports = env => {
 		plugins: [
 			new HtmlWebpackPlugin({
 				base: "/",
-				title: "/mjg/ competitions"
+				title: "",
 			})
 		]
 	};
