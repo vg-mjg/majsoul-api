@@ -1,5 +1,5 @@
 {
-	"yakumanAttained": "Yakuman Attained",
+	"yakumanAttained": "手に入れた役満",
 	"viewOnMajsoul": "View on Majsoul",
 	"backToSummary": "Back to Summary",
 	"title": {
@@ -84,7 +84,7 @@
 	},
 	"league": {
 		"graph": {
-			"start": "Start"
+			"start": "始め"
 		},
 		"sessions": {
 			"selected": "Selected Session",

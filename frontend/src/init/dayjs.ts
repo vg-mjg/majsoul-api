@@ -39,7 +39,7 @@ dayjs.extend(localizedFormat);
 dayjs.extend(localeData);
 dayjs.extend(updateLocale);
 
-function setDayjsLocale() {
+function findSupportedLocale(): string {
 	let loc;
 	for (const locale of navigator.languages) {
 		loc = locale.toLowerCase();
@@ -52,8 +52,11 @@ function setDayjsLocale() {
 		loc = dayjs.locale("en-gb");
 	}
 
-	loc = dayjs.locale("ja");
+	return loc;
+}
 
+export function setDayjsLocale(locale?: "ja" | null) {
+	const loc = locale == null ? findSupportedLocale() : dayjs.locale("ja");
 	const calendarLocale = loc === "ja" ? "ja" : "en";
 
 	dayjs.updateLocale(loc, {
@@ -68,4 +71,4 @@ function setDayjsLocale() {
 	});
 }
 
-setDayjsLocale();
+setDayjsLocale("ja");

@@ -32,6 +32,7 @@ import "./init/dayjs";
 import "./init/i18n";
 import { useTranslation } from "react-i18next";
 import clsx from "clsx";
+import { setDayjsLocale } from "./init/dayjs";
 
 function updatedContestRecord(state: IState, contestId: string, contest: Partial<Contest>): {
 	contestsById: Record<string, Contest>,
@@ -305,7 +306,9 @@ function Footer() {
 		</Col>
 		<Col md="auto">
 			<div className={clsx("text-dark", styles.linkDark, styles.linkUnderline)} onClick={() => {
-				i18n.changeLanguage(i18n.language === "ja" ? "en" : "ja");
+				const nextLocale = i18n.language === "ja" ? null : "ja";
+				setDayjsLocale(nextLocale);
+				i18n.changeLanguage(nextLocale ?? "en");
 			}}>
 				{i18n.language === "ja" ? "English" : "日本語"}
 			</div>
