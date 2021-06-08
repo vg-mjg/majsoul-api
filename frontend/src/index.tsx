@@ -276,13 +276,41 @@ function GoogleAuthReceiver(): JSX.Element {
 	return <Redirect to="/" />
 }
 
-function LanguageSelector(): JSX.Element {
-	const { i18n } = useTranslation();
-	return <div className={clsx("text-dark", styles.linkDark, styles.linkUnderline)} onClick={() => {
-		i18n.changeLanguage(i18n.language === "jp" ? "en" : "jp");
-	}}>
-		{i18n.language === "jp" ? "English" : "日本語"}
-	</div>;
+function Footer() {
+	const { t, i18n } = useTranslation();
+
+	return <Row className="mt-3 justify-content-center">
+		<Col md="auto">
+			<Link className="text-dark" to="/" >{t("footer.home")}</Link>
+		</Col>
+		<Col md="auto">
+			<a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">
+				{t("footer.4chan")}
+			</a>
+		</Col>
+		<Col md="auto">
+			<a className="text-dark" href="https://repo.riichi.moe/">
+				{t("footer.repo")}
+			</a>
+		</Col>
+		<Col md="auto">
+			<a className="text-dark" href="https://github.com/riichinomics/majsoul-api">
+				{t("footer.source")}
+			</a>
+		</Col>
+		<Col md="auto">
+			<Link className="text-dark" to="/contests" >
+				{t("footer.contests")}
+			</Link>
+		</Col>
+		<Col md="auto">
+			<div className={clsx("text-dark", styles.linkDark, styles.linkUnderline)} onClick={() => {
+				i18n.changeLanguage(i18n.language === "jp" ? "en" : "jp");
+			}}>
+				{i18n.language === "jp" ? "English" : "日本語"}
+			</div>
+		</Col>
+	</Row>
 }
 
 ReactDOM.render(
@@ -317,14 +345,7 @@ ReactDOM.render(
 							</Switch>
 						</Row>
 						<Row style={{ flex: "1" }}></Row>
-						<Row className="mt-3 justify-content-center">
-							<Col md="auto"><Link className="text-dark" to="/" >Home</Link></Col>
-							<Col md="auto"><a className="text-dark" href="https://boards.4channel.org/vg/catalog#s=mjg">/mjg/</a></Col>
-							<Col md="auto"><a className="text-dark" href="https://repo.riichi.moe/">Repo</a></Col>
-							<Col md="auto"><a className="text-dark" href="https://github.com/riichinomics/majsoul-api">Source Code/Report Issue</a></Col>
-							<Col md="auto"><Link className="text-dark" to="/contests" >Contests</Link></Col>
-							<Col md="auto"><LanguageSelector /></Col>
-						</Row>
+						<Footer />
 					</Container>
 				</Container>
 			</BrowserRouter>

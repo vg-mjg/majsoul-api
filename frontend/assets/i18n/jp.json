@@ -63,5 +63,12 @@
 				"totalCallRate": "Calls / Opportunities"
 			}
 		}
+	},
+	"footer": {
+		"home": "Home",
+		"4chan": "/mjg/",
+		"repo": "Repo",
+		"source": "Source Code/Report Issue",
+		"contests": "Contests"
 	}
 }
