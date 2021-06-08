@@ -148,7 +148,10 @@ export function ContestSessions(props: {
 	const sessions = Object.values(contest.sessionsById).sort((a, b) => a.scheduledTime - b.scheduledTime);
 	const parsedHash = parseInt(hash) ?? 0;
 	const now = Date.now();
-	const activePage = isNaN(parsedHash) ? Math.floor(sessions.findIndex(session => session.scheduledTime >= now) / 10) : parsedHash - 1;
+	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime >= now);
+	const activePage = isNaN(parsedHash)
+		? Math.floor((nextSessionIndex < 0 ? sessions.length - 1 : nextSessionIndex) / 10)
+		: parsedHash - 1;
 
 	const numberOfPages = Math.floor(sessions.length / 10) + 1;
 	return <Container className="mt-4">
