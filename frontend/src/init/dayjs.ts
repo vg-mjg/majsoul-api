@@ -28,6 +28,7 @@ import "dayjs/locale/zh";
 import "dayjs/locale/es";
 import "dayjs/locale/nl";
 import { withLocale } from "../api/utils";
+import i18n from "./i18n";
 dayjs.extend(advancedFormat);
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -38,25 +39,33 @@ dayjs.extend(localizedFormat);
 dayjs.extend(localeData);
 dayjs.extend(updateLocale);
 
-let loc;
-for (const locale of navigator.languages) {
-	loc = locale.toLowerCase();
-	if (loc === dayjs.locale(loc)) {
-		break;
+function setDayjsLocale() {
+	let loc;
+	for (const locale of navigator.languages) {
+		loc = locale.toLowerCase();
+		if (loc === dayjs.locale(loc)) {
+			break;
+		}
 	}
+
+	if (loc === "en" && !dayjs.tz.guess().startsWith("America")) {
+		loc = dayjs.locale("en-gb");
+	}
+
+	loc = dayjs.locale("ja");
+
+	const calendarLocale = loc === "ja" ? "ja" : "en";
+
+	dayjs.updateLocale(loc, {
+		calendar: {
+			lastDay: withLocale(calendarLocale, i18n.t("time.general.lastDay")),
+			sameDay: withLocale(calendarLocale, i18n.t("time.general.sameDay")),
+			nextDay: withLocale(calendarLocale, i18n.t("time.general.nextDay")),
+			lastWeek: withLocale(calendarLocale, i18n.t("time.general.lastWeek")),
+			nextWeek: withLocale(calendarLocale, i18n.t("time.general.nextWeek")),
+			sameElse: 'L'
+		}
+	});
 }
 
-if (loc === "en" && !dayjs.tz.guess().startsWith("America")) {
-	loc = dayjs.locale("en-gb");
-}
-
-dayjs.updateLocale(loc, {
-	calendar: {
-		lastDay: withLocale("en", "[Yesterday at] LT"),
-		sameDay: withLocale("en", "[Today at] LT"),
-		nextDay: withLocale("en", "[Tomorrow at] LT"),
-		lastWeek: withLocale("en", "[Last] dddd [at] LT"),
-		nextWeek: withLocale("en", "dddd [at] LT"),
-		sameElse: 'L'
-	}
-});
+setDayjsLocale();

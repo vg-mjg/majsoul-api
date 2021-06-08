@@ -97,6 +97,36 @@
 
 	"session": {
 		"matches": "Matches",
-		"games": "Games"
+		"games": "Games",
+		"timeInZone": "{{time}} in {{zone}}"
+	},
+	"time": {
+		"general": {
+			"lastDay": "[Yesterday at] LT",
+			"sameDay": "[Today at] LT",
+			"nextDay": "[Tomorrow at] LT",
+			"lastWeek": "[Last] dddd [at] LT",
+			"nextWeek": "dddd [at] LT"
+		},
+		"countdown": {
+			"sameDay": {
+				"after": "[Starts] [in] H:mm:ss",
+				"before": "[Started] H:mm:ss [ago]"
+			},
+			"lastDay": {
+				"greaterThanDay": "[Started] D [day] [and] H:mm:ss [ago]",
+				"withinDay": "[Started] H:mm:ss [ago]"
+			},
+			"nextDay": {
+				"greaterThanDay": "[Starts] [in] D [day] [and] H:mm:ss",
+				"withinDay": "[Starts] [in] H:mm:ss"
+			},
+			"lastWeek": "[Started] [Last] dddd",
+			"nextWeek": "[Starts] [on] dddd [at] LT",
+			"sameElse": {
+				"after": "[Starts] [on] l",
+				"before": "[Started] [on] l"
+			}
+		}
 	}
 }

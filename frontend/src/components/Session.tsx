@@ -195,7 +195,7 @@ export function Session(props: {
 						/>
 					</Row>
 					<Row>
-						{dayjs(props.session.scheduledTime).calendar()} in {dayjs.tz.guess()}
+						{t("session.timeInZone", { time: dayjs(props.session.scheduledTime).calendar(), zone: dayjs.tz.guess() })}
 					</Row>
 				</Container>
 			</Col>
