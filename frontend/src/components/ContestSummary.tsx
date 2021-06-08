@@ -248,7 +248,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 			<LeagueStandingChart phase={selectedPhase} teams={contest.teams} onSessionSelect={onSessionSelect} />
 		</Row>
 		<SessionSection session={sessions[selectedSessionIndex]} title={t("league.sessions.selected")} />
-		<SessionSection session={currentSessionComplete ? null : currentSession} title={t("league.sessions.selected")} />
+		<SessionSection session={currentSessionComplete ? null : currentSession} title={t("league.sessions.current")} />
 		<SessionSection session={nextSession} title={t("league.sessions.next")} />
 		<SessionSection session={currentSessionComplete ? currentSession : null} title={t("league.sessions.recent")} />
 		<Row className="mt-4">

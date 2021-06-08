@@ -98,15 +98,15 @@
 	"session": {
 		"matches": "参戦チーム",
 		"games": "試合",
-		"timeInZone": "{{zone}}{{time}}"
+		"timeInZone": "{{zone}} {{time}}"
 	},
 	"time": {
 		"general": {
 			"lastDay": "[昨日]LT",
 			"sameDay": "[今日]LT",
 			"nextDay": "[明日]LT",
-			"lastWeek": "lLT",
-			"nextWeek": "lLT"
+			"lastWeek": "l LT",
+			"nextWeek": "l LT"
 		},
 		"countdown": {
 			"sameDay": {
@@ -121,11 +121,11 @@
 				"greaterThanDay": "[開始まであと]D[日間]H:mm:ss",
 				"withinDay": "[開始まであと]H:mm:ss"
 			},
-			"lastWeek": "l[に開始しました]",
-			"nextWeek": "lLT[に開始します]",
+			"lastWeek": "l [に開始しました]",
+			"nextWeek": "l LT[に開始します]",
 			"sameElse": {
-				"after": "l[に開始します]",
-				"before": "l[に開始しました]"
+				"after": "l [に開始します]",
+				"before": "l [に開始しました]"
 			}
 		}
 	}
