@@ -1,9 +1,18 @@
 {
-	"contestNoPageTitle": "競争",
-	"contestPageTitle": "競争 ー {{title}}",
-	"contestListTitle": "競争",
-	"contestSessionsNoTitle": "競争",
-	"contestSessionsTitle": "競争 ー {{title}}",
+	"yakumanAttained": "Yakuman Attained",
+	"title": {
+		"contest": {
+			"list": "競争",
+			"page": {
+				"generic": "競争",
+				"specific": "競争 ー {{title}}"
+			},
+			"sessions": {
+				"generic": "競争",
+				"specific": "競争 ー {{title}}"
+			}
+		}
+	},
 
 	"stats": {
 		"terminology": {
@@ -70,5 +79,17 @@
 		"repo": "Repo",
 		"source": "Source Code/Report Issue",
 		"contests": "Contests"
+	},
+	"league": {
+		"graph": {
+			"start": "Start"
+		},
+		"sessions": {
+			"selected": "Selected Session",
+			"current": "Current Session",
+			"next": "Next Session",
+			"recent": "Recent Session",
+			"more": "View Schedule"
+		}
 	}
 }

@@ -9,6 +9,7 @@ import { fetchYakuman } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import * as dayjs from "dayjs";
 import { AgariInfo, RoundResult } from "majsoul-api/dist/store/types";
+import { useTranslation } from "react-i18next";
 
 function getYakumanName(han: Han[]): string {
 	const names = han.map(h => {
@@ -89,9 +90,11 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 		.filter(game => game.contestId === props.contestId
 			&& game.rounds?.find(round => getYakumanAgari(round).length > 0))
 	);
+
+	const { t } = useTranslation();
 	return <>
 		<Row className="px-4 py-3 justify-content-end">
-			<Col md="auto" className="h4 mb-0"><u>Yakuman Attained</u></Col>
+			<Col md="auto" className="h4 mb-0"><u>{t("yakumanAttained")}</u></Col>
 		</Row>
 		<Row>
 			<Container className="rounded bg-dark text-light pt-2 px-3">

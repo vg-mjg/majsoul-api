@@ -5,13 +5,19 @@ import { Store, Rest } from "majsoul-api";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import * as dayjs from 'dayjs';
+import { useTranslation } from "react-i18next";
 
 defaults.color = "white";
 defaults.borderColor = "#666666";
 
-function createData(phase: Rest.Phase, sessions: Rest.Session[], teams: Record<string, Store.ContestTeam>): ChartData {
+function createData(
+	startPointName: string,
+	phase: Rest.Phase,
+	sessions: Rest.Session[],
+	teams: Record<string, Store.ContestTeam>
+): ChartData {
 	return {
-		labels: ["Start"].concat(sessions.map(session => {
+		labels: [startPointName].concat(sessions.map(session => {
 			if (session.name) {
 				return session.name;
 			}
@@ -44,6 +50,8 @@ export function LeagueStandingChart(props: {
 		return null;
 	}
 
+	const { t } = useTranslation();
+
 	const now = Date.now();
 
 	const sessions = props.phase.sessions?.filter(session => session.scheduledTime < now);
@@ -53,7 +61,7 @@ export function LeagueStandingChart(props: {
 	return <Container className="bg-dark rounded text-white">
 		<Row className="px-2 pb-3 pt-4">
 			<Line
-				data={createData(props.phase, sessions, teams)}
+				data={createData(t("league.graph.start"), props.phase, sessions, teams)}
 				options={{
 					animation: {
 						duration: 0

@@ -134,11 +134,11 @@ export function ContestSessions(props: {
 
 	React.useEffect(() => {
 		if (contest?.name == null) {
-			document.title = t("contestSessionsNoTitle");
+			document.title = t("title.contest.sessions.generic");
 			return;
 		}
 
-		document.title = t("contestSessionsTitle", { title: contestName(contest) });
+		document.title = t("title.contest.sessions.specific", { title: contestName(contest) });
 	}, [contest?.name, i18n.language]);
 
 	if (contest?.sessionsById == null) {

@@ -63,11 +63,11 @@ export function ContestSummary(props: {
 
 	React.useEffect(() => {
 		if (contest?.name == null) {
-			document.title = t("contestNoPageTitle");
+			document.title = t("title.contest.page.generic");
 			return;
 		}
 
-		document.title = t("contestPageTitle", { title: contestName(contest) });
+		document.title = t("title.contest.page.specific", { title: contestName(contest) });
 	}, [contest?.name, i18n.language]);
 
 
@@ -215,7 +215,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		setSelectedSessionIndex(index - 1)
 	}, [setSelectedSessionIndex]);
 
-	console.log(contest.phases);
+	const { t } = useTranslation();
 
 	return <>
 		{ contest.phases && contest.phases.length > 1 &&
@@ -247,13 +247,13 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		<Row className="mt-3">
 			<LeagueStandingChart phase={selectedPhase} teams={contest.teams} onSessionSelect={onSessionSelect} />
 		</Row>
-		<SessionSection session={sessions[selectedSessionIndex]} title="Selected Session" />
-		<SessionSection session={currentSessionComplete ? null : currentSession} title="Current Session" />
-		<SessionSection session={nextSession} title="Next Session" />
-		<SessionSection session={currentSessionComplete ? currentSession : null} title="Recent Session" />
+		<SessionSection session={sessions[selectedSessionIndex]} title={t("league.sessions.selected")} />
+		<SessionSection session={currentSessionComplete ? null : currentSession} title={t("league.sessions.selected")} />
+		<SessionSection session={nextSession} title={t("league.sessions.next")} />
+		<SessionSection session={currentSessionComplete ? currentSession : null} title={t("league.sessions.recent")} />
 		<Row className="mt-4">
 			<Col className="text-center">
-				<Link className="h5 text-dark" to={`/contests/${contest._id}/sessions`}><u>More Sessions</u></Link>
+				<Link className="h5 text-dark" to={`/contests/${contest._id}/sessions`}><u>{t("league.sessions.more")}</u></Link>
 			</Col>
 		</Row>
 	</>

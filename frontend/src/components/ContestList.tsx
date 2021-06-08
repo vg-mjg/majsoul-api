@@ -40,7 +40,7 @@ export function ContestList(): JSX.Element {
 	const { t, i18n } = useTranslation();
 
 	React.useEffect(() => {
-		document.title = t("contestListTitle");
+		document.title = t("title.contest.list");
 	}, [i18n.language]);
 
 	const onFeaturedContestChanged = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
