@@ -25,7 +25,7 @@ function getYakumanName(han: Han[]): string {
 			case Han.All_Honors:
 				return "字一色";
 			case Han.All_Green:
-				return "绿一色";
+				return "緑一色";
 			case Han.All_Terminals:
 				return "清老頭";
 			case Han.Thirteen_Orphans:
