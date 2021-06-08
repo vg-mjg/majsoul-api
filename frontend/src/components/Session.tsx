@@ -21,6 +21,7 @@ import { patchSession } from "src/api/Sessions";
 import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsPatched";
 import * as dayjs from "dayjs";
 import { css } from "astroturf";
+import { useTranslation } from "react-i18next";
 
 enum GamesFetchStatus {
 	None,
@@ -58,6 +59,8 @@ export function Session(props: {
 	const [gamesFetchedStatus, setGamesFetched] = React.useState(GamesFetchStatus.None);
 	const teams = useSelector((state: IState) => state.contestsById[props.session.contestId].teams);
 	const detailsOpen = viewDetails || props.forceDetails;
+
+	const { t } = useTranslation();
 
 	const token = useSelector((state: IState) => state.user?.token);
 	const games = useSelector((state: IState) =>
@@ -214,7 +217,7 @@ export function Session(props: {
 								{props.session.plannedMatches?.length > 0 && <>
 									<Row className="no-gutters">
 										<Col className="px-2">
-											<div className="h5"><u>Matches</u></div>
+											<div className="h5"><u>{t("session.matches")}</u></div>
 										</Col>
 									</Row>
 									<Row className="no-gutters">
@@ -226,7 +229,7 @@ export function Session(props: {
 								{hasStarted && <>
 									<Row className="no-gutters">
 										<Col className="px-2">
-											<div className="h5"><u>Games</u></div>
+											<div className="h5"><u>{t("session.games")}</u></div>
 										</Col>
 									</Row>
 									<Row className="no-gutters">

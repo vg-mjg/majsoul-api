@@ -113,7 +113,7 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 						</Col>
 
 						<Col md="auto">
-							<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">On Majsoul</a>
+							<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
 						</Col>
 					</Row>
 					)

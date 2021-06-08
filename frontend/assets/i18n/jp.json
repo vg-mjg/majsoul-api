@@ -1,5 +1,6 @@
 {
 	"yakumanAttained": "Yakuman Attained",
+	"viewOnMajsoul": "View on Majsoul",
 	"title": {
 		"contest": {
 			"list": "競争",
@@ -91,5 +92,10 @@
 			"recent": "Recent Session",
 			"more": "View Schedule"
 		}
+	},
+
+	"session": {
+		"matches": "Matches",
+		"games": "Games"
 	}
 }

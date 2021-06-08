@@ -11,6 +11,7 @@ import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import * as dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 export function ContestPlayerDisplay(props: {
 	contestId: string;
@@ -18,6 +19,7 @@ export function ContestPlayerDisplay(props: {
 	team: string;
 	ignoredGames?: number;
 }): JSX.Element {
+	const { t } = useTranslation();
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];
@@ -91,7 +93,7 @@ export function ContestPlayerDisplay(props: {
 							</Col>
 
 							<Col md="auto">
-								<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">On Majsoul</a>
+								<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
 							</Col>
 						</Row>;
 					})}

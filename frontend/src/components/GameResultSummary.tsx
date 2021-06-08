@@ -9,6 +9,7 @@ import { useSelector } from "react-redux";
 import { levelToString, pickColorGradient } from "./utils";
 import { TeamImage } from "./TeamImage";
 import dayjs = require("dayjs");
+import { useTranslation } from "react-i18next";
 
 function GameSeat(props: {
 	seat: number,
@@ -43,18 +44,18 @@ function GameSeat(props: {
 	);
 
 	return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark border border-2`}>
-		<Row className={`no-gutters`} style={{lineHeight: "40px", textAlign: "center"}}>
+		<Row className={`no-gutters`} style={{ lineHeight: "40px", textAlign: "center" }}>
 			<Col
 				md="auto"
 				className={`${(styles as any)[`seat-${props.seat}`]} rounded-left border-right border-2`}
-				style={{minWidth: "40px", boxSizing: "content-box"}}
+				style={{ minWidth: "40px", boxSizing: "content-box" }}
 			>
 				{getSeatCharacter(props.seat)}
 			</Col>
 			<Col
 				md="auto"
 				className="border-right border-2"
-				style={{minWidth: "40px", boxSizing: "content-box"}}
+				style={{ minWidth: "40px", boxSizing: "content-box" }}
 			>
 				{props.game.finalScore.map((score, index) => ({ score, index })).sort((a, b) => b.score.uma - a.score.uma).findIndex(s => s.index === props.seat) + 1}
 			</Col>
@@ -63,7 +64,7 @@ function GameSeat(props: {
 					md="auto"
 					className="border-right border-2"
 				>
-					<TeamImage team={playerInformation?.team}/>
+					<TeamImage team={playerInformation?.team} />
 				</Col>
 			}
 			<Col
@@ -106,6 +107,7 @@ export function GameResultSummary(props: {
 	game: Rest.GameResult,
 }): JSX.Element {
 	const endTime = React.useMemo(() => dayjs(props.game?.end_time).calendar(), [props.game?.end_time]);
+	const { t } = useTranslation();
 	const cellStyle = "mb-1 pl-0 pr-1";
 	const rowStyle = "pl-1 no-gutters";
 
@@ -113,16 +115,17 @@ export function GameResultSummary(props: {
 		return null
 	}
 
+
 	return <Container className="px-1 py-2">
 		<Row className={`${rowStyle} px-2 pb-2`}>
 			<Col className="">
-				{ endTime }
+				{endTime}
 			</Col>
 			<Col md="auto" className="">
-				<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${props.game.majsoulId}`} rel="noreferrer" target="_blank">View on Majsoul</a>
+				<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${props.game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
 			</Col>
 		</Row>
-		{ props.game.players
+		{props.game.players
 			.map((_, seat) => seat)
 			.sort((a, b) => props.game.finalScore[b].uma - props.game.finalScore[a].uma)
 			.map(seat => <Row key={seat} className={rowStyle}>
@@ -130,6 +133,6 @@ export function GameResultSummary(props: {
 					<GameSeat seat={seat} game={props.game} />
 				</Col>
 			</Row>
-		)}
+			)}
 	</Container>;
 }
