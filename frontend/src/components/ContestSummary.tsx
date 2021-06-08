@@ -20,25 +20,33 @@ import { fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
 import { fetchContestImages, fetchContestSummary, getPhase } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
-import { fetchContestSessions } from "src/api/Sessions";
-import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
 import { Link, useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
 import { Rest } from "majsoul-api";
 import { ContestHeader } from "./ContestHeader";
-import Nav from "react-bootstrap/Nav";
 import { TabNavigator } from "./TabNavigator";
+import { RequestState } from "./utils/RequestState";
+import { LoadingSpinner } from "./utils/LoadingSpinner";
 
 export function ContestSummary(props: {
 	contestId: string;
 }): JSX.Element {
+	const [imageRequestState, setImageRequestState] = React.useState(RequestState.Initial);
+	const [contestRequestState, setContestRequestState] = React.useState(RequestState.Initial);
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
+		setImageRequestState(RequestState.Started);
+		setContestRequestState(RequestState.Started);
+
 		fetchContestImages(props.contestId)
-			.then(contest => dispatchContestImagesFetchedAction(dispatch, contest));
+			.then(contest => {
+				setImageRequestState(RequestState.Complete);
+				dispatchContestImagesFetchedAction(dispatch, contest)
+			});
 		fetchContestSummary(props.contestId).then(contest => {
+			setContestRequestState(RequestState.Complete);
 			fetchContestPlayers({
 				contestId: props.contestId
 			}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
@@ -56,6 +64,12 @@ export function ContestSummary(props: {
 			document.title = "/mjg/ competitions";
 		}
 	}, [contest?.name, contest?._id]);
+
+	if (imageRequestState !== RequestState.Complete || contestRequestState !== RequestState.Complete) {
+		return <Container className="text-center pt-4">
+			<LoadingSpinner color="black" />
+		</Container>;
+	}
 
 	if (contest == null) {
 		return <Container className="text-light text-center pt-4">
@@ -144,13 +158,6 @@ function SessionSection(props: {
 			<Session session={props.session} forceDetails />
 		</Row>
 	</>
-}
-
-enum RequestState {
-	Initial,
-	Started,
-	Complete,
-	Error,
 }
 
 function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
