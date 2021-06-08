@@ -436,6 +436,7 @@ interface TeamData extends Store.ContestTeam<string> {
 export function Teams(props: {
 	contestId: string;
 	teams: Record<string, Store.ContestTeam>;
+	isLoading?: boolean;
 	teamScores: Record<string, number>;
 	teamLimit?: number;
 }): JSX.Element {
@@ -459,8 +460,21 @@ export function Teams(props: {
 		setViewDetails(accordionKey === "0");
 	}, [setViewDetails]);
 
-	const teams = props.teams;
-	if (!teams || !props.teamScores) {
+	const {
+		teams = {},
+		teamScores = {},
+	} = props;
+
+	const teamsArray: TeamData[] =
+		Object.values(teams)
+			.filter(team => team._id in teamScores)
+			.map(team => ({ ...team, total: teamScores[team._id] }))
+			.sort((a, b) => b.total - a.total)
+			.map((team, placing) => ({ ...team, placing }));
+
+	const maxPlaceLength = jpNumeral(teamsArray.length).length;
+
+	if (props.isLoading) {
 		return <Container className="rounded bg-dark text-light px-3 py-4">
 			<Row>
 				<Col className="text-center">
@@ -469,15 +483,6 @@ export function Teams(props: {
 			</Row>
 		</Container>
 	}
-
-	const teamsArray: TeamData[] =
-		Object.values(teams)
-			.filter(team => team._id in props.teamScores)
-			.map(team => ({ ...team, total: props.teamScores[team._id] }))
-			.sort((a, b) => b.total - a.total)
-			.map((team, placing) => ({ ...team, placing }));
-
-	const maxPlaceLength = jpNumeral(teamsArray.length).length;
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		<TeamList

@@ -1811,26 +1811,17 @@ export class RestApi {
 		transitions,
 		phases
 	}: PhaseInfo): Promise<Phase<ObjectID>[]> {
-		const phasesReverseChronological = [...phases].reverse();
-		return this.getSessions(contest).pipe(
-			groupBy(
-				session => phasesReverseChronological
-					.find(transition => session.scheduledTime > transition.startTime)?.index
-					?? phasesReverseChronological.length - 1
-			),
-			map(phase => phase.pipe(
-				toArray(),
-				map(sessions => ({
-					transition: transitions[phase.key],
-					phase: phases[phase.key],
-					sessions: sessions.sort((a, b) => a.scheduledTime - b.scheduledTime),
-				})),
-			)),
-			mergeAll(),
-			toArray(),
-			map(phases => phases.sort((a, b) => a.phase.index - b.phase.index)),
-			mergeAll(),
-			mergeScan((completePhase, phase) => {
+		const sessions = (await this.getSessions(contest).pipe(toArray()).toPromise())
+			.sort((a, b) => a.scheduledTime - b.scheduledTime);
+		return from(phases.concat(null)).pipe(
+			pairwise(),
+			mergeScan((completePhase, [phase, nextPhase]) => {
+				const transition = transitions[phase.index];
+				const phaseSessions = sessions.filter(
+					session =>
+						session.scheduledTime >= phase.startTime
+						&& (nextPhase == null || session.scheduledTime < nextPhase.startTime)
+				);
 				const startingTotals = {
 					...completePhase.sessions[completePhase.sessions.length - 1]?.aggregateTotals ?? {}
 				};
@@ -1839,8 +1830,8 @@ export class RestApi {
 					.map(([team, score]) => ({ team, score }))
 					.sort((a, b) => b.score - a.score);
 
-				const allowedTeams = phase.transition.teams?.top
-					? rankedTeams.slice(0, phase.transition.teams.top)
+				const allowedTeams = transition.teams?.top
+					? rankedTeams.slice(0, transition.teams.top)
 						.reduce((total, next) => (total[next.team] = true, total), {} as Record<string, true>)
 					: null;
 
@@ -1850,14 +1841,14 @@ export class RestApi {
 						continue;
 					}
 
-					if (phase.transition.score?.half) {
+					if (transition.score?.half) {
 						startingTotals[team] = Math.floor(startingTotals[team] / 2);
 					}
 				}
 
 				return of({
-					...phase.phase,
-					sessions: phase.sessions.reduce((total, next) => {
+					...phase,
+					sessions: phaseSessions.reduce((total, next) => {
 						const aggregateTotals = { ...(total[total.length - 1]?.aggregateTotals ?? startingTotals) };
 						const filteredTotals = Object.entries(next.totals)
 							.filter(([key]) => !allowedTeams || key in allowedTeams)
@@ -1881,7 +1872,7 @@ export class RestApi {
 				} as Phase<ObjectID>);
 			}, {
 				sessions: [{
-					aggregateTotals: contest.teams.reduce(
+					aggregateTotals: (contest.teams ?? []).reduce(
 						(total, next) => (total[next._id.toHexString()] = 0, total),
 						{} as Record<string, number>
 					)

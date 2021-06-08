@@ -146,9 +146,15 @@ function SessionSection(props: {
 	</>
 }
 
-function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
-	const dispatch = useDispatch();
+enum RequestState {
+	Initial,
+	Started,
+	Complete,
+	Error,
+}
 
+function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
+	const [phaseRequestState, setPhaseRequestState] = React.useState(RequestState.Initial);
 	const history = useHistory();
 	const hash = parseInt(useLocation().hash.toLowerCase().substr(1));
 	const selectedPhaseIndex = Math.max(
@@ -167,18 +173,12 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		if (!contest.phases) {
 			return;
 		}
-
-		getPhase(contest._id, selectedPhaseIndex).then(phase => setSelectedPhase(phase));
+		setPhaseRequestState(RequestState.Started);
+		getPhase(contest._id, selectedPhaseIndex).then(phase => {
+			setPhaseRequestState(RequestState.Complete);
+			setSelectedPhase(phase)
+		});
 	}, [contest.phases, selectedPhaseIndex]);
-
-	React.useEffect(() => {
-		fetchContestSessions(contest._id)
-			.then(phases => dispatchContestSessionsRetrievedAction(
-				dispatch,
-				contest._id,
-				phases,
-			));
-	}, [dispatch, contest._id]);
 
 	const sessions = selectedPhase?.sessions ?? [];
 
@@ -224,7 +224,12 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 			</Row>
 		}
 		<Row className="mt-3">
-			<Teams contestId={contest._id} teams={contest.teams} teamScores={currentSession?.aggregateTotals} />
+			<Teams
+				contestId={contest._id}
+				teams={contest.teams}
+				teamScores={currentSession?.aggregateTotals}
+				isLoading={phaseRequestState !== RequestState.Complete}
+			/>
 		</Row>
 		<Row className="mt-3">
 			<LeagueStandingChart phase={selectedPhase} teams={contest.teams} onSessionSelect={onSessionSelect} />
