@@ -7,6 +7,7 @@ import { AgariCategories, FirstStats } from "majsoul-api/dist/rest/types/stats/F
 import { css } from "astroturf";
 import clsx from "clsx";
 import * as globalStyles from "../styles.sass";
+import { useTranslation } from "react-i18next";
 
 const styles = css`
 	.chartContainer {
@@ -162,6 +163,8 @@ export const FirstStatsDisplay = React.memo(function ({
 	stats: FirstStats['stats'];
 }): JSX.Element {
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
+
+	const { t, i18n } = useTranslation();
 	const statsPagesByType = React.useMemo<Record<StatsPageType, StatsPageProps>>(() => {
 		const totalWins = getAgariCategories(stats.wins).reduce((total, next) => total + next.total, 0);
 		const totalWinsPercent = twoDecimalPlaceRound(
@@ -173,11 +176,6 @@ export const FirstStatsDisplay = React.memo(function ({
 			open: getAgariCategories(stats.dealins.open).reduce((total, next) => total + next.total, 0),
 			riichi: getAgariCategories(stats.dealins.riichi).reduce((total, next) => total + next.total, 0),
 		}
-
-		// const riichi = {
-		// 	won: stats.wins.riichi.total,
-		// 	draw:
-		// }
 
 		const dealingOpponentStats = getAgariCategories(stats.dealins).reduce((total, next) => {
 			total.dama += next.dama.total;
@@ -203,21 +201,21 @@ export const FirstStatsDisplay = React.memo(function ({
 			[StatsPageType.Overall]: {
 				graphData: [
 					{
-						label: "Wins",
+						label: t("stats.overall.graph.wins"),
 						data: [{
 							value: totalWinsPercent,
 							color: GraphColor.Green,
 						}]
 					},
 					{
-						label: "Draws",
+						label: t("stats.overall.graph.draws"),
 						data: [{
 							value: totalDrawsPercent,
 							color: GraphColor.Black,
 						}]
 					},
 					{
-						label: "Deal Ins",
+						label: t("stats.overall.graph.dealins"),
 						data: [{
 							value: totalDealinsPercent,
 							color: GraphColor.Red,
@@ -225,7 +223,7 @@ export const FirstStatsDisplay = React.memo(function ({
 					},
 
 					{
-						label: "Other",
+						label: t("stats.overall.graph.other"),
 						data: [{
 							value: twoDecimalPlaceRound(100 - totalDealinsPercent - totalWinsPercent - totalDrawsPercent),
 							color: GraphColor.White,
@@ -236,15 +234,15 @@ export const FirstStatsDisplay = React.memo(function ({
 				rightColumn: {
 					fields: [
 						{
-							label: "Total Games",
+							label: t("stats.overall.details.totalGames"),
 							value: stats.gamesPlayed.toString(),
 						},
 						{
-							label: "Average Rank",
+							label: t("stats.overall.details.averageRank"),
 							value: twoDecimalPlaceRound(stats.totalRank / stats.gamesPlayed).toString(),
 						},
 						{
-							label: "Average Shanten",
+							label: t("stats.overall.details.averageShanten"),
 							value: twoDecimalPlaceRound(stats.totalHaipaiShanten / stats.totalHands).toString()
 						}
 					]
@@ -253,7 +251,7 @@ export const FirstStatsDisplay = React.memo(function ({
 			[StatsPageType.Dealins]: {
 				graphData: [
 					{
-						label: "Riichi",
+						label: t("stats.terminology.riichi"),
 						data: [
 							{
 								value: twoDecimalPlaceRound(100 * dealinStats.riichi / totalDealins),
@@ -266,7 +264,7 @@ export const FirstStatsDisplay = React.memo(function ({
 						]
 					},
 					{
-						label: "Open",
+						label: t("stats.terminology.open"),
 						data: [
 							{
 								value: twoDecimalPlaceRound(100 * dealinStats.open / totalDealins),
@@ -279,7 +277,7 @@ export const FirstStatsDisplay = React.memo(function ({
 						]
 					},
 					{
-						label: "Dama",
+						label: t("stats.terminology.dama"),
 						data: [
 							{
 								value: twoDecimalPlaceRound(100 * dealinStats.dama / totalDealins),
@@ -293,30 +291,30 @@ export const FirstStatsDisplay = React.memo(function ({
 					},
 				],
 				centerColumn: {
-					title: "Own Hand"
+					title: t("stats.dealins.detailsTitleMain"),
 				},
 				rightColumn: {
-					title: "Opponent's Hand"
+					title: t("stats.dealins.detailsTitleSecondary"),
 				}
 			},
 			[StatsPageType.Wins]: {
 				graphData: [
 					{
-						label: "Riichi",
+						label: t("stats.terminology.riichi"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.wins.riichi.total / totalWins),
 							color: GraphColor.Green,
 						}]
 					},
 					{
-						label: "Open",
+						label: t("stats.terminology.open"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.wins.open.total / totalWins),
 							color: GraphColor.Red,
 						}]
 					},
 					{
-						label: "Dama",
+						label: t("stats.terminology.dama"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.wins.dama.total / totalWins),
 							color: GraphColor.Black,
@@ -329,21 +327,21 @@ export const FirstStatsDisplay = React.memo(function ({
 			[StatsPageType.Riichi]: {
 				graphData: [
 					{
-						label: "Won",
+						label: t("stats.riichi.graph.won"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.wins.riichi.total / stats.riichi.total),
 							color: GraphColor.Green,
 						}]
 					},
 					{
-						label: "Dealt In",
+						label: t("stats.riichi.graph.dealin"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * dealinStats.riichi / stats.riichi.total),
 							color: GraphColor.Red,
 						}]
 					},
 					{
-						label: "Outskilled",
+						label: t("stats.riichi.graph.tsumo"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * (
 								stats.riichi.total
@@ -355,7 +353,7 @@ export const FirstStatsDisplay = React.memo(function ({
 						}]
 					},
 					{
-						label: "Draw",
+						label: t("stats.riichi.graph.draw"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.draws.riichi / stats.riichi.total),
 							color: GraphColor.White,
@@ -363,10 +361,10 @@ export const FirstStatsDisplay = React.memo(function ({
 					},
 				],
 				centerColumn: {
-					title: "Riichi Result",
+					title: t("stats.riichi.detailsTitleMain"),
 					fields: [
 						{
-							label: "Riichi Rate",
+							label: t("stats.riichi.details.riichiRate"),
 							value: twoDecimalPlaceRound(100 * stats.riichi.total / stats.totalHands).toString() + "%",
 						},
 					]
@@ -374,27 +372,27 @@ export const FirstStatsDisplay = React.memo(function ({
 				rightColumn: {
 					fields: [
 						{
-							label: "Ura Per Riichi Won",
+							label: t("stats.riichi.details.uraPerRiichi"),
 							value: twoDecimalPlaceRound(stats.uraDora / stats.wins.riichi.total).toString(),
 						},
 						{
-							label: "Riichi Won With Ura",
+							label: t("stats.riichi.details.riichiWithUra"),
 							value: twoDecimalPlaceRound(100 * stats.riichi.uraHit / stats.wins.riichi.total).toString() + "%",
 						},
 						{
-							label: "Ippatsu Rate",
+							label: t("stats.riichi.details.ippatsuRate"),
 							value: twoDecimalPlaceRound(100 * stats.riichi.ippatsu / stats.riichi.total).toString() + "%",
 						},
 						{
-							label: "First Riichi",
+							label: t("stats.riichi.details.firstRiichi"),
 							value: twoDecimalPlaceRound(100 * stats.riichi.first / stats.riichi.total).toString() + "%",
 						},
 						{
-							label: "Chased",
+							label: t("stats.riichi.details.chaseRiichi"),
 							value: twoDecimalPlaceRound(100 * stats.riichi.chase / stats.riichi.total).toString() + "%",
 						},
 						{
-							label: "Was Chased",
+							label: t("stats.riichi.details.riichiChased"),
 							value: twoDecimalPlaceRound(100 * stats.riichi.chased / stats.riichi.total).toString() + "%",
 						},
 					]
@@ -403,21 +401,21 @@ export const FirstStatsDisplay = React.memo(function ({
 			[StatsPageType.Calls]: {
 				graphData: [
 					{
-						label: "Call Rate",
+						label: t("stats.calls.graph.callRate"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.calls.openedHands / stats.totalHands),
 							color: GraphColor.Red,
 						}]
 					},
 					{
-						label: "Riichi Rate",
+						label: t("stats.calls.graph.riichiRate"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * stats.riichi.total / stats.totalHands),
 							color: GraphColor.Green,
 						}]
 					},
 					{
-						label: "Closed",
+						label: t("stats.calls.graph.closed"),
 						data: [{
 							value: twoDecimalPlaceRound(100 * (
 								stats.totalHands
@@ -431,14 +429,14 @@ export const FirstStatsDisplay = React.memo(function ({
 				rightColumn: {
 					fields: [
 						{
-							label: "Calls / Opportunities",
+							label: t("stats.calls.details.totalCallRate"),
 							value: twoDecimalPlaceRound(100 * stats.calls.total / stats.calls.opportunities).toString() + "%",
 						},
 					]
 				},
 			}
 		};
-	}, [stats]);
+	}, [stats, i18n.language]);
 
 	return <Container className={clsx("p-0")}>
 		<FirstStatsPage {...statsPagesByType[selectedPageType]} />
@@ -446,7 +444,7 @@ export const FirstStatsDisplay = React.memo(function ({
 			{Object.keys(statsPagesByType).map(type => parseInt(type)).map((type: StatsPageType) =>
 				<Col key={type}>
 					<SwapPageButton key={type} onClick={() => setSelectedPageType(type)} isSelected={type === selectedPageType}>
-						{StatsPageType[type]}
+						{t(`stats.${StatsPageType[type].toLowerCase()}.tabTitle`)}
 					</SwapPageButton>
 				</Col>
 			)}

@@ -3,5 +3,65 @@
 	"contestPageTitle": "競争 ー {{title}}",
 	"contestListTitle": "競争",
 	"contestSessionsNoTitle": "競争",
-	"contestSessionsTitle": "競争 ー {{title}}"
+	"contestSessionsTitle": "競争 ー {{title}}",
+
+	"stats": {
+		"terminology": {
+			"riichi": "Riichi",
+			"open": "Open",
+			"dama": "Dama"
+		},
+		"overall": {
+			"tabTitle": "Overall",
+			"graph": {
+				"wins": "Wins",
+				"draws": "Draws",
+				"dealins": "Deal Ins",
+				"other": "Other"
+			},
+			"details": {
+				"totalGames": "Total Games",
+				"averageRank": "Average Rank",
+				"averageShanten": "Average Shanten"
+			}
+		},
+		"wins": {
+			"tabTitle": "Wins"
+		},
+		"dealins": {
+			"tabTitle": "Dealins",
+			"detailsTitleMain": "Own Hand",
+			"detailsTitleSecondary": "Opponent's Hand"
+		},
+		"riichi": {
+			"tabTitle": "Riichi",
+			"detailsTitleMain": "Riichi Result",
+			"graph": {
+				"won": "Won",
+				"dealin": "Dealt In",
+				"tsumo": "Outskilled",
+				"draw": "Draw"
+			},
+			"details": {
+				"riichiRate": "Riichi Rate",
+				"uraPerRiichi": "Ura Per Riichi Won",
+				"riichiWithUra": "Riichi Won With Ura",
+				"ippatsuRate": "Ippatsu Rate",
+				"firstRiichi": "First Riichi",
+				"chaseRiichi": "Chased",
+				"riichiChased": "Was Chased"
+			}
+		},
+		"calls": {
+			"tabTitle": "Calls",
+			"graph": {
+				"callRate": "Call Rate",
+				"riichiRate": "Riichi Rate",
+				"closed": "Closed"
+			},
+			"details": {
+				"totalCallRate": "Calls / Opportunities"
+			}
+		}
+	}
 }
