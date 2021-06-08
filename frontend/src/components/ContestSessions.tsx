@@ -61,6 +61,7 @@ function SessionsPagination(props: {
 	onActivePageChanged?: (page: number) => void;
 }) {
 	const [activePage, setActivePage] = React.useState(0);
+	const { t } = useTranslation();
 
 	const onChange = React.useCallback((event: any) => {
 		const pageNumber = parseInt(event.currentTarget.getAttribute("data-page-number"));
@@ -74,7 +75,7 @@ function SessionsPagination(props: {
 
 	return <Pagination className={styles.pagination}>
 		<Link className={styles.backLink} to={`/contests/${props.contestId}/`}>
-			Back to Summary
+			{t("backToSummary")}
 		</Link>
 		<div className={styles.spacer} />
 		{[...Array(props.numberOfPages).keys()].map(pageNumber =>
