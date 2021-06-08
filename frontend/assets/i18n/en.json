@@ -1,7 +1,132 @@
 {
-	"contestPageTitle": "/mjg/ competitions - {{title}}",
-	"contestNoPageTitle": "/mjg/ competitions",
-	"contestListTitle": "/mjg/ competitions",
-	"contestSessionsNoTitle": "/mjg/ competitions",
-	"contestSessionsTitle": "/mjg/ competitions - {{title}}"
+	"yakumanAttained": "Yakuman Attained",
+	"viewOnMajsoul": "View on Majsoul",
+	"backToSummary": "Back to Summary",
+	"title": {
+		"contest": {
+			"list": "/mjg/ competitions",
+			"page": {
+				"generic": "/mjg/ competitions",
+				"specific": "/mjg/ competitions - {{title}}"
+			},
+			"sessions": {
+				"generic": "/mjg/ competitions",
+				"specific": "/mjg/ competitions - {{title}}"
+			}
+		}
+	},
+
+	"stats": {
+		"terminology": {
+			"riichi": "Riichi",
+			"open": "Open",
+			"dama": "Dama"
+		},
+		"overall": {
+			"tabTitle": "Overall",
+			"graph": {
+				"wins": "Wins",
+				"draws": "Draws",
+				"dealins": "Deal Ins",
+				"other": "Other"
+			},
+			"details": {
+				"totalGames": "Total Games",
+				"averageRank": "Average Rank",
+				"averageShanten": "Average Shanten"
+			}
+		},
+		"wins": {
+			"tabTitle": "Wins"
+		},
+		"dealins": {
+			"tabTitle": "Dealins",
+			"detailsTitleMain": "Own Hand",
+			"detailsTitleSecondary": "Opponent's Hand"
+		},
+		"riichi": {
+			"tabTitle": "Riichi",
+			"detailsTitleMain": "Riichi Result",
+			"graph": {
+				"won": "Won",
+				"dealin": "Dealt In",
+				"tsumo": "Outskilled",
+				"draw": "Draw"
+			},
+			"details": {
+				"riichiRate": "Riichi Rate",
+				"uraPerRiichi": "Ura Per Riichi Won",
+				"riichiWithUra": "Riichi Won With Ura",
+				"ippatsuRate": "Ippatsu Rate",
+				"firstRiichi": "First Riichi",
+				"chaseRiichi": "Chased",
+				"riichiChased": "Was Chased"
+			}
+		},
+		"calls": {
+			"tabTitle": "Calls",
+			"graph": {
+				"callRate": "Call Rate",
+				"riichiRate": "Riichi Rate",
+				"closed": "Closed"
+			},
+			"details": {
+				"totalCallRate": "Calls / Opportunities"
+			}
+		}
+	},
+	"footer": {
+		"home": "Home",
+		"4chan": "/mjg/",
+		"repo": "Repo",
+		"source": "Source Code/Report Issue",
+		"contests": "Contests"
+	},
+	"league": {
+		"graph": {
+			"start": "Start"
+		},
+		"sessions": {
+			"selected": "Selected Session",
+			"current": "Current Session",
+			"next": "Next Session",
+			"recent": "Recent Session",
+			"more": "View Schedule"
+		}
+	},
+
+	"session": {
+		"matches": "Matches",
+		"games": "Games",
+		"timeInZone": "{{time}} in {{zone}}"
+	},
+	"time": {
+		"general": {
+			"lastDay": "[Yesterday at] LT",
+			"sameDay": "[Today at] LT",
+			"nextDay": "[Tomorrow at] LT",
+			"lastWeek": "[Last] dddd [at] LT",
+			"nextWeek": "dddd [at] LT"
+		},
+		"countdown": {
+			"sameDay": {
+				"after": "[Starts] [in] H:mm:ss",
+				"before": "[Started] H:mm:ss [ago]"
+			},
+			"lastDay": {
+				"greaterThanDay": "[Started] D [day] [and] H:mm:ss [ago]",
+				"withinDay": "[Started] H:mm:ss [ago]"
+			},
+			"nextDay": {
+				"greaterThanDay": "[Starts] [in] D [day] [and] H:mm:ss",
+				"withinDay": "[Starts] [in] H:mm:ss"
+			},
+			"lastWeek": "[Started] [Last] dddd",
+			"nextWeek": "[Starts] [on] dddd [at] LT",
+			"sameElse": {
+				"after": "[Starts] [on] l",
+				"before": "[Started] [on] l"
+			}
+		}
+	}
 }
