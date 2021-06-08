@@ -1,131 +1,131 @@
 {
-	"yakumanAttained": "手に入れた役満",
-	"viewOnMajsoul": "View on Majsoul",
-	"backToSummary": "Back to Summary",
+	"yakumanAttained": "役満",
+	"viewOnMajsoul": "雀魂で牌譜を見る",
+	"backToSummary": "トップへ戻る",
 	"title": {
 		"contest": {
-			"list": "競争",
+			"list": "としあきの大会一覧",
 			"page": {
-				"generic": "競争",
-				"specific": "競争 ー {{title}}"
+				"generic": "としあきの大会",
+				"specific": "としあきの大会・{{title}}"
 			},
 			"sessions": {
-				"generic": "競争",
-				"specific": "競争 ー {{title}}"
+				"generic": "としあきの大会",
+				"specific": "としあきの大会・{{title}}"
 			}
 		}
 	},
 
 	"stats": {
 		"terminology": {
-			"riichi": "Riichi",
-			"open": "Open",
-			"dama": "Dama"
+			"riichi": "リーチ",
+			"open": "副露",
+			"dama": "ダマテン"
 		},
 		"overall": {
-			"tabTitle": "Overall",
+			"tabTitle": "総合",
 			"graph": {
-				"wins": "Wins",
-				"draws": "Draws",
-				"dealins": "Deal Ins",
-				"other": "Other"
+				"wins": "和了率",
+				"draws": "流局率",
+				"dealins": "放銃率",
+				"other": "その他"
 			},
 			"details": {
-				"totalGames": "Total Games",
-				"averageRank": "Average Rank",
-				"averageShanten": "Average Shanten"
+				"totalGames": "総合半荘数",
+				"averageRank": "平均順位",
+				"averageShanten": "平均配牌向聴数"
 			}
 		},
 		"wins": {
-			"tabTitle": "Wins"
+			"tabTitle": "和了"
 		},
 		"dealins": {
-			"tabTitle": "Dealins",
-			"detailsTitleMain": "Own Hand",
-			"detailsTitleSecondary": "Opponent's Hand"
+			"tabTitle": "放銃",
+			"detailsTitleMain": "自家",
+			"detailsTitleSecondary": "相手"
 		},
 		"riichi": {
-			"tabTitle": "Riichi",
-			"detailsTitleMain": "Riichi Result",
+			"tabTitle": "リーチ",
+			"detailsTitleMain": "リーチ結果",
 			"graph": {
-				"won": "Won",
-				"dealin": "Dealt In",
-				"tsumo": "Outskilled",
-				"draw": "Draw"
+				"won": "リーチ成功",
+				"dealin": "銃率",
+				"tsumo": "積もられ",
+				"draw": "流局"
 			},
 			"details": {
-				"riichiRate": "Riichi Rate",
-				"uraPerRiichi": "Ura Per Riichi Won",
-				"riichiWithUra": "Riichi Won With Ura",
-				"ippatsuRate": "Ippatsu Rate",
-				"firstRiichi": "First Riichi",
-				"chaseRiichi": "Chased",
-				"riichiChased": "Was Chased"
+				"riichiRate": "リーチ率",
+				"uraPerRiichi": "平均裏ドラ数",
+				"riichiWithUra": "裏ドラ乗り率",
+				"ippatsuRate": "一発率",
+				"firstRiichi": "リーチ先制率",
+				"chaseRiichi": "追っかけ率",
+				"riichiChased": "追っかけられ率"
 			}
 		},
 		"calls": {
-			"tabTitle": "Calls",
+			"tabTitle": "副露",
 			"graph": {
-				"callRate": "Call Rate",
-				"riichiRate": "Riichi Rate",
-				"closed": "Closed"
+				"callRate": "副露率",
+				"riichiRate": "リーチ率",
+				"closed": "その他"
 			},
 			"details": {
-				"totalCallRate": "Calls / Opportunities"
+				"totalCallRate": "鳴き数÷鳴く機会数"
 			}
 		}
 	},
 	"footer": {
-		"home": "Home",
-		"4chan": "/mjg/",
-		"repo": "Repo",
-		"source": "Source Code/Report Issue",
-		"contests": "Contests"
+		"home": "トップ",
+		"4chan": "/mjg/スレ",
+		"repo": "/mjg/ウィキ",
+		"source": "ソースコード・問題報告",
+		"contests": "大会一覧"
 	},
 	"league": {
 		"graph": {
-			"start": "始め"
+			"start": "開幕"
 		},
 		"sessions": {
-			"selected": "Selected Session",
-			"current": "Current Session",
-			"next": "Next Session",
-			"recent": "Recent Session",
-			"more": "View Schedule"
+			"selected": "この回戦",
+			"current": "今回戦",
+			"next": "次回戦",
+			"recent": "最近の回戦",
+			"more": "もっと見る"
 		}
 	},
 
 	"session": {
-		"matches": "Matches",
-		"games": "Games",
-		"timeInZone": "{{time}} in {{zone}}"
+		"matches": "参戦チーム",
+		"games": "試合",
+		"timeInZone": "{{zone}}{{time}}"
 	},
 	"time": {
 		"general": {
-			"lastDay": "[Yesterday at] LT",
-			"sameDay": "[Today at] LT",
-			"nextDay": "[Tomorrow at] LT",
-			"lastWeek": "[Last] dddd [at] LT",
-			"nextWeek": "dddd [at] LT"
+			"lastDay": "[昨日]LT",
+			"sameDay": "[今日]LT",
+			"nextDay": "[明日]LT",
+			"lastWeek": "lLT",
+			"nextWeek": "lLT"
 		},
 		"countdown": {
 			"sameDay": {
-				"after": "[Starts] [in] H:mm:ss",
-				"before": "[Started] H:mm:ss [ago]"
+				"after": "[開始まであと]H:mm:ss",
+				"before": "H:mm:ss[前開始しました]"
 			},
 			"lastDay": {
-				"greaterThanDay": "[Started] D [day] [and] H:mm:ss [ago]",
-				"withinDay": "[Started] H:mm:ss [ago]"
+				"greaterThanDay": "D[日間]H:mm:ss[前開始しました]",
+				"withinDay": "H:mm:ss[前開始しました]"
 			},
 			"nextDay": {
-				"greaterThanDay": "[Starts] [in] D [day] [and] H:mm:ss",
-				"withinDay": "[Starts] [in] H:mm:ss"
+				"greaterThanDay": "[開始まであと]D[日間]H:mm:ss",
+				"withinDay": "[開始まであと]H:mm:ss"
 			},
-			"lastWeek": "[Started] [Last] dddd",
-			"nextWeek": "[Starts] [on] dddd [at] LT",
+			"lastWeek": "l[に開始しました]",
+			"nextWeek": "lLT[に開始します]",
 			"sameElse": {
-				"after": "[Starts] [on] l",
-				"before": "[Started] [on] l"
+				"after": "l[に開始します]",
+				"before": "l[に開始しました]"
 			}
 		}
 	}
