@@ -18,7 +18,7 @@ import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import { fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
-import { fetchContestImages, fetchContestSummary, getPhase } from "src/api/Contests";
+import { fetchContestImages, fetchContestSummary, getActivePhase, getPhase } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { Link, useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
@@ -240,7 +240,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 			<Teams
 				contestId={contest._id}
 				teams={contest.teams}
-				teamScores={currentSession?.aggregateTotals}
+				teamScores={currentSession?.aggregateTotals ?? selectedPhase?.aggregateTotals}
 				isLoading={phaseRequestState !== RequestState.Complete}
 			/>
 		</Row>
