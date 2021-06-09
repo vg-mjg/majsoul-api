@@ -626,6 +626,7 @@ export class RestApi {
 				const games = await this.mongoStore.gamesCollection.find(
 					{
 						contestId: contestId,
+						hidden: { $ne: true },
 						$or: [
 							{ notFoundOnMajsoul: false },
 							{ contestMajsoulId: { $exists: true } }
