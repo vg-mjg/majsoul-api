@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import * as en from 'assets/i18n/en.json';
 import * as ja from 'assets/i18n/ja.json';
+import { setDayjsLocale } from './dayjs';
 
 const localeKey = "__riichi_locale";
 
@@ -23,6 +24,7 @@ i18n
 		}
 	});
 
+setDayjsLocale(i18n.language as any);
 
 export function saveLocale(locale: string) {
 	localStorage.setItem(localeKey, locale);

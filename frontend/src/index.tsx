@@ -308,9 +308,9 @@ function Footer() {
 		<Col md="auto">
 			<div className={clsx("text-dark", styles.linkDark, styles.linkUnderline)} onClick={() => {
 				const nextLocale = i18n.language === "ja" ? "en" : "ja";
+				i18n.changeLanguage(nextLocale);
 				saveLocale(nextLocale);
 				setDayjsLocale(nextLocale);
-				i18n.changeLanguage(nextLocale);
 			}}>
 				{i18n.language === "ja" ? "English" : "日本語"}
 			</div>

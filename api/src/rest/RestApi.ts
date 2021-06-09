@@ -598,7 +598,6 @@ export class RestApi {
 
 			try {
 				const games = await cursor.toArray();
-				console.log(games.length);
 				const contests = await this.mongoStore.contestCollection.find(
 					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
 				).toArray();
