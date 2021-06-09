@@ -73,9 +73,10 @@ export function Session(props: {
 
 	const orderedGames = React.useMemo(() => {
 		const numberOfMatches = props.session.plannedMatches.length;
-		const matchMap: Record<number, number> = [];
+		const matchMap: Record<number, number> = {};
 		const indexedGames = games
 			.filter(game => token || !game.hidden)
+			.sort((a, b) => a.start_time - b.start_time)
 			.map((game) => {
 				const info = findPlayerInformation(game.players[0]._id, teams);
 				const matchIndex = props.session.plannedMatches
@@ -90,18 +91,21 @@ export function Session(props: {
 				}
 			});
 
-		const mostGames = Object.entries(matchMap)
-			.filter(([key, value]) => key !== "-1")
-			.reduce((prev, next) => Math.max(prev, next.length), 0);
+		console.log(matchMap);
 
-		return indexedGames.reduce((total, next, index) => (
-			total[
-			next.matchIndex < 0
-				? mostGames * numberOfMatches
-				: next.index * numberOfMatches + next.matchIndex
-			] = next,
-			total
-		), new Array<Rest.GameResult<string>>(mostGames * numberOfMatches).fill(null))
+		const mostGames = Object.entries(matchMap)
+			.filter(([key]) => key !== "-1")
+			.reduce((prev, [, value]) => Math.max(prev, value), 0);
+
+		return indexedGames.reduce((total, next) => {
+			const index = next.matchIndex < 0
+				? mostGames * numberOfMatches + next.index
+				: next.index * numberOfMatches + next.matchIndex;
+
+			total[index] = next;
+			return total;
+		}
+			, new Array<Rest.GameResult<string>>(mostGames * numberOfMatches + (matchMap[-1] ?? 0)).fill(null))
 	}, [teams, games, token]);
 
 	const dispatch = useDispatch();

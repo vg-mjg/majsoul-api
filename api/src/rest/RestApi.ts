@@ -10,7 +10,7 @@ import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
-import { groupBy, map, mergeAll, mergeMap, mergeScan, pairwise, toArray } from 'rxjs/operators';
+import { groupBy, map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Store } from '..';
 import { google } from 'googleapis';
@@ -557,7 +557,10 @@ export class RestApi {
 				const sessionOr = [];
 				for (const session of sessions) {
 					let [startSession, endSession] = await this.mongoStore.sessionsCollection.find(
-						{ scheduledTime: { $gte: session.scheduledTime } }
+						{
+							contestId: session.contestId,
+							scheduledTime: { $gte: session.scheduledTime }
+						}
 					).sort({ scheduledTime: 1 }).limit(2).toArray();
 
 					sessionMap.push({
@@ -579,10 +582,6 @@ export class RestApi {
 				filter.$and.push({ $or: sessionOr });
 			}
 
-			if (filter.$and.length === 0) {
-				delete filter.$and;
-			}
-
 			const cursor = this.mongoStore.gamesCollection.find(filter);
 
 			cursor.project({
@@ -599,6 +598,7 @@ export class RestApi {
 
 			try {
 				const games = await cursor.toArray();
+				console.log(games.length);
 				const contests = await this.mongoStore.contestCollection.find(
 					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
 				).toArray();
@@ -660,6 +660,7 @@ export class RestApi {
 							{ notFoundOnMajsoul: false },
 							{ contestMajsoulId: { $exists: true } }
 						],
+						hidden: { $ne: true }
 					}
 				).toArray();
 
@@ -842,6 +843,7 @@ export class RestApi {
 
 				const query: FilterQuery<Store.GameResult<ObjectId>> = {
 					contestId: contest._id,
+					hidden: { $ne: true }
 				};
 
 				let playerMap: Record<string, ObjectId | boolean> = null;
@@ -1789,7 +1791,8 @@ export class RestApi {
 
 		const games = await this.mongoStore.gamesCollection.find({
 			contestId: contest._id,
-			end_time: timeWindow
+			end_time: timeWindow,
+			hidden: { $ne: true }
 		}).toArray();
 
 		return games.reduce<Record<string, number>>((total, game) => {
