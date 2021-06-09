@@ -854,7 +854,7 @@ export class RestApi {
 						return;
 					}
 
-					playerMap = team.players.reduce((total, next) => (total[next._id.toHexString()] = teamId, total), {} as Record<string, ObjectId | boolean>)
+					playerMap = (team.players ?? []).reduce((total, next) => (total[next._id.toHexString()] = teamId, total), {} as Record<string, ObjectId | boolean>)
 				} else if (data.player != null) {
 					const playerId = new ObjectId(data.player);
 					const [player] = await this.mongoStore.playersCollection.find({
@@ -1174,6 +1174,62 @@ export class RestApi {
 						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
 					}
 				)
+			)
+
+			.patch('/games/:id',
+				param("id").isMongoId(),
+				body(nameofGameResult("hidden")).isBoolean().not().isString().optional({ nullable: true }),
+				withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
+					const gameId = new ObjectId(data.id);
+					const [game] = await this.mongoStore.gamesCollection.find({
+						_id: gameId
+					}).toArray();
+
+					if (!game) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const result = await this.mongoStore.gamesCollection.findOneAndUpdate(
+						{
+							_id: gameId
+						},
+						update,
+						{
+							returnOriginal: false,
+							projection: {
+								rounds: false
+							}
+						}
+					);
+
+					res.send(result.value);
+				})
 			)
 
 			.delete<any, void>('/games/:id',

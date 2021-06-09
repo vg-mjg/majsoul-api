@@ -96,6 +96,7 @@ export interface GameResult<Id = any> {
 	contestId: Id;
 	players?: Player<Id>[];
 	notFoundOnMajsoul?: boolean;
+	hidden?: boolean;
 	version?: GameResultVersion;
 }
 
