@@ -719,6 +719,7 @@ export class RestApi {
 
 				const gameQuery: FilterQuery<store.GameResult<ObjectId>> = {
 					contestId: contest._id,
+					hidden: { $ne: true },
 					$or: [
 						{ notFoundOnMajsoul: false },
 						{ contestMajsoulId: { $exists: true } }
