@@ -77,7 +77,7 @@ export function Session(props: {
 		const indexedGames = games.map((game) => {
 			const info = findPlayerInformation(game.players[0]._id, teams);
 			const matchIndex = props.session.plannedMatches
-				.findIndex(match => match.teams.find(team => team._id === info.team._id) != null);
+				.findIndex(match => match.teams.find(team => team._id === info?.team?._id) != null);
 
 			matchMap[matchIndex] ??= 0;
 
