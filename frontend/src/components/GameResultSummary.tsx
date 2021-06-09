@@ -5,11 +5,15 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import * as styles from "./styles.sass";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { levelToString, pickColorGradient } from "./utils";
 import { TeamImage } from "./TeamImage";
 import dayjs = require("dayjs");
 import { useTranslation } from "react-i18next";
+import { css } from "astroturf";
+import clsx from "clsx";
+import { updateGame } from "src/api/Games";
+import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 
 function GameSeat(props: {
 	seat: number,
@@ -102,10 +106,19 @@ export function getSeatCharacter(seat: number): string {
 	return null;
 }
 
+
+const localStyles = css`
+	.hidden {
+		opacity: 0.5;
+	}
+`;
+
 //todo: use wind enum from types package
 export function GameResultSummary(props: {
 	game: Rest.GameResult,
 }): JSX.Element {
+	const token = useSelector((state: IState) => state.user?.token);
+	const dispatch = useDispatch();
 	const endTime = React.useMemo(() => dayjs(props.game?.end_time).calendar(), [props.game?.end_time]);
 	const { t } = useTranslation();
 	const cellStyle = "mb-1 pl-0 pr-1";
@@ -116,12 +129,22 @@ export function GameResultSummary(props: {
 	}
 
 
-	return <Container className="px-1 py-2">
+	return <Container className={clsx("px-1 py-2", props.game.hidden && localStyles.hidden)}>
 		<Row className={`${rowStyle} px-2 pb-2`}>
-			<Col className="">
+			<Col>
 				{endTime}
 			</Col>
-			<Col md="auto" className="">
+			{token && <Col>
+				<div className={clsx(styles.linkDark, styles.linkUnderline)} onClick={() => {
+					updateGame(token, props.game._id, { hidden: !props.game.hidden })
+						.then(game => {
+							dispatchGamesRetrievedAction(dispatch, [game]);
+						})
+				}}>
+					{props.game.hidden ? "Show" : "Hide"}
+				</div>
+			</Col>}
+			<Col md="auto">
 				<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${props.game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
 			</Col>
 		</Row>

@@ -97,6 +97,7 @@ export function ContestSummary(props: {
 }
 
 function TourneyContestSummary(props: { contestId: string }): JSX.Element {
+	const token = useSelector((state: IState) => state.user?.token);
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];
@@ -136,7 +137,7 @@ function TourneyContestSummary(props: { contestId: string }): JSX.Element {
 		<Row>
 			<Container className="p-0 rounded bg-dark text-light px-1 py-2">
 				<Row className="no-gutters">
-					{games?.map((game, index) => <React.Fragment key={game._id}>
+					{games?.filter(game => token || !game.hidden).map((game, index) => <React.Fragment key={game._id}>
 						<Col style={{ minWidth: "auto" }}>
 							<GameResultSummary game={game} />
 						</Col>

@@ -1,8 +1,7 @@
 import { Rest } from "majsoul-api";
-import { GameResult } from "majsoul-api/dist/store";
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
-export async function createGame(token: string, game: Partial<GameResult<string>>): Promise<string> {
+export async function createGame(token: string, game: Partial<Rest.GameResult<string>>): Promise<string> {
 	const url = buildApiUrl(`games/`);
 	const response = await fetch(
 		url.toString(),
@@ -21,13 +20,31 @@ export async function createGame(token: string, game: Partial<GameResult<string>
 	return await response.json();
 }
 
-export async function fetchGame(id: string): Promise<GameResult<string>> {
+export async function updateGame(token: string, gameId: string, game: Partial<Rest.GameResult<string>>): Promise<Rest.GameResult> {
+	const url = buildApiUrl(`games/${gameId}`);
+	const response = await fetch(
+		url.toString(),
+		{
+			method: "PATCH",
+			headers: {
+				...jsonHeader(),
+				...authHeader(token),
+			},
+			body: JSON.stringify({
+				...game
+			})
+		}
+	);
+	return await response.json();
+}
+
+export async function fetchGame(id: string): Promise<Rest.GameResult<string>> {
 	const url = buildApiUrl(`games/${id}`);
 	const response = await fetch(url.toString());
 	return await response.json();
 }
 
-export async function  fetchPendingGames(contestId: string): Promise<GameResult<string>[]> {
+export async function fetchPendingGames(contestId: string): Promise<Rest.GameResult<string>[]> {
 	const url = buildApiUrl(`contests/${contestId}/pendingGames/`);
 	const response = await fetch(url.toString());
 	return await response.json();
