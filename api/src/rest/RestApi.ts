@@ -1065,6 +1065,7 @@ export class RestApi {
 				body(nameofContest('tagline')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
 				body(nameofContest('taglineAlternate')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
 				body(nameofContest('displayName')).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
+				body(nameofContest('initialPhaseName')).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
 				body(nameofContest('maxGames')).not().isString().bail().isInt({ gt: 0, max: 50 }).optional({ nullable: true }),
 				body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
@@ -1840,6 +1841,7 @@ export class RestApi {
 				'teams._id': true,
 				'teams.players._id': true,
 				transitions: true,
+				initialPhaseName: true,
 			}
 		});
 
@@ -1849,7 +1851,7 @@ export class RestApi {
 
 		const transitions = [
 			{
-				name: "予選",
+				name: contest?.initialPhaseName ?? "予選",
 				startTime: 0,
 			} as ContestPhaseTransition<ObjectID>,
 			...(contest.transitions ?? [])

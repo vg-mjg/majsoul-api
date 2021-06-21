@@ -130,6 +130,7 @@ export interface Contest<Id = any> extends Partial<majsoul.Contest> {
 	taglineAlternate?: string;
 	maxGames?: number;
 	displayName?: string;
+	initialPhaseName?: string;
 	notFoundOnMajsoul?: boolean;
 	bonusPerGame?: number;
 	track?: boolean;
