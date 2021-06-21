@@ -13,6 +13,7 @@ token.json
 secrets.json
 
 mongo-creds
+mongo-keyfile
 majsoul.env
 
 riichi.key.pem
