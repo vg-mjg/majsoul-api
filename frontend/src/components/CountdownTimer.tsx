@@ -30,9 +30,9 @@ function createCountdownCalendarSettings(locale: string) {
 			const diff = dayjs.duration(now.diff(this)).locale(locale);
 
 			if (diff.days() >= 1) {
-				return diff.format(i18n.t("time.countdown.nextDay.greaterThanDay"));
+				return diff.format(i18n.t("time.countdown.lastDay.greaterThanDay"));
 			}
-			return diff.format(i18n.t("time.countdown.nextDay.withinDay"));
+			return diff.format(i18n.t("time.countdown.lastDay.withinDay"));
 		},
 		lastWeek: function (this: dayjs.Dayjs) {
 			return this.locale(locale).format(i18n.t("time.countdown.lastWeek"));
