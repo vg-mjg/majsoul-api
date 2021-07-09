@@ -48,12 +48,13 @@ export class Store {
 		console.log("Connected successfully to server");
 
 		const majsoulDb = client.db('majsoul');
-		this.contestCollection = await majsoulDb.createCollection("contests", {});
-		this.gamesCollection = await majsoulDb.createCollection("games", {});
-		this.sessionsCollection = await majsoulDb.createCollection("sessions", {});
+
+		this.contestCollection = await majsoulDb.collection("contests");
+		this.gamesCollection = await majsoulDb.collection("games");
+		this.sessionsCollection = await majsoulDb.collection("sessions");
 		this.sessionsCollection.createIndex({ scheduledTime: -1 });
-		this.playersCollection = await majsoulDb.createCollection("players", {});
-		this.configCollection = await majsoulDb.createCollection("config", {});
+		this.playersCollection = await majsoulDb.collection("players");
+		this.configCollection = await majsoulDb.collection("config");
 
 		this.contestStream = this.contestCollection.watch().on("change", change => this.contestChangesSubject.next(change));
 		this.configStream = this.configCollection.watch().on("change", change => this.configChangesSubject.next(change));
@@ -65,7 +66,7 @@ export class Store {
 		}
 
 		const oauthDb = client.db('oauth');
-		this.userCollection = await oauthDb.createCollection("users", {});
+		this.userCollection = await oauthDb.collection("users", {});
 	}
 
 	public async isGameRecorded(majsoulId: string): Promise<boolean> {

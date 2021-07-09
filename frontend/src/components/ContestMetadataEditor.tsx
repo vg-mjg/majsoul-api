@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { ContestType } from "majsoul-api/dist/store/types/types";
+import { ContestType, TourneyContestType } from "majsoul-api/dist/store/types/types";
 import Form from "react-bootstrap/Form";
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
@@ -134,11 +134,17 @@ const contestTypeValues =
 		.map(k => parseInt(k))
 		.filter(k => !isNaN(k));
 
+const tourneyContestTypeValues =
+	Object.keys(TourneyContestType)
+		.map(k => parseInt(k))
+		.filter(k => !isNaN(k));
+
 export function ContestMetadataEditor(props: { contestId: string; }): JSX.Element {
 	const token = useSelector((state: IState) => state.user?.token);
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const [majsoulFriendlyId, setMajsoulFriendlyId] = useState<number>(undefined);
 	const [type, setType] = useState<ContestType>(undefined);
+	const [tourneyType, setTourneyType] = useState<TourneyContestType>(undefined);
 	const [displayName, setDisplayName] = useState<string>(undefined);
 	const [maxGames, setMaxGames] = useState<number>(undefined);
 	const [anthem, setAnthem] = useState<string>(undefined);
@@ -257,6 +263,18 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						{contestTypeValues.map((value, index) => <option key={index} value={value}>{ContestType[value]}</option>)}
 					</Form.Control>
 				</Form>
+				{((type ?? contest.type ?? contestTypeValues[0]) === ContestType.Tourney) &&
+					<Form.Control
+						id="tourneyContestTypeSelector"
+						as="select"
+						custom
+						value={tourneyType ?? contest.tourneyType ?? tourneyContestTypeValues[0]}
+						size="sm"
+						onChange={(event) => setTourneyType(parseInt(event.target.value) as TourneyContestType)}
+					>
+						{tourneyContestTypeValues.map((value, index) => <option key={index} value={value}>{TourneyContestType[value]}</option>)}
+					</Form.Control>
+				}
 			</Col>
 		</Row>
 		<Row className="no-gutters">
@@ -390,6 +408,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					variant="secondary"
 					disabled={(contest.majsoulFriendlyId === majsoulFriendlyId || majsoulFriendlyId === undefined)
 						&& (contest.type === type || type === undefined)
+						&& (contest.tourneyType === tourneyType || tourneyType === undefined)
 						&& (contest.displayName === displayName || displayName === undefined)
 						&& (contest.anthem === anthem || anthem === undefined)
 						&& (contest.spreadsheetId === spreadsheetId || spreadsheetId === undefined)
@@ -408,6 +427,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 							taglineAlternate,
 							anthem,
 							type,
+							tourneyType,
 							maxGames,
 							displayName,
 							bonusPerGame,

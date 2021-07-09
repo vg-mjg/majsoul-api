@@ -120,21 +120,48 @@ export enum ContestType {
 	League,
 }
 
-export interface Contest<Id = any> extends Partial<majsoul.Contest> {
-	type?: ContestType;
+export enum SupportedLocales {
+	en = "en",
+	ja = "ja"
+}
+
+export type LocalisedString = string | Record<SupportedLocales, string>
+
+export interface ContestPhaseShared<Id = any> {
 	_id: Id;
-	transitions?: ContestPhaseTransition<Id>[];
-	teams?: ContestTeam<Id>[];
-	anthem?: string;
 	tagline?: string;
 	taglineAlternate?: string;
-	maxGames?: number;
 	displayName?: string;
-	initialPhaseName?: string;
 	notFoundOnMajsoul?: boolean;
-	bonusPerGame?: number;
+	initialPhaseName?: string;
+	anthem?: string;
 	track?: boolean;
 	spreadsheetId?: string;
+	transitions?: ContestPhaseTransition<Id>[];
+}
+
+export interface LeagueContestPhase<Id = any> {
+	type?: ContestType.League,
+	teams?: ContestTeam<Id>[];
+}
+
+export enum TourneyContestType {
+	Cumulative,
+	BestConsecutive
+}
+
+export interface TourneyContestPhase<Id = any> {
+	type?: ContestType.Tourney,
+	tourneyType?: TourneyContestType;
+	maxGames?: number;
+	bonusPerGame?: number;
+}
+
+
+export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhase<Id> & TourneyContestPhase<Id>)
+
+export interface Contest<Id = any> extends Partial<majsoul.Contest>, Omit<ContestPhase<Id>, "type"> {
+	type?: ContestType
 }
 
 export interface ContestTeam<Id = any> {

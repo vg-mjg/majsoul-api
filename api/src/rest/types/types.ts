@@ -34,6 +34,6 @@ export interface Phase<Id = string> extends PhaseMetadata<Id> {
 	aggregateTotals?: Record<string, number>;
 }
 
-export interface Contest<Id = any> extends Store.Contest<Id> {
+export type Contest<Id = any> = Store.Contest<Id> & {
 	phases: PhaseMetadata[];
 }
