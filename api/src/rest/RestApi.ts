@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -24,7 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { ContestPhaseTransition } from '../store';
+import { ContestPhaseTransition, ContestType, TourneyContestType } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -431,8 +431,13 @@ export class RestApi {
 					return;
 				}
 
-				const phases = await this.getPhaseData(phaseInfo);
-				res.send(phases);
+				if (phaseInfo.contest.type === ContestType.League) {
+					const phases = await this.getLeaguePhaseData(phaseInfo);
+					res.send(phases);
+					return;
+				}
+
+				res.sendStatus(500);
 			})
 		);
 
@@ -448,8 +453,83 @@ export class RestApi {
 
 				const now = Date.now();
 
-				const phases = await this.getPhaseData(phaseInfo);
-				res.send(phases.reverse().find(phase => phase.startTime < now));
+				if (phaseInfo.contest.type === ContestType.League) {
+					const phases = await this.getLeaguePhaseData(phaseInfo);
+					res.send(phases.reverse().find(phase => phase.startTime < now));
+					return;
+				}
+
+				if (phaseInfo.contest.tourneyType !== TourneyContestType.BestConsecutive) {
+					res.status(500).send("Tourney subtype is not supported" as any);
+					return
+				}
+
+				const games = await this.mongoStore.gamesCollection.find(
+					{
+						contestId: phaseInfo.contest._id,
+					},
+					{
+						sort: {
+							end_time: -1
+						}
+					}
+				).toArray();
+
+				const playerData = games.reduce((total, next) => {
+					for (let seat = 0; seat < next.players.length; seat++) {
+						const playerId = next.players[seat]._id.toHexString();
+						const playerData = total[playerId] ??= {
+							oldestMatchScore: 0,
+							score: 0,
+							maxScore: 0,
+							totalMatches: 0
+						};
+						playerData.totalMatches++;
+						const score = next.finalScore[seat].uma;
+						playerData.score += score;
+						if (playerData.totalMatches > 5) {
+							playerData.score -= playerData.oldestMatchScore;
+							playerData.oldestMatchScore = score;
+							playerData.maxScore = Math.max(playerData.maxScore, playerData.score);
+						} else {
+							playerData.maxScore = playerData.score
+						}
+					}
+					return total;
+				}, {} as Record<string, {
+					totalMatches: number,
+					score: number,
+					maxScore: number,
+					oldestMatchScore: number,
+				}>);
+
+				const players = await this.mongoStore.playersCollection.find({
+					_id: { $in: Object.keys(playerData).map(ObjectId.createFromHexString) }
+				}).toArray();
+
+				const playerMap = players.reduce(
+					(total, next) => (total[next._id.toHexString()] = next, total),
+					{} as Record<string, store.Player>
+				);
+
+				res.send({
+					index: 0,
+					name: phaseInfo.contest?.initialPhaseName ?? "予選",
+					startTime: phaseInfo.contest.startTime,
+					standings: Object.entries(playerData)
+						.sort(([, a], [, b]) => b.score - a.score)
+						.map(([_id, { maxScore: score, totalMatches }], index) => ({
+							player: {
+								_id,
+								nickname: playerMap[_id].nickname
+							},
+							hasMetRequirements: totalMatches >= 5,
+							rank: index + 1,
+							score,
+							totalMatches
+						} as PlayerTourneyStandingInformation))
+				});
+
 			})
 		);
 
@@ -470,7 +550,7 @@ export class RestApi {
 					return;
 				}
 
-				const phases = await this.getPhaseData(phaseInfo);
+				const phases = await this.getLeaguePhaseData(phaseInfo);
 				res.send(phases.find(phase => phase.index === index));
 			})
 		);
@@ -485,7 +565,7 @@ export class RestApi {
 					return;
 				}
 
-				const phases = await this.getPhaseData(phaseInfo);
+				const phases = await this.getLeaguePhaseData(phaseInfo);
 				res.send(phases.reduce((total, next) =>
 					total.concat(next.sessions), [])
 				);
@@ -1839,6 +1919,8 @@ export class RestApi {
 		const contest = await this.findContest(contestId, {
 			projection: {
 				_id: true,
+				type: true,
+				tourneyType: true,
 				'teams._id': true,
 				'teams.players._id': true,
 				transitions: true,
@@ -1869,11 +1951,11 @@ export class RestApi {
 		};
 	}
 
-	private async getPhaseData({
+	private async getLeaguePhaseData({
 		contest,
 		transitions,
 		phases
-	}: PhaseInfo): Promise<Phase<ObjectID>[]> {
+	}: PhaseInfo): Promise<LeaguePhase<ObjectID>[]> {
 		const sessions = (await this.getSessions(contest).pipe(toArray()).toPromise())
 			.sort((a, b) => a.scheduledTime - b.scheduledTime);
 		return from(phases.concat(null)).pipe(
@@ -1932,7 +2014,7 @@ export class RestApi {
 						return total;
 					}, [] as Session<ObjectID>[]),
 					aggregateTotals: startingTotals,
-				} as Phase<ObjectID>);
+				} as LeaguePhase<ObjectID>);
 			}, {
 				sessions: [{
 					aggregateTotals: (contest.teams ?? []).reduce(
@@ -1940,7 +2022,7 @@ export class RestApi {
 						{} as Record<string, number>
 					)
 				}]
-			} as Phase<ObjectID>, 1),
+			} as LeaguePhase<ObjectID>, 1),
 			toArray(),
 		).toPromise();
 	}

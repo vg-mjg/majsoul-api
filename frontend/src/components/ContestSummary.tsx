@@ -8,7 +8,7 @@ import Col from 'react-bootstrap/Col';
 import { Session } from "./Session";
 import { Teams } from "./Teams";
 import { GameResultSummary } from "./GameResultSummary";
-import { ContestType } from "majsoul-api/dist/store/types/types";
+import { ContestType, TourneyContestType } from "majsoul-api/dist/store/types/types";
 import { ContestMetadataEditor } from "./ContestMetadataEditor";
 import { PlayerStandings } from "./PlayerStandings";
 import { YakumanDisplay } from "./YakumanDisplay";
@@ -18,7 +18,7 @@ import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import { fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
-import { fetchContestImages, fetchContestSummary, getActivePhase, getPhase } from "src/api/Contests";
+import { fetchContestImages, fetchContestSummary, fetchActivePhase, fetchPhase } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
 import { Link, useHistory, useLocation } from "react-router-dom";
 import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
@@ -28,6 +28,7 @@ import { TabNavigator } from "./TabNavigator";
 import { RequestState } from "./utils/RequestState";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { useTranslation } from "react-i18next";
+import { PhaseStandings } from "./PhaseStandings";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -128,7 +129,9 @@ function TourneyContestSummary(props: { contestId: string }): JSX.Element {
 		<Row className="mt-3">
 			{contest.majsoulFriendlyId === 236728
 				? <BracketPlayerStandings contestId={props.contestId} />
-				: <PlayerStandings contestId={props.contestId} />
+				: contest.tourneyType === TourneyContestType.BestConsecutive
+					? <PhaseStandings contestId={props.contestId} />
+					: <PlayerStandings contestId={props.contestId} />
 			}
 		</Row>
 		<Row className="px-4 py-3 justify-content-end" >
@@ -181,14 +184,14 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		)
 	);
 
-	const [selectedPhase, setSelectedPhase] = React.useState<Rest.Phase>();
+	const [selectedPhase, setSelectedPhase] = React.useState<Rest.LeaguePhase>();
 
 	React.useEffect(() => {
 		if (!contest.phases) {
 			return;
 		}
 		setPhaseRequestState(RequestState.Started);
-		getPhase(contest._id, selectedPhaseIndex).then(phase => {
+		fetchPhase(contest._id, selectedPhaseIndex).then(phase => {
 			setPhaseRequestState(RequestState.Complete);
 			setSelectedPhase(phase)
 		});
@@ -219,7 +222,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 	const { t } = useTranslation();
 
 	return <>
-		{ contest.phases && contest.phases.length > 1 &&
+		{contest.phases && contest.phases.length > 1 &&
 			<Row>
 				<Col className="p-0 overflow-hidden rounded">
 					<TabNavigator

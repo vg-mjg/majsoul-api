@@ -45,7 +45,7 @@ export function patchContest(token: string, id: string, contest: Partial<Rest.Co
 		.then(response => response.json())
 }
 
-export function getPhases(id: string): Promise<Rest.Phase[]> {
+export function fetchPhases(id: string): Promise<Rest.Phase[]> {
 	const url = buildApiUrl(`contests/${id}/phases`);
 	return fetch(
 		url.toString(),
@@ -55,7 +55,7 @@ export function getPhases(id: string): Promise<Rest.Phase[]> {
 		.then(response => response.json())
 }
 
-export function getPhase(id: string, phaseIndex: number): Promise<Rest.Phase> {
+export function fetchPhase(id: string, phaseIndex: number): Promise<Rest.Phase> {
 	const url = buildApiUrl(`contests/${id}/phases/${phaseIndex}`);
 	return fetch(
 		url.toString(),
@@ -65,7 +65,7 @@ export function getPhase(id: string, phaseIndex: number): Promise<Rest.Phase> {
 		.then(response => response.json())
 }
 
-export function getActivePhase(id: string): Promise<Rest.Phase> {
+export function fetchActivePhase(id: string): Promise<Rest.Phase> {
 	const url = buildApiUrl(`contests/${id}/phases/active`);
 	return fetch(
 		url.toString(),

@@ -12,7 +12,7 @@ defaults.borderColor = "#666666";
 
 function createData(
 	startPointName: string,
-	phase: Rest.Phase,
+	phase: Rest.LeaguePhase,
 	sessions: Rest.Session[],
 	teams: Record<string, Store.ContestTeam>
 ): ChartData {
@@ -42,7 +42,7 @@ function createData(
 }
 
 export function LeagueStandingChart(props: {
-	phase: Rest.Phase;
+	phase: Rest.LeaguePhase;
 	teams: Record<string, Store.ContestTeam>;
 	onSessionSelect?: (index: number) => void;
 }): JSX.Element {

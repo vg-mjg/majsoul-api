@@ -29,10 +29,28 @@ export interface PhaseMetadata<Id = string> {
 	name: string;
 }
 
-export interface Phase<Id = string> extends PhaseMetadata<Id> {
-	sessions: Session<Id>[];
+export interface LeaguePhase<Id = string> extends PhaseMetadata<Id> {
+	sessions?: Session<Id>[];
 	aggregateTotals?: Record<string, number>;
 }
+
+export interface PlayerTourneyStandingInformation {
+	player: {
+		_id: string;
+		nickname: string;
+	};
+	hasMetRequirements?: boolean;
+	rank: number;
+	score: number;
+	totalMatches: number;
+}
+
+export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
+	standings?: PlayerTourneyStandingInformation[];
+}
+
+export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>
+
 
 export type Contest<Id = any> = Store.Contest<Id> & {
 	phases: PhaseMetadata[];
