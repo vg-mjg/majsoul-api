@@ -40,6 +40,7 @@ export interface PlayerTourneyStandingInformation {
 		nickname: string;
 	};
 	hasMetRequirements?: boolean;
+	highlightedGameIds: string[];
 	rank: number;
 	score: number;
 	totalMatches: number;

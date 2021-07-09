@@ -3,14 +3,14 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Rest } from "majsoul-api";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import Accordion from "react-bootstrap/Accordion";
-import { IState } from "src/State";
 import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { PlayerTourneyStandingInformation } from "../../../api/dist/rest";
+import clsx from "clsx";
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
 	contestId: string
@@ -21,9 +21,6 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 
 	const [games, setGames] = React.useState<Rest.GameResult[]>([])
 
-	const maxGames = useSelector((state: IState) => state.contestsById[props.contestId].maxGames ?? Infinity);
-
-	const dispatch = useDispatch();
 	const [loadGames, setLoadGames] = React.useState(false);
 	React.useEffect(() => {
 		if (!loadGames) {
@@ -58,7 +55,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 							.map((score, seat) => ({ score, seat }))
 							.sort((a, b) => b.score.uma - a.score.uma)
 							.findIndex(r => r.seat === playerSeat);
-						return <Row key={game._id}>
+						return <Row key={game._id} className={clsx(props.highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
 							<Col md="auto">
 								{getSeatCharacter(playerSeat)}
 							</Col>

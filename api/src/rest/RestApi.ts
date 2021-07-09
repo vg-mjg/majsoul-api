@@ -482,16 +482,24 @@ export class RestApi {
 							oldestMatchScore: 0,
 							score: 0,
 							maxScore: 0,
-							totalMatches: 0
+							totalMatches: 0,
+							maxSeqence: [],
+							currentSequence: []
 						};
 						playerData.totalMatches++;
+						playerData.currentSequence.push(next._id.toHexString());
 						const score = next.finalScore[seat].uma;
 						playerData.score += score;
 						if (playerData.totalMatches > 5) {
+							playerData.currentSequence.shift();
 							playerData.score -= playerData.oldestMatchScore;
 							playerData.oldestMatchScore = score;
-							playerData.maxScore = Math.max(playerData.maxScore, playerData.score);
+							if (playerData.score > playerData.maxScore) {
+								playerData.maxScore = playerData.score;
+								playerData.maxSeqence = [...playerData.currentSequence]
+							}
 						} else {
+							playerData.maxSeqence.push(next._id.toHexString());
 							playerData.maxScore = playerData.score
 						}
 					}
@@ -501,6 +509,8 @@ export class RestApi {
 					score: number,
 					maxScore: number,
 					oldestMatchScore: number,
+					maxSeqence: string[],
+					currentSequence: string[]
 				}>);
 
 				const players = await this.mongoStore.playersCollection.find({
@@ -518,7 +528,7 @@ export class RestApi {
 					startTime: phaseInfo.contest.startTime,
 					standings: Object.entries(playerData)
 						.sort(([, a], [, b]) => b.score - a.score)
-						.map(([_id, { maxScore: score, totalMatches }], index) => ({
+						.map(([_id, { maxScore: score, totalMatches, maxSeqence: highlightedGameIds }], index) => ({
 							player: {
 								_id,
 								nickname: playerMap[_id].nickname
@@ -526,7 +536,8 @@ export class RestApi {
 							hasMetRequirements: totalMatches >= 5,
 							rank: index + 1,
 							score,
-							totalMatches
+							totalMatches,
+							highlightedGameIds
 						} as PlayerTourneyStandingInformation))
 				});
 
