@@ -486,7 +486,7 @@ export class RestApi {
 							currentSequence: []
 						};
 						playerData.totalMatches++;
-						const score = next.finalScore[seat].score;
+						const score = next.finalScore[seat].uma;
 						playerData.currentSequence.push({
 							id: next._id.toHexString(),
 							score
