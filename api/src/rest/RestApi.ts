@@ -470,7 +470,7 @@ export class RestApi {
 					},
 					{
 						sort: {
-							end_time: -1
+							end_time: 1
 						}
 					}
 				).toArray();
@@ -479,7 +479,6 @@ export class RestApi {
 					for (let seat = 0; seat < next.players.length; seat++) {
 						const playerId = next.players[seat]._id.toHexString();
 						const playerData = total[playerId] ??= {
-							oldestMatchScore: 0,
 							score: 0,
 							maxScore: 0,
 							totalMatches: 0,
@@ -487,16 +486,18 @@ export class RestApi {
 							currentSequence: []
 						};
 						playerData.totalMatches++;
-						playerData.currentSequence.push(next._id.toHexString());
 						const score = next.finalScore[seat].uma;
+						playerData.currentSequence.push({
+							id: next._id.toHexString(),
+							score
+						});
 						playerData.score += score;
 						if (playerData.totalMatches > 5) {
-							playerData.currentSequence.shift();
-							playerData.score -= playerData.oldestMatchScore;
-							playerData.oldestMatchScore = score;
+							const removedGame = playerData.currentSequence.shift();
+							playerData.score -= removedGame.score
 							if (playerData.score > playerData.maxScore) {
 								playerData.maxScore = playerData.score;
-								playerData.maxSeqence = [...playerData.currentSequence]
+								playerData.maxSeqence = playerData.currentSequence.map(game => game.id)
 							}
 						} else {
 							playerData.maxSeqence.push(next._id.toHexString());
@@ -508,9 +509,11 @@ export class RestApi {
 					totalMatches: number,
 					score: number,
 					maxScore: number,
-					oldestMatchScore: number,
 					maxSeqence: string[],
-					currentSequence: string[]
+					currentSequence: {
+						id: string,
+						score: number,
+					}[]
 				}>);
 
 				const players = await this.mongoStore.playersCollection.find({
@@ -527,7 +530,7 @@ export class RestApi {
 					name: phaseInfo.contest?.initialPhaseName ?? "予選",
 					startTime: phaseInfo.contest.startTime,
 					standings: Object.entries(playerData)
-						.sort(([, a], [, b]) => b.score - a.score)
+						.sort(([, a], [, b]) => b.maxScore - a.maxScore)
 						.map(([_id, { maxScore: score, totalMatches, maxSeqence: highlightedGameIds }], index) => ({
 							player: {
 								_id,
