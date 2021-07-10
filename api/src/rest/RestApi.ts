@@ -12,7 +12,7 @@ import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
 import { groupBy, map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
-import { Store } from '..';
+import { Majsoul, Store } from '..';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { getSecrets } from '../secrets';
@@ -486,7 +486,7 @@ export class RestApi {
 							currentSequence: []
 						};
 						playerData.totalMatches++;
-						const score = next.finalScore[seat].uma;
+						const score = next.finalScore[seat].score;
 						playerData.currentSequence.push({
 							id: next._id.toHexString(),
 							score
@@ -534,7 +534,8 @@ export class RestApi {
 						.map(([_id, { maxScore: score, totalMatches, maxSeqence: highlightedGameIds }], index) => ({
 							player: {
 								_id,
-								nickname: playerMap[_id].nickname
+								nickname: playerMap[_id].nickname,
+								zone: Majsoul.Api.getPlayerZone(playerMap[_id].majsoulId)
 							},
 							hasMetRequirements: totalMatches >= 5,
 							rank: index + 1,

@@ -11,6 +11,7 @@ import { RpcImplementation } from "./RpcImplementation";
 import { RpcService } from "./Service";
 import { ApiResources } from "./ApiResources";
 import { GameRecord } from "./types/GameRecordResponse";
+import { PlayerZone } from "./types";
 
 export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
@@ -56,6 +57,28 @@ export class Api {
 		this.notifications = this.connection.messages.pipe(filter(message => message.type === MessageType.Notification), map(message => this.codec.decode(message.data)));
 		this.rpc = new RpcImplementation(this.connection, this.protobufRoot);
 		this.lobbyService = this.rpc.getService("Lobby");
+	}
+
+	public static getPlayerZone(playerId: number): PlayerZone {
+		if (isNaN(playerId)) {
+			return PlayerZone.Unknown;
+		}
+
+		const regionBits = playerId >> 23;
+
+		if (regionBits >= 0 && regionBits <= 6) {
+			return PlayerZone.China;
+		}
+
+		if (regionBits >= 7 && regionBits <= 12) {
+			return PlayerZone.Japan;
+		}
+
+		if (regionBits >= 13 && regionBits <= 15) {
+			return PlayerZone.Other;
+		}
+
+		return PlayerZone.Unknown;
 	}
 
 	public get majsoulCodec(): Codec {

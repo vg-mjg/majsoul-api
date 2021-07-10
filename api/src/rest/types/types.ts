@@ -1,4 +1,5 @@
 import { Store } from "../..";
+import { PlayerZone } from "../../majsoul";
 import { Session as StoreSession, GameResult as StoreGameResult, Player } from "../../store/types/types";
 
 export * from "./stats";
@@ -38,6 +39,7 @@ export interface PlayerTourneyStandingInformation {
 	player: {
 		_id: string;
 		nickname: string;
+		zone: PlayerZone;
 	};
 	hasMetRequirements?: boolean;
 	highlightedGameIds: string[];

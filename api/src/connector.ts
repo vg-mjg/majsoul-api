@@ -4,7 +4,7 @@ import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { Credentials } from 'google-auth-library';
 import { getSecrets } from "./secrets";
-import { combineLatest, concat, defer, from,  fromEvent,  merge,  Observable, of } from "rxjs";
+import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
 import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { google } from "googleapis";
@@ -186,31 +186,31 @@ async function main() {
 			of(null),
 			tracker.MajsoulId$.pipe(distinctUntilChanged())
 		).pipe(pairwise())
-		.subscribe(([previous, next]) => {
-			if (next == null && previous != null) {
+			.subscribe(([previous, next]) => {
+				if (next == null && previous != null) {
+					mongoStore.gamesCollection.updateMany(
+						{
+							contestMajsoulId: previous
+						},
+						{
+							$unset: {
+								contestId: true,
+							}
+						}
+					);
+					return;
+				}
 				mongoStore.gamesCollection.updateMany(
 					{
-						contestMajsoulId: previous
+						contestMajsoulId: next
 					},
 					{
-						$unset: {
-							contestId: true,
+						$set: {
+							contestId: contestId,
 						}
 					}
 				);
-				return;
-			}
-			mongoStore.gamesCollection.updateMany(
-				{
-					contestMajsoulId: next
-				},
-				{
-					$set: {
-						contestId: contestId,
-					}
-				}
-			);
-		});
+			});
 
 		tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
 			const majsoulContest = await api.findContestByContestId(majsoulFriendlyId);
@@ -232,7 +232,7 @@ async function main() {
 			);
 
 			console.log(`updating contest ${majsoulFriendlyId} games`);
-			for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)){
+			for (const gameId of await api.getContestGamesIds(majsoulContest.majsoulId)) {
 				await recordGame(contestId, gameId.majsoulId, mongoStore, api);
 			}
 		});
@@ -302,7 +302,7 @@ async function recordGame(
 
 		mongoStore.gamesCollection.updateOne(
 			{ majsoulId: gameId },
-			{ $set: { notFoundOnMajsoul: true }}
+			{ $set: { notFoundOnMajsoul: true } }
 		);
 		return;
 	}

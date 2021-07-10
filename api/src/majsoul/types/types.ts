@@ -19,3 +19,4 @@ export interface Contest {
 	startTime: number;
 	finishTime: number;
 }
+

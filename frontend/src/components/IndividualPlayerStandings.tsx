@@ -3,7 +3,6 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Rest } from "majsoul-api";
-import { useDispatch } from "react-redux";
 import Accordion from "react-bootstrap/Accordion";
 import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
@@ -11,9 +10,57 @@ import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { PlayerTourneyStandingInformation } from "../../../api/dist/rest";
 import clsx from "clsx";
+import Badge from "react-bootstrap/Badge";
+
+export enum PlayerZone {
+	Unknown,
+	China,
+	Japan,
+	Other
+}
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
 	contestId: string
+}
+
+const zoneMap: Record<PlayerZone, {
+	color: string,
+	name: string,
+}> = {
+	[PlayerZone.China]: {
+		name: "中国",
+		color: "#fece1b"
+	},
+	[PlayerZone.Japan]: {
+		name: "日本",
+		color: "#bd0029"
+	},
+	[PlayerZone.Other]: {
+		name: "世界",
+		color: "#3f90df"
+	},
+	[PlayerZone.Unknown]: {
+		name: "不明",
+		color: "#000000"
+	}
+}
+
+const Zone: React.FC<{
+	zone: PlayerZone
+}> = ({ zone }) => {
+	if (zone === PlayerZone.Unknown) {
+		return null;
+	}
+
+	const { name, color } = zoneMap[zone];
+	return <h4 className="pr-2 text-dark">
+		<Badge style={{
+			backgroundColor: color,
+			color: "white"
+		}}>
+			{name}
+		</Badge>
+	</h4>
 }
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps): JSX.Element {
@@ -34,6 +81,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 	return <Accordion as={Container} className="p-0">
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{ cursor: "pointer" }}>
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.rank}位</b></h5></Col>
+			<Zone zone={props.player.zone} />
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
 					<Row className="no-gutters">
