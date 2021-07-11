@@ -12,6 +12,7 @@ import { PlayerTourneyStandingInformation } from "../../../api/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
 import { PlayerZone } from "majsoul-api/dist/majsoul/types";
+import { Stats } from "./Stats/Stats";
 
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
@@ -62,6 +63,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 	const { t } = useTranslation();
 
 	const [games, setGames] = React.useState<Rest.GameResult[]>([])
+	const [viewDetails, setViewDetails] = React.useState(false);
 
 	const [loadGames, setLoadGames] = React.useState(false);
 	React.useEffect(() => {
@@ -73,7 +75,11 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 			.then(setGames);
 	}, [props.contestId, props.player._id, loadGames]);
 
-	return <Accordion as={Container} className="p-0">
+	const onAccordionSelect = React.useCallback((accordionKey: string) => {
+		setViewDetails(accordionKey === "0");
+	}, [setViewDetails]);
+
+	return <Accordion as={Container} className="p-0" activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} >
 		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{ cursor: "pointer" }}>
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.rank}位</b></h5></Col>
 			<Zone zone={props.player.zone} />
@@ -90,37 +96,44 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 			<Col md="auto" className="mr-3"> <h5><b>{props.totalMatches}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
-			<Container>
-				{games.sort((a, b) => b.start_time - a.start_time)
-					.map(game => {
-						const playerSeat = game.players.findIndex(p => p?._id === props.player._id);
-						const position = game.finalScore
-							.map((score, seat) => ({ score, seat }))
-							.sort((a, b) => b.score.uma - a.score.uma)
-							.findIndex(r => r.seat === playerSeat);
-						return <Row key={game._id} className={clsx(props.highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
-							<Col md="auto">
-								{getSeatCharacter(playerSeat)}
-							</Col>
+			<>
+				{ viewDetails && <Container>
+					<Row>
+						<Stats
+							request={{player: props.player._id}}
+						/>
+					</Row>
+					{games.sort((a, b) => b.start_time - a.start_time)
+						.map(game => {
+							const playerSeat = game.players.findIndex(p => p?._id === props.player._id);
+							const position = game.finalScore
+								.map((score, seat) => ({ score, seat }))
+								.sort((a, b) => b.score.uma - a.score.uma)
+								.findIndex(r => r.seat === playerSeat);
+							return <Row key={game._id} className={clsx(props.highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
+								<Col md="auto">
+									{getSeatCharacter(playerSeat)}
+								</Col>
 
-							<Col md="auto">
-								{position + 1}位
-							</Col>
+								<Col md="auto">
+									{position + 1}位
+								</Col>
 
-							<Col>
-								{game.finalScore[playerSeat].uma / 1000}
-							</Col>
+								<Col>
+									{game.finalScore[playerSeat].uma / 1000}
+								</Col>
 
-							<Col md="auto">
-								{dayjs(game.start_time).calendar()}
-							</Col>
+								<Col md="auto">
+									{dayjs(game.start_time).calendar()}
+								</Col>
 
-							<Col md="auto">
-								<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
-							</Col>
-						</Row>;
-					})}
-			</Container>
+								<Col md="auto">
+									<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
+								</Col>
+							</Row>;
+						})}
+				</Container>}
+			</>
 		</Accordion.Collapse>
 	</Accordion>;
 }

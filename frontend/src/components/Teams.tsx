@@ -20,9 +20,9 @@ import { BsChevronCompactDown, BsChevronCompactUp, BsX } from 'react-icons/bs';
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
-import { Stats } from "./Stats/Stats";
-import { fetchStats, StatsRequest } from "src/api/Contests";
+import { StatsRequest } from "src/api/Contests";
 import * as globalStyles from "./styles.sass";
+import { Stats } from "./Stats/Stats";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -140,7 +140,6 @@ function Team(props: {
 	const [apiPlayers, setApiPlayers] = React.useState<Rest.ContestPlayer<string>[]>(null);
 	const [editedPlayers, setEditedPlayers] = React.useState<Partial<Rest.ContestPlayer<string>>[]>(null);
 	const [color, setColor] = React.useState<string>();
-	const [stats, setStats] = React.useState<Rest.Stats>(null);
 	const [statsRequest, setStatsRequest] = React.useState<StatsRequest>(null);
 	const [selectedPlayerName, setSelectedPlayerName] = React.useState<string>();
 	const onColorChange = React.useCallback((oldValue: string, newValue: string) => {
@@ -170,24 +169,6 @@ function Team(props: {
 			team: props.team._id
 		});
 	}, [props.team._id, props.contestId, viewDetails]);
-
-	React.useEffect(() => {
-		if (!viewDetails || !statsRequest) {
-			return;
-		}
-
-		const targetId = "team" in statsRequest ? statsRequest.team : "player" in statsRequest ? statsRequest.player : null;
-		if (targetId === null) {
-			return;
-		}
-
-		fetchStats(
-			props.contestId,
-			statsRequest
-		).then(stats => {
-			setStats(stats[targetId]);
-		})
-	}, [statsRequest, viewDetails])
 
 	const onAccordionSelect = React.useCallback((selectedKey: string) => {
 		setViewDetails(selectedKey === "0");
@@ -256,15 +237,26 @@ function Team(props: {
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
-				<Stats
-					stats={stats}
-					teamName={props.team.name}
-					playerName={selectedPlayerName}
-					onSelectTeam={() => {
-						setSelectedPlayerName(null);
-						setStatsRequest({ team: props.team._id });
-					}}
-				/>
+				<Container className={clsx("p-0")}>
+					<Row>
+						{players && <Col className="text-center">
+							<span
+								className={clsx("h5 font-weight-bold", globalStyles.linkDark)}
+								onClick={() => {
+									setSelectedPlayerName(null);
+									setStatsRequest({ team: props.team._id });
+								}}
+							>{props.team.name}</span>&nbsp;
+							<span className="h5">{selectedPlayerName}</span>
+						</Col>}
+					</Row>
+					<Row>
+						<Stats
+							request={statsRequest}
+							hideResults={players == null}
+						/>
+					</Row>
+				</Container>
 				{players == null
 					? <LoadingSpinner />
 					: <Container className="p-0">

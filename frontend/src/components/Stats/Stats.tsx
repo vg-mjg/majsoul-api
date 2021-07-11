@@ -1,30 +1,43 @@
-import * as React from "react";
+import * as React from 'react'
 import { Rest } from "majsoul-api";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import clsx from "clsx";
-import * as globalStyles from "../styles.sass";
-import { VersionedStatsDisplay } from "./VersionedStatsDisplay";
+import { fetchStats, StatsRequest } from '../../api/Contests';
+import { ContestContext } from '../Contest/ContestProvider';
+import { LoadingSpinner } from '../utils/LoadingSpinner';
+import { VersionedStatsDisplay } from './VersionedStatsDisplay';
+import Container from 'react-bootstrap/Container';
 
-export interface StatsPlayerProps {
-	teamName?: string;
-	playerName?: string;
-}
+export const Stats: React.FC<{
+	request: StatsRequest;
+	hideResults?: boolean;
+	loadingSpinnerClassName?: string;
+}> = ({request, hideResults, loadingSpinnerClassName}) => {
+	const { contestId } = React.useContext(ContestContext);
+	const [stats, setStats] = React.useState<Rest.Stats>(null);
 
-export function Stats(props: { stats: Rest.Stats; onSelectTeam?: () => void; } & StatsPlayerProps): JSX.Element {
-	return <Container className={clsx("p-0")}>
-		<Row>
-			<Col className="text-center">
-				<span
-					className={clsx("h5 font-weight-bold", globalStyles.linkDark)}
-					onClick={() => props.onSelectTeam()}
-				>{props.teamName}</span>&nbsp;
-				<span className="h5">{props.playerName}</span>
-			</Col>
-		</Row>
-		<Row>
-			<VersionedStatsDisplay stats={props.stats} />
-		</Row>
-	</Container>;
+	const targetId = request == null ? null : "team" in request ? request.team : "player" in request ? request.player : null;
+
+	React.useEffect(() => {
+		if (!contestId || !request || !targetId) {
+			return;
+		}
+
+		setStats(null);
+
+		fetchStats(
+			contestId,
+			request
+		).then(stats => {
+			setStats(stats[targetId]);
+		})
+	}, [contestId, targetId]);
+
+	if (hideResults) {
+		return null;
+	}
+
+	if (!stats) {
+		return <Container className={loadingSpinnerClassName}><LoadingSpinner/></Container>
+	}
+
+	return <VersionedStatsDisplay stats={stats} />
 }

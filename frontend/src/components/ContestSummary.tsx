@@ -29,6 +29,7 @@ import { RequestState } from "./utils/RequestState";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { useTranslation } from "react-i18next";
 import { PhaseStandings } from "./PhaseStandings";
+import { ContestContext } from "./Contest/ContestProvider";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -86,15 +87,17 @@ export function ContestSummary(props: {
 		</Container>;
 	}
 
-	return <Container>
-		<ContestHeader contest={contest} />
-		<ContestMetadataEditor contestId={contest._id} />
-		{contest.type === ContestType.League
-			? <LeagueContestSummary contest={contest} />
-			: <TourneyContestSummary contestId={contest._id} />
-		}
-		<YakumanDisplay contestId={contest._id} />
-	</Container>
+	return <ContestContext.Provider value={{contestId: props.contestId}}>
+		<Container>
+			<ContestHeader contest={contest} />
+			<ContestMetadataEditor contestId={contest._id} />
+			{contest.type === ContestType.League
+				? <LeagueContestSummary contest={contest} />
+				: <TourneyContestSummary contestId={contest._id} />
+			}
+			<YakumanDisplay contestId={contest._id} />
+		</Container>
+	</ContestContext.Provider>
 }
 
 function TourneyContestSummary(props: { contestId: string }): JSX.Element {

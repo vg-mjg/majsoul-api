@@ -91,8 +91,6 @@ export function Session(props: {
 				}
 			});
 
-		console.log(matchMap);
-
 		const mostGames = Object.entries(matchMap)
 			.filter(([key]) => key !== "-1")
 			.reduce((prev, [, value]) => Math.max(prev, value), 0);

@@ -75,7 +75,6 @@ enum GraphColor {
 function StatsColumn(props: StatsGroup & {
 	graphData: (GraphData & { label: string })[]
 }): JSX.Element {
-	console.log(props);
 	return <Container>
 		{props.title && <Row><Col className="font-weight-bold">{props.title}</Col></Row>}
 		{props.graphData.map((stat) =>
