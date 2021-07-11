@@ -75,7 +75,7 @@ export function fetchGames(params: {
 		.then(response => response.json());
 }
 
-export function fetchYakuman(contestId: string): Promise<Rest.GameResult<string>[]> {
+export function fetchYakuman(contestId: string): Promise<Rest.YakumanInformation[]> {
 	return fetch(buildApiUrl(`contests/${contestId}/yakuman`).toString())
 		.then(response => response.json())
 }

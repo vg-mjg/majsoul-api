@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -24,7 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { ContestPhaseTransition, ContestType, TourneyContestType } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, TourneyContestType } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -740,7 +740,7 @@ export class RestApi {
 			}
 		});
 
-		this.app.get<any, GameResult[]>('/contests/:contestId/yakuman', async (req, res) => {
+		this.app.get<any, YakumanInformation[]>('/contests/:contestId/yakuman', async (req, res) => {
 			try {
 				const contestId = await this.contestExists(req.params.contestId);
 				if (!contestId) {
@@ -759,16 +759,48 @@ export class RestApi {
 					}
 				).toArray();
 
-				res.send(games
-					.filter(game => game.rounds.find(round =>
-						round.tsumo?.value === 32000
-						|| round.tsumo?.value === 48000
-						|| round.rons?.find(ron => ron.value === 32000 || ron.value === 48000) != null
-					))
+				const yakumanGames = games
 					.map(game => ({
-						...game,
-						contestId: contestId
-					}))
+						game,
+						yakumanAgari: game.rounds.map(round =>
+							(round.tsumo?.value >= 32000
+								? [round.tsumo]
+								: round.rons?.filter(ron => ron.value >= 32000) || []) as AgariInfo[]
+						).flat()
+					}));
+
+				const playerMap = (await this.mongoStore.playersCollection.find(
+					{
+						_id: {
+							$in: yakumanGames.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => game.players[agari.winner]._id)).flat()
+						},
+					},
+					{
+						projection: {
+							_id: true,
+							nickname: true,
+							majsoulId: true,
+						}
+					}
+				).toArray()).reduce((total, next) => (total[next._id.toHexString()] = next, total), {} as Record<string, store.Player>)
+
+				res.send(
+					yakumanGames
+						.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => {
+							const player = playerMap[game.players[agari.winner]._id.toHexString()];
+							return {
+								han: agari.han,
+								player: {
+									nickname: player.nickname,
+									_id: player._id.toHexString(),
+									zone: Majsoul.Api.getPlayerZone(player.majsoulId)
+								},
+								game: {
+									endTime: game.end_time,
+									majsoulId: game.majsoulId,
+								}
+							}
+						})).flat()
 				);
 			} catch (error) {
 				console.log(error);

@@ -1,5 +1,5 @@
 import { Store } from "../..";
-import { PlayerZone } from "../../majsoul";
+import { Han, PlayerZone } from "../../majsoul";
 import { Session as StoreSession, GameResult as StoreGameResult, Player } from "../../store/types/types";
 
 export * from "./stats";
@@ -35,12 +35,14 @@ export interface LeaguePhase<Id = string> extends PhaseMetadata<Id> {
 	aggregateTotals?: Record<string, number>;
 }
 
+export interface PlayerInformation {
+	_id: string;
+	nickname: string;
+	zone: PlayerZone;
+}
+
 export interface PlayerTourneyStandingInformation {
-	player: {
-		_id: string;
-		nickname: string;
-		zone: PlayerZone;
-	};
+	player: PlayerInformation;
 	hasMetRequirements?: boolean;
 	highlightedGameIds: string[];
 	rank: number;
@@ -57,4 +59,13 @@ export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>
 
 export type Contest<Id = any> = Store.Contest<Id> & {
 	phases: PhaseMetadata[];
+}
+
+export interface YakumanInformation {
+	han: Han[];
+	player: PlayerInformation;
+	game: {
+		majsoulId: string;
+		endTime: number;
+	}
 }

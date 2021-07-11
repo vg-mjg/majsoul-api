@@ -10,6 +10,9 @@ import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAc
 import * as dayjs from "dayjs";
 import { AgariInfo, RoundResult } from "majsoul-api/dist/store/types";
 import { useTranslation } from "react-i18next";
+import { Rest } from "majsoul-api";
+import { css } from "astroturf";
+import clsx from "clsx";
 
 function getYakumanName(han: Han[]): string {
 	const names = han.map(h => {
@@ -79,17 +82,20 @@ function getYakumanAgari(round: RoundResult): AgariInfo[] {
 	return round.rons.filter(ron => ron.value === 32000 || ron.value === 48000);
 }
 
-export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
-	const dispatch = useDispatch();
-	React.useEffect(() => {
-		fetchYakuman(props.contestId)
-			.then(games => dispatchGamesRetrievedAction(dispatch, games));
-	}, [dispatch, props.contestId]);
+const styles = css`
+	.yakumanEntry {
+		&:not(:last-child) {
+			border-bottom: solid white 1px;
+		}
+	}
+`;
 
-	const games = useSelector((state: IState) => Object.values(state.games ?? {})
-		.filter(game => game.contestId === props.contestId
-			&& game.rounds?.find(round => getYakumanAgari(round).length > 0))
-	);
+export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
+	const [yakumen, setYakumen] = React.useState<Rest.YakumanInformation[]>(null);
+	React.useEffect(() => {
+		setYakumen(null);
+		fetchYakuman(props.contestId).then(setYakumen);
+	}, [props.contestId]);
 
 	const { t } = useTranslation();
 	return <>
@@ -98,18 +104,21 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 		</Row>
 		<Row>
 			<Container className="rounded bg-dark text-light pt-2 px-3">
-				{games.length > 0 ?
-					games.map((game, i) => <Row
-						className={`no-gutters align-items-center pb-1 mb-1`}
-						key={game._id}
-						style={i === games.length - 1 ? {} : { borderBottom: "solid white 1px" }}
+				{yakumen?.length > 0 ?
+					yakumen.map(({ game, han, player }, index) => <Row
+						className={clsx(`no-gutters align-items-center pb-1 mb-1`, styles.yakumanEntry)}
+						key={index}
 					>
-						<Col style={{ fontSize: "1.5em" }}>
-							{game.rounds.map(getYakumanAgari).filter(agari => agari.length > 0).flat().map(agari => getYakumanName(agari.han)).join(" ")}
+						<Col  style={{ fontSize: "1.5em" }}>
+							{getYakumanName(han)}
 						</Col>
 
 						<Col md="auto" className="mr-3">
-							{dayjs(game.start_time).calendar()}
+							{player.nickname}
+						</Col>
+
+						<Col md="auto" className="mr-3">
+							{dayjs(game.endTime).calendar()}
 						</Col>
 
 						<Col md="auto">
