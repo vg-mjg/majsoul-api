@@ -11,13 +11,8 @@ import { useTranslation } from "react-i18next";
 import { PlayerTourneyStandingInformation } from "../../../api/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
+import { PlayerZone } from "majsoul-api/dist/majsoul/types";
 
-export enum PlayerZone {
-	Unknown,
-	China,
-	Japan,
-	Other
-}
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
 	contestId: string
