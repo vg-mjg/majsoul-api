@@ -133,7 +133,7 @@ function TourneyContestSummary(props: { contestId: string }): JSX.Element {
 			{contest.majsoulFriendlyId === 236728
 				? <BracketPlayerStandings contestId={props.contestId} />
 				: contest.tourneyType === TourneyContestType.BestConsecutive
-					? <PhaseStandings contestId={props.contestId} />
+					? <PhaseStandings />
 					: <PlayerStandings contestId={props.contestId} />
 			}
 		</Row>

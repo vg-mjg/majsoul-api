@@ -13,10 +13,11 @@ import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
 import { PlayerZone } from "majsoul-api/dist/majsoul/types";
 import { Stats } from "./Stats/Stats";
-
+import { useContext } from "react";
+import { ContestContext } from "./Contest/ContestProvider";
+import * as globalStyles from "./styles.sass";
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
-	contestId: string
 }
 
 const zoneMap: Record<PlayerZone, {
@@ -62,6 +63,8 @@ const Zone: React.FC<{
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps): JSX.Element {
 	const { t } = useTranslation();
 
+	const { contestId } = useContext(ContestContext);
+
 	const [games, setGames] = React.useState<Rest.GameResult[]>([])
 	const [viewDetails, setViewDetails] = React.useState(false);
 
@@ -71,16 +74,22 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 			return;
 		}
 		setGames([]);
-		fetchContestPlayerGames(props.contestId, props.player._id)
+		fetchContestPlayerGames(contestId, props.player._id)
 			.then(setGames);
-	}, [props.contestId, props.player._id, loadGames]);
+	}, [contestId, props.player._id, loadGames]);
 
 	const onAccordionSelect = React.useCallback((accordionKey: string) => {
 		setViewDetails(accordionKey === "0");
 	}, [setViewDetails]);
 
 	return <Accordion as={Container} className="p-0" activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} >
-		<Accordion.Toggle as={Row} eventKey="0" className="no-gutters align-items-center flex-nowrap" onClick={() => setLoadGames(true)} style={{ cursor: "pointer" }}>
+		<Accordion.Toggle
+			as={Row}
+			eventKey="0"
+			className={clsx("no-gutters align-items-center flex-nowrap", globalStyles.linkDark)}
+			onClick={() => setLoadGames(true)}
+			style={{ cursor: "pointer" }}
+		>
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.rank}位</b></h5></Col>
 			<Zone zone={props.player.zone} />
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
