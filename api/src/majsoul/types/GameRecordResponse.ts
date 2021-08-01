@@ -9,6 +9,6 @@ export type GameStepRecord = lq.RecordNewRound
 	| lq.RecordNoTile
 	| lq.RecordHule;
 
-export interface GameRecord extends lq.ResGameRecord {
+export interface GameRecord extends lq.IResGameRecord {
 	records: GameStepRecord[];
 }

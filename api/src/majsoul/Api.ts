@@ -12,6 +12,7 @@ import { RpcService } from "./Service";
 import { ApiResources } from "./ApiResources";
 import { GameRecord } from "./types/GameRecordResponse";
 import { PlayerZone } from "./types";
+import { lq } from "./types/liqi";
 
 export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
@@ -47,10 +48,13 @@ export class Api {
 	private readonly rpc: RpcImplementation;
 	private readonly lobbyService: RpcService;
 	private readonly codec: Codec;
+	private readonly clientVersion: string;
 	public readonly notifications: Observable<any>;
 
 	constructor(private readonly apiResources: ApiResources) {
 		this.protobufRoot = Root.fromJSON(this.apiResources.protobufDefinition);
+		this.clientVersion = `web-${this.apiResources.version.slice(0, -2)}`;
+		console.log(`Client version: [${this.clientVersion}]`);
 		this.codec = new Codec(this.protobufRoot);
 		const serverIndex = Math.floor(Math.random() * this.apiResources.serverList.servers.length);
 		this.connection = new Connection(`wss://${this.apiResources.serverList.servers[serverIndex]}`);
@@ -106,37 +110,63 @@ export class Api {
 			console.log("no passport");
 			return;
 		}
+
 		const type = 8;
-		let resp = await this.lobbyService.rpcCall("oauth2Auth", {
+
+		const respOauth2Auth = await this.lobbyService.rpcCall<lq.IReqOauth2Auth, lq.IResOauth2Auth>("oauth2Auth", {
 			type,
 			code: passport.accessToken,
 			uid: passport.uid,
+			client_version_string: this.clientVersion
 		});
-		accessToken = resp.access_token;
-		resp = await this.lobbyService.rpcCall("oauth2Check", { type, access_token: accessToken });
-		if (!resp.has_account) {
-			await new Promise((res) => setTimeout(res, 2000));
-			resp = await this.lobbyService.rpcCall("oauth2Check", { type, access_token: accessToken });
-		}
-		resp = await this.lobbyService.rpcCall("oauth2Login", {
+
+		const reqOauth2Check: lq.IReqOauth2Check = {
 			type,
-			access_token: accessToken,
-			reconnect: false,
-			device: { device_type: "pc", browser: "safari" },
-			random_key: uuidv4(),
-			client_version: this.apiResources.version,
-		});
-		if (!resp.account) {
+			access_token: respOauth2Auth.access_token
+		}
+
+		let respOauth2Check = await this.lobbyService.rpcCall<lq.IReqOauth2Check, lq.IResOauth2Check>("oauth2Check", reqOauth2Check);
+		if (!respOauth2Check.has_account) {
+			await new Promise((res) => setTimeout(res, 2000));
+			respOauth2Check = await this.lobbyService.rpcCall("oauth2Check", reqOauth2Check);
+		}
+
+		const respOauth2Login = await this.lobbyService.rpcCall< lq.IReqOauth2Login,  lq.IResLogin>(
+			"oauth2Login",
+			{
+				type,
+				currency_platforms: [ 2, 9 ],
+				access_token: respOauth2Auth.access_token,
+				reconnect: false,
+				device: {
+					platform: 'pc',
+					hardware: 'pc',
+					os: 'windows',
+					os_version: 'win10',
+					is_browser: true,
+					software: 'Chrome',
+					sale_platform: 'web'
+				},
+				random_key: uuidv4(),
+				client_version: { resource: this.apiResources.version },
+				client_version_string: this.clientVersion
+			}
+		);
+
+		if (!respOauth2Login.account) {
 			throw Error(`Couldn't log in to user id ${userId}`);
 		}
-		console.log(`Logged in as ${resp.account.nickname} account id ${resp.account_id}`);
+		console.log(`Logged in as ${respOauth2Login.account.nickname} account id ${respOauth2Login.account_id}`);
 		console.log("Connection ready");
 	}
 
 	public async findContestByContestId(id: number): Promise<Contest> {
-		const resp = await this.lobbyService.rpcCall("fetchCustomizedContestByContestId", {
-			contest_id: id,
-		});
+		const resp = await this.lobbyService.rpcCall<lq.IReqFetchCustomizedContestByContestId, lq.IResFetchCustomizedContestByContestId>(
+			"fetchCustomizedContestByContestId",
+			{
+				contest_id: id,
+			}
+		);
 
 		if (!resp.contest_info) {
 			return null;
@@ -158,10 +188,13 @@ export class Api {
 		let nextIndex = undefined;
 		const idLog = {};
 		while (true) {
-			const resp = await this.lobbyService.rpcCall("fetchCustomizedContestGameRecords", {
-				unique_id: id,
-				last_index: nextIndex,
-			});
+			const resp = await this.lobbyService.rpcCall<lq.IReqFetchCustomizedContestGameRecords, lq.IResFetchCustomizedContestGameRecords>(
+				"fetchCustomizedContestGameRecords",
+				{
+					unique_id: id,
+					last_index: nextIndex,
+				}
+			);
 			for (const game of resp.record_list) {
 				idLog[game.uuid] = true;
 			}
@@ -185,14 +218,20 @@ export class Api {
 					delete this.contestSystemMessagesSubscriptions[id];
 					this.lobbyService.rpcCall("leaveCustomizedContestChatRoom", {});
 					for (const id of Object.keys(this.contestSystemMessagesSubscriptions)) {
-						this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: id });
+						this.lobbyService.rpcCall<lq.IReqJoinCustomizedContestChatRoom>(
+							"joinCustomizedContestChatRoom",
+							{ unique_id: parseInt(id) }
+						);
 					}
 				}
 			}),
 			() => {
 				if (this.contestSystemMessagesSubscriptions[id] == null) {
 					this.contestSystemMessagesSubscriptions[id] = 1;
-					this.lobbyService.rpcCall("joinCustomizedContestChatRoom", { unique_id: id });
+					this.lobbyService.rpcCall<lq.IReqJoinCustomizedContestChatRoom>(
+						"joinCustomizedContestChatRoom",
+						{ unique_id: id }
+					);
 				} else {
 					this.contestSystemMessagesSubscriptions[id]++;
 				}
@@ -209,12 +248,18 @@ export class Api {
 
 	public async findPlayerByFriendlyId(majsoulFriendlyId: number): Promise<Player> {
 		try {
-			const resp = (await this.lobbyService.rpcCall("searchAccountByPattern", { pattern: majsoulFriendlyId.toString() }));
+			const resp = (await this.lobbyService.rpcCall<lq.IReqSearchAccountByPattern, lq.IResSearchAccountByPattern>(
+				"searchAccountByPattern",
+				{ pattern: majsoulFriendlyId.toString() }
+			));
 			if (!resp.decode_id) {
 				return null;
 			}
 
-			const [player] = (await this.lobbyService.rpcCall("fetchMultiAccountBrief", { account_id_list: [resp.decode_id] })).players;
+			const [player] = (await this.lobbyService.rpcCall<lq.IReqMultiAccountId, lq.IResMultiAccountBrief>(
+				"fetchMultiAccountBrief",
+				{ account_id_list: [resp.decode_id] }
+			)).players;
 			return {
 				majsoulId: player.account_id,
 				nickname: player.nickname
@@ -226,11 +271,24 @@ export class Api {
 	}
 
 	public async getGame(id: string): Promise<GameRecord> {
-		let resp;
+		let resp: lq.IResGameRecord;
 		try {
-			resp = (await this.lobbyService.rpcCall("fetchGameRecord", { game_uuid: id }));
-			resp.records = this.codec.decode(resp.data).records.map((r) => this.codec.decode(r));
-			return resp;
+			resp = (await this.lobbyService.rpcCall<lq.IReqGameRecord, lq.IResGameRecord>(
+				"fetchGameRecord",
+				{ game_uuid: id, client_version_string: this.clientVersion }
+			));
+			const details = this.codec.decode<lq.IGameDetailRecords>(resp.data as Buffer);
+
+			return {
+				...resp,
+				records: (
+					details.records.length > 0
+						? details.records
+						: (details.actions
+								.filter(action => action.type === 1)
+								.map(action => action.result))
+					).map(item => this.codec.decode(item as Buffer))
+			};
 		}
 		catch (e) {
 			console.log(`Couldn't find game ${id}`);

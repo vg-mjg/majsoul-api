@@ -23,6 +23,9 @@ async function main() {
 
 	api.notifications.subscribe(n => console.log(n));
 	await api.init();
+
+	// console.log(api.majsoulCodec.decodeMessage(Buffer.from("", "hex")));
+
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
 
 	// const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
@@ -31,10 +34,9 @@ async function main() {
 	// 	}
 	// });
 
-	//console.log(api.majsoulCodec.decodeMessage(Buffer.from("0227000a282e6c712e4c6f6262792e6c65617665437573746f6d697a6564436f6e7465737443686174526f6f6d1200", "hex")));
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
-	// api.getGame("210527-bca2215d-2d17-47b4-a419-f1c43f6b50c5").then(game => console.log(parseGameRecordResponse(game)));
+	// api.getGame("").then(game => console.log(parseGameRecordResponse(game)));
 
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");

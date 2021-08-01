@@ -56,7 +56,7 @@ export class Codec {
 		this.wrapper = protobufRoot.lookupType('Wrapper');
 	}
 
-	public decode(data: Buffer): any {
+	public decode<T = any>(data: Buffer): T {
 		return Codec.decode(this.protobufRoot, this.wrapper, data);
 	}
 

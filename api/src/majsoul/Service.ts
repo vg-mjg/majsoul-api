@@ -23,7 +23,7 @@ export class RpcService {
 		});
 	}
 
-	public rpcCall(name: string, request: any): Promise<any> {
+	public rpcCall<TReq = any, TRes = any>(name: string, request: TReq): Promise<TRes> {
 		return this.callChain = this.callChain
 			.then(() => this.rpcCallImmediate(name, request))
 			.catch(() => this.rpcCallImmediate(name, request));
