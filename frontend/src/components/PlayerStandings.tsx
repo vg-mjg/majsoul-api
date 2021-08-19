@@ -7,9 +7,8 @@ import { Rest } from "majsoul-api";
 import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
 import { useSelector } from "react-redux";
 import { IState } from "src/State";
-import { fetchContestPlayers } from "src/api/Players";
 
-function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: string}): number {
+function contestPlayerTeamSort(params: { player: Rest.ContestPlayer<any>, team: string }): number {
 	if (params.player.team.seeded && params.team != null) {
 		return 1;
 	}
@@ -22,20 +21,10 @@ export function PlayerStandings(props: {
 	ignoredGames?: number;
 }): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
-	const maxGames = contest?.maxGames;
-	const [contestPlayers, setContestPlayers] = React.useState<Array<Rest.ContestPlayer<any>>>(null);
-
-	React.useEffect(() => {
-		setContestPlayers(null);
-		fetchContestPlayers({
-			contestId: props.contestId,
-			gameLimit: maxGames,
-			ignoredGames: props.ignoredGames
-		}).then(setContestPlayers);
-	}, [props.contestId, props.ignoredGames, contest?.bonusPerGame, maxGames]);
+	const players = contest?.players;
 
 	return <Container className="rounded-bottom bg-dark text-light text-center px-3 py-4">
-		{contestPlayers == null
+		{!players
 			? <Row>
 				<Col>
 					<Spinner animation="border" role="status">
@@ -43,7 +32,7 @@ export function PlayerStandings(props: {
 					</Spinner>
 				</Col>
 			</Row>
-			: contestPlayers
+			: players
 				.map(player => ({
 					player,
 					team: props.allowedTeams == null ? player.team.teams[0] : props.allowedTeams.find(team => player.team.teams.indexOf(team) >= 0)

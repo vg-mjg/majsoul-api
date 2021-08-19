@@ -12,11 +12,11 @@ import { ContestType, TourneyContestType } from "majsoul-api/dist/store/types/ty
 import { ContestMetadataEditor } from "./ContestMetadataEditor";
 import { PlayerStandings } from "./PlayerStandings";
 import { YakumanDisplay } from "./YakumanDisplay";
-import { BracketPlayerStandings } from "./BracketPlayerStandings";
+import { BracketPlayerStandings, brackets } from "./BracketPlayerStandings";
 import { contestName } from "./utils";
 import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
-import { fetchContestPlayers } from "src/api/Players";
+import { FetchContestPlayerParams, fetchContestPlayers } from "src/api/Players";
 import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
 import { fetchContestImages, fetchContestSummary, fetchActivePhase, fetchPhase } from "src/api/Contests";
 import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
@@ -39,6 +39,9 @@ export function ContestSummary(props: {
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const dispatch = useDispatch();
 
+	const hash = useLocation().hash.toLowerCase().substr(1);
+	const activeSide = hash in brackets ? hash : "achiga";
+
 	React.useEffect(() => {
 		if (!props.contestId) {
 			return;
@@ -47,19 +50,26 @@ export function ContestSummary(props: {
 		setImageRequestState(RequestState.Started);
 		setContestRequestState(RequestState.Started);
 
-		fetchContestImages(props.contestId)
-			.then(contest => {
-				setImageRequestState(RequestState.Complete);
-				dispatchContestImagesFetchedAction(dispatch, contest)
-			});
-		fetchContestSummary(props.contestId).then(contest => {
-			setContestRequestState(RequestState.Complete);
-			fetchContestPlayers({
-				contestId: props.contestId
-			}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
-			dispatchContestSummaryRetrievedAction(dispatch, contest)
+		fetchContestImages(props.contestId).then((_contest) => {
+			setImageRequestState(RequestState.Complete);
+			dispatchContestImagesFetchedAction(dispatch, _contest);
 		});
-	}, [props.contestId]);
+
+		fetchContestSummary(props.contestId).then((_contest) => {
+			setContestRequestState(RequestState.Complete);
+			const playerPayload: FetchContestPlayerParams = {
+				contestId: _contest._id,
+				gameLimit: _contest.maxGames,
+			}
+			if (_contest.majsoulFriendlyId === 236728 && activeSide !== "achiga") {
+				playerPayload.ignoredGames = 4;
+			}
+			fetchContestPlayers(playerPayload).then((players) => {
+				dispatchContestPlayersRetrieved(dispatch, props.contestId, players);
+			});
+			dispatchContestSummaryRetrievedAction(dispatch, _contest);
+		});
+	}, [props.contestId, activeSide]);
 
 	const { t, i18n } = useTranslation();
 
@@ -87,7 +97,7 @@ export function ContestSummary(props: {
 		</Container>;
 	}
 
-	return <ContestContext.Provider value={{contestId: props.contestId}}>
+	return <ContestContext.Provider value={{ contestId: props.contestId }}>
 		<Container>
 			<ContestHeader contest={contest} />
 			<ContestMetadataEditor contestId={contest._id} />

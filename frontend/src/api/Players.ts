@@ -1,7 +1,7 @@
 import { Rest, Store } from "majsoul-api";
 import { buildApiUrl } from "./utils";
 
-interface FetchContestPlayerParams {
+export interface FetchContestPlayerParams {
 	contestId: string;
 	gameLimit?: number;
 	ignoredGames?: number;
