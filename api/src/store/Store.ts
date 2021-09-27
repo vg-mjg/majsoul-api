@@ -101,7 +101,7 @@ export class Store {
 					player == null
 						? Promise.resolve(null)
 						: this.playersCollection.findOneAndUpdate(
-							{ $or: [{ majsoulId: player.majsoulId }, { nickname: player.nickname }] },
+							{ majsoulId: player.majsoulId },
 							{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
 							{ upsert: true, returnOriginal: false, projection: { _id: true } }
 						)
