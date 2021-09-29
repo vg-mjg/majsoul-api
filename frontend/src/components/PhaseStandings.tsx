@@ -13,6 +13,7 @@ import { TabNavigator } from "./TabNavigator";
 import { TourneyContestType } from "majsoul-api/dist/store/types";
 import { useHistory, useLocation } from "react-router";
 import clsx from "clsx";
+import { useTranslation } from "react-i18next";
 
 const StandingsSection: React.FC<{
 	standings: Rest.PlayerTourneyStandingInformation[],
@@ -42,6 +43,8 @@ export const PhaseStandings: React.FC = () => {
 	const history = useHistory();
 	const hash = useLocation().hash.toLowerCase().substr(1);
 	const selectedScoreType = contestTypeValues[hash];
+
+	const { t } = useTranslation();
 
 	const standings = React.useMemo(() => {
 		if (!phase?.standings) {
@@ -98,13 +101,13 @@ export const PhaseStandings: React.FC = () => {
 								[
 									{
 										key: "combined",
-										title: "Combined Score",
+										title: t("tourney.scoreType.combined"),
 									},
 									...contestScoreTypes.map(scoreType => ({
 											key: TourneyContestType[parseInt(scoreType) as TourneyContestType].toLowerCase(),
-											title: TourneyContestType[parseInt(scoreType) as TourneyContestType],
+											title: t(`tourney.scoreType.${TourneyContestType[parseInt(scoreType) as TourneyContestType].toLowerCase()}`),
 									}))
-								]
+							]
 							}
 							onTabChanged={(key) => {
 								history.push({

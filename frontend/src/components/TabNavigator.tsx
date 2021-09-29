@@ -16,7 +16,7 @@ export function TabNavigator(props: {
 		justify
 		variant="tabs"
 		activeKey={props.activeTab ?? activeTab ?? props.defaultTab ?? props.tabs[0]?.key}
-		className="rounded-top text-light"
+		className="rounded-top text-light "
 		style={{
 			backgroundColor: "black"
 		}}
@@ -26,7 +26,7 @@ export function TabNavigator(props: {
 		}}
 	>
 		{props.tabs.map(tab => <Nav.Item key={tab.key} className="rounded-0">
-			<Nav.Link eventKey={tab.key} className="h3 m-0 rounded-0">{tab.title}</Nav.Link>
+			<Nav.Link eventKey={tab.key} className="h3 m-0 rounded-0 h-100">{tab.title}</Nav.Link>
 		</Nav.Item>)
 		}
 	</Nav >;

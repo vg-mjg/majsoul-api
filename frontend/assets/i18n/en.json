@@ -16,6 +16,14 @@
 		}
 	},
 
+	"tourney": {
+		"scoreType": {
+			"combined": "Combined",
+			"cumulative": "Cumulative",
+			"bestconsecutive": "Best Consecutive"
+		}
+	},
+
 	"stats": {
 		"terminology": {
 			"riichi": "Riichi",
