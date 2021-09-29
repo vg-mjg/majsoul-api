@@ -15,6 +15,49 @@ import { useHistory, useLocation } from "react-router";
 import clsx from "clsx";
 import { useTranslation } from "react-i18next";
 
+interface TypeGroup {
+	type: TourneyContestType;
+	standings: Rest.PlayerTourneyStandingInformation[];
+};
+
+function groupByType(standings: Rest.PlayerTourneyStandingInformation[]): TypeGroup[] {
+	const groups: TypeGroup[] = [];
+
+	for(const standing of standings) {
+		if (standing.qualificationType !== groups[0]?.type) {
+			groups.unshift({
+				type: standing.qualificationType,
+				standings: []
+			});
+		}
+		groups[0].standings.push(standing);
+	}
+
+	return groups.reverse();
+}
+
+const GroupedStandingsSection: React.FC<{
+	previousItem?: Rest.PlayerTourneyStandingInformation,
+	standings: Rest.PlayerTourneyStandingInformation[],
+	scoreType?: TourneyContestType,
+}>= ({standings, scoreType, previousItem}) => {
+	const { t } = useTranslation();
+
+	if (scoreType == null) {
+		const groups = groupByType(standings);
+		return <>
+			{groups.map((group, index) => <React.Fragment key={index}>
+				{ (index !== 0 || previousItem?.qualificationType !== group.type)
+						&& <div className="h4 mt-2 mb-3">{t(`tourney.scoreType.${TourneyContestType[group.type].toLowerCase()}`)}</div> }
+					<StandingsSection standings={group.standings}/>
+				</React.Fragment>
+			)}
+		</>;
+	}
+
+	return <StandingsSection standings={standings} scoreType={scoreType}/>;
+}
+
 const StandingsSection: React.FC<{
 	standings: Rest.PlayerTourneyStandingInformation[],
 	scoreType?: TourneyContestType,
@@ -120,10 +163,10 @@ export const PhaseStandings: React.FC = () => {
 					</Col>
 				</Row>
 			}
-			<StandingsSection standings={topStandings} scoreType={selectedScoreType}/>
+			<GroupedStandingsSection standings={topStandings} scoreType={selectedScoreType}/>
 			<Accordion.Collapse eventKey="0">
 				<>
-					{showMore && <StandingsSection standings={otherStandings} scoreType={selectedScoreType}/>}
+					{showMore &&  <GroupedStandingsSection standings={otherStandings} scoreType={selectedScoreType} previousItem={topStandings[topStandings.length - 1]}/>}
 				</>
 			</Accordion.Collapse>
 			<Accordion.Toggle as={Row} eventKey="0" className="pt-1">
