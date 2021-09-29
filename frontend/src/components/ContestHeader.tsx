@@ -5,6 +5,14 @@ import Col from 'react-bootstrap/Col';
 import { SongPlayer } from "./utils/SongPlayer";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { contestName } from "./utils";
+import clsx from "clsx";
+import { css } from "astroturf";
+
+const classes = css`
+	.tagline {
+		line-height: 18px;
+	}
+`;
 
 export function ContestHeader(props: {
 	contest: Contest;
@@ -32,10 +40,10 @@ export function ContestHeader(props: {
 				<h1 onClick={() => setSecret(true)}><u style={{ cursor: "pointer" }}>{contestName(props.contest)}</u></h1>
 			</Col>
 			<Col md="auto">
-				<i>
+				<i className={clsx("d-flex flex-column")}>
 					{!secret
-						? (props.contest.tagline ?? "")
-						: (props.contest.taglineAlternate ?? "")}
+						? (props.contest.tagline ?? "").split(";;").map(text => <span className={classes.tagline}>{text}</span>)
+						: (props.contest.tagline ?? "").split(";;").map(text => <span className={clsx("text-center", classes.tagline)}>{text}</span>)}
 				</i>
 			</Col>
 		</Row>
