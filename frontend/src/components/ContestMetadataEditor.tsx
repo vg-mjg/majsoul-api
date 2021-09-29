@@ -268,11 +268,18 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						id="tourneyContestTypeSelector"
 						as="select"
 						custom
-						value={tourneyType ?? contest.tourneyType ?? tourneyContestTypeValues[0]}
+						value={tourneyType ?? (contest.tourneyType == null ? tourneyContestTypeValues[0] : isNaN(contest.tourneyType as number) ? -1 : contest.tourneyType as TourneyContestType)}
 						size="sm"
-						onChange={(event) => setTourneyType(parseInt(event.target.value) as TourneyContestType)}
+						onChange={(event) => {
+							const value = parseInt(event.target.value);
+							if (value === -1) {
+								return;
+							}
+							setTourneyType(value as TourneyContestType);
+						}}
 					>
 						{tourneyContestTypeValues.map((value, index) => <option key={index} value={value}>{TourneyContestType[value]}</option>)}
+						<option value={-1}>Custom</option>
 					</Form.Control>
 				}
 			</Col>

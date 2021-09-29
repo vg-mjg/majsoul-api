@@ -132,9 +132,9 @@ function TourneyContestSummary(props: { contestId: string }): JSX.Element {
 		<Row className="mt-3">
 			{contest.majsoulFriendlyId === 236728
 				? <BracketPlayerStandings contestId={props.contestId} />
-				: contest.tourneyType === TourneyContestType.BestConsecutive
-					? <PhaseStandings />
-					: <PlayerStandings contestId={props.contestId} />
+				: contest.tourneyType === TourneyContestType.Cumulative || contest.tourneyType == null
+					? <PlayerStandings contestId={props.contestId} />
+					: <PhaseStandings />
 			}
 		</Row>
 		<Row className="px-4 py-3 justify-content-end" >

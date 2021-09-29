@@ -1,6 +1,6 @@
 import { Store } from "../..";
 import { Han, PlayerZone } from "../../majsoul";
-import { Session as StoreSession, GameResult as StoreGameResult, Player } from "../../store/types/types";
+import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestType } from "../../store/types/types";
 
 export * from "./stats";
 
@@ -41,13 +41,19 @@ export interface PlayerInformation {
 	zone: PlayerZone;
 }
 
+export interface PlayerTourneyScore {
+	rank: number;
+	score: number;
+	highlightedGameIds?: string[];
+}
+
 export interface PlayerTourneyStandingInformation {
 	player: PlayerInformation;
 	hasMetRequirements?: boolean;
-	highlightedGameIds: string[];
-	rank: number;
-	score: number;
 	totalMatches: number;
+	qualificationType: TourneyContestType;
+	rank: number;
+	scores: Record<TourneyContestType, PlayerTourneyScore>;
 }
 
 export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {

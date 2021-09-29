@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerTourneyScore } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -10,7 +10,7 @@ import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
-import { groupBy, map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
+import { map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Majsoul, Store } from '..';
 import { google } from 'googleapis';
@@ -24,7 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, TourneyContestType } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, TourneyContestType, TourneyScoringType } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -282,6 +282,7 @@ const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>()
 const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
+const nameofTourneyScoringType = nameofFactory<store.TourneyScoringType>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -296,6 +297,14 @@ interface PhaseInfo {
 	contest: store.Contest<ObjectID>,
 	transitions: ContestPhaseTransition<ObjectID>[],
 	phases: PhaseMetadata<ObjectID>[]
+}
+
+interface PlayerContestTypeResults {
+	playerId: string;
+	rank: number;
+	score: number;
+	totalMatches: number;
+	highlightedGameIds?: string[],
 }
 
 export class RestApi {
@@ -459,92 +468,13 @@ export class RestApi {
 					return;
 				}
 
-				if (phaseInfo.contest.tourneyType !== TourneyContestType.BestConsecutive) {
+				if (phaseInfo.contest.tourneyType === TourneyContestType.Cumulative) {
 					res.status(500).send("Tourney subtype is not supported" as any);
 					return
 				}
 
-				const games = await this.mongoStore.gamesCollection.find(
-					{
-						contestId: phaseInfo.contest._id,
-					},
-					{
-						sort: {
-							end_time: 1
-						}
-					}
-				).toArray();
-
-				const playerData = games.reduce((total, next) => {
-					for (let seat = 0; seat < next.players.length; seat++) {
-						const playerId = next.players[seat]._id.toHexString();
-						const playerData = total[playerId] ??= {
-							score: 0,
-							maxScore: 0,
-							totalMatches: 0,
-							maxSeqence: [],
-							currentSequence: []
-						};
-						playerData.totalMatches++;
-						const score = next.finalScore[seat].uma;
-						playerData.currentSequence.push({
-							id: next._id.toHexString(),
-							score
-						});
-						playerData.score += score;
-						if (playerData.totalMatches > 5) {
-							const removedGame = playerData.currentSequence.shift();
-							playerData.score -= removedGame.score
-							if (playerData.score > playerData.maxScore) {
-								playerData.maxScore = playerData.score;
-								playerData.maxSeqence = playerData.currentSequence.map(game => game.id)
-							}
-						} else {
-							playerData.maxSeqence.push(next._id.toHexString());
-							playerData.maxScore = playerData.score
-						}
-					}
-					return total;
-				}, {} as Record<string, {
-					totalMatches: number,
-					score: number,
-					maxScore: number,
-					maxSeqence: string[],
-					currentSequence: {
-						id: string,
-						score: number,
-					}[]
-				}>);
-
-				const players = await this.mongoStore.playersCollection.find({
-					_id: { $in: Object.keys(playerData).map(ObjectId.createFromHexString) }
-				}).toArray();
-
-				const playerMap = players.reduce(
-					(total, next) => (total[next._id.toHexString()] = next, total),
-					{} as Record<string, store.Player>
-				);
-
-				res.send({
-					index: 0,
-					name: phaseInfo.contest?.initialPhaseName ?? "予選",
-					startTime: phaseInfo.contest.startTime,
-					standings: Object.entries(playerData)
-						.sort(([, a], [, b]) => b.maxScore - a.maxScore)
-						.map(([_id, { maxScore: score, totalMatches, maxSeqence: highlightedGameIds }], index) => ({
-							player: {
-								_id,
-								nickname: playerMap[_id].nickname,
-								zone: Majsoul.Api.getPlayerZone(playerMap[_id].majsoulId)
-							},
-							hasMetRequirements: totalMatches >= 5,
-							rank: index + 1,
-							score,
-							totalMatches,
-							highlightedGameIds
-						} as PlayerTourneyStandingInformation))
-				});
-
+				const phases = await this.getTourneyPhaseData(phaseInfo);
+				res.send(phases.reverse().find(phase => phase.startTime < now) ?? phases[0]);
 			})
 		);
 
@@ -1196,7 +1126,12 @@ export class RestApi {
 				body(nameofContest('maxGames')).not().isString().bail().isInt({ gt: 0, max: 50 }).optional({ nullable: true }),
 				body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
-				body(nameofContest('tourneyType')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestType)).optional(),
+				oneOf([
+					body(nameofContest('tourneyType')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestType)).optional(),
+					body(nameofContest('tourneyType')).not().isString().bail().isArray({ min: 1 }).optional(),
+				]),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestType)),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 				async (req, res) => {
 					const errors = validationResult(req);
 					if (!errors.isEmpty()) {
@@ -1968,6 +1903,7 @@ export class RestApi {
 				_id: true,
 				type: true,
 				tourneyType: true,
+				startTime: true,
 				'teams._id': true,
 				'teams.players._id': true,
 				transitions: true,
@@ -2072,5 +2008,211 @@ export class RestApi {
 			} as LeaguePhase<ObjectID>, 1),
 			toArray(),
 		).toPromise();
+	}
+
+	private async getTourneyPhaseData({
+		contest,
+		transitions,
+		phases
+	}: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
+		const contestTypes: TourneyScoringType[] = contest.tourneyType === TourneyContestType.Cumulative
+			? [ { type: TourneyContestType.Cumulative } ]
+			: contest.tourneyType === TourneyContestType.BestConsecutive
+				? [ { type: TourneyContestType.BestConsecutive } ]
+				: contest.tourneyType;
+
+		const games = await this.mongoStore.gamesCollection.find(
+			{
+				contestId: contest._id,
+			},
+			{
+				sort: {
+					end_time: 1
+				}
+			}
+		).toArray();
+
+		const scoreTypes = [...new Set(contestTypes.map(type => type.type)).values()];
+		const resultsByType: Record<TourneyContestType, Record<string, PlayerContestTypeResults>> = {
+			[TourneyContestType.Cumulative]: undefined,
+			[TourneyContestType.BestConsecutive]: undefined
+		};
+		for (const type of scoreTypes) {
+			switch (type) {
+				case TourneyContestType.BestConsecutive: {
+					resultsByType[TourneyContestType.BestConsecutive] = this.getBestConsectutiveResults(games);
+					break;
+				} case TourneyContestType.Cumulative: {
+					resultsByType[TourneyContestType.Cumulative] = this.getCumulativeResults(games, contest);
+					break;
+				}
+			}
+		}
+
+		let players = await this.mongoStore.playersCollection.find({
+			_id: { $in: Object.keys(resultsByType[contestTypes[0].type]).map(ObjectId.createFromHexString) }
+		}).toArray();
+
+		const playerResults = players.map(player => {
+			return {
+				player: {
+					_id: player._id.toHexString(),
+					nickname: player.nickname,
+					zone: Majsoul.Api.getPlayerZone(player.majsoulId),
+				},
+				rank: 0,
+				// hasMetRequirements?: boolean;
+				totalMatches: resultsByType[contestTypes[0].type][player._id.toHexString()].totalMatches,
+				qualificationType: contestTypes[0].type,
+				scores: scoreTypes.reduce((total, type) => {
+					const result = resultsByType[type][player._id.toHexString()];
+					total[type] = {
+						score: result.score,
+						highlightedGameIds: result.highlightedGameIds,
+						rank: result.rank,
+					};
+					return total;
+				}, {} as Record<TourneyContestType, PlayerTourneyScore>)
+			}
+		}).reduce(
+			(total, next) => (total[next.player._id] = next, total),
+			{} as Record<string, PlayerTourneyStandingInformation>
+		);
+
+		let rank = 1;
+		for(const type of [...contestTypes, {type: contestTypes[0].type}]) {
+			const results = resultsByType[type.type];
+			let takenPlayers = players.sort((a, b) => results[a._id.toHexString()].rank - results[b._id.toHexString()].rank).slice(0, type.places ?? Infinity);
+
+			for (const player of takenPlayers) {
+				const playerResult = playerResults[player._id.toHexString()];
+				playerResult.rank = rank;
+				playerResult.qualificationType = type.type;
+
+				if (!playerResult.hasMetRequirements && contest.tourneyType === TourneyContestType.BestConsecutive && playerResult.totalMatches > 5) {
+					playerResult.hasMetRequirements = true;
+				}
+				rank++;
+			}
+
+			if (!type.places) {
+				break;
+			}
+
+			players = players.slice(type.places);
+
+			if (players.length === 0) {
+				break;
+			}
+		}
+
+		return [{
+			index: 0,
+			name: contest?.initialPhaseName ?? "予選",
+			startTime: contest.startTime,
+			standings: Object.values(playerResults)
+				.sort((a, b) => a.rank - b.rank)
+		}];
+	};
+
+	private getBestConsectutiveResults(games: GameResult[]): Record<string, PlayerContestTypeResults> {
+		const playerResults = games.reduce((total, next) => {
+			for (let seat = 0; seat < next.players.length; seat++) {
+				const playerId = next.players[seat]._id.toHexString();
+				const playerData = total[playerId] ??= {
+					score: 0,
+					maxScore: 0,
+					totalMatches: 0,
+					maxSeqence: [],
+					currentSequence: []
+				};
+				playerData.totalMatches++;
+				const score = next.finalScore[seat].uma;
+				playerData.currentSequence.push({
+					id: next._id.toHexString(),
+					score
+				});
+				playerData.score += score;
+				if (playerData.totalMatches > 5) {
+					const removedGame = playerData.currentSequence.shift();
+					playerData.score -= removedGame.score
+					if (playerData.score > playerData.maxScore) {
+						playerData.maxScore = playerData.score;
+						playerData.maxSeqence = playerData.currentSequence.map(game => game.id)
+					}
+				} else {
+					playerData.maxSeqence.push(next._id.toHexString());
+					playerData.maxScore = playerData.score
+				}
+			}
+			return total;
+		}, {} as Record<string, {
+			totalMatches: number,
+			score: number,
+			maxScore: number,
+			rank?: number,
+			maxSeqence: string[],
+			currentSequence: {
+				id: string,
+				score: number,
+			}[]
+		}>);
+
+		return Object.entries(playerResults)
+			.sort(([, a], [, b]) => b.maxScore - a.maxScore)
+			.map((result, index) => {
+				result[1].rank = index + 1;
+				return result;
+			})
+			.reduce((total, [id, result]) => {
+			total[id] = {
+				playerId: id,
+				rank: result.rank,
+				score: result.maxScore,
+				totalMatches: result.totalMatches,
+				highlightedGameIds: result.maxSeqence,
+			};
+			return total;
+		}, {} as Record<string, PlayerContestTypeResults>);
+	}
+
+	private getCumulativeResults(games: GameResult[], contest: store.Contest): Record<string, PlayerContestTypeResults> {
+		const maxGames = contest.maxGames ?? Infinity;
+		const playerResults = games.reduce((total, next) => {
+			for (let seat = 0; seat < next.players.length; seat++) {
+				const playerId = next.players[seat]._id.toHexString();
+				const playerData = total[playerId] ??= {
+					score: 0,
+					totalMatches: 0,
+				};
+
+				playerData.totalMatches++;
+				const score = next.finalScore[seat].uma;
+				if (playerData.totalMatches <= maxGames) {
+					playerData.score += score;
+				}
+			}
+			return total;
+		}, {} as Record<string, {
+			totalMatches: number,
+			rank?: number,
+			score: number,
+		}>);
+
+		return Object.entries(playerResults)
+			.sort(([, {score: scoreA}], [, {score: scoreB}]) => scoreB - scoreA)
+			.map((result, index) => {
+				result[1].rank = index;
+				return result;
+			})
+			.reduce((total, [id, result]) => {
+			total[id] = {
+				playerId: id,
+				rank: result.rank + 1,
+				score: result.score,
+				totalMatches: result.totalMatches,
+			};
+			return total;
+		}, {} as Record<string, PlayerContestTypeResults>);
 	}
 }

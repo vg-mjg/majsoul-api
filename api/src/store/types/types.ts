@@ -150,15 +150,19 @@ export enum TourneyContestType {
 	BestConsecutive
 }
 
-export interface TourneyContestPhase<Id = any> {
+export interface TourneyScoringType {
+	type: TourneyContestType;
+	places?: number;
+}
+
+export interface TourneyContestPhase {
 	type?: ContestType.Tourney,
-	tourneyType?: TourneyContestType;
+	tourneyType?: TourneyContestType | TourneyScoringType[];
 	maxGames?: number;
 	bonusPerGame?: number;
 }
 
-
-export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhase<Id> & TourneyContestPhase<Id>)
+export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhase<Id> & TourneyContestPhase)
 
 export interface Contest<Id = any> extends Partial<majsoul.Contest>, Omit<ContestPhase<Id>, "type"> {
 	type?: ContestType
