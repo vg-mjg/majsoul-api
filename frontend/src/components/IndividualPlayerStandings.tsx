@@ -16,8 +16,10 @@ import { Stats } from "./Stats/Stats";
 import { useContext } from "react";
 import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
+import { TourneyContestType } from "majsoul-api/dist/store/types";
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
+	scoreType?: TourneyContestType,
 }
 
 const zoneMap: Record<PlayerZone, {
@@ -90,7 +92,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 			onClick={() => setLoadGames(true)}
 			style={{ cursor: "pointer" }}
 		>
-			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.rank}位</b></h5></Col>
+			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreType == null ? props.rank : props.scores[props.scoreType].rank}位</b></h5></Col>
 			<Zone zone={props.player.zone} />
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
@@ -101,7 +103,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 					</Row>
 				</Container>
 			</Col>
-			<Col md="auto" className="mr-3"> <h5><b>{props.scores[props.qualificationType].score / 1000}</b></h5></Col>
+			<Col md="auto" className="mr-3"> <h5><b>{props.scores[props.scoreType ?? props.qualificationType].score / 1000}</b></h5></Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.totalMatches}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
@@ -119,7 +121,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 								.map((score, seat) => ({ score, seat }))
 								.sort((a, b) => b.score.uma - a.score.uma)
 								.findIndex(r => r.seat === playerSeat);
-							return <Row key={game._id} className={clsx(props.scores[props.qualificationType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
+							return <Row key={game._id} className={clsx(props.scores[props.scoreType ?? props.qualificationType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
 								<Col md="auto">
 									{getSeatCharacter(playerSeat)}
 								</Col>
