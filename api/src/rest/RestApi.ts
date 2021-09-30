@@ -2040,7 +2040,7 @@ export class RestApi {
 		for (const type of scoreTypes) {
 			switch (type) {
 				case TourneyContestType.BestConsecutive: {
-					resultsByType[TourneyContestType.BestConsecutive] = this.getBestConsectutiveResults(games);
+					resultsByType[TourneyContestType.BestConsecutive] = this.getBestConsectutiveResults(games, contest);
 					break;
 				} case TourneyContestType.Cumulative: {
 					resultsByType[TourneyContestType.Cumulative] = this.getCumulativeResults(games, contest);
@@ -2115,8 +2115,9 @@ export class RestApi {
 		}];
 	};
 
-	private getBestConsectutiveResults(games: GameResult[]): Record<string, PlayerContestTypeResults> {
+	private getBestConsectutiveResults(games: GameResult[], contest: store.Contest): Record<string, PlayerContestTypeResults> {
 		const playerResults = games.reduce((total, next) => {
+			const maxGames = contest.maxGames ?? Infinity;
 			for (let seat = 0; seat < next.players.length; seat++) {
 				const playerId = next.players[seat]._id.toHexString();
 				const playerData = total[playerId] ??= {
@@ -2126,6 +2127,11 @@ export class RestApi {
 					maxSeqence: [],
 					currentSequence: []
 				};
+
+				if (playerData.totalMatches >= maxGames) {
+					continue;
+				}
+
 				playerData.totalMatches++;
 				const score = next.finalScore[seat].uma;
 				playerData.currentSequence.push({
