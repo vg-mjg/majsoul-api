@@ -1,20 +1,18 @@
 import * as React from "react";
-import { IState } from "../State";
-import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Accordion from 'react-bootstrap/Accordion';
 import { Han } from "majsoul-api/dist/majsoul/types";
 import { fetchYakuman } from "src/api/Games";
-import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import * as dayjs from "dayjs";
-import { AgariInfo, RoundResult } from "majsoul-api/dist/store/types";
 import { useTranslation } from "react-i18next";
 import { Rest } from "majsoul-api";
 import { css } from "astroturf";
 import clsx from "clsx";
+import * as globalStyles from "./styles.sass";
 
-function getYakumanName(han: Han[]): string {
+function getYakumanName(han: Han[]): string[] {
 	const names = han.map(h => {
 		switch (h) {
 			case Han.Blessing_of_Heaven:
@@ -64,22 +62,7 @@ function getYakumanName(han: Han[]): string {
 		}
 		return null;
 	}).filter(h => h !== null);
-	return names.length ? names.join(" ") : "数え";
-}
-
-function getYakumanAgari(round: RoundResult): AgariInfo[] {
-	if (round.tsumo) {
-		if (round.tsumo.value === 32000 || round.tsumo.value === 48000) {
-			return [round.tsumo];
-		}
-		return [];
-	}
-
-	if (!round.rons) {
-		return []
-	}
-
-	return round.rons.filter(ron => ron.value === 32000 || ron.value === 48000);
+	return names.length ? names : ["数え"];
 }
 
 const styles = css`
@@ -90,49 +73,125 @@ const styles = css`
 	}
 `;
 
+function YakumanList(props: {yakumen: Rest.YakumanInformation[]}) {
+	const { t } = useTranslation();
+	return <Container className="p-0">
+		{props.yakumen.length > 0 ?
+			props.yakumen.map(({ game, han, player }, index) => <Row
+				className={clsx(`no-gutters align-items-center pb-1 mb-1`, styles.yakumanEntry)}
+				key={index}
+			>
+				<Col style={{ fontSize: "1.5em" }}>
+					{getYakumanName(han).join(" ")}
+				</Col>
+
+				<Col md="auto" className="mr-3">
+					{player.nickname}
+				</Col>
+
+				<Col md="auto" className="mr-3">
+					{dayjs(game.endTime).calendar()}
+				</Col>
+
+				<Col md="auto">
+					<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
+				</Col>
+			</Row>
+			)
+			:
+			<Row className={`no-gutters text-center pb-1 mb-1`}>
+				<Col>
+					<div className="h4 font-weight-bold m-0">未だ無し</div>
+				</Col>
+			</Row>}
+	</Container>
+}
+
+const RECENT_LENGTH = 5;
+
 export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
-	const [yakumen, setYakumen] = React.useState<Rest.YakumanInformation[]>(null);
+	const { t } = useTranslation();
+	const [yakumen, setYakumen] = React.useState<Rest.YakumanInformation[]>([]);
+	const [activeTab, setActiveTab] = React.useState<string>(null);
+
 	React.useEffect(() => {
-		setYakumen(null);
-		fetchYakuman(props.contestId).then(setYakumen);
+		setYakumen([]);
+		fetchYakuman(props.contestId).then((yakumen) => setYakumen(yakumen.reverse()));
 	}, [props.contestId]);
 
-	const { t } = useTranslation();
+	const yakumenSorted = React.useMemo(() => {
+		if (!yakumen) {
+			return [];
+		}
+
+		return Object.values(yakumen.reduce((total, next) => {
+			for (const yaku of getYakumanName(next.han)) {
+				total[yaku] ??= {
+					yaku,
+					yakumen: []
+				};
+				total[yaku].yakumen.push(next);
+			}
+			return total;
+		}, {} as Record<string, {
+			yaku: string,
+			yakumen: Rest.YakumanInformation[]
+		}>));
+	}, [yakumen]);
+
+	console.log(yakumenSorted);
+
 	return <>
-		<Row className="px-4 py-3 justify-content-end">
+		<Row className="px-4 py-3 justify-content-end no-gutters">
 			<Col md="auto" className="h4 mb-0"><u>{t("yakumanAttained")}</u></Col>
 		</Row>
 		<Row>
-			<Container className="rounded bg-dark text-light pt-2 px-3">
-				{yakumen?.length > 0 ?
-					yakumen.map(({ game, han, player }, index) => <Row
-						className={clsx(`no-gutters align-items-center pb-1 mb-1`, styles.yakumanEntry)}
-						key={index}
-					>
-						<Col  style={{ fontSize: "1.5em" }}>
-							{getYakumanName(han)}
-						</Col>
-
-						<Col md="auto" className="mr-3">
-							{player.nickname}
-						</Col>
-
-						<Col md="auto" className="mr-3">
-							{dayjs(game.endTime).calendar()}
-						</Col>
-
-						<Col md="auto">
-							<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
-						</Col>
-					</Row>
-					)
-					:
-					<Row className={`no-gutters text-center pb-1 mb-1`}>
-						<Col>
-							<div className="h4 font-weight-bold m-0">未だ無し</div>
-						</Col>
-					</Row>}
+			<Container className="rounded bg-dark text-light pt-2">
+				{ yakumen?.length >= RECENT_LENGTH && <Row className="no-gutters">
+					<Col className="h6">
+						<u>Recent</u>
+					</Col>
+				</Row> }
+				<Row>
+					<Col>
+						<YakumanList yakumen={yakumen.slice(0, RECENT_LENGTH)} />
+					</Col>
+				</Row>
 			</Container>
 		</Row>
+		{ yakumen?.length >= RECENT_LENGTH && <Row className="mt-3">
+			<Container className="rounded bg-dark text-light pt-2">
+				<Row className="no-gutters py-1">
+					<Col className="h6">
+						<u>By Type</u>
+					</Col>
+				</Row>
+				<Row>
+					<Col>
+						<Accordion as={Container} activeKey={activeTab} onSelect={setActiveTab} className="p-0">
+							{ yakumenSorted.map((type, index) => <React.Fragment key={type.yaku}>
+								<Accordion.Toggle
+									as={Row}
+									eventKey={type.yaku}
+									className={clsx("no-gutters align-items-center flex-nowrap pb-1 mb-1", globalStyles.linkDark, (activeTab === type.yaku || index < yakumenSorted.length - 1) && styles.yakumanEntry)}
+									// onClick={() => setActiveTab(activeTab === Han[type.han] ? null : Han[type.han])}
+									style={{ cursor: "pointer" }}
+								>
+									<Col style={{ fontSize: "1.35em" }}>
+										<b>{type.yaku}</b>
+									</Col>
+									<Col md="auto" style={{ fontSize: "1.2em" }}>
+										<b>{type.yakumen.length}</b>
+									</Col>
+								</Accordion.Toggle>
+								<Accordion.Collapse as={Row} eventKey={type.yaku}>
+									<YakumanList yakumen={type.yakumen}/>
+								</Accordion.Collapse>
+							</React.Fragment>) }
+						</Accordion>
+					</Col>
+				</Row>
+			</Container>
+		</Row> }
 	</>;
 }
