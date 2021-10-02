@@ -143,13 +143,13 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 
 	return <>
 		<Row className="px-4 py-3 justify-content-end no-gutters">
-			<Col md="auto" className="h4 mb-0"><u>{t("yakumanAttained")}</u></Col>
+			<Col md="auto" className="h4 mb-0"><u>{t("yakuman.attained")}</u></Col>
 		</Row>
 		<Row>
 			<Container className="rounded bg-dark text-light pt-2">
 				{ yakumen?.length >= RECENT_LENGTH && <Row className="no-gutters">
 					<Col className="h6">
-						<u>Recent</u>
+						<u>{t("yakuman.recent")}</u>
 					</Col>
 				</Row> }
 				<Row>
@@ -163,7 +163,7 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 			<Container className="rounded bg-dark text-light pt-2">
 				<Row className="no-gutters py-1">
 					<Col className="h6">
-						<u>By Type</u>
+						<u>{t("yakuman.byType")}</u>
 					</Col>
 				</Row>
 				<Row>

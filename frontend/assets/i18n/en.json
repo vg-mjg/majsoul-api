@@ -1,5 +1,9 @@
 {
-	"yakumanAttained": "Yakuman Attained",
+	"yakuman": {
+		"recent": "Recent",
+		"attained": "Yakuman Attained",
+		"byType": "By Type"
+	},
 	"viewOnMajsoul": "View on Majsoul",
 	"backToSummary": "Back to Summary",
 	"title": {

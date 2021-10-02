@@ -1,5 +1,9 @@
 {
-	"yakumanAttained": "役満",
+	"yakuman": {
+		"recent": "Recent",
+		"attained": "役満",
+		"byType": "By Type"
+	},
 	"viewOnMajsoul": "雀魂で牌譜を見る",
 	"backToSummary": "トップへ戻る",
 	"title": {
