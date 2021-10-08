@@ -43,7 +43,7 @@ export function ContestHeader(props: {
 				<i className={clsx("d-flex flex-column")}>
 					{!secret
 						? (props.contest.tagline ?? "").split(";;").map(text => <span className={classes.tagline}>{text}</span>)
-						: (props.contest.tagline ?? "").split(";;").map(text => <span className={clsx("text-center", classes.tagline)}>{text}</span>)}
+						: (props.contest.taglineAlternate ?? "").split(";;").map(text => <span className={clsx("text-center", classes.tagline)}>{text}</span>)}
 				</i>
 			</Col>
 		</Row>

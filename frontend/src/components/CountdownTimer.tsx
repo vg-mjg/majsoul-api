@@ -39,9 +39,9 @@ function createCountdownCalendarSettings(locale: string) {
 		},
 		sameElse: function (this: dayjs.Dayjs, now: dayjs.Dayjs) {
 			if (now.isAfter(this)) {
-				return this.format(i18n.t("time.countdown.sameElse.after"));
+				return this.format(i18n.t("time.countdown.sameElse.before"));
 			}
-			return this.format(i18n.t("time.countdown.sameElse.before"));
+			return this.format(i18n.t("time.countdown.sameElse.after"));
 		},
 	}
 }
