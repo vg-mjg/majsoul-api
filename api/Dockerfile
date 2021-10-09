@@ -8,6 +8,7 @@ RUN yarn --frozen-lockfile
 COPY . ./
 RUN yarn run proto:fetch
 RUN yarn run proto:generate
+RUN yarn run proto:admin:generate
 RUN yarn run tsc
 
 FROM base

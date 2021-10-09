@@ -19,8 +19,8 @@ export class Connection {
 		return this.reconnect();
 	}
 
-	private reconnect(): Promise<void> {
-		if (this.socket) {
+	public reconnect(): Promise<void> {
+		if (this.socket && !this.socket.CLOSED && !this.socket.CLOSING) {
 			this.socket.terminate();
 		}
 
@@ -43,19 +43,13 @@ export class Connection {
 
 			this.socket.onerror = (event) => {
 				console.log(`websocker onerror`, event);
-				process.exit(1);
 			}
 			this.socket.onclose = (event) => {
-				console.log(`websocker onclose`, event);
-				process.exit(1);
 			}
 			this.socket.on("close", (a, b) => {
-				console.log(`websocket closed`, a, b);
-				process.exit(1);
 			});
 			this.socket.on("error", (e) => {
 				console.log(`websocket error`, e);
-				process.exit(1);
 			});
 			this.socket.on("open", () => resolve());
 		});
@@ -70,6 +64,6 @@ export class Connection {
 	}
 
 	public close() {
-		this.socket.terminate()
+		this.socket.terminate();
 	}
 }

@@ -127,6 +127,23 @@ export class ContestTracker {
 		);
 	}
 
+	public get AdminPlayerFetchRequested$(): Observable<boolean> {
+		return merge(
+			defer(() => from(this.mongoStore.contestCollection.findOne({ _id: this.id })))
+				.pipe(map(contest => contest.adminPlayerFetchRequested ?? false)),
+			this.ContestUpdates$.pipe(
+				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("adminPlayerFetchRequested")) >= 0),
+				mapTo(false)
+			),
+			this.ContestUpdates$.pipe(
+				filter(event => event.updateDescription.updatedFields?.adminPlayerFetchRequested !== undefined),
+				map(event => event.updateDescription.updatedFields.adminPlayerFetchRequested ?? false)
+			)
+		).pipe(
+			takeUntil(this.ContestDeleted$)
+		);
+	}
+
 	public get LiveGames$() {
 		return combineLatest([this.MajsoulId$, this.NotFoundOnMajsoul$, this.Track$]).pipe(
 			map(([majsoulId, notFoundOnMajsoul, track]) => (majsoulId == null || notFoundOnMajsoul || !track)

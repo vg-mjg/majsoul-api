@@ -182,7 +182,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		Math.min(
 			(contest.phases?.length ?? 1) - 1,
 			Number.isNaN(hash)
-				? [...contest.phases ?? []].reverse().find(phase => phase.startTime < Date.now()).index ?? 0
+				? [...contest.phases ?? []].reverse().find(phase => phase.startTime < Date.now())?.index ?? 0
 				: hash
 		)
 	);

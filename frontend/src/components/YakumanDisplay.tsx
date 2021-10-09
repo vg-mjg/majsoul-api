@@ -139,8 +139,6 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 		}>));
 	}, [yakumen]);
 
-	console.log(yakumenSorted);
-
 	return <>
 		<Row className="px-4 py-3 justify-content-end no-gutters">
 			<Col md="auto" className="h4 mb-0"><u>{t("yakuman.attained")}</u></Col>

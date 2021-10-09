@@ -135,7 +135,6 @@ export interface ContestPhaseShared<Id = any> {
 	notFoundOnMajsoul?: boolean;
 	initialPhaseName?: string;
 	anthem?: string;
-	track?: boolean;
 	spreadsheetId?: string;
 	transitions?: ContestPhaseTransition<Id>[];
 }
@@ -166,6 +165,8 @@ export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhas
 
 export interface Contest<Id = any> extends Partial<majsoul.Contest>, Omit<ContestPhase<Id>, "type"> {
 	type?: ContestType
+	track?: boolean;
+	adminPlayerFetchRequested?: boolean;
 }
 
 export interface ContestTeam<Id = any> {

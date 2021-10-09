@@ -154,6 +154,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 	const [taglineAlternate, setTaglineAlternate] = useState<string>(undefined);
 	const [bonusPerGame, setBonusPerGame] = useState<number>(undefined);
 	const [track, setTrack] = useState<boolean>(undefined);
+	const [adminPlayerFetchRequested, setAdminPlayerFetchRequested] = useState<boolean>(undefined);
 	const dispatch = useDispatch();
 	if (token == null || contest == null) {
 		return null;
@@ -410,6 +411,16 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTrack(event.target.checked)}
 				/>
 			</Col>
+			<Col>
+				<Form.Check
+					inline
+					label="Fetch Players"
+					type="checkbox"
+					id={`fetch-contest-players`}
+					checked={adminPlayerFetchRequested ?? contest.adminPlayerFetchRequested ?? false}
+					onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAdminPlayerFetchRequested(event.target.checked)}
+				/>
+			</Col>
 			<Col className="text-right">
 				<Button
 					variant="secondary"
@@ -425,6 +436,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						&& (contest.maxGames === maxGames || maxGames === undefined)
 						&& (contest.bonusPerGame === bonusPerGame || bonusPerGame === undefined)
 						&& (contest.track === track || track === undefined)
+						&& (contest.adminPlayerFetchRequested === adminPlayerFetchRequested || adminPlayerFetchRequested === undefined)
 					}
 					onClick={(event: any) => {
 						patchContest(token, contest._id, {
@@ -439,7 +451,8 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 							displayName,
 							bonusPerGame,
 							spreadsheetId,
-							track
+							track,
+							adminPlayerFetchRequested
 						}).then(contest => dispatchContestPatchedAction(dispatch, contest));
 					}}
 				>Save</Button>

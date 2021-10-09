@@ -1,5 +1,6 @@
 import { Spreadsheet } from "./google";
 import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
+import { Api as AdminApi } from "./majsoul/admin/Api";
 import * as majsoul from "./majsoul";
 import * as store from "./store";
 import { Credentials } from 'google-auth-library';
@@ -17,8 +18,10 @@ const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 
 async function main() {
 	const secrets = getSecrets();
+
 	const apiResources = await majsoul.Api.retrieveApiResources();
 	console.log(`Using api version ${apiResources.pbVersion}`);
+	const adminApi = new AdminApi();
 	const api = new majsoul.Api(apiResources);
 
 	api.notifications.subscribe(n => console.log(n));
@@ -27,12 +30,6 @@ async function main() {
 	// console.log(api.majsoulCodec.decodeMessage(Buffer.from("", "hex")));
 
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
-
-	// const sub = api.subscribeToContestChatSystemMessages(majsoulContest.majsoulId).subscribe(notification => {
-	// 	if (notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd") {
-	// 		setTimeout(() => addToSpreadSheet(notification.uuid), 5000);
-	// 	}
-	// });
 
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
@@ -212,6 +209,53 @@ async function main() {
 						}
 					}
 				);
+			});
+
+		tracker.AdminPlayerFetchRequested$
+			.pipe(filter(fetchRequested => fetchRequested == true))
+			.subscribe(async () => {
+				const contest = await mongoStore.contestCollection.findOneAndUpdate(
+					{ _id: contestId },
+					{ $unset: { adminPlayerFetchRequested: true } },
+					{ projection: {
+						adminPlayerFetchRequested: true,
+						majsoulId: true
+					}}
+				);
+				console.log(`fetchRequested for contest #${contestId} #${contest.value.majsoulId}` );
+				await adminApi.reconnect();
+				try {
+					await adminApi.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
+					await adminApi.manageContest(contest.value.majsoulId);
+					const { players, error } = await adminApi.fetchContestPlayers();
+					if (error) {
+						console.log(error);
+						return;
+					}
+
+					const existingPlayers = await mongoStore.playersCollection.find({
+						majsoulId: {
+							$in: players.map(player => player.account_id)
+						}
+					}).toArray();
+
+					const newPlayers = players.filter(player => existingPlayers.find(existingPlayer => existingPlayer.majsoulId === player.account_id) == null);
+
+					if (!newPlayers.length) {
+						console.log("No new players to add found");
+						return;
+					}
+
+					await mongoStore.playersCollection.insertMany(
+							newPlayers.map(player => ({
+								nickname: player.nickname,
+								majsoulId: player.account_id,
+							}))
+					);
+
+				} finally {
+					adminApi.disconnect();
+				}
 			});
 
 		tracker.UpdateRequest$.subscribe(async (majsoulFriendlyId) => {
