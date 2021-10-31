@@ -25,7 +25,7 @@ export function fetchContestSessions(contestId: string): Promise<Rest.Session[]>
 		.then(response => response.json());
 }
 
-export function patchSession(token: string, session: Partial<Store.Session>): Promise<Store.Session> {
+export function patchSession(token: string, session: Partial<Store.Session>): Promise<Rest.Session<string>> {
 	const url = buildApiUrl(`sessions/${session._id}/`);
 	return fetch(
 		url.toString(),

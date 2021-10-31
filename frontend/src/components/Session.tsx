@@ -57,10 +57,15 @@ export function Session(props: {
 }): JSX.Element {
 	const [viewDetails, setViewDetails] = React.useState(false);
 	const [gamesFetchedStatus, setGamesFetched] = React.useState(GamesFetchStatus.None);
+	const [sessionName, setSessionName] = React.useState(props?.session?.name);
 	const teams = useSelector((state: IState) => state.contestsById[props.session.contestId].teams);
 	const detailsOpen = viewDetails || props.forceDetails;
 
 	const { t } = useTranslation();
+
+	React.useEffect(() => {
+		setSessionName(props.session?.name);
+	}, [props.session?.name]);
 
 	const token = useSelector((state: IState) => state.user?.token);
 	const games = useSelector((state: IState) =>
@@ -146,7 +151,7 @@ export function Session(props: {
 	const utcStartMomentText = React.useMemo(() => utcScheduledTime.format("LT l z"), [utcScheduledTime]);
 	const hasStarted = React.useMemo(() => utcScheduledTime.isBefore(dayjs().tz("UTC")), [utcScheduledTime]);
 
-	const [name, setName] = React.useState<string>();
+	const [editName, setEditName] = React.useState<string>();
 	const [utcMoment, setUtcMoment] = React.useState<string>();
 	const [timeIsInvalid, setTimeIsValid] = React.useState(!utcScheduledTime.isValid());
 	const [editTime, setEditTime] = React.useState(false);
@@ -204,7 +209,7 @@ export function Session(props: {
 				</Container>
 			</Col>
 			<Col className="text-right align-self-center">
-				<CountdownTimer targetTime={props.session.scheduledTime} prefix={props.session.name}></CountdownTimer>
+				<CountdownTimer targetTime={props.session.scheduledTime} prefix={sessionName}></CountdownTimer>
 			</Col>
 		</Row>
 		<Row>
@@ -295,10 +300,10 @@ export function Session(props: {
 				<Col>
 					<TextField
 						id={`${props.session._id}-name-editor`}
-						fallbackValue={name ?? props.session.name}
+						fallbackValue={editName ?? sessionName}
 						placeholder="Session Name"
 						onChange={(oldValue, newValue) => {
-							setName(newValue);
+							setEditName(newValue);
 						}}
 					/>
 				</Col>
@@ -306,14 +311,17 @@ export function Session(props: {
 					<Button
 						disabled={
 							(utcMoment == null || timeIsInvalid)
-							&& (name === props.session.name || name === undefined)
+							&& (editName === sessionName || editName === undefined)
 						}
 						variant="secondary"
 						onClick={() => patchSession(token, {
 							_id: props.session._id,
-							name,
-							scheduledTime: dayjs(utcMoment ?? utcStartMomentText).valueOf()
-						}).then(session => dispatchSessionPatchedAction(dispatch, session))}
+							name: editName
+						}).then(session => {
+							if (session.name) {
+								setSessionName(session.name);
+							}
+						})}
 					>Save</Button>
 				</Col>
 			</Row>

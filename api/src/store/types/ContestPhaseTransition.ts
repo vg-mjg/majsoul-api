@@ -8,5 +8,6 @@ export interface ContestPhaseTransition<Id = string> {
 	};
 	score?: {
 		half?: true;
+		nil?: true;
 	};
 }

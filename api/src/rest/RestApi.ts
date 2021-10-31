@@ -1727,6 +1727,7 @@ export class RestApi {
 				body(nameofTransition("startTime")).isInt({ min: 0 }).not().isString(),
 				body(nameofTransition("name")).isString(),
 				body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
+				body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
 				body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
 				withData<
 					Partial<store.ContestPhaseTransition> & {
@@ -1972,6 +1973,8 @@ export class RestApi {
 
 					if (transition.score?.half) {
 						startingTotals[team] = Math.floor(startingTotals[team] / 2);
+					} else if (transition.score?.nil) {
+						startingTotals[team] = 0;
 					}
 				}
 

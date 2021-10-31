@@ -30,6 +30,7 @@ import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { useTranslation } from "react-i18next";
 import { PhaseStandings } from "./PhaseStandings";
 import { ContestContext } from "./Contest/ContestProvider";
+import clsx from "clsx";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -226,8 +227,8 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 
 	return <>
 		{contest.phases && contest.phases.length > 1 &&
-			<Row>
-				<Col className="p-0 overflow-hidden rounded">
+			<Row className="mt-3" >
+				<Col className="p-0 overflow-hidden rounded-top">
 					<TabNavigator
 						tabs={contest.phases.map(phase => ({
 							key: phase.index.toString(),
@@ -243,7 +244,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 				</Col>
 			</Row>
 		}
-		<Row className="mt-3">
+		<Row className={clsx((!contest.phases || !contest.phases.length) && "mt-3" || "rounded-bottom bg-dark")}>
 			<Teams
 				contestId={contest._id}
 				teams={contest.teams}
