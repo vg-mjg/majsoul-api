@@ -72,7 +72,7 @@ module.exports = env => {
 					}]
 				},
 				{
-					test: /\.(mp3)$/i,
+					test: /\.(mp3|wav)$/i,
 					use: [
 						{
 							loader: 'file-loader',
@@ -102,6 +102,7 @@ module.exports = env => {
 			new HtmlWebpackPlugin({
 				base: "/",
 				title: "",
+				favicon: "./assets/package.png",
 			})
 		]
 	};

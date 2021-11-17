@@ -26,6 +26,7 @@ export function ContestHeader(props: {
 
 		if (props.contest.majsoulFriendlyId === 866709) {
 			new Audio(nantoka_nare as any).play();
+			return;
 		}
 	}, [secret]);
 
