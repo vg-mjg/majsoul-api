@@ -1,4 +1,5 @@
-import * as majsoul from "../../majsoul";
+import { Han } from "../../majsoul/types/Han";
+import { Player as MajsoulPlayer, Contest as MajsoulContest } from "../../majsoul/types/types";
 import { ContestPhaseTransition } from "./ContestPhaseTransition";
 import { DrawStatus } from "./DrawStatus";
 import { Wind } from "./Wind";
@@ -71,7 +72,7 @@ export interface AgariInfo {
 	extras: number;
 	winner: number;
 	value: number;
-	han: majsoul.Han[];
+	han: Han[];
 }
 
 interface TsumoRecord extends AgariInfo {
@@ -112,7 +113,7 @@ export function isAgariYakuman(
 	}
 
 	let { value } = agari;
-	if (agari.han.findIndex(han => han === majsoul.Han.Riichi || han === majsoul.Han.Double_Riichi) >= 0) {
+	if (agari.han.findIndex(han => han === Han.Riichi || han === Han.Double_Riichi) >= 0) {
 		value += config?.riichiStickValue ?? 1000;
 	}
 
@@ -132,7 +133,7 @@ export interface Session<Id = any> {
 	isCancelled?: boolean;
 }
 
-export interface Player<Id = any> extends Partial<majsoul.Player> {
+export interface Player<Id = any> extends Partial<MajsoulPlayer> {
 	_id: Id;
 	majsoulFriendlyId?: number;
 	displayName?: string;
@@ -186,7 +187,7 @@ export interface TourneyContestPhase {
 
 export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhase<Id> & TourneyContestPhase)
 
-export interface Contest<Id = any> extends Partial<majsoul.Contest>, Omit<ContestPhase<Id>, "type"> {
+export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<ContestPhase<Id>, "type"> {
 	type?: ContestType
 	track?: boolean;
 	adminPlayerFetchRequested?: boolean;
