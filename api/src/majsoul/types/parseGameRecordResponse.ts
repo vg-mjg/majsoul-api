@@ -247,7 +247,8 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 		contestId: null,
 		version: latestGameResultVersion,
 		config: {
-			aiLevel: game.head.config.mode.detail_rule.ai_level
+			aiLevel: game.head.config.mode.detail_rule.ai_level,
+			riichiStickValue: game.head.config.mode.detail_rule.liqibang_value
 		},
 		contestMajsoulId: game.head.config ? game.head.config.meta ? game.head.config.meta.contest_uid : null : null,
 		majsoulId: game.head.uuid,

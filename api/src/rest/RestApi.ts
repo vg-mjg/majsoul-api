@@ -10,7 +10,7 @@ import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
-import { map, mergeAll, mergeMap, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
+import { map, mergeAll, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Majsoul, Store } from '..';
 import { google } from 'googleapis';
@@ -24,7 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, TourneyContestType, TourneyScoringType } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, isAgariYakuman, TourneyContestType, TourneyScoringType } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -690,14 +690,26 @@ export class RestApi {
 				).toArray();
 
 				const yakumanGames = games
-					.map(game => ({
-						game,
-						yakumanAgari: game.rounds.map(round =>
-							(round.tsumo?.value >= 32000
-								? [round.tsumo]
-								: round.rons?.filter(ron => ron.value >= 32000) || []) as AgariInfo[]
-						).flat()
-					}));
+					.map(game => {
+						return {
+							game,
+							yakumanAgari: game.rounds.map(({tsumo, round, rons}) => {
+								if (isAgariYakuman(
+									game,
+									round,
+									tsumo
+								)) {
+									return [tsumo] as AgariInfo[];
+								}
+
+								return rons?.filter(ron => isAgariYakuman(
+									game,
+									round,
+									ron
+								)) || [] as AgariInfo[];
+							}).flat()
+						}
+					});
 
 				const playerMap = (await this.mongoStore.playersCollection.find(
 					{

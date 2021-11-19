@@ -11,6 +11,7 @@ import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
 import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse";
+// import * as util from "util";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
@@ -33,7 +34,10 @@ async function main() {
 
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
-	// api.getGame("").then(game => console.log(parseGameRecordResponse(game)));
+	// api.getGame("").then(game => {
+	// 	console.log(util.inspect(game.head, false, null));
+		// console.log(util.inspect(parseGameRecordResponse(game), false, null));
+	// });
 
 	const mongoStore = new store.Store();
 	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");

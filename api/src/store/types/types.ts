@@ -6,6 +6,7 @@ import { Wind } from "./Wind";
 export enum GameResultVersion {
 	None,
 	First,
+	Second,
 }
 
 export const latestGameResultVersion = Object.values(GameResultVersion).length / 2 - 1 as GameResultVersion;
@@ -85,6 +86,7 @@ interface RonRecord extends AgariInfo {
 export interface GameResult<Id = any> {
 	config?: {
 		aiLevel: number;
+		riichiStickValue?: number;
 	}
 	contestMajsoulId?: number;
 	majsoulId: string;
@@ -98,6 +100,27 @@ export interface GameResult<Id = any> {
 	notFoundOnMajsoul?: boolean;
 	hidden?: boolean;
 	version?: GameResultVersion;
+}
+
+export function isAgariYakuman(
+	{ config }: GameResult,
+	{ dealership }: RoundInfo,
+	agari: AgariInfo
+): boolean {
+	if (!agari) {
+		return false;
+	}
+
+	let { value } = agari;
+	if (agari.han.findIndex(han => han === majsoul.Han.Riichi || han === majsoul.Han.Double_Riichi) >= 0) {
+		value += config?.riichiStickValue ?? 1000;
+	}
+
+	if (agari.winner === dealership) {
+		return value >= 48000;
+	}
+
+	return value >= 32000;
 }
 
 export interface Session<Id = any> {
