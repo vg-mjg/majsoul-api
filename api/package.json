@@ -23,7 +23,7 @@
 		"install": "^0.13.0",
 		"jsonwebtoken": "^8.5.1",
 		"mongodb": "^3.5.8",
-		"node-fetch": "^2.6.1",
+		"node-fetch": "^3.1.1",
 		"rxjs": "^6.5.5",
 		"syanten": "^1.5.0",
 		"uuid": "^3.3.3",
