@@ -1579,6 +1579,7 @@ export class RestApi {
 				body(`${nameofTeam('players')}.*._id`).isMongoId(),
 				body(nameofTeam('anthem')).isString().optional({ nullable: true }),
 				body(nameofTeam('color')).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({ nullable: true }),
+				body(nameofTeam("contrastBadgeFont")).isBoolean().not().isString().optional({ nullable: true }),
 				withData<
 					{
 						id: string;

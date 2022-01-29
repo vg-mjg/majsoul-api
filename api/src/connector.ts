@@ -250,6 +250,8 @@ async function main() {
 						return;
 					}
 
+					console.log(`Inserting ${newPlayers.length} players`);
+
 					await mongoStore.playersCollection.insertMany(
 							newPlayers.map(player => ({
 								nickname: player.nickname,

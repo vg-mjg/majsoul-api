@@ -200,6 +200,7 @@ export interface ContestTeam<Id = any> {
 	image?: string;
 	players?: Player<Id>[];
 	color?: string;
+	contrastBadgeFont?: boolean;
 	anthem?: string;
 }
 

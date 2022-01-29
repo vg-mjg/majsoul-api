@@ -2,7 +2,7 @@ import * as React from "react";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { Rest } from "majsoul-api";
+import { Rest, Store } from "majsoul-api";
 import Accordion from "react-bootstrap/Accordion";
 import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
@@ -17,6 +17,8 @@ import { useContext } from "react";
 import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
 import { TourneyContestType } from "majsoul-api/dist/store/types";
+import { useSelector } from "react-redux";
+import { IState } from "../State";
 
 interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
 	scoreType?: TourneyContestType,
@@ -62,10 +64,31 @@ const Zone: React.FC<{
 	</h4>
 }
 
+
+export function TeamIcon(props: {
+	team: Store.ContestTeam
+}): JSX.Element {
+	return <h4 className="pr-2 text-dark">
+		<Badge style={{
+			backgroundColor: `#${props.team.color}`,
+			color: props.team.contrastBadgeFont ? undefined : "white"
+		}}>
+			{props.team.name}
+		</Badge>
+	</h4>
+}
+
+
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps): JSX.Element {
 	const { t } = useTranslation();
 
 	const { contestId } = useContext(ContestContext);
+
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+	console.log(props.player._id);
+	const team = contest?.teams != null
+		? Object.values(contest.teams).find(team => team?.players?.find(player => player._id === props.player._id))
+		: null;
 
 	const [games, setGames] = React.useState<Rest.GameResult[]>([])
 	const [viewDetails, setViewDetails] = React.useState(false);
@@ -93,6 +116,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 			style={{ cursor: "pointer" }}
 		>
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreType == null ? props.rank : props.scores[props.scoreType].rank}位</b></h5></Col>
+			{team && <TeamIcon team={team} />}
 			<Zone zone={props.player.zone} />
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
