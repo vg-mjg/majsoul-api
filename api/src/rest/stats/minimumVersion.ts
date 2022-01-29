@@ -14,6 +14,8 @@ export function minimumVersion(game: Store.GameResult<ObjectId>): StatsVersion {
 		case GameResultVersion.First:
 		case GameResultVersion.Second:
 			return StatsVersion.First;
+		case GameResultVersion.Third:
+			return StatsVersion.Khan;
 		default:
 			return StatsVersion.None;
 	}

@@ -1,8 +1,8 @@
-import { inspect } from 'util';
 import { StatsVersion } from '../types/stats/StatsVersion';
 import { Stats } from '../types/stats';
 import { BaseStats } from '../types/stats/BaseStats';
 import { createStats, FirstStats } from '../types/stats/FirstStats';
+import { createKhanStats, KhanStats } from '../types/stats/KhanStats';
 
 export function mergeStats(stats: Stats[], version: StatsVersion): Stats {
 	switch (version) {
@@ -16,7 +16,12 @@ export function mergeStats(stats: Stats[], version: StatsVersion): Stats {
 		} case StatsVersion.First: {
 			return {
 				version: StatsVersion.First,
-				stats: mergeFirstStats(stats as FirstStats[])
+				stats: mergeAllStats(stats as FirstStats[], createStats)
+			};
+		} case StatsVersion.Khan: {
+			return {
+				version: StatsVersion.Khan,
+				stats: mergeAllStats(stats as KhanStats[], createKhanStats)
 			};
 		}
 	}
@@ -36,9 +41,9 @@ function mergeBaseStats(stats: BaseStats[]): BaseStats['stats'] {
 	});
 }
 
-function mergeFirstStats(stats: FirstStats[]): FirstStats['stats'] {
+function mergeAllStats<T extends Stats>(stats: T[], createStats: () => T['stats']): T['stats'] {
 	return stats.reduce((total, next) => {
-		const totalChildren = [total];
+		const totalChildren = [total] as any;
 		const nextChildren = [next.stats];
 		while (totalChildren.length) {
 			const totalChild = totalChildren.shift();

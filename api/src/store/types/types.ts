@@ -8,6 +8,7 @@ export enum GameResultVersion {
 	None,
 	First,
 	Second,
+	Third,
 }
 
 export const latestGameResultVersion = Object.values(GameResultVersion).length / 2 - 1 as GameResultVersion;
@@ -22,8 +23,17 @@ export interface RoundInfo {
 	repeat: number;
 }
 
+export interface KanStatics {
+	ankan: number;
+	shouminkan: number;
+	daiminkan: number;
+	shouminkanRobbed: number;
+	rinshan: number;
+}
+
 export interface CallStats {
 	total: number; //chinponyas
+	kans: KanStatics;
 	opportunities: number; //opportunities
 	repeatOpportunities: number; //'' including subsequent shouminkan/ankan chances
 }

@@ -6,6 +6,7 @@ import { BaseStats } from '../types/stats/BaseStats';
 import { AgariCategories, createStats, FirstStats } from '../types/stats/FirstStats';
 import { Han } from '../../majsoul';
 import { DrawStatus, HandStatus } from '../../store';
+import { KhanStats } from '../types/stats/KhanStats';
 
 interface PlayerData {
 	playerId: ObjectId;
@@ -23,31 +24,36 @@ export function collectStats(
 	version: StatsVersion,
 	players?: Record<string, ObjectId | boolean>): (Stats & GamePlayerIds)[] {
 	const baseStatsData = generateBaseStatsData(game);
-	switch (version) {
-		case StatsVersion.Undefined: {
-			return null;
-		} case StatsVersion.None: {
-			return selectPlayers(game, players).map(player => {
-				return {
-					version: StatsVersion.None,
-					...player,
-					stats: collectBaseStats(game, player, baseStatsData)
-				};
-			});
-		} case StatsVersion.First: {
-			return selectPlayers(game, players).map(player => {
-				return {
-					version: StatsVersion.First,
-					...player,
-					stats: collectFirstStats(
-						game,
-						player,
-						collectBaseStats(game, player, baseStatsData)
-					)
-				};
-			});
-		}
+	if (version = StatsVersion.Undefined) {
+		return null;
 	}
+
+	return selectPlayers(game, players).map(player => {
+		const baseStats = collectBaseStats(game, player, baseStatsData);
+		if (version === StatsVersion.None) {
+			return {
+				version: StatsVersion.None,
+				...player,
+				stats: baseStats,
+			}
+		}
+
+		const firstStats = collectFirstStats(game, player, baseStats);
+		if (version === StatsVersion.First) {
+			return {
+				version: StatsVersion.First,
+				...player,
+				stats: firstStats,
+			}
+		}
+
+		const khanStats = collectKhanStats(game, player, firstStats);
+		return {
+			version: StatsVersion.Khan,
+			...player,
+			stats: khanStats,
+		};
+	});
 }
 
 function selectPlayers(game: Store.GameResult<ObjectId>, players?: Record<string, boolean | ObjectId>): PlayerData[] {
@@ -187,4 +193,27 @@ function collectFirstStats(
 	};
 }
 
+function collectKhanStats(
+	game: Store.GameResult<ObjectId>,
+	player: PlayerData,
+	firstStats: FirstStats['stats'],
+): KhanStats['stats'] {
+	const khanStats = firstStats as KhanStats['stats'];
+	khanStats.calls.kans = {
+		ankan: 0,
+		daiminkan: 0,
+		rinshan: 0,
+		shouminkan: 0,
+		shouminkanRobbed: 0,
+	};
 
+	for (const round of game.rounds) {
+		khanStats.calls.kans.ankan += round.playerStats[player.seat].calls.kans.ankan;
+		khanStats.calls.kans.daiminkan += round.playerStats[player.seat].calls.kans.daiminkan;
+		khanStats.calls.kans.rinshan += round.playerStats[player.seat].calls.kans.rinshan;
+		khanStats.calls.kans.shouminkan += round.playerStats[player.seat].calls.kans.shouminkan;
+		khanStats.calls.kans.shouminkanRobbed += round.playerStats[player.seat].calls.kans.shouminkanRobbed;
+	}
+
+	return khanStats;
+}

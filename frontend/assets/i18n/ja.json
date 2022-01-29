@@ -83,7 +83,8 @@
 				"closed": "その他"
 			},
 			"details": {
-				"totalCallRate": "鳴き数÷鳴く機会数"
+				"totalCallRate": "鳴き数÷鳴く機会数",
+				"kans": "カン"
 			}
 		}
 	},

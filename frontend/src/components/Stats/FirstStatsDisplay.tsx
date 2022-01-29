@@ -3,11 +3,12 @@ import { Pie } from "../utils/Chart";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { AgariCategories, FirstStats } from "majsoul-api/dist/rest/types/stats/FirstStats";
+import { AgariCategories } from "majsoul-api/dist/rest/types/stats/FirstStats";
 import { css } from "astroturf";
 import clsx from "clsx";
 import * as globalStyles from "../styles.sass";
 import { useTranslation } from "react-i18next";
+import { KhanStats } from "majsoul-api/dist/rest/types/stats/KhanStats";
 
 const styles = css`
 	.chartContainer {
@@ -159,7 +160,7 @@ function SwapPageButton(props: {
 export const FirstStatsDisplay = React.memo(function ({
 	stats,
 }: {
-	stats: FirstStats['stats'];
+	stats: KhanStats['stats'];
 }): JSX.Element {
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 
@@ -195,6 +196,23 @@ export const FirstStatsDisplay = React.memo(function ({
 		const totalDealinsPercent = twoDecimalPlaceRound(
 			100 * totalDealins / stats.totalHands
 		);
+
+		const callTabDetails = [
+			{
+				label: t("stats.calls.details.totalCallRate"),
+				value: twoDecimalPlaceRound(100 * stats.calls.total / stats.calls.opportunities).toString() + "%",
+			},
+		];
+
+		if (stats.calls.kans) {
+			callTabDetails.push(
+				{
+					label: t("stats.calls.details.kans"),
+					value: (stats.calls.kans.daiminkan + stats.calls.kans.ankan + stats.calls.kans.shouminkan - stats.calls.kans.shouminkanRobbed).toString(),
+				}
+			);
+		}
+
 
 		return {
 			[StatsPageType.Overall]: {
@@ -426,12 +444,7 @@ export const FirstStatsDisplay = React.memo(function ({
 					},
 				],
 				rightColumn: {
-					fields: [
-						{
-							label: t("stats.calls.details.totalCallRate"),
-							value: twoDecimalPlaceRound(100 * stats.calls.total / stats.calls.opportunities).toString() + "%",
-						},
-					]
+					fields: callTabDetails
 				},
 			}
 		};

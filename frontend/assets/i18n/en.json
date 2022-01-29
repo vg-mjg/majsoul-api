@@ -83,7 +83,8 @@
 				"closed": "Closed"
 			},
 			"details": {
-				"totalCallRate": "Calls / Opportunities"
+				"totalCallRate": "Calls / Opportunities",
+				"kans": "Kans"
 			}
 		}
 	},

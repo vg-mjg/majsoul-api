@@ -98,6 +98,13 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 					playerStats[p] = {
 						haipaiShanten: handShanten(recordNewRound['tiles' + p]),
 						calls: {
+							kans: {
+								ankan: 0,
+								daiminkan: 0,
+								rinshan: 0,
+								shouminkan: 0,
+								shouminkanRobbed: 0,
+							},
 							total: 0,
 							repeatOpportunities: 0,
 							opportunities: 0,
@@ -180,11 +187,26 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 			} case "RecordAnGangAddGang": {
 				const recordAnGangAddGang = record as lq.RecordAnGangAddGang;
 				playerStats[recordAnGangAddGang.seat].calls.total++;
+				switch (recordAnGangAddGang.type) {
+					case 2: {
+						playerStats[recordAnGangAddGang.seat].calls.kans.shouminkan++;
+						break;
+					}
+					case 3: {
+						playerStats[recordAnGangAddGang.seat].calls.kans.ankan++;
+						break;
+					}
+				}
 				losingSeat = recordAnGangAddGang.seat;
 				break;
 			} case "RecordChiPengGang": {
 				const recordChiPengGang = record as lq.RecordChiPengGang;
 				playerStats[recordChiPengGang.seat].calls.total++;
+
+				if (recordChiPengGang.type === 2) {
+					playerStats[recordChiPengGang.seat].calls.kans.daiminkan++;
+				}
+
 				if (playerStats[recordChiPengGang.seat].finalHandState.status === HandStatus.Open) {
 					break;
 				}
@@ -214,27 +236,43 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 
 				if (recordHule.hules[0].zimo) {
 					const hule = recordHule.hules[0];
+					const agariInfo = getAgariRecord(record, hule, round);
 					rounds.push({
 						round,
 						tsumo: {
-							...getAgariRecord(record, hule, round),
+							...agariInfo,
 							dealerValue: hule.point_zimo_qin,
 						},
 						playerStats
 					});
+
+					if (agariInfo.han?.find(h => h === Han.After_a_Kan)) {
+						playerStats[hule.seat].calls.kans.rinshan++;
+					}
 					break;
 				}
 
+				let chankan = false;
 				rounds.push({
 					round,
 					rons: (recordHule.hules).map(hule => {
+						const agariInfo = getAgariRecord(record, hule, round);
+						if (agariInfo.han?.find(h => h === Han.Robbing_a_Kan)) {
+							chankan = true;
+						}
+
 						return {
-							...getAgariRecord(record, hule, round),
+							...agariInfo,
 							loser: losingSeat
 						};
 					}),
 					playerStats
 				});
+
+				if (chankan) {
+					playerStats[losingSeat].calls.kans.shouminkanRobbed++;
+				}
+
 				break;
 			}
 		}
