@@ -142,6 +142,7 @@ export interface Player<Id = any> extends Partial<MajsoulPlayer> {
 export enum ContestType {
 	Tourney,
 	League,
+	TeamTourney,
 }
 
 export enum SupportedLocales {

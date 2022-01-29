@@ -1922,6 +1922,7 @@ export class RestApi {
 				'teams.players._id': true,
 				transitions: true,
 				initialPhaseName: true,
+				maxGames: true,
 			}
 		});
 
@@ -2031,11 +2032,9 @@ export class RestApi {
 		transitions,
 		phases
 	}: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
-		const contestTypes: TourneyScoringType[] = contest.tourneyType === TourneyContestType.Cumulative
-			? [ { type: TourneyContestType.Cumulative } ]
-			: contest.tourneyType === TourneyContestType.BestConsecutive
-				? [ { type: TourneyContestType.BestConsecutive } ]
-				: contest.tourneyType;
+		const contestTypes: TourneyScoringType[] = Array.isArray(contest.tourneyType)
+			? contest.tourneyType
+			: [ {type: contest.tourneyType == null ? TourneyContestType.Cumulative : contest.tourneyType } ];
 
 		const games = await this.mongoStore.gamesCollection.find(
 			{
@@ -2077,7 +2076,6 @@ export class RestApi {
 					zone: Majsoul.Api.getPlayerZone(player.majsoulId),
 				},
 				rank: 0,
-				// hasMetRequirements?: boolean;
 				totalMatches: resultsByType[contestTypes[0].type][player._id.toHexString()].totalMatches,
 				qualificationType: contestTypes[0].type,
 				scores: scoreTypes.reduce((total, type) => {
@@ -2098,14 +2096,16 @@ export class RestApi {
 		let rank = 1;
 		for(const type of [...contestTypes, {type: contestTypes[0].type}]) {
 			const results = resultsByType[type.type];
-			let takenPlayers = players.sort((a, b) => results[a._id.toHexString()].rank - results[b._id.toHexString()].rank).slice(0, type.places ?? Infinity);
+			let takenPlayers = players
+				.sort((a, b) => results[a._id.toHexString()].rank - results[b._id.toHexString()].rank)
+				.slice(0, type.places ?? Infinity);
 
 			for (const player of takenPlayers) {
 				const playerResult = playerResults[player._id.toHexString()];
 				playerResult.rank = rank;
 				playerResult.qualificationType = type.type;
 
-				if (!playerResult.hasMetRequirements && contest.tourneyType === TourneyContestType.BestConsecutive && playerResult.totalMatches > 5) {
+			if (!playerResult.hasMetRequirements && !Number.isNaN(contest.maxGames) && playerResult.totalMatches >= contest.maxGames) {
 					playerResult.hasMetRequirements = true;
 				}
 				rank++;
