@@ -152,7 +152,6 @@ export interface Player<Id = any> extends Partial<MajsoulPlayer> {
 export enum ContestType {
 	Tourney,
 	League,
-	TeamTourney,
 }
 
 export enum SupportedLocales {
@@ -166,12 +165,7 @@ export interface ContestPhaseShared<Id = any> {
 	_id: Id;
 	tagline?: string;
 	taglineAlternate?: string;
-	displayName?: string;
-	notFoundOnMajsoul?: boolean;
-	initialPhaseName?: string;
 	anthem?: string;
-	spreadsheetId?: string;
-	transitions?: ContestPhaseTransition<Id>[];
 }
 
 export interface LeagueContestPhase<Id = any> {
@@ -179,19 +173,25 @@ export interface LeagueContestPhase<Id = any> {
 	teams?: ContestTeam<Id>[];
 }
 
-export enum TourneyContestType {
+export enum TourneyContestPhaseSubtype {
+	Default,
+	TeamQualifier
+}
+
+export enum TourneyContestScoringType {
 	Cumulative,
 	BestConsecutive
 }
 
-export interface TourneyScoringType {
-	type: TourneyContestType;
+export interface TourneyScoringInfo {
+	type: TourneyContestScoringType;
 	places?: number;
 }
 
 export interface TourneyContestPhase {
-	type?: ContestType.Tourney,
-	tourneyType?: TourneyContestType | TourneyScoringType[];
+	type?: ContestType.Tourney;
+	subtype?: TourneyContestPhaseSubtype;
+	tourneyType?: TourneyContestScoringType | TourneyScoringInfo[];
 	maxGames?: number;
 	bonusPerGame?: number;
 }
@@ -202,6 +202,12 @@ export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Contest
 	type?: ContestType
 	track?: boolean;
 	adminPlayerFetchRequested?: boolean;
+
+	displayName?: string;
+	notFoundOnMajsoul?: boolean;
+	initialPhaseName?: string;
+	spreadsheetId?: string;
+	transitions?: ContestPhaseTransition<Id>[];
 }
 
 export interface ContestTeam<Id = any> {

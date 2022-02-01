@@ -1,6 +1,6 @@
 import { Store } from "../..";
 import { Han, PlayerZone } from "../../majsoul";
-import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestType } from "../../store/types/types";
+import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestScoringType, TourneyContestPhaseSubtype } from "../../store/types/types";
 
 export * from "./stats";
 
@@ -41,27 +41,42 @@ export interface PlayerInformation {
 	zone: PlayerZone;
 }
 
-export interface PlayerTourneyScore {
-	rank: number;
-	score: number;
-	highlightedGameIds?: string[];
+export enum PlayerRankingType {
+	Score,
+	Team,
+}
+
+export interface PlayerScoreTypeRanking {
+	type: PlayerRankingType.Score;
+	details: Record<TourneyContestScoringType, {
+		rank: number;
+		score: number;
+		highlightedGameIds?: string[];
+	}>;
+}
+
+export interface PlayerTeamRanking {
+	type: PlayerRankingType.Team;
+	details: Record<string, {
+		scoreRanking: PlayerScoreTypeRanking;
+	}>
 }
 
 export interface PlayerTourneyStandingInformation {
 	player: PlayerInformation;
 	hasMetRequirements?: boolean;
 	totalMatches: number;
-	qualificationType: TourneyContestType;
+	qualificationType: TourneyContestScoringType;
 	rank: number;
-	scores: Record<TourneyContestType, PlayerTourneyScore>;
+	rankingDetails: PlayerScoreTypeRanking | PlayerTeamRanking;
 }
 
 export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
 	standings?: PlayerTourneyStandingInformation[];
+	subtype?: TourneyContestPhaseSubtype;
 }
 
-export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>
-
+export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>;
 
 export type Contest<Id = any> = Store.Contest<Id> & {
 	phases: PhaseMetadata[];

@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerTourneyScore } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -24,7 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, isAgariYakuman, TourneyContestType, TourneyScoringType } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -282,7 +282,7 @@ const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>()
 const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
-const nameofTourneyScoringType = nameofFactory<store.TourneyScoringType>();
+const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfo>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -468,7 +468,7 @@ export class RestApi {
 					return;
 				}
 
-				if (phaseInfo.contest.tourneyType === TourneyContestType.Cumulative) {
+				if (phaseInfo.contest.tourneyType === TourneyContestScoringType.Cumulative) {
 					res.status(500).send("Tourney subtype is not supported" as any);
 					return
 				}
@@ -1129,6 +1129,7 @@ export class RestApi {
 				param("id").isMongoId(),
 				body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
 				body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
+				body(nameofContest('subtype')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestPhaseSubtype)).optional(),
 				body(nameofContest('anthem')).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
 				body(nameofContest('spreadsheetId')).isString().bail().optional({ nullable: true }),
 				body(nameofContest('tagline')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
@@ -1140,10 +1141,10 @@ export class RestApi {
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				oneOf([
-					body(nameofContest('tourneyType')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestType)).optional(),
+					body(nameofContest('tourneyType')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)).optional(),
 					body(nameofContest('tourneyType')).not().isString().bail().isArray({ min: 1 }).optional(),
 				]),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestType)),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 				async (req, res) => {
 					const errors = validationResult(req);
@@ -2033,9 +2034,9 @@ export class RestApi {
 		transitions,
 		phases
 	}: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
-		const contestTypes: TourneyScoringType[] = Array.isArray(contest.tourneyType)
+		const contestTypes: TourneyScoringInfo[] = Array.isArray(contest.tourneyType)
 			? contest.tourneyType
-			: [ {type: contest.tourneyType == null ? TourneyContestType.Cumulative : contest.tourneyType } ];
+			: [ {type: contest.tourneyType == null ? TourneyContestScoringType.Cumulative : contest.tourneyType } ];
 
 		const games = await this.mongoStore.gamesCollection.find(
 			{
@@ -2049,17 +2050,17 @@ export class RestApi {
 		).toArray();
 
 		const scoreTypes = [...new Set(contestTypes.map(type => type.type)).values()];
-		const resultsByType: Record<TourneyContestType, Record<string, PlayerContestTypeResults>> = {
-			[TourneyContestType.Cumulative]: undefined,
-			[TourneyContestType.BestConsecutive]: undefined
+		const resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>> = {
+			[TourneyContestScoringType.Cumulative]: undefined,
+			[TourneyContestScoringType.BestConsecutive]: undefined
 		};
 		for (const type of scoreTypes) {
 			switch (type) {
-				case TourneyContestType.BestConsecutive: {
-					resultsByType[TourneyContestType.BestConsecutive] = this.getBestConsectutiveResults(games, contest);
+				case TourneyContestScoringType.BestConsecutive: {
+					resultsByType[TourneyContestScoringType.BestConsecutive] = this.getBestConsectutiveResults(games, contest);
 					break;
-				} case TourneyContestType.Cumulative: {
-					resultsByType[TourneyContestType.Cumulative] = this.getCumulativeResults(games, contest);
+				} case TourneyContestScoringType.Cumulative: {
+					resultsByType[TourneyContestScoringType.Cumulative] = this.getCumulativeResults(games, contest);
 					break;
 				}
 			}
@@ -2069,17 +2070,18 @@ export class RestApi {
 			_id: { $in: Object.keys(resultsByType[contestTypes[0].type]).map(ObjectId.createFromHexString) }
 		}).toArray();
 
-		const playerResults = players.map(player => {
-			return {
-				player: {
-					_id: player._id.toHexString(),
-					nickname: player.nickname,
-					zone: Majsoul.Api.getPlayerZone(player.majsoulId),
-				},
-				rank: 0,
-				totalMatches: resultsByType[contestTypes[0].type][player._id.toHexString()].totalMatches,
-				qualificationType: contestTypes[0].type,
-				scores: scoreTypes.reduce((total, type) => {
+		const playerResults = players.map<PlayerTourneyStandingInformation>(player => ({
+			player: {
+				_id: player._id.toHexString(),
+				nickname: player.nickname,
+				zone: Majsoul.Api.getPlayerZone(player.majsoulId),
+			},
+			rank: 0,
+			totalMatches: resultsByType[contestTypes[0].type][player._id.toHexString()].totalMatches,
+			qualificationType: contestTypes[0].type,
+			rankingDetails: {
+				type: PlayerRankingType.Score,
+				details: scoreTypes.reduce((total, type) => {
 					const result = resultsByType[type][player._id.toHexString()];
 					total[type] = {
 						score: result.score,
@@ -2087,9 +2089,9 @@ export class RestApi {
 						rank: result.rank,
 					};
 					return total;
-				}, {} as Record<TourneyContestType, PlayerTourneyScore>)
+				}, {} as PlayerScoreTypeRanking['details'])
 			}
-		}).reduce(
+		})).reduce(
 			(total, next) => (total[next.player._id] = next, total),
 			{} as Record<string, PlayerTourneyStandingInformation>
 		);
@@ -2125,6 +2127,7 @@ export class RestApi {
 
 		return [{
 			index: 0,
+			subtype: contest.subtype,
 			name: contest?.initialPhaseName ?? "予選",
 			startTime: contest.startTime,
 			standings: Object.values(playerResults)

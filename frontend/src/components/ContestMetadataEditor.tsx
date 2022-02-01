@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { ContestType, TourneyContestType } from "majsoul-api/dist/store/types/types";
+import { ContestType, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
 import Form from "react-bootstrap/Form";
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
@@ -135,7 +135,7 @@ const contestTypeValues =
 		.filter(k => !isNaN(k));
 
 const tourneyContestTypeValues =
-	Object.keys(TourneyContestType)
+	Object.keys(TourneyContestScoringType)
 		.map(k => parseInt(k))
 		.filter(k => !isNaN(k));
 
@@ -144,7 +144,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 	const [majsoulFriendlyId, setMajsoulFriendlyId] = useState<number>(undefined);
 	const [type, setType] = useState<ContestType>(undefined);
-	const [tourneyType, setTourneyType] = useState<TourneyContestType>(undefined);
+	const [tourneyType, setTourneyType] = useState<TourneyContestScoringType>(undefined);
 	const [displayName, setDisplayName] = useState<string>(undefined);
 	const [maxGames, setMaxGames] = useState<number>(undefined);
 	const [anthem, setAnthem] = useState<string>(undefined);
@@ -269,17 +269,17 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						id="tourneyContestTypeSelector"
 						as="select"
 						custom
-						value={tourneyType ?? (contest.tourneyType == null ? tourneyContestTypeValues[0] : isNaN(contest.tourneyType as number) ? -1 : contest.tourneyType as TourneyContestType)}
+						value={tourneyType ?? (contest.tourneyType == null ? tourneyContestTypeValues[0] : isNaN(contest.tourneyType as number) ? -1 : contest.tourneyType as TourneyContestScoringType)}
 						size="sm"
 						onChange={(event) => {
 							const value = parseInt(event.target.value);
 							if (value === -1) {
 								return;
 							}
-							setTourneyType(value as TourneyContestType);
+							setTourneyType(value as TourneyContestScoringType);
 						}}
 					>
-						{tourneyContestTypeValues.map((value, index) => <option key={index} value={value}>{TourneyContestType[value]}</option>)}
+						{tourneyContestTypeValues.map((value, index) => <option key={index} value={value}>{TourneyContestScoringType[value]}</option>)}
 						<option value={-1}>Custom</option>
 					</Form.Control>
 				}

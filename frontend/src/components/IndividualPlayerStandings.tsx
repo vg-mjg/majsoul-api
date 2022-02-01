@@ -8,7 +8,7 @@ import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { PlayerTourneyStandingInformation } from "../../../api/dist/rest";
+import { PlayerTourneyStandingInformation } from "majsoul-api/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
 import { PlayerZone } from "majsoul-api/dist/majsoul/types";
@@ -16,12 +16,11 @@ import { Stats } from "./Stats/Stats";
 import { useContext } from "react";
 import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
-import { TourneyContestType } from "majsoul-api/dist/store/types";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
 
-interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
-	scoreType?: TourneyContestType,
+export interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
+	scoreRanking?: Rest.PlayerScoreTypeRanking['details'];
 }
 
 const zoneMap: Record<PlayerZone, {
@@ -79,13 +78,14 @@ export function TeamIcon(props: {
 }
 
 
-export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps): JSX.Element {
+export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
+	scoreType: Store.TourneyContestScoringType
+}): JSX.Element {
 	const { t } = useTranslation();
 
 	const { contestId } = useContext(ContestContext);
 
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
-	console.log(props.player._id);
 	const team = contest?.teams != null
 		? Object.values(contest.teams).find(team => team?.players?.find(player => player._id === props.player._id))
 		: null;
@@ -115,7 +115,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 			onClick={() => setLoadGames(true)}
 			style={{ cursor: "pointer" }}
 		>
-			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreType == null ? props.rank : props.scores[props.scoreType].rank}位</b></h5></Col>
+			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreType == null ? props.rank : props.scoreRanking[props.scoreType].rank}位</b></h5></Col>
 			{team && <TeamIcon team={team} />}
 			<Zone zone={props.player.zone} />
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -127,7 +127,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 					</Row>
 				</Container>
 			</Col>
-			<Col md="auto" className="mr-3"> <h5><b>{props.scores[props.scoreType ?? props.qualificationType].score / 1000}</b></h5></Col>
+			<Col md="auto" className="mr-3"> <h5><b>{props.scoreRanking[props.scoreType ?? props.qualificationType].score / 1000}</b></h5></Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.totalMatches}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
@@ -145,7 +145,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps)
 								.map((score, seat) => ({ score, seat }))
 								.sort((a, b) => b.score.uma - a.score.uma)
 								.findIndex(r => r.seat === playerSeat);
-							return <Row key={game._id} className={clsx(props.scores[props.scoreType ?? props.qualificationType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
+							return <Row key={game._id} className={clsx(props.scoreRanking[props.scoreType ?? props.qualificationType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
 								<Col md="auto">
 									{getSeatCharacter(playerSeat)}
 								</Col>

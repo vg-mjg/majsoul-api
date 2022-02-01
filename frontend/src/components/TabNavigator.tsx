@@ -1,7 +1,7 @@
 import * as React from "react";
 import Nav from 'react-bootstrap/Nav';
 
-export function TabNavigator(props: {
+export const TabNavigator: React.FC<{
 	tabs: {
 		title: string;
 		key: string;
@@ -9,7 +9,7 @@ export function TabNavigator(props: {
 	onTabChanged?: (selectedKey: string) => void;
 	defaultTab?: string;
 	activeTab?: string;
-}): JSX.Element {
+}> = (props) => {
 	const [activeTab, setActiveTab] = React.useState<string>();
 
 	return <Nav
