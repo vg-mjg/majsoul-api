@@ -1146,6 +1146,11 @@ export class RestApi {
 				]),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}`).not().isString().bail().isArray().optional({ nullable: true }),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('type')}`)
+					.not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('places')}`)
+					.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 				async (req, res) => {
 					const errors = validationResult(req);
 					if (!errors.isEmpty()) {
@@ -2046,30 +2051,52 @@ export class RestApi {
 	}
 
 	private rankPlayersUsingContestRules(
-		players: Record<string, SharedGroupRankingData>,
+		players: {
+			player: SharedGroupRankingData;
+			_id: string;
+		}[],
 		contestTypes: TourneyScoringInfo[],
-		resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>>
+		resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>>,
+		rank = null,
 	) {
-		const playersWithId = Object.entries(players).map(([_id, player]) => ({
-			_id,
-			player,
-		}));
-		let rank = 1;
-		for(const type of [...contestTypes, {type: contestTypes[0].type}]) {
+		players = [...players];
+		const types = [...contestTypes];
+		if (rank === null) {
+			types.push({type: contestTypes[0].type});
+			rank = 1;
+		}
+
+		for (const type of types) {
+			if (players.length === 0) {
+				break;
+			}
+
 			const results = resultsByType[type.type];
-			let takenPlayers = playersWithId
+			let takenPlayers = players
 				.sort((a, b) => results[a._id].rank - results[b._id].rank)
 				.splice(0, type.places ?? Infinity);
 
+			if (type.suborder) {
+				this.rankPlayersUsingContestRules(
+					takenPlayers,
+					[
+						...type.suborder,
+						{type: type.type}
+					],
+					resultsByType,
+					rank,
+				);
+				rank += takenPlayers.length;
+				console.log("taken", takenPlayers.length);
+				continue;
+			}
+
 			for (const player of takenPlayers) {
+				console.log(type, rank);
 				player.player.rank = rank;
 				player.player.qualificationType = type.type;
 
 				rank++;
-			}
-
-			if (playersWithId.length === 0) {
-				break;
 			}
 		}
 	}
@@ -2094,7 +2121,17 @@ export class RestApi {
 			}
 		).toArray();
 
-		const scoreTypes = [...new Set(contestTypes.map(type => type.type)).values()];
+		const scoreTypeSet = new Set<TourneyContestScoringType>();
+		const scoreTypeLevels = [...contestTypes];
+		while (scoreTypeLevels.length > 0) {
+			const scoreTypeLevel = scoreTypeLevels.pop();
+			scoreTypeSet.add(scoreTypeLevel.type);
+			if (scoreTypeLevel.suborder) {
+				scoreTypeLevels.push(...scoreTypeLevel.suborder);
+			}
+		}
+
+		const scoreTypes = [...scoreTypeSet.values()];
 		const resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>> = {
 			[TourneyContestScoringType.Cumulative]: undefined,
 			[TourneyContestScoringType.BestConsecutive]: undefined,
@@ -2152,11 +2189,10 @@ export class RestApi {
 		}
 
 		this.rankPlayersUsingContestRules(
-			Object.values(playerResults)
-				.reduce(
-					(total, next) => (total[next.player._id] = next, total),
-					{} as Record<string, SharedGroupRankingData>
-				),
+			Object.values(playerResults).map(player => ({
+				_id: player.player._id,
+				player: player
+			})),
 			contestTypes,
 			resultsByType
 		);
@@ -2201,11 +2237,10 @@ export class RestApi {
 				}
 
 				this.rankPlayersUsingContestRules(
-					Object.values(teamPlayerResults)
-						.reduce(
-							(total, next) => (total[next.player._id] = (next.rankingDetails as PlayerTeamRanking).details[team._id.toHexString()], total),
-							{} as Record<string, SharedGroupRankingData>
-						),
+					Object.values(teamPlayerResults).map(player => ({
+						_id: player.player._id,
+						player: (player.rankingDetails as PlayerTeamRanking).details[team._id.toHexString()]
+					})),
 					contestTypes,
 					resultsByType
 				);

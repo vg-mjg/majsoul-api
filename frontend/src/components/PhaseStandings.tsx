@@ -103,7 +103,7 @@ const ScoreRankingDisplay: React.FC<{
 		})).filter(standing => standing.scoreRanking);
 
 		if (selectedScoreType == null) {
-			return standings;
+			return standings.sort((a, b) => a.rank - b.rank);
 		}
 
 		return standings.sort((a, b) => a.scoreRanking[selectedScoreType].rank - b.scoreRanking[selectedScoreType].rank);
@@ -116,7 +116,11 @@ const ScoreRankingDisplay: React.FC<{
 	const topStandings = standings.slice(0, 32);
 	const otherStandings = standings.slice(32);
 
-	const contestScoreTypes = Object.keys(standings?.[0]?.rankingDetails?.details ?? {});
+	const contestScoreTypes = Object.keys(
+		(standings?.[0]?.rankingDetails?.type === PlayerRankingType.Team
+			? Object.values(standings[0].rankingDetails.details)[0]?.scoreRanking?.details
+			: standings?.[0]?.rankingDetails?.details) ?? {}
+	);
 
 	return <>
 		<Accordion

@@ -187,6 +187,7 @@ export enum TourneyContestScoringType {
 export interface TourneyScoringInfo {
 	type: TourneyContestScoringType;
 	places?: number;
+	suborder?: TourneyScoringInfo[];
 }
 
 export interface TourneyContestPhase {
