@@ -91,6 +91,12 @@ const ScoreRankingDisplay: React.FC<{
 
 		const standings = props.standings.map(standing => ({
 			...standing,
+			rank: standing.rankingDetails.type === PlayerRankingType.Score
+				? standing.rank
+				: standing.rankingDetails.details?.[props.team]?.rank,
+			qualificationType: standing.rankingDetails.type === PlayerRankingType.Score
+				? standing.qualificationType
+				: standing.rankingDetails.details?.[props.team]?.qualificationType,
 			scoreRanking: standing.rankingDetails.type === PlayerRankingType.Score
 				? standing.rankingDetails?.details
 				: standing.rankingDetails.details[props.team]?.scoreRanking?.details
@@ -170,20 +176,26 @@ const TeamRankingDisplay: React.FC<{
 		}
 		return Object.values(contest.teams);
 	});
-	const [selectedTeam, setSelectedTeam] = React.useState<string>(null);
+	const [selectedTeam, setSelectedTeam] = React.useState<string>(teams[0]?._id);
 	return <>
-		<TabNavigator
-			tabs={
-				teams.map(team => ({
-					key: team._id,
-					title: team.name,
-				}))
-			}
-			onTabChanged={(key) => {
-				setSelectedTeam(key);
-			}}
-			activeTab={selectedTeam}
-		/>
+		<Container className="p-0 overflow-hidden rounded-top">
+			<Row className="no-gutters">
+				<Col>
+				<TabNavigator
+					tabs={
+						teams.map(team => ({
+							key: team._id,
+							title: team.name,
+						}))
+					}
+					onTabChanged={(key) => {
+						setSelectedTeam(key);
+					}}
+					activeTab={selectedTeam}
+				/>
+				</Col>
+			</Row>
+		</Container>
 		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam} />}
 	</>
 }

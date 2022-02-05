@@ -55,19 +55,22 @@ export interface PlayerScoreTypeRanking {
 	}>;
 }
 
+export interface SharedGroupRankingData {
+	rank: number;
+	qualificationType: TourneyContestScoringType;
+}
+
 export interface PlayerTeamRanking {
 	type: PlayerRankingType.Team;
-	details: Record<string, {
+	details: Record<string, SharedGroupRankingData & {
 		scoreRanking: PlayerScoreTypeRanking;
 	}>
 }
 
-export interface PlayerTourneyStandingInformation {
+export type PlayerTourneyStandingInformation = SharedGroupRankingData & {
 	player: PlayerInformation;
 	hasMetRequirements?: boolean;
 	totalMatches: number;
-	qualificationType: TourneyContestScoringType;
-	rank: number;
 	rankingDetails: PlayerScoreTypeRanking | PlayerTeamRanking;
 }
 

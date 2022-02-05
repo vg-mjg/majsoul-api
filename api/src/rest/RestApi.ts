@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -1925,6 +1925,7 @@ export class RestApi {
 				transitions: true,
 				initialPhaseName: true,
 				maxGames: true,
+				subtype: true,
 			}
 		});
 
@@ -2029,6 +2030,50 @@ export class RestApi {
 		).toPromise();
 	}
 
+	private copyScoreRanking(scoreRanking: PlayerScoreTypeRanking): PlayerScoreTypeRanking {
+		const details = {
+			...scoreRanking.details
+		};
+
+		for (const type in details) {
+			details[type] = {...details[type]}
+		}
+
+		return {
+			type: PlayerRankingType.Score,
+			details
+		};
+	}
+
+	private rankPlayersUsingContestRules(
+		players: Record<string, SharedGroupRankingData>,
+		contestTypes: TourneyScoringInfo[],
+		resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>>
+	) {
+		const playersWithId = Object.entries(players).map(([_id, player]) => ({
+			_id,
+			player,
+		}));
+		let rank = 1;
+		for(const type of [...contestTypes, {type: contestTypes[0].type}]) {
+			const results = resultsByType[type.type];
+			let takenPlayers = playersWithId
+				.sort((a, b) => results[a._id].rank - results[b._id].rank)
+				.splice(0, type.places ?? Infinity);
+
+			for (const player of takenPlayers) {
+				player.player.rank = rank;
+				player.player.qualificationType = type.type;
+
+				rank++;
+			}
+
+			if (playersWithId.length === 0) {
+				break;
+			}
+		}
+	}
+
 	private async getTourneyPhaseData({
 		contest,
 		transitions,
@@ -2094,34 +2139,72 @@ export class RestApi {
 		})).reduce(
 			(total, next) => (total[next.player._id] = next, total),
 			{} as Record<string, PlayerTourneyStandingInformation>
+		)
+
+		for (const result of Object.values(playerResults)) {
+			if (!result.hasMetRequirements && !Number.isNaN(contest.maxGames) && result.totalMatches >= contest.maxGames) {
+				result.hasMetRequirements = true;
+			}
+		}
+
+		this.rankPlayersUsingContestRules(
+			Object.values(playerResults)
+				.reduce(
+					(total, next) => (total[next.player._id] = next, total),
+					{} as Record<string, SharedGroupRankingData>
+				),
+			contestTypes,
+			resultsByType
 		);
 
-		let rank = 1;
-		for(const type of [...contestTypes, {type: contestTypes[0].type}]) {
-			const results = resultsByType[type.type];
-			let takenPlayers = players
-				.sort((a, b) => results[a._id.toHexString()].rank - results[b._id.toHexString()].rank)
-				.slice(0, type.places ?? Infinity);
+		if (contest.subtype === store.TourneyContestPhaseSubtype.TeamQualifier && contest.teams) {
+			const freeAgents = players.filter(player => !contest.teams.find(team => team.players?.find(teamPlayer => player._id.equals(teamPlayer._id))))
+				.map(player => playerResults[player._id.toHexString()]);
 
-			for (const player of takenPlayers) {
-				const playerResult = playerResults[player._id.toHexString()];
-				playerResult.rank = rank;
-				playerResult.qualificationType = type.type;
+			const scoreRankings = {} as Record<string, PlayerScoreTypeRanking>;
+			for (const team of contest.teams) {
+				const teamPlayerResults = [
+					...team.players?.map(player => playerResults[player._id.toHexString()]),
+					...freeAgents
+				].filter(player => player) ?? [];
+				for (const result of teamPlayerResults) {
+					if (result.rankingDetails.type !== PlayerRankingType.Team) {
+						scoreRankings[result.player._id] = result.rankingDetails;
+						result.rankingDetails = {
+							type: PlayerRankingType.Team,
+							details: {}
+						}
+					}
 
-			if (!playerResult.hasMetRequirements && !Number.isNaN(contest.maxGames) && playerResult.totalMatches >= contest.maxGames) {
-					playerResult.hasMetRequirements = true;
+					result.rankingDetails.details[team._id.toHexString()] = {
+						rank: 0,
+						qualificationType: null,
+						scoreRanking: this.copyScoreRanking(scoreRankings[result.player._id])
+					}
 				}
-				rank++;
-			}
 
-			if (!type.places) {
-				break;
-			}
+				for (const scoreType of [...contestTypes]) {
+					teamPlayerResults.sort((a, b) => scoreRankings[a.player._id].details[scoreType.type].rank - scoreRankings[b.player._id].details[scoreType.type].rank);
+					let rank = 1;
+					for (const player of teamPlayerResults) {
+						if (player.rankingDetails.type !== PlayerRankingType.Team) {
+							continue;
+						}
 
-			players = players.slice(type.places);
+						player.rankingDetails.details[team._id.toHexString()].scoreRanking.details[scoreType.type].rank = rank;
+						rank++;
+					}
+				}
 
-			if (players.length === 0) {
-				break;
+				this.rankPlayersUsingContestRules(
+					Object.values(teamPlayerResults)
+						.reduce(
+							(total, next) => (total[next.player._id] = (next.rankingDetails as PlayerTeamRanking).details[team._id.toHexString()], total),
+							{} as Record<string, SharedGroupRankingData>
+						),
+					contestTypes,
+					resultsByType
+				);
 			}
 		}
 
