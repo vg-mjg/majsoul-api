@@ -2087,12 +2087,10 @@ export class RestApi {
 					rank,
 				);
 				rank += takenPlayers.length;
-				console.log("taken", takenPlayers.length);
 				continue;
 			}
 
 			for (const player of takenPlayers) {
-				console.log(type, rank);
 				player.player.rank = rank;
 				player.player.qualificationType = type.type;
 
@@ -2223,15 +2221,15 @@ export class RestApi {
 					}
 				}
 
-				for (const scoreType of [...contestTypes]) {
-					teamPlayerResults.sort((a, b) => scoreRankings[a.player._id].details[scoreType.type].rank - scoreRankings[b.player._id].details[scoreType.type].rank);
+				for (const scoreType of [...scoreTypes]) {
+					teamPlayerResults.sort((a, b) => scoreRankings[a.player._id].details[scoreType].rank - scoreRankings[b.player._id].details[scoreType].rank);
 					let rank = 1;
 					for (const player of teamPlayerResults) {
 						if (player.rankingDetails.type !== PlayerRankingType.Team) {
 							continue;
 						}
 
-						player.rankingDetails.details[team._id.toHexString()].scoreRanking.details[scoreType.type].rank = rank;
+						player.rankingDetails.details[team._id.toHexString()].scoreRanking.details[scoreType].rank = rank;
 						rank++;
 					}
 				}
