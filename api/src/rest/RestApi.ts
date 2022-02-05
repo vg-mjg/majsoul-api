@@ -2097,7 +2097,8 @@ export class RestApi {
 		const scoreTypes = [...new Set(contestTypes.map(type => type.type)).values()];
 		const resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>> = {
 			[TourneyContestScoringType.Cumulative]: undefined,
-			[TourneyContestScoringType.BestConsecutive]: undefined
+			[TourneyContestScoringType.BestConsecutive]: undefined,
+			[TourneyContestScoringType.Kans]: undefined
 		};
 		for (const type of scoreTypes) {
 			switch (type) {
@@ -2106,6 +2107,9 @@ export class RestApi {
 					break;
 				} case TourneyContestScoringType.Cumulative: {
 					resultsByType[TourneyContestScoringType.Cumulative] = this.getCumulativeResults(games, contest);
+					break;
+				} case TourneyContestScoringType.Kans: {
+					resultsByType[TourneyContestScoringType.Kans] = this.getKanResults(games, contest);
 					break;
 				}
 			}
@@ -2319,6 +2323,63 @@ export class RestApi {
 				playerId: id,
 				rank: result.rank + 1,
 				score: result.score,
+				totalMatches: result.totalMatches,
+			};
+			return total;
+		}, {} as Record<string, PlayerContestTypeResults>);
+	}
+
+	private getKanResults(games: GameResult[], contest: store.Contest): Record<string, PlayerContestTypeResults> {
+		const maxGames = contest.maxGames ?? Infinity;
+		const playerResults = games.reduce((total, next) => {
+			for (let seat = 0; seat < next.players.length; seat++) {
+				const playerId = next.players[seat]._id.toHexString();
+				const playerData = total[playerId] ??= {
+					score: 0,
+					totalMatches: 0,
+					gamesWithKans: [],
+				};
+
+				playerData.totalMatches++;
+
+				if (playerData.totalMatches > maxGames) {
+					continue;
+				}
+
+				const score = next.rounds?.reduce((total, next) => {
+					const kans = next.playerStats[seat].calls.kans;
+					if (!kans) {
+						return total;
+					}
+					return total + kans.ankan + kans.daiminkan + kans.shouminkan - kans.shouminkanRobbed;
+				}, 0) ?? 0;
+
+
+				playerData.score += score;
+				if (score > 0) {
+					playerData.gamesWithKans.push(next._id);
+				}
+			}
+			return total;
+		}, {} as Record<string, {
+			totalMatches: number,
+			gamesWithKans: string[],
+			rank?: number,
+			score: number,
+		}>);
+
+		return Object.entries(playerResults)
+			.sort(([, {score: scoreA}], [, {score: scoreB}]) => scoreB - scoreA)
+			.map((result, index) => {
+				result[1].rank = index;
+				return result;
+			})
+			.reduce((total, [id, result]) => {
+			total[id] = {
+				playerId: id,
+				rank: result.rank + 1,
+				score: result.score,
+				highlightedGameIds: result.gamesWithKans,
 				totalMatches: result.totalMatches,
 			};
 			return total;

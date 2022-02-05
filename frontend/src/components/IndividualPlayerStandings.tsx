@@ -2,7 +2,7 @@ import * as React from "react";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import { Rest, Store } from "majsoul-api";
+import { Rest } from "majsoul-api";
 import Accordion from "react-bootstrap/Accordion";
 import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
@@ -18,6 +18,7 @@ import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
+import { ContestTeam, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
 
 export interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
 	scoreRanking?: Rest.PlayerScoreTypeRanking['details'];
@@ -65,7 +66,7 @@ const Zone: React.FC<{
 
 
 export function TeamIcon(props: {
-	team: Store.ContestTeam
+	team: ContestTeam
 }): JSX.Element {
 	return <h4 className="pr-2 text-dark">
 		<Badge style={{
@@ -79,7 +80,7 @@ export function TeamIcon(props: {
 
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
-	scoreType: Store.TourneyContestScoringType
+	scoreType: TourneyContestScoringType
 }): JSX.Element {
 	const { t } = useTranslation();
 
@@ -107,6 +108,8 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 		setViewDetails(accordionKey === "0");
 	}, [setViewDetails]);
 
+	const selectedScoreType = props.scoreType ?? props.qualificationType;
+
 	return <Accordion as={Container} className="p-0" activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} >
 		<Accordion.Toggle
 			as={Row}
@@ -127,7 +130,10 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 					</Row>
 				</Container>
 			</Col>
-			<Col md="auto" className="mr-3"> <h5><b>{props.scoreRanking[props.scoreType ?? props.qualificationType].score / 1000}</b></h5></Col>
+			<Col md="auto" className="mr-3"> <h5><b>
+				{props.scoreRanking[selectedScoreType].score / (selectedScoreType === TourneyContestScoringType.Kans ? 1 : 1000)}
+				{selectedScoreType === TourneyContestScoringType.Kans && "槓"}
+			</b></h5></Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.totalMatches}戦</b></h5></Col>
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
@@ -145,7 +151,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 								.map((score, seat) => ({ score, seat }))
 								.sort((a, b) => b.score.uma - a.score.uma)
 								.findIndex(r => r.seat === playerSeat);
-							return <Row key={game._id} className={clsx(props.scoreRanking[props.scoreType ?? props.qualificationType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
+							return <Row key={game._id} className={clsx(props.scoreRanking[selectedScoreType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
 								<Col md="auto">
 									{getSeatCharacter(playerSeat)}
 								</Col>
@@ -154,11 +160,11 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 									{position + 1}位
 								</Col>
 
-								<Col>
+								<Col md="auto">
 									{game.finalScore[playerSeat].uma / 1000}
 								</Col>
 
-								<Col md="auto">
+								<Col>
 									{dayjs(game.start_time).calendar()}
 								</Col>
 

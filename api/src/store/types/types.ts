@@ -180,7 +180,8 @@ export enum TourneyContestPhaseSubtype {
 
 export enum TourneyContestScoringType {
 	Cumulative,
-	BestConsecutive
+	BestConsecutive,
+	Kans,
 }
 
 export interface TourneyScoringInfo {
