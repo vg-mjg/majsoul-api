@@ -188,6 +188,7 @@ export interface TourneyScoringInfo {
 	type: TourneyContestScoringType;
 	places?: number;
 	suborder?: TourneyScoringInfo[];
+	reverse?: boolean;
 }
 
 export interface TourneyContestPhase {

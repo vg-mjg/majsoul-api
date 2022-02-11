@@ -1146,11 +1146,14 @@ export class RestApi {
 				]),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('reverse')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}`).not().isString().bail().isArray().optional({ nullable: true }),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('type')}`)
 					.not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('places')}`)
 					.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('reverse')}`)
+					.not().isString().bail().isBoolean().optional({ nullable: true }),
 				async (req, res) => {
 					const errors = validationResult(req);
 					if (!errors.isEmpty()) {
@@ -2073,8 +2076,13 @@ export class RestApi {
 
 			const results = resultsByType[type.type];
 			let takenPlayers = players
-				.sort((a, b) => results[a._id].rank - results[b._id].rank)
-				.splice(0, type.places ?? Infinity);
+				.sort((a, b) => results[a._id].rank - results[b._id].rank);
+
+			if (type.reverse) {
+				takenPlayers.reverse();
+			}
+
+			takenPlayers = takenPlayers.splice(0, type.places ?? Infinity);
 
 			if (type.suborder) {
 				this.rankPlayersUsingContestRules(
