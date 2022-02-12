@@ -29,8 +29,8 @@ function groupByType(
 	const groups: TypeGroup[] = [];
 
 	for(const standing of standings) {
-		const qualificationType = scoreTypes[standing.qualificationType];
-		if (qualificationType.type !== groups[0]?.type.type) {
+		if (standing.qualificationType !== groups[0]?.type.id) {
+			const qualificationType = scoreTypes[standing.qualificationType];
 			groups.unshift({
 				type: qualificationType,
 				standings: []
