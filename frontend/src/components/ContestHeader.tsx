@@ -7,6 +7,7 @@ import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { contestName } from "./utils";
 import clsx from "clsx";
 import { css } from "astroturf";
+import { hashCode } from "../api/utils";
 
 const classes = css`
 	.tagline {
@@ -34,6 +35,12 @@ export function ContestHeader(props: {
 		return null;
 	}
 
+	const tagline = props?.contest?.tagline ?? "";
+	const taglineHash = hashCode(tagline);
+
+	const taglineAlternate = props?.contest?.taglineAlternate ?? "";
+	const taglineAlternateHash = hashCode(taglineAlternate);
+
 	return <>
 		{props.contest.anthem == null ? null : <SongPlayer videoId={props.contest.anthem} play={secret} />}
 		<Row className="px-4 pt-4 pb-3 no-gutters align-items-center">
@@ -43,8 +50,8 @@ export function ContestHeader(props: {
 			<Col md="auto">
 				<i className={clsx("d-flex flex-column")}>
 					{!secret
-						? (props.contest.tagline ?? "").split(";;").map(text => <span className={classes.tagline}>{text}</span>)
-						: (props.contest.taglineAlternate ?? "").split(";;").map(text => <span className={clsx("text-center", classes.tagline)}>{text}</span>)}
+						? (tagline).split(";;").map((text, index) => <span key={`${taglineHash}_${index}`} className={classes.tagline}>{text}</span>)
+						: (taglineAlternate).split(";;").map((text, index) => <span key={`${taglineAlternateHash}_${index}`} className={clsx("text-center", classes.tagline)}>{text}</span>)}
 				</i>
 			</Col>
 		</Row>

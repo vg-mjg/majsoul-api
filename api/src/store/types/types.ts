@@ -180,15 +180,26 @@ export enum TourneyContestPhaseSubtype {
 
 export enum TourneyContestScoringType {
 	Cumulative,
-	BestConsecutive,
+	Consecutive,
 	Kans,
 }
 
-export interface TourneyScoringInfo {
+export interface TourneyScoringTypeDetails {
 	type: TourneyContestScoringType;
+	typeDetails?: ConsecutiveScoringDetails;
+};
+
+export type TourneyScoringInfo = TourneyScoringTypeDetails & TourneyScoringSharedInfo;
+
+interface TourneyScoringSharedInfo {
 	places?: number;
 	suborder?: TourneyScoringInfo[];
 	reverse?: boolean;
+}
+
+interface ConsecutiveScoringDetails {
+	findWorst?: boolean;
+	gamesToCount?: number;
 }
 
 export interface TourneyContestPhase {

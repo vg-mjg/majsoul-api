@@ -24,7 +24,10 @@
 		"scoreType": {
 			"combined": "合計順位",
 			"cumulative": "合計点数上位",
-			"bestconsecutive": "最高精算点連続",
+			"consecutive": {
+				"best": "最高精算点連続",
+				"worst": "最低精算点連続"
+			},
 			"kans": "カン"
 		}
 	},

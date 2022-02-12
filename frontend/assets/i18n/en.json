@@ -24,7 +24,10 @@
 		"scoreType": {
 			"combined": "Combined",
 			"cumulative": "Cumulative",
-			"bestconsecutive": "Best Consecutive",
+			"consecutive": {
+				"best": "Best Consecutive",
+				"worst": "Worst Consecutive"
+			},
 			"kans": "Kans"
 		}
 	},

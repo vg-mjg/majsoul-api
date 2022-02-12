@@ -2,7 +2,7 @@ import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -24,7 +24,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo, TourneyScoringTypeDetails } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -283,6 +283,7 @@ const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfo>();
+const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfo['typeDetails']>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -1145,6 +1146,8 @@ export class RestApi {
 					body(nameofContest('tourneyType')).not().isString().bail().isArray({ min: 1 }).optional(),
 				]),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('findWorst')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('gamesToCount')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('reverse')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}`).not().isString().bail().isArray().optional({ nullable: true }),
@@ -2058,14 +2061,15 @@ export class RestApi {
 			player: SharedGroupRankingData;
 			_id: string;
 		}[],
-		contestTypes: TourneyScoringInfo[],
-		resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>>,
+		contestTypes: (TourneyScoringInfo & {id: string})[],
+		resultsByType: Record<string, Record<string, PlayerContestTypeResults>>,
 		rank = null,
 	) {
 		players = [...players];
 		const types = [...contestTypes];
 		if (rank === null) {
-			types.push({type: contestTypes[0].type});
+			const type = {type: contestTypes[0].type};
+			types.push({...type, id: this.generateScoringTypeId(type)});
 			rank = 1;
 		}
 
@@ -2074,7 +2078,7 @@ export class RestApi {
 				break;
 			}
 
-			const results = resultsByType[type.type];
+			const results = resultsByType[type.id];
 			let takenPlayers = players
 				.sort((a, b) => results[a._id].rank - results[b._id].rank);
 
@@ -2090,7 +2094,7 @@ export class RestApi {
 					[
 						...type.suborder,
 						{type: type.type}
-					],
+					].map(type => ({...type, id: this.generateScoringTypeId(type)})),
 					resultsByType,
 					rank,
 				);
@@ -2100,11 +2104,19 @@ export class RestApi {
 
 			for (const player of takenPlayers) {
 				player.player.rank = rank;
-				player.player.qualificationType = type.type;
+				player.player.qualificationType = type.id;
 
 				rank++;
 			}
 		}
+	}
+
+	private generateScoringTypeId(type: TourneyScoringTypeDetails): string {
+		if (type.type === TourneyContestScoringType.Consecutive) {
+			return `${type.type}_${type.typeDetails?.gamesToCount ?? 5}${type.typeDetails?.findWorst == null ? "" : "_worst"}`;
+		}
+
+		return `${type.type}`;
 	}
 
 	private async getTourneyPhaseData({
@@ -2112,9 +2124,12 @@ export class RestApi {
 		transitions,
 		phases
 	}: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
-		const contestTypes: TourneyScoringInfo[] = Array.isArray(contest.tourneyType)
-			? contest.tourneyType
-			: [ {type: contest.tourneyType == null ? TourneyContestScoringType.Cumulative : contest.tourneyType } ];
+		const contestTypes: (TourneyScoringInfo & {id:string})[] = (
+			Array.isArray(contest.tourneyType)
+				? contest.tourneyType
+				: [ {type: contest.tourneyType == null ? TourneyContestScoringType.Cumulative : contest.tourneyType } ]
+		).map(type => ({...type, id: this.generateScoringTypeId(type)}))
+
 
 		const games = await this.mongoStore.gamesCollection.find(
 			{
@@ -2127,39 +2142,45 @@ export class RestApi {
 			}
 		).toArray();
 
-		const scoreTypeSet = new Set<TourneyContestScoringType>();
+		const scoreTypeSet: Record<string, TourneyContestScoringDetailsWithId> = {};
 		const scoreTypeLevels = [...contestTypes];
 		while (scoreTypeLevels.length > 0) {
 			const scoreTypeLevel = scoreTypeLevels.pop();
-			scoreTypeSet.add(scoreTypeLevel.type);
+			const id = this.generateScoringTypeId(scoreTypeLevel);
+			if (!(id in scoreTypeSet)) {
+				scoreTypeSet[id] = {
+					type: scoreTypeLevel.type,
+					typeDetails: scoreTypeLevel.typeDetails,
+					id,
+				}
+			};
+
 			if (scoreTypeLevel.suborder) {
-				scoreTypeLevels.push(...scoreTypeLevel.suborder);
+				scoreTypeLevels.push(
+					...scoreTypeLevel.suborder?.map(type => ({...type, id: this.generateScoringTypeId(type)}))
+				);
 			}
 		}
 
-		const scoreTypes = [...scoreTypeSet.values()];
-		const resultsByType: Record<TourneyContestScoringType, Record<string, PlayerContestTypeResults>> = {
-			[TourneyContestScoringType.Cumulative]: undefined,
-			[TourneyContestScoringType.BestConsecutive]: undefined,
-			[TourneyContestScoringType.Kans]: undefined
-		};
+		const scoreTypes = Object.values(scoreTypeSet);
+		const resultsByType = {} as Record<string, Record<string, PlayerContestTypeResults>>;
 		for (const type of scoreTypes) {
-			switch (type) {
-				case TourneyContestScoringType.BestConsecutive: {
-					resultsByType[TourneyContestScoringType.BestConsecutive] = this.getBestConsectutiveResults(games, contest);
+			switch (type.type) {
+				case TourneyContestScoringType.Consecutive: {
+					resultsByType[type.id] = this.getConsectutiveResults(type, games, contest);
 					break;
 				} case TourneyContestScoringType.Cumulative: {
-					resultsByType[TourneyContestScoringType.Cumulative] = this.getCumulativeResults(games, contest);
+					resultsByType[type.id] = this.getCumulativeResults(games, contest);
 					break;
 				} case TourneyContestScoringType.Kans: {
-					resultsByType[TourneyContestScoringType.Kans] = this.getKanResults(games, contest);
+					resultsByType[type.id] = this.getKanResults(games, contest);
 					break;
 				}
 			}
 		}
 
 		let players = await this.mongoStore.playersCollection.find({
-			_id: { $in: Object.keys(resultsByType[contestTypes[0].type]).map(ObjectId.createFromHexString) }
+			_id: { $in: Object.keys(resultsByType[contestTypes[0].id]).map(ObjectId.createFromHexString) }
 		}).toArray();
 
 		const playerResults = players.map<PlayerTourneyStandingInformation>(player => ({
@@ -2169,13 +2190,13 @@ export class RestApi {
 				zone: Majsoul.Api.getPlayerZone(player.majsoulId),
 			},
 			rank: 0,
-			totalMatches: resultsByType[contestTypes[0].type][player._id.toHexString()].totalMatches,
-			qualificationType: contestTypes[0].type,
+			totalMatches: resultsByType[contestTypes[0].id][player._id.toHexString()].totalMatches,
+			qualificationType: contestTypes[0].id,
 			rankingDetails: {
 				type: PlayerRankingType.Score,
 				details: scoreTypes.reduce((total, type) => {
-					const result = resultsByType[type][player._id.toHexString()];
-					total[type] = {
+					const result = resultsByType[type.id][player._id.toHexString()];
+					total[type.id] = {
 						score: result.score,
 						highlightedGameIds: result.highlightedGameIds,
 						rank: result.rank,
@@ -2187,12 +2208,6 @@ export class RestApi {
 			(total, next) => (total[next.player._id] = next, total),
 			{} as Record<string, PlayerTourneyStandingInformation>
 		)
-
-		for (const result of Object.values(playerResults)) {
-			if (!result.hasMetRequirements && !Number.isNaN(contest.maxGames) && result.totalMatches >= contest.maxGames) {
-				result.hasMetRequirements = true;
-			}
-		}
 
 		this.rankPlayersUsingContestRules(
 			Object.values(playerResults).map(player => ({
@@ -2230,14 +2245,14 @@ export class RestApi {
 				}
 
 				for (const scoreType of [...scoreTypes]) {
-					teamPlayerResults.sort((a, b) => scoreRankings[a.player._id].details[scoreType].rank - scoreRankings[b.player._id].details[scoreType].rank);
+					teamPlayerResults.sort((a, b) => scoreRankings[a.player._id].details[scoreType.id].rank - scoreRankings[b.player._id].details[scoreType.id].rank);
 					let rank = 1;
 					for (const player of teamPlayerResults) {
 						if (player.rankingDetails.type !== PlayerRankingType.Team) {
 							continue;
 						}
 
-						player.rankingDetails.details[team._id.toHexString()].scoreRanking.details[scoreType].rank = rank;
+						player.rankingDetails.details[team._id.toHexString()].scoreRanking.details[scoreType.id].rank = rank;
 						rank++;
 					}
 				}
@@ -2253,17 +2268,46 @@ export class RestApi {
 			}
 		}
 
+		for (const result of Object.values(playerResults)) {
+			if (result.hasMetRequirements) {
+				continue;
+			}
+
+			const type = scoreTypeSet[result.qualificationType];
+
+			const targetGames = type.type === TourneyContestScoringType.Consecutive
+				? (type.typeDetails?.gamesToCount ?? 5)
+				: contest.maxGames;
+
+			if (Number.isNaN(targetGames)) {
+				continue;
+			}
+
+			if (result.totalMatches < contest.maxGames) {
+				continue;
+			}
+
+			result.hasMetRequirements = true;
+		}
+
 		return [{
 			index: 0,
 			subtype: contest.subtype,
 			name: contest?.initialPhaseName ?? "予選",
 			startTime: contest.startTime,
+			scoringTypes: scoreTypes,
 			standings: Object.values(playerResults)
 				.sort((a, b) => a.rank - b.rank)
 		}];
 	};
 
-	private getBestConsectutiveResults(games: GameResult[], contest: store.Contest): Record<string, PlayerContestTypeResults> {
+	private getConsectutiveResults(
+		scoringDetails: TourneyScoringTypeDetails,
+		games: GameResult[],
+		contest: store.Contest
+	): Record<string, PlayerContestTypeResults> {
+		const gamesToCount = scoringDetails?.typeDetails?.gamesToCount ?? 5;
+		const scoreFlip = scoringDetails?.typeDetails?.findWorst ? -1 : 1;
 		const playerResults = games.reduce((total, next) => {
 			const maxGames = contest.maxGames ?? Infinity;
 			for (let seat = 0; seat < next.players.length; seat++) {
@@ -2272,7 +2316,7 @@ export class RestApi {
 					score: 0,
 					maxScore: 0,
 					totalMatches: 0,
-					maxSeqence: [],
+					maxSequence: [],
 					currentSequence: []
 				};
 
@@ -2287,15 +2331,15 @@ export class RestApi {
 					score
 				});
 				playerData.score += score;
-				if (playerData.totalMatches > 5) {
+				if (playerData.totalMatches > gamesToCount) {
 					const removedGame = playerData.currentSequence.shift();
 					playerData.score -= removedGame.score
-					if (playerData.score > playerData.maxScore) {
+					if (playerData.score * scoreFlip > playerData.maxScore * scoreFlip) {
 						playerData.maxScore = playerData.score;
-						playerData.maxSeqence = playerData.currentSequence.map(game => game.id)
+						playerData.maxSequence = playerData.currentSequence.map(game => game.id)
 					}
 				} else {
-					playerData.maxSeqence.push(next._id.toHexString());
+					playerData.maxSequence.push(next._id.toHexString());
 					playerData.maxScore = playerData.score
 				}
 			}
@@ -2305,7 +2349,7 @@ export class RestApi {
 			score: number,
 			maxScore: number,
 			rank?: number,
-			maxSeqence: string[],
+			maxSequence: string[],
 			currentSequence: {
 				id: string,
 				score: number,
@@ -2324,7 +2368,7 @@ export class RestApi {
 				rank: result.rank,
 				score: result.maxScore,
 				totalMatches: result.totalMatches,
-				highlightedGameIds: result.maxSeqence,
+				highlightedGameIds: result.maxSequence,
 			};
 			return total;
 		}, {} as Record<string, PlayerContestTypeResults>);

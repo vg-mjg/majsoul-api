@@ -9,26 +9,30 @@ import { ContestContext } from "./Contest/ContestProvider";
 import Accordion from "react-bootstrap/Accordion";
 import { ArrowToggle } from "./utils/ArrowToggle";
 import { TabNavigator } from "./TabNavigator";
-import { TourneyContestPhaseSubtype, TourneyContestScoringType } from "majsoul-api/dist/store/types";
+import { TourneyContestPhaseSubtype, TourneyContestScoringType, TourneyScoringTypeDetails } from "majsoul-api/dist/store/types";
 import { useHistory, useLocation } from "react-router";
 import clsx from "clsx";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
-import { PlayerRankingType, PlayerTourneyStandingInformation, TourneyPhase } from "majsoul-api/dist/rest/types/types";
+import { PlayerRankingType, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId, TourneyPhase } from "majsoul-api/dist/rest/types/types";
 
 interface TypeGroup {
-	type: TourneyContestScoringType;
+	type: TourneyContestScoringDetailsWithId;
 	standings: IndividualPlayerStandingsProps[];
 };
 
-function groupByType(standings: IndividualPlayerStandingsProps[]): TypeGroup[] {
+function groupByType(
+	standings: IndividualPlayerStandingsProps[],
+	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>,
+): TypeGroup[] {
 	const groups: TypeGroup[] = [];
 
 	for(const standing of standings) {
-		if (standing.qualificationType !== groups[0]?.type) {
+		const qualificationType = scoreTypes[standing.qualificationType];
+		if (qualificationType.type !== groups[0]?.type.type) {
 			groups.unshift({
-				type: standing.qualificationType,
+				type: qualificationType,
 				standings: []
 			});
 		}
@@ -41,48 +45,51 @@ function groupByType(standings: IndividualPlayerStandingsProps[]): TypeGroup[] {
 const GroupedStandingsSection: React.FC<{
 	previousItem?: PlayerTourneyStandingInformation;
 	standings: IndividualPlayerStandingsProps[];
-	scoreType: TourneyContestScoringType;
-}>= ({previousItem, standings, scoreType}) => {
+	scoreTypeId: string;
+	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+}>= ({previousItem, standings, scoreTypeId, scoreTypes}) => {
 	const { t } = useTranslation();
 
-	const groups = groupByType(standings);
-	if (scoreType == null) {
+	const groups = groupByType(standings, scoreTypes);
+	if (scoreTypeId == null) {
 		return <>
 			{groups.map((group, index) => <React.Fragment key={index}>
-				{ (index !== 0 || previousItem?.qualificationType !== group.type)
-						&& <div className="h4 mt-2 mb-3">{t(`tourney.scoreType.${TourneyContestScoringType[group.type].toLowerCase()}`)}</div> }
-					<StandingsSection standings={group.standings} scoreType={scoreType}/>
+				{ (index !== 0 || scoreTypes[previousItem?.qualificationType]?.type !== group.type.type)
+						&& <div className="h4 mt-2 mb-3">{t(getScoreTitleKey(group.type))}</div> }
+					<StandingsSection standings={group.standings} scoreTypes={scoreTypes} scoreTypeId={scoreTypeId} />
 				</React.Fragment>
 			)}
 		</>;
 	}
 
-	return <StandingsSection standings={standings} scoreType={scoreType}/>;
+	return <StandingsSection standings={standings} scoreTypeId={scoreTypeId} scoreTypes={scoreTypes} />;
 }
 
 const StandingsSection: React.FC<{
 	standings: IndividualPlayerStandingsProps[];
-	scoreType: TourneyContestScoringType;
-}>= ({standings, scoreType}) => {
+	scoreTypeId: string;
+	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+}>= ({standings, scoreTypes, scoreTypeId}) => {
 	return <>
 		{standings
 			.map((data, index) => <Row key={data.player._id} className={`mt-3 no-gutters`} style={{ maxWidth: 640, margin: "auto" }}>
-				<IndividualPlayerStandings {...data} scoreType={scoreType} />
+				<IndividualPlayerStandings {...data} scoreTypeId={scoreTypeId} scoreTypes={scoreTypes} />
 			</Row>
 			)}
 	</>;
 }
 
 const ScoreRankingDisplay: React.FC<{
-	standings: PlayerTourneyStandingInformation[],
-	team?: string,
+	standings: PlayerTourneyStandingInformation[];
+	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	team?: string;
 }> = (props) => {
 	const [showMore, setShowMore] = React.useState(false);
 	const { t } = useTranslation();
 	const history = useHistory();
 
-	const hash = useLocation().hash.toLowerCase().substr(1);
-	const selectedScoreType = contestTypeValues[hash];
+	const hash = useLocation().hash.toLowerCase().slice(1);
+	const selectedScoreTypeId = props.scoreTypes[hash]?.id;
 
 	const standings = React.useMemo<IndividualPlayerStandingsProps[]>(() => {
 		if (!props.standings) {
@@ -102,31 +109,23 @@ const ScoreRankingDisplay: React.FC<{
 				: standing.rankingDetails.details[props.team]?.scoreRanking?.details
 		})).filter(standing => standing.scoreRanking);
 
-		if (selectedScoreType == null) {
+		if (selectedScoreTypeId == null) {
 			return standings.sort((a, b) => a.rank - b.rank);
 		}
 
-		return standings.sort((a, b) => a.scoreRanking[selectedScoreType].rank - b.scoreRanking[selectedScoreType].rank);
-	}, [props.standings, selectedScoreType, props.team]);
-
-	const onAccordionSelect = React.useCallback((accordionKey: string) => {
-		setShowMore(accordionKey === "0");
-	}, [setShowMore]);
+		return standings.sort((a, b) => a.scoreRanking[selectedScoreTypeId].rank - b.scoreRanking[selectedScoreTypeId].rank);
+	}, [props.standings, selectedScoreTypeId, props.team]);
 
 	const topStandings = standings.slice(0, 32);
 	const otherStandings = standings.slice(32);
+	console.log(standings.length, topStandings.length, otherStandings.length);
 
-	const contestScoreTypes = Object.keys(
-		(standings?.[0]?.rankingDetails?.type === PlayerRankingType.Team
-			? Object.values(standings[0].rankingDetails.details)[0]?.scoreRanking?.details
-			: standings?.[0]?.rankingDetails?.details) ?? {}
-	);
+	const contestScoreTypes = Object.values(props.scoreTypes);
 
 	return <>
 		<Accordion
 			as={Container}
 			className={clsx("rounded-bottom bg-dark text-light text-center px-3 pb-2", contestScoreTypes.length <= 1 && "pt-2")}
-			onSelect={onAccordionSelect}
 			activeKey={showMore ? "0" : null}
 		>
 			{contestScoreTypes.length > 1 &&
@@ -140,12 +139,13 @@ const ScoreRankingDisplay: React.FC<{
 										title: t("tourney.scoreType.combined"),
 									},
 									...contestScoreTypes.map(scoreType => ({
-											key: TourneyContestScoringType[parseInt(scoreType) as TourneyContestScoringType].toLowerCase(),
-											title: t(`tourney.scoreType.${TourneyContestScoringType[parseInt(scoreType) as TourneyContestScoringType].toLowerCase()}`),
+											key: scoreType.id,
+											title: t(getScoreTitleKey(scoreType))
 									}))
 							]
 							}
 							onTabChanged={(key) => {
+								setShowMore(false);
 								history.push({
 									hash: `#${key}`,
 								});
@@ -156,13 +156,18 @@ const ScoreRankingDisplay: React.FC<{
 					</Col>
 				</Row>
 			}
-			<GroupedStandingsSection standings={topStandings} scoreType={selectedScoreType}/>
+			<GroupedStandingsSection standings={topStandings} scoreTypeId={selectedScoreTypeId} scoreTypes={props.scoreTypes} />
 			<Accordion.Collapse eventKey="0">
 				<>
-					{showMore &&  <GroupedStandingsSection standings={otherStandings} previousItem={topStandings[topStandings.length - 1]} scoreType={selectedScoreType}/>}
+					{showMore && <GroupedStandingsSection
+						standings={otherStandings}
+						previousItem={topStandings[topStandings.length - 1]}
+						scoreTypeId={selectedScoreTypeId}
+						scoreTypes={props.scoreTypes}
+					/>}
 				</>
 			</Accordion.Collapse>
-			<Accordion.Toggle as={Row} eventKey="0" className="pt-1">
+			<Accordion.Toggle as={Row} eventKey="0" className="pt-1" onClick={() => setShowMore(!showMore)} >
 				<ArrowToggle pointUp={showMore}/>
 			</Accordion.Toggle>
 		</Accordion>
@@ -170,7 +175,8 @@ const ScoreRankingDisplay: React.FC<{
 }
 
 const TeamRankingDisplay: React.FC<{
-	phase: TourneyPhase
+	phase: TourneyPhase;
+	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
 }> = (props) => {
 	const { contestId } = React.useContext(ContestContext);
 	const teams = useSelector((state: IState) => {
@@ -200,17 +206,9 @@ const TeamRankingDisplay: React.FC<{
 				</Col>
 			</Row>
 		</Container>
-		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam} />}
+		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam} scoreTypes={props.scoreTypes} />}
 	</>
 }
-
-const contestTypeValues =
-	Object.values(TourneyContestScoringType)
-		.filter(value => !isNaN(value as any))
-		.reduce((total, next: TourneyContestScoringType) => {
-			total[TourneyContestScoringType[next].toLowerCase()] = next as TourneyContestScoringType
-			return total
-		}, {} as  Record<string, TourneyContestScoringType>);
 
 export const PhaseStandings: React.FC = () => {
 	const [phase, setPhase] = React.useState<TourneyPhase>(null);
@@ -233,9 +231,22 @@ export const PhaseStandings: React.FC = () => {
 		</Container>;
 	}
 
+	const scoreTypes = phase.scoringTypes?.reduce(
+		(total, next) => (total[next.id] = next, total),
+		{} as Record<string, TourneyContestScoringDetailsWithId>
+	) ?? {};
+
 	if (phase.subtype === TourneyContestPhaseSubtype.TeamQualifier) {
-		return <TeamRankingDisplay phase={phase} />;
+		return <TeamRankingDisplay phase={phase} scoreTypes={scoreTypes} />;
 	}
 
-	return <ScoreRankingDisplay standings={phase.standings} />;
+	return <ScoreRankingDisplay standings={phase.standings} scoreTypes={scoreTypes} />;
 }
+function getScoreTitleKey(scoreType: TourneyContestScoringDetailsWithId): string {
+	const typeKey = `tourney.scoreType.${TourneyContestScoringType[scoreType.type].toLowerCase()}`;
+	if (scoreType.type === TourneyContestScoringType.Consecutive) {
+		return `${typeKey}.${scoreType.typeDetails?.findWorst ? "worst" : "best"}`;
+	}
+	return typeKey;
+}
+

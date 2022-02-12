@@ -8,7 +8,7 @@ import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "src/api/Games";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { PlayerTourneyStandingInformation } from "majsoul-api/dist/rest";
+import { PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId } from "majsoul-api/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
 import { PlayerZone } from "majsoul-api/dist/majsoul/types";
@@ -80,7 +80,8 @@ export function TeamIcon(props: {
 
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
-	scoreType: TourneyContestScoringType
+	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	scoreTypeId: string;
 }): JSX.Element {
 	const { t } = useTranslation();
 
@@ -108,7 +109,8 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 		setViewDetails(accordionKey === "0");
 	}, [setViewDetails]);
 
-	const selectedScoreType = props.scoreType ?? props.qualificationType;
+	const selectedScoreTypeId = props.scoreTypeId ?? props.qualificationType;
+	const selectedScoreType = props.scoreTypes[selectedScoreTypeId];
 
 	return <Accordion as={Container} className="p-0" activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} >
 		<Accordion.Toggle
@@ -118,7 +120,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 			onClick={() => setLoadGames(true)}
 			style={{ cursor: "pointer" }}
 		>
-			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreType == null ? props.rank : props.scoreRanking[props.scoreType].rank}位</b></h5></Col>
+			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreTypeId == null ? props.rank : props.scoreRanking[props.scoreTypeId].rank}位</b></h5></Col>
 			{team && <TeamIcon team={team} />}
 			<Zone zone={props.player.zone} />
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -131,8 +133,8 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 				</Container>
 			</Col>
 			<Col md="auto" className="mr-3"> <h5><b>
-				{props.scoreRanking[selectedScoreType].score / (selectedScoreType === TourneyContestScoringType.Kans ? 1 : 1000)}
-				{selectedScoreType === TourneyContestScoringType.Kans && "槓"}
+				{props.scoreRanking[selectedScoreType.id].score / (selectedScoreType.type === TourneyContestScoringType.Kans ? 1 : 1000)}
+				{selectedScoreType.type === TourneyContestScoringType.Kans && "槓"}
 			</b></h5></Col>
 			<Col md="auto" className="mr-3"> <h5><b>{props.totalMatches}戦</b></h5></Col>
 		</Accordion.Toggle>
@@ -151,7 +153,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 								.map((score, seat) => ({ score, seat }))
 								.sort((a, b) => b.score.uma - a.score.uma)
 								.findIndex(r => r.seat === playerSeat);
-							return <Row key={game._id} className={clsx(props.scoreRanking[selectedScoreType].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
+							return <Row key={game._id} className={clsx(props.scoreRanking[selectedScoreType.id].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
 								<Col md="auto">
 									{getSeatCharacter(playerSeat)}
 								</Col>

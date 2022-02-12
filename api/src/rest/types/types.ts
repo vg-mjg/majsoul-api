@@ -1,6 +1,6 @@
 import { Store } from "../..";
 import { Han, PlayerZone } from "../../majsoul";
-import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestScoringType, TourneyContestPhaseSubtype } from "../../store/types/types";
+import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestScoringType, TourneyContestPhaseSubtype, TourneyScoringTypeDetails } from "../../store/types/types";
 
 export * from "./stats";
 
@@ -46,9 +46,11 @@ export enum PlayerRankingType {
 	Team,
 }
 
+export type TourneyContestScoringDetailsWithId = TourneyScoringTypeDetails & {id: string};
+
 export interface PlayerScoreTypeRanking {
 	type: PlayerRankingType.Score;
-	details: Record<TourneyContestScoringType, {
+	details: Record<string, {
 		rank: number;
 		score: number;
 		highlightedGameIds?: string[];
@@ -57,7 +59,7 @@ export interface PlayerScoreTypeRanking {
 
 export interface SharedGroupRankingData {
 	rank: number;
-	qualificationType: TourneyContestScoringType;
+	qualificationType: string;
 }
 
 export interface PlayerTeamRanking {
@@ -75,6 +77,7 @@ export type PlayerTourneyStandingInformation = SharedGroupRankingData & {
 }
 
 export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
+	scoringTypes?: TourneyContestScoringDetailsWithId[];
 	standings?: PlayerTourneyStandingInformation[];
 	subtype?: TourneyContestPhaseSubtype;
 }
