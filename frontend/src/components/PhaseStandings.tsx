@@ -167,9 +167,11 @@ const ScoreRankingDisplay: React.FC<{
 					/>}
 				</>
 			</Accordion.Collapse>
-			<Accordion.Toggle as={Row} eventKey="0" className="pt-1" onClick={() => setShowMore(!showMore)} >
-				<ArrowToggle pointUp={showMore}/>
-			</Accordion.Toggle>
+			{ otherStandings.length > 0 &&
+				<Accordion.Toggle as={Row} eventKey="0" className="pt-1" onClick={() => setShowMore(!showMore)} >
+					<ArrowToggle pointUp={showMore}/>
+				</Accordion.Toggle>
+			}
 		</Accordion>
 	</>;
 }
