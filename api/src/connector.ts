@@ -11,12 +11,9 @@ import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
 import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse";
-import { Codec } from "./majsoul/Codec";
-import * as util from "util";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
-const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 
 async function main() {
 	const secrets = getSecrets();
@@ -32,6 +29,10 @@ async function main() {
 	// console.log(api.majsoulCodec.decodeMessage(Buffer.from("", "hex")));
 
 	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
+	api.errors$.subscribe((error => {
+		console.log("error detected with api connection: ", error);
+		process.exit(1);
+	}));
 
 	//spreadsheet.addGameDetails(await api.getGame(decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split('_')[0]));
 
@@ -46,7 +47,12 @@ async function main() {
 	// });
 
 	const mongoStore = new store.Store();
-	await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
+	try {
+		await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
+	} catch (error) {
+		console.log("failed to connect to mongo db: ", error);
+		process.exit(1);
+	}
 
 	const googleAuth = new google.auth.OAuth2(
 		secrets.google.clientId,

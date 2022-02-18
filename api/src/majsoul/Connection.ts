@@ -5,6 +5,7 @@ import { MessageType } from "./types/MessageType";
 
 export class Connection {
 	private readonly messagesSubject = new Subject<any>();
+	private readonly errorSubject = new Subject<any>();
 	private socket: WebSocket;
 	constructor(private readonly server) { }
 
@@ -13,6 +14,10 @@ export class Connection {
 		data: Buffer;
 	}> {
 		return this.messagesSubject;
+	}
+
+	public get errors$(): Observable<any> {
+		return this.errorSubject;
 	}
 
 	public init(): Promise<void> {
@@ -42,13 +47,17 @@ export class Connection {
 			});
 
 			this.socket.onerror = (event) => {
+				this.errorSubject.next(event);
 				console.log(`websocker onerror`, event);
 			}
 			this.socket.onclose = (event) => {
+				this.errorSubject.next(event);
 			}
 			this.socket.on("close", (a, b) => {
+				this.errorSubject.next();
 			});
 			this.socket.on("error", (e) => {
+				this.errorSubject.next(e);
 				console.log(`websocket error`, e);
 			});
 			this.socket.on("open", () => resolve());

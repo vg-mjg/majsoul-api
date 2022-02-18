@@ -1,8 +1,8 @@
 import * as uuidv4 from "uuid/v4";
 import { Root } from "protobufjs";
 import fetch from "node-fetch";
-import { Observable, using } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { from, interval, merge, Observable, of, pipe, using } from 'rxjs';
+import { catchError, filter, map, mergeAll, timeout } from 'rxjs/operators';
 import { Contest, Player } from "./types/types";
 import { Codec } from "./Codec";
 import { MessageType } from "./types/MessageType";
@@ -85,12 +85,29 @@ export class Api {
 		return PlayerZone.Unknown;
 	}
 
+	public get errors$(): Observable<any> {
+		return merge(
+			this.connection.errors$,
+			interval(1000 * 60).pipe(
+				map((number) => from(this.lobbyService.rpcCall<lq.ReqHeatBeat>("heatbeat", {
+					no_operation_counter: number,
+				})).pipe(
+					timeout(3000),
+					filter(() => false),
+					catchError(() => of("heartbeat failed")),
+				)),
+				mergeAll(),
+			)
+		);
+	}
+
 	public get majsoulCodec(): Codec {
 		return this.codec;
 	}
 
 	public async init(): Promise<void> {
 		await this.connection.init();
+		// this.lobbyService.rpcCall
 	}
 
 	public async logIn(userId: string, accessToken: string): Promise<void> {
