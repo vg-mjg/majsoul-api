@@ -24,7 +24,8 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo, TourneyScoringTypeDetails } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo, TourneyScoringTypeDetails } from '../store';
+import { games } from 'googleapis/build/src/apis/games';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -282,6 +283,7 @@ const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>()
 const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
+const nameofGameCorrection = nameofFactory<store.GameCorrection<ObjectId>>();
 const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfo>();
 const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfo['typeDetails']>();
 
@@ -407,9 +409,9 @@ export class RestApi {
 			param("id").isMongoId(),
 			withData<{ id: string }, any, store.GameResult<ObjectId>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
-				const games = await this.mongoStore.gamesCollection.find({
+				const games = await this.getGames({
 					_id: gameId
-				}).toArray();
+				});
 
 				if (games.length < 1) {
 					res.status(404).send();
@@ -422,11 +424,11 @@ export class RestApi {
 		this.app.get('/contests/:id/pendingGames',
 			param("id").isMongoId(),
 			withData<{ id: string }, any, store.GameResult<ObjectId>[]>(async (data, req, res) => {
-				const games = await this.mongoStore.gamesCollection.find({
+				const games = await this.getGames({
 					contestId: new ObjectId(data.id),
 					notFoundOnMajsoul: { $ne: false },
 					contestMajsoulId: { $exists: false }
-				}).toArray();
+				});
 				res.send(games);
 			})
 		);
@@ -623,7 +625,7 @@ export class RestApi {
 			}
 
 			try {
-				const games = await cursor.toArray();
+				const games = await this.correctGames(await cursor.toArray());
 				const contests = await this.mongoStore.contestCollection.find(
 					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
 				).toArray();
@@ -641,6 +643,11 @@ export class RestApi {
 			}
 		});
 
+		this.app.get<any, GameCorrection<ObjectId>[]>('/corrections', async (req, res) => {
+			const corrections = await this.mongoStore.gameCorrectionsCollection.find({}).toArray();
+			res.send(corrections);
+		});
+
 		this.app.get<any, GameResult[]>('/contests/:contestId/players/:playerId/games', async (req, res) => {
 			try {
 				const contestId = await this.contestExists(req.params.contestId);
@@ -649,17 +656,15 @@ export class RestApi {
 					return;
 				}
 
-				const games = await this.mongoStore.gamesCollection.find(
-					{
-						contestId: contestId,
-						hidden: { $ne: true },
-						$or: [
-							{ notFoundOnMajsoul: false },
-							{ contestMajsoulId: { $exists: true } }
-						],
-						"players._id": ObjectId.createFromHexString(req.params.playerId)
-					}
-				).toArray();
+				const games = await this.getGames({
+					contestId: contestId,
+					hidden: { $ne: true },
+					$or: [
+						{ notFoundOnMajsoul: false },
+						{ contestMajsoulId: { $exists: true } }
+					],
+					"players._id": ObjectId.createFromHexString(req.params.playerId)
+				});
 
 				res.send(games.map(game => ({
 					...game,
@@ -679,16 +684,14 @@ export class RestApi {
 					return;
 				}
 
-				const games = await this.mongoStore.gamesCollection.find(
-					{
-						contestId: contestId,
-						$or: [
-							{ notFoundOnMajsoul: false },
-							{ contestMajsoulId: { $exists: true } }
-						],
-						hidden: { $ne: true }
-					}
-				).toArray();
+				const games = await this.getGames({
+					contestId: contestId,
+					$or: [
+						{ notFoundOnMajsoul: false },
+						{ contestMajsoulId: { $exists: true } }
+					],
+					hidden: { $ne: true }
+				});
 
 				const yakumanGames = games
 					.map(game => {
@@ -802,9 +805,7 @@ export class RestApi {
 					}
 				}
 
-				const games = await this.mongoStore.gamesCollection.find(
-					gameQuery
-				).toArray();
+				const games = await this.getGames(gameQuery);
 
 				let gameLimit = parseInt(data.gameLimit);
 				if (isNaN(gameLimit)) {
@@ -954,7 +955,7 @@ export class RestApi {
 					}
 				}
 
-				const games = await this.mongoStore.gamesCollection.find(query).toArray();
+				const games = await this.getGames(query);
 				const commonVersion = games.reduce((total, next) => Math.min(total, minimumVersion(next)) as StatsVersion, latestStatsVersion)
 				const gameStats = games.map(game => collectStats(game, commonVersion, playerMap));
 
@@ -1337,6 +1338,116 @@ export class RestApi {
 
 					const result = await this.mongoStore.gamesCollection.deleteOne({
 						_id: gameId
+					})
+
+					res.send();
+				})
+			)
+
+			.put<any, string>('/corrections',
+				body(nameofGameCorrection('gameId')).isMongoId().isString(),
+				logError<any, string>(
+					async (req, res) => {
+						const errors = validationResult(req);
+						if (!errors.isEmpty()) {
+							res.status(400).json({ errors: errors.array() } as any);
+							return;
+						}
+						const data: Partial<store.GameCorrection<string>> = matchedData(req, { includeOptionals: true });
+						const gameId = new ObjectId(data.gameId);
+						const game = await this.mongoStore.gamesCollection.find({ _id: gameId }).toArray();
+						if (game.length <= 0) {
+							res.status(400).send("Game doesn't exist." as any);
+							return;
+						}
+
+						const existingCorrection = await this.mongoStore.gameCorrectionsCollection.find({ gameId: gameId }).toArray();
+
+						if (existingCorrection.length > 0) {
+							res.status(400).send(`Correction for that game id already exists.` as any);
+							return;
+						}
+
+						const gameResult = await this.mongoStore.gameCorrectionsCollection.insertOne({
+							gameId,
+						});
+
+						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
+					}
+				)
+			)
+
+			.patch('/corrections/:id',
+				param("id").isMongoId(),
+				body(nameofGameCorrection("finalScore")).isArray().not().isString().optional({ nullable: true }),
+				body(`${nameofGameCorrection("finalScore")}.*.uma`).isInt().not().isString().optional({ nullable: true }),
+				body(`${nameofGameCorrection("finalScore")}.*.score`).isInt().not().isString().optional({ nullable: true }),
+				withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
+					const correctionId = new ObjectId(data.id);
+					const [game] = await this.mongoStore.gameCorrectionsCollection.find({
+						_id: correctionId
+					}).toArray();
+
+					if (!game) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const result = await this.mongoStore.gameCorrectionsCollection.findOneAndUpdate(
+						{
+							_id: correctionId
+						},
+						update,
+						{
+							returnOriginal: false,
+							projection: {
+								rounds: false
+							}
+						}
+					);
+
+					res.send(result.value);
+				})
+			)
+
+			.delete<any, void>('/corrections/:id',
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+					const data = matchedData(req, { includeOptionals: true }) as { id: string; };
+					const correctionId = new ObjectId(data.id);
+
+					const result = await this.mongoStore.gameCorrectionsCollection.deleteOne({
+						_id: correctionId
 					})
 
 					res.send();
@@ -1881,11 +1992,11 @@ export class RestApi {
 			timeWindow.$lt = endSession.scheduledTime
 		}
 
-		const games = await this.mongoStore.gamesCollection.find({
+		const games = await this.getGames({
 			contestId: contest._id,
 			end_time: timeWindow,
 			hidden: { $ne: true }
-		}).toArray();
+		});
 
 		return games.reduce<Record<string, number>>((total, game) => {
 			game.finalScore.forEach((score, index) => {
@@ -2131,16 +2242,18 @@ export class RestApi {
 		).map(type => ({...type, id: this.generateScoringTypeId(type)}))
 
 
-		const games = await this.mongoStore.gamesCollection.find(
-			{
-				contestId: contest._id,
-			},
-			{
-				sort: {
-					end_time: 1
+		const games = await this.correctGames(
+			await this.mongoStore.gamesCollection.find(
+				{
+					contestId: contest._id,
+				},
+				{
+					sort: {
+						end_time: 1
+					}
 				}
-			}
-		).toArray();
+			).toArray()
+		);
 
 		const scoreTypeSet: Record<string, TourneyContestScoringDetailsWithId> = {};
 		const scoreTypeLevels = [...contestTypes];
@@ -2469,5 +2582,43 @@ export class RestApi {
 			};
 			return total;
 		}, {} as Record<string, PlayerContestTypeResults>);
+	}
+
+	private async correctGames(games: store.GameResult<ObjectId>[]): Promise<store.GameResult<ObjectId>[]> {
+		const corrections = await this.mongoStore.gameCorrectionsCollection.find({
+			gameId: {
+				$in: games.map(game => game._id)
+			}
+		}).toArray();
+
+		if (!corrections.length) {
+			return games;
+		}
+
+		const gameMap = games.reduce(
+			(total, next) => (total[next._id.toHexString()] = next, total),
+			{} as Record<string, store.GameResult<ObjectId>>
+		);
+
+		for (const correction of corrections) {
+			const game = gameMap[correction.gameId.toHexString()];
+			for(let i = 0; i < game.finalScore.length; i++) {
+				const umaCorrection = correction.finalScore[i].uma
+				if (!isNaN(umaCorrection)) {
+					game.finalScore[i].uma += umaCorrection;
+				}
+
+				const scoreCorrection = correction.finalScore[i].score
+				if (!isNaN(scoreCorrection)) {
+					game.finalScore[i].score += scoreCorrection;
+				}
+			}
+		}
+		return games;
+	}
+
+	private async getGames(query: FilterQuery<store.GameResult<ObjectId>>): Promise<store.GameResult<ObjectId>[]> {
+		const games = await this.mongoStore.gamesCollection.find(query).toArray();
+		return await this.correctGames(games);
 	}
 }

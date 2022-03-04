@@ -93,6 +93,11 @@ interface RonRecord extends AgariInfo {
 	loser: number;
 }
 
+export interface GameCorrection<Id = any> {
+	_id: Id;
+	gameId: Id;
+	finalScore?: FinalScore[];
+}
 
 export interface GameResult<Id = any> {
 	config?: {

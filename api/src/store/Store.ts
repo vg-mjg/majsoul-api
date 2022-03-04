@@ -1,5 +1,5 @@
 import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion } from "./types/types";
+import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection } from "./types/types";
 import { Observable, Subject } from "rxjs";
 
 interface Migration {
@@ -10,6 +10,7 @@ const migrations: Migration[] = [];
 export class Store {
 	public contestCollection: Collection<Contest<ObjectId>>;
 	public gamesCollection: Collection<GameResult<ObjectId>>;
+	public gameCorrectionsCollection: Collection<GameCorrection<ObjectId>>;
 	public sessionsCollection: Collection<Session<ObjectId>>;
 	public playersCollection: Collection<Player<ObjectId>>;
 	public configCollection: Collection<Config<ObjectId>>;
@@ -52,6 +53,7 @@ export class Store {
 
 		this.contestCollection = await majsoulDb.collection("contests");
 		this.gamesCollection = await majsoulDb.collection("games");
+		this.gameCorrectionsCollection = await majsoulDb.collection("gameCorrections");
 		this.sessionsCollection = await majsoulDb.collection("sessions");
 		this.sessionsCollection.createIndex({ scheduledTime: -1 });
 		this.playersCollection = await majsoulDb.collection("players");
