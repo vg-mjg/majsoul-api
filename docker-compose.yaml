@@ -19,7 +19,7 @@ services:
       - majsoul.json
     env_file:
       - ./majsoul.env
-    entrypoint: ["node", "--http-parser=legacy", "/dist/connector.js"]
+    entrypoint: ["node", "--insecure-http-parser", "/dist/connector.js"]
 
   riichi-rest:
     build:
