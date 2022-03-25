@@ -21,6 +21,7 @@
 	},
 
 	"tourney": {
+		"allPlayers": "全員",
 		"scoreType": {
 			"combined": "合計順位",
 			"cumulative": "合計点数上位",

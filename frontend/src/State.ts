@@ -17,7 +17,7 @@ export interface IState {
 
 export function findPlayerInformation(playerId: string, teams: Record<string, Store.ContestTeam>): { team: Store.ContestTeam; player: Store.Player; } {
 	for (const teamId in teams) {
-		const player = teams[teamId].players.find(player => player._id === playerId);
+		const player = teams[teamId].players?.find(player => player._id === playerId);
 		if (player) {
 			return {
 				player,

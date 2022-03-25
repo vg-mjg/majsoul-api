@@ -243,8 +243,6 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		}
 		<Row className={clsx((!contest.phases || !contest.phases.length) && "mt-3" || "rounded-bottom bg-dark")}>
 			<Teams
-				contestId={contest._id}
-				teams={contest.teams}
 				teamScores={currentSession?.aggregateTotals ?? selectedPhase?.aggregateTotals}
 				isLoading={phaseRequestState !== RequestState.Complete}
 			/>

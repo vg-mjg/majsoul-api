@@ -23,6 +23,8 @@ import Badge from "react-bootstrap/Badge";
 import { StatsRequest } from "src/api/Contests";
 import * as globalStyles from "./styles.sass";
 import { Stats } from "./Stats/Stats";
+import { ContestContext } from "./Contest/ContestProvider";
+import { TourneyContestPhaseSubtype } from "majsoul-api/dist/store/types";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -125,12 +127,14 @@ function PlayerSearch(props: {
 }
 
 function Team(props: {
-	contestId: string,
 	team: Store.ContestTeam,
 	score?: number,
 	placing: number,
 	maxPlaceLength: number,
 }): JSX.Element {
+	const { contestId } = React.useContext(ContestContext);
+	const showTeamLogo = useSelector((state: IState) => state.contestsById[contestId]?.subtype !== TourneyContestPhaseSubtype.TeamQualifier);
+
 	const token = useSelector((state: IState) => state.user?.token);
 	const [name, setName] = React.useState<string>();
 	const [image, setImage] = React.useState<string>();
@@ -159,7 +163,7 @@ function Team(props: {
 			return;
 		}
 		fetchContestPlayers({
-			contestId: props.contestId,
+			contestId: contestId,
 			teamId: props.team._id,
 		}).then(players => {
 			setApiPlayers(players);
@@ -168,7 +172,7 @@ function Team(props: {
 		setStatsRequest({
 			team: props.team._id
 		});
-	}, [props.team._id, props.contestId, viewDetails]);
+	}, [props.team._id, contestId, viewDetails]);
 
 	const onAccordionSelect = React.useCallback((selectedKey: string) => {
 		setViewDetails(selectedKey === "0");
@@ -203,26 +207,28 @@ function Team(props: {
 					</h3>
 				</Col>
 			}
-			<Col md="auto" className="mr-3">
-				<label>
-					<input
-						disabled={token == null}
-						style={{ display: "none" }}
-						type="file"
-						onChange={function (event) {
-							const reader = new FileReader();
-							const input = event.target as HTMLInputElement;
-							if (input.files && input.files[0]) {
-								reader.onload = function (e) {
-									setImage(e.target.result.toString());
+			{ showTeamLogo &&
+				<Col md="auto" className="mr-3">
+					<label>
+						<input
+							disabled={token == null}
+							style={{ display: "none" }}
+							type="file"
+							onChange={function (event) {
+								const reader = new FileReader();
+								const input = event.target as HTMLInputElement;
+								if (input.files && input.files[0]) {
+									reader.onload = function (e) {
+										setImage(e.target.result.toString());
+									}
+									reader.readAsDataURL(input.files[0]);
 								}
-								reader.readAsDataURL(input.files[0]);
-							}
-						}}
-					/>
-					<TeamImage className={clsx(styles.teamImage, "rounded")} team={props.team} />
-				</label>
-			</Col>
+							}}
+						/>
+						<TeamImage className={clsx(styles.teamImage, "rounded")} team={props.team} />
+					</label>
+				</Col>
+			}
 			<Col md="auto" className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
 					<Row className="no-gutters">
@@ -308,8 +314,8 @@ function Team(props: {
 							<Col md="auto">
 								<Button
 									onClick={() =>
-										deleteTeam(token, props.contestId, props.team._id)
-											.then(() => dispatchTeamDeletedAction(dispatch, props.contestId, props.team._id))
+										deleteTeam(token, contestId, props.team._id)
+											.then(() => dispatchTeamDeletedAction(dispatch, contestId, props.team._id))
 									}
 								>
 									Delete
@@ -328,7 +334,7 @@ function Team(props: {
 									onClick={(event: any) => {
 										patchTeam(
 											token,
-											props.contestId,
+											contestId,
 											{
 												_id: props.team._id,
 												name: name,
@@ -337,7 +343,7 @@ function Team(props: {
 												players: players,
 												color
 											} as Store.ContestTeam
-										).then(team => dispatchTeamPatchedAction(dispatch, props.contestId, team))
+										).then(team => dispatchTeamPatchedAction(dispatch, contestId, team))
 									}}
 								>Save</Button>
 							</Col>
@@ -403,13 +409,11 @@ function TeamRow(props: {
 function TeamList(props: {
 	teams: TeamData[];
 	maxPlaceLength: number;
-	contestId: string;
 }): JSX.Element {
 	return <>
 		{props.teams.map((team) =>
 			<TeamRow key={team._id} first={team.placing === 0}>
 				<Team
-					contestId={props.contestId}
 					team={team}
 					score={team.total}
 					placing={team.placing + 1}
@@ -426,8 +430,6 @@ interface TeamData extends Store.ContestTeam<string> {
 }
 
 export function Teams(props: {
-	contestId: string;
-	teams: Record<string, Store.ContestTeam>;
 	isLoading?: boolean;
 	teamScores: Record<string, number>;
 	teamLimit?: number;
@@ -437,8 +439,11 @@ export function Teams(props: {
 
 	const dispatch = useDispatch();
 
+	const { contestId } = React.useContext(ContestContext);
+	const teams = useSelector((state: IState) => state.contestsById[contestId]?.teams ?? {});
+
 	const addTeamOnClick = React.useCallback(() => {
-		const id = props.contestId;
+		const id = contestId;
 		if (id == null) {
 			return;
 		}
@@ -453,7 +458,6 @@ export function Teams(props: {
 	}, [setViewDetails]);
 
 	const {
-		teams = {},
 		teamScores = {},
 	} = props;
 
@@ -478,7 +482,6 @@ export function Teams(props: {
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">
 		<TeamList
-			contestId={props.contestId}
 			maxPlaceLength={maxPlaceLength}
 			teams={teamsArray.slice(0, teamLimit)}
 		/>
@@ -490,7 +493,6 @@ export function Teams(props: {
 		>
 			<Accordion.Collapse eventKey="0">
 				<TeamList
-					contestId={props.contestId}
 					maxPlaceLength={maxPlaceLength}
 					teams={teamsArray.slice(teamLimit)}
 				/>

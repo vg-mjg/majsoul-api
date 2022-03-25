@@ -14,12 +14,15 @@ import { css } from "astroturf";
 import clsx from "clsx";
 import { updateGame } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
+import { TourneyContestPhaseSubtype } from "majsoul-api/dist/store/types";
 
 function GameSeat(props: {
 	seat: number,
 	game: Rest.GameResult
 }): JSX.Element {
 	const contest = useSelector((state: IState) => state.contestsById[props.game.contestId]);
+
+	const hideTeams = contest.subtype === TourneyContestPhaseSubtype.TeamQualifier;
 
 	const teams = contest?.teams;
 
@@ -63,7 +66,7 @@ function GameSeat(props: {
 			>
 				{props.game.finalScore.map((score, index) => ({ score, index })).sort((a, b) => b.score.uma - a.score.uma).findIndex(s => s.index === props.seat) + 1}
 			</Col>
-			{playerInformation?.team &&
+			{!hideTeams && playerInformation?.team &&
 				<Col
 					md="auto"
 					className="border-right border-2"

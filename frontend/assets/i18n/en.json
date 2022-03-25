@@ -21,6 +21,7 @@
 	},
 
 	"tourney": {
+		"allPlayers": "All Players",
 		"scoreType": {
 			"combined": "Combined",
 			"cumulative": "Cumulative",

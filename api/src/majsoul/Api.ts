@@ -224,6 +224,7 @@ export class Api {
 	}
 
 	public subscribeToContestChatSystemMessages(id: number): Observable<any> {
+		console.log("subscribeToContestChatSystemMessages", id);
 		return using(
 			() => ({
 				unsubscribe: () => {
@@ -248,7 +249,9 @@ export class Api {
 					this.lobbyService.rpcCall<lq.IReqJoinCustomizedContestChatRoom>(
 						"joinCustomizedContestChatRoom",
 						{ unique_id: id }
-					);
+					).then((resp) => {
+						console.log(`tracking room '${id}'`, resp);
+					});;
 				} else {
 					this.contestSystemMessagesSubscriptions[id]++;
 				}

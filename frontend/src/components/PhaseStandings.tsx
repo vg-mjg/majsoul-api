@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
 import { PlayerRankingType, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId, TourneyPhase } from "majsoul-api/dist/rest/types/types";
+import { Teams } from "./Teams";
 
 interface TypeGroup {
 	type: TourneyContestScoringDetailsWithId;
@@ -118,7 +119,6 @@ const ScoreRankingDisplay: React.FC<{
 
 	const topStandings = standings.slice(0, 32);
 	const otherStandings = standings.slice(32);
-	console.log(standings.length, topStandings.length, otherStandings.length);
 
 	const contestScoreTypes = Object.values(props.scoreTypes);
 
@@ -181,16 +181,58 @@ const TeamRankingDisplay: React.FC<{
 	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
 }> = (props) => {
 	const { contestId } = React.useContext(ContestContext);
-	const teams = useSelector((state: IState) => {
-		const contest = state.contestsById[contestId];
-		if (!contest?.teams) {
-			return [];
-		}
-		return Object.values(contest.teams);
-	});
-	const [selectedTeam, setSelectedTeam] = React.useState<string>(teams[0]?._id);
+
+	const { t } = useTranslation();
+
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+	const teamsById = contest?.teams;
+
+	const teams = [
+		{
+			_id: "allPlayers",
+			name: t("tourney.allPlayers"),
+		},
+		...(teamsById == null ? [] : Object.values(teamsById))
+	];
+
+	const showTeams = contest.subtype === TourneyContestPhaseSubtype.TeamQualifier;
+
+	const teamScores = props.phase.standings.reduce(
+		(total, standing) => {
+			if (standing.rankingDetails.type !== PlayerRankingType.Team) {
+				return total;
+			}
+
+			for (const teamId in standing.rankingDetails.details) {
+				const teamDetail = standing.rankingDetails.details[teamId];
+				const score = teamDetail.scoreRanking.details[TourneyContestScoringType.Cumulative]?.score;
+
+				if (score == null) {
+					return total;
+				}
+
+				if (!(teamId in total)) {
+					total[teamId] = 0;
+				}
+
+				total[teamId] += score;
+			}
+			return total;
+		},
+		{} as Record<string, number>
+	);
+
+	const [selectedTeam, setSelectedTeam] = React.useState<string>("allPlayers");
+
 	return <>
 		<Container className="p-0 overflow-hidden rounded-top">
+			{ showTeams
+				&& <Row className="no-gutters mb-3">
+					<Teams
+						teamScores={teamScores}
+					/>
+				</Row>
+			}
 			<Row className="no-gutters">
 				<Col>
 				<TabNavigator
@@ -208,7 +250,7 @@ const TeamRankingDisplay: React.FC<{
 				</Col>
 			</Row>
 		</Container>
-		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam} scoreTypes={props.scoreTypes} />}
+		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam === "allPlayers" ? null : selectedTeam} scoreTypes={props.scoreTypes} />}
 	</>
 }
 

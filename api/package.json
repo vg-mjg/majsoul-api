@@ -6,9 +6,9 @@
 	"module": "dist/index.js",
 	"scripts": {
 		"dev": "tsc --watch",
-		"connect": "node -r source-map-support/register ./dist/connector.js",
+		"connect": "node -r source-map-support/register --insecure-http-parser ./dist/connector.js",
 		"rest": "node -r source-map-support/register ./dist/rest-api.js",
-		"proto:fetch": "curl https://mahjongsoul.game.yo-star.com/v0.9.200.w/res/proto/liqi.json > src/majsoul/types/liqi.json",
+		"proto:fetch": "curl https://mahjongsoul.game.yo-star.com/v0.10.63.w/res/proto/liqi.json > src/majsoul/types/liqi.json",
 		"proto:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/majsoul/types/liqi.json | pbts --no-comments -o src/majsoul/types/liqi.d.ts -",
 		"proto:admin:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/majsoul/admin/types/proto.json | pbts --no-comments -o src/majsoul/admin/types/proto.d.ts -",
 		"cert:create": "openssl req -x509 -newkey rsa:4096 -keyout dist/riichi.key.pem -out dist/riichi.crt.pem -sha256 -days 365 -nodes"

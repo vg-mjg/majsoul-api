@@ -2239,8 +2239,7 @@ export class RestApi {
 			Array.isArray(contest.tourneyType)
 				? contest.tourneyType
 				: [ {type: contest.tourneyType == null ? TourneyContestScoringType.Cumulative : contest.tourneyType } ]
-		).map(type => ({...type, id: this.generateScoringTypeId(type)}))
-
+		).map(type => ({...type, id: this.generateScoringTypeId(type)}));
 
 		const games = await this.correctGames(
 			await this.mongoStore.gamesCollection.find(
@@ -2336,9 +2335,20 @@ export class RestApi {
 				.map(player => playerResults[player._id.toHexString()]);
 
 			const scoreRankings = {} as Record<string, PlayerScoreTypeRanking>;
-			for (const team of contest.teams) {
+			const teams = [
+				{
+					id: null,
+					playerIds: players.map(player => player._id.toHexString())
+				},
+				...contest.teams.map(team => ({
+					id: team._id.toHexString(),
+					playerIds: team.players?.map(player => player._id.toHexString())
+				}))
+			];
+
+			for (const team of teams) {
 				const teamPlayerResults = [
-					...team.players?.map(player => playerResults[player._id.toHexString()]),
+					...team.playerIds?.map(player => playerResults[player]),
 					...freeAgents
 				].filter(player => player) ?? [];
 				for (const result of teamPlayerResults) {
@@ -2350,7 +2360,7 @@ export class RestApi {
 						}
 					}
 
-					result.rankingDetails.details[team._id.toHexString()] = {
+					result.rankingDetails.details[team.id] = {
 						rank: 0,
 						qualificationType: null,
 						scoreRanking: this.copyScoreRanking(scoreRankings[result.player._id])
@@ -2365,7 +2375,7 @@ export class RestApi {
 							continue;
 						}
 
-						player.rankingDetails.details[team._id.toHexString()].scoreRanking.details[scoreType.id].rank = rank;
+						player.rankingDetails.details[team.id].scoreRanking.details[scoreType.id].rank = rank;
 						rank++;
 					}
 				}
@@ -2373,7 +2383,7 @@ export class RestApi {
 				this.rankPlayersUsingContestRules(
 					Object.values(teamPlayerResults).map(player => ({
 						_id: player.player._id,
-						player: (player.rankingDetails as PlayerTeamRanking).details[team._id.toHexString()]
+						player: (player.rankingDetails as PlayerTeamRanking).details[team.id]
 					})),
 					contestTypes,
 					resultsByType
