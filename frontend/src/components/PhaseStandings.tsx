@@ -94,7 +94,7 @@ const ScoreRankingDisplay: React.FC<{
 
 	const standings = React.useMemo<IndividualPlayerStandingsProps[]>(() => {
 		if (!props.standings) {
-			return [];
+			return null;
 		}
 
 		const standings = props.standings.map(standing => ({
@@ -286,6 +286,7 @@ export const PhaseStandings: React.FC = () => {
 
 	return <ScoreRankingDisplay standings={phase.standings} scoreTypes={scoreTypes} />;
 }
+
 function getScoreTitleKey(scoreType: TourneyContestScoringDetailsWithId): string {
 	const typeKey = `tourney.scoreType.${TourneyContestScoringType[scoreType.type].toLowerCase()}`;
 	if (scoreType.type === TourneyContestScoringType.Consecutive) {
