@@ -6,6 +6,7 @@ import { RpcImplementation } from "../RpcImplementation";
 import { RpcService } from "../Service";
 import * as proto from "./types/proto.json";
 import { lq } from "./types/proto";
+import { Passport } from "../types/types";
 
 export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
@@ -35,23 +36,7 @@ export class Api {
 		await this.connection.init();
 	}
 
-	public async logIn(userId: string, accessToken: string): Promise<void> {
-		const passport = await (await fetch("https://passport.mahjongsoul.com/user/login", {
-			method: "POST",
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				"uid": userId,
-				"token": accessToken,
-				"deviceId": `web|${userId}`
-			})
-		})).json();
-		if (!passport) {
-			console.log("no passport");
-			return;
-		}
+	public async logIn(passport: Passport): Promise<void> {
 
 		const type = 8;
 

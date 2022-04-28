@@ -3,7 +3,7 @@ import { Root } from "protobufjs";
 import fetch from "node-fetch";
 import { from, interval, merge, Observable, of, pipe, using } from 'rxjs';
 import { catchError, filter, map, mergeAll, timeout } from 'rxjs/operators';
-import { Contest, Player } from "./types/types";
+import { Contest, Passport, Player } from "./types/types";
 import { Codec } from "./Codec";
 import { MessageType } from "./types/MessageType";
 import { Connection } from "./Connection";
@@ -110,24 +110,7 @@ export class Api {
 		// this.lobbyService.rpcCall
 	}
 
-	public async logIn(userId: string, accessToken: string): Promise<void> {
-		const passport = await (await fetch("https://passport.mahjongsoul.com/user/login", {
-			method: "POST",
-			headers: {
-				'Accept': 'application/json',
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				"uid": userId,
-				"token": accessToken,
-				"deviceId": `web|${userId}`
-			})
-		})).json();
-		if (!passport) {
-			console.log("no passport");
-			return;
-		}
-
+	public async logIn(passport: Passport): Promise<void> {
 		const type = 8;
 
 		const respOauth2Auth = await this.lobbyService.rpcCall<lq.IReqOauth2Auth, lq.IResOauth2Auth>("oauth2Auth", {
@@ -171,7 +154,7 @@ export class Api {
 		);
 
 		if (!respOauth2Login.account) {
-			throw Error(`Couldn't log in to user id ${userId}`);
+			throw Error(`Couldn't log in to user id`);
 		}
 		console.log(`Logged in as ${respOauth2Login.account.nickname} account id ${respOauth2Login.account_id}`);
 		console.log("Connection ready");

@@ -11,12 +11,120 @@ import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
 import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse";
+import fetch, { HeadersInit } from "node-fetch";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 
+const sharedSpoofHeaders = {
+}
+
+async function getPassport(userId: string, accessToken: string, existingCookies: store.Cookie[]): Promise<{
+	passport: majsoul.Passport,
+	loginCookies: store.Cookie[]
+}> {
+	if (!existingCookies.length) {
+		existingCookies.push(
+		);
+	}
+
+	const cookie = (existingCookies)
+		.map(cookie => `${cookie.key}=${cookie.value}`).join(";");
+
+	console.log(cookie, cookie.length);
+
+	const optionsHeaders: HeadersInit = {
+		...sharedSpoofHeaders,
+	}
+
+	if (cookie.length) {
+		optionsHeaders.cookie = cookie;
+	}
+
+	const headers = (await fetch("https://passport.mahjongsoul.com/user/login", {
+		method: "OPTIONS",
+		headers: optionsHeaders,
+	})).headers.raw();
+	console.log(headers);
+	const newCookies = headers["set-cookie"]
+		?.map(cookie => {
+			const parts = cookie.split(';');
+			const [key, value] = parts[0].split(/=(.*)/s);
+			const expires = parts.find(part => part.trim().startsWith("expires"));
+			return {
+				key,
+				value,
+				expires: expires == null ? (Date.now() + 24 * 60 * 60 * 1000) : Date.parse(expires.split(/=(.*)/s)[1])
+			}
+		}) ?? [];
+
+	console.log(newCookies);
+
+	const loginCookies = [...(existingCookies), ...newCookies];
+
+	const joinedCookies = loginCookies
+		.map(cookie => `${cookie.key}=${cookie.value}`).join(";");
+
+	console.log(joinedCookies);
+
+
+	try {
+		const passport = await (await fetch("https://passport.mahjongsoul.com/user/login", {
+			method: "POST",
+			headers: {
+				...sharedSpoofHeaders,
+				'Accept': 'application/json',
+				'Content-Type': 'application/json',
+				cookies: joinedCookies
+			},
+			body: JSON.stringify({
+				"uid": userId,
+				"token": accessToken,
+				"deviceId": `web|${userId}`
+			})
+		})).json();
+
+		return {
+			passport,
+			loginCookies,
+		}
+	} catch {
+		return {
+			loginCookies,
+			passport: null,
+		}
+	}
+}
+
 async function main() {
 	const secrets = getSecrets();
+
+	const mongoStore = new store.Store();
+	try {
+		await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
+	} catch (error) {
+		console.log("failed to connect to mongo db: ", error);
+		process.exit(1);
+	}
+
+	const [config] = await mongoStore.configCollection.find().toArray();
+	const expireDeadline = Date.now() + 60 * 1000;
+	const existingCookies = (config.loginCookies ?? []).filter(cookie => !cookie.expires || cookie.expires > expireDeadline);
+	const {passport, loginCookies} = (await getPassport(secrets.majsoul.uid, secrets.majsoul.accessToken, existingCookies)) ?? {};
+
+	await mongoStore.configCollection.updateOne(
+		{
+			_id: config._id,
+		},
+		{
+			loginCookies
+		}
+	);
+
+	if (!passport) {
+		console.log("failed to aquire passport");
+		process.exit(1);
+	}
 
 	const apiResources = await majsoul.Api.retrieveApiResources();
 	console.log(`Using api version ${apiResources.pbVersion}`);
@@ -28,7 +136,8 @@ async function main() {
 
 	// console.log(api.majsoulCodec.decodeMessage(Buffer.from("", "hex")));
 
-	await api.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
+	await api.logIn(passport);
+
 	api.errors$.subscribe((error => {
 		console.log("error detected with api connection: ", error);
 		process.exit(1);
@@ -45,14 +154,6 @@ async function main() {
 	// 	// console.log(util.inspect(game.head, false, null));
 	// 	// console.log(util.inspect(parseGameRecordResponse(game), false, null));
 	// });
-
-	const mongoStore = new store.Store();
-	try {
-		await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
-	} catch (error) {
-		console.log("failed to connect to mongo db: ", error);
-		process.exit(1);
-	}
 
 	const googleAuth = new google.auth.OAuth2(
 		secrets.google.clientId,
@@ -241,7 +342,7 @@ async function main() {
 				console.log(`fetchRequested for contest #${contestId} #${contest.value.majsoulId}` );
 				await adminApi.reconnect();
 				try {
-					await adminApi.logIn(secrets.majsoul.uid, secrets.majsoul.accessToken);
+					await adminApi.logIn(passport);
 					await adminApi.manageContest(contest.value.majsoulId);
 					const { players, error } = await adminApi.fetchContestPlayers();
 					if (error) {

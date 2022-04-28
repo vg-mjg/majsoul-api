@@ -20,3 +20,7 @@ export interface Contest {
 	finishTime: number;
 }
 
+export interface Passport {
+	accessToken: string;
+	uid: string;
+}

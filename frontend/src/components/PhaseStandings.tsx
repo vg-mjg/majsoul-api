@@ -94,7 +94,7 @@ const ScoreRankingDisplay: React.FC<{
 
 	const standings = React.useMemo<IndividualPlayerStandingsProps[]>(() => {
 		if (!props.standings) {
-			return null;
+			return [];
 		}
 
 		const standings = props.standings.map(standing => ({

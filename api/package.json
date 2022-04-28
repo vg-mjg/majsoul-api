@@ -25,11 +25,11 @@
 		"jsonwebtoken": "^8.5.1",
 		"mongodb": "^3.5.8",
 		"node-fetch": "^2.6.1",
+		"protobufjs": "^6.11.2",
 		"rxjs": "^6.5.5",
 		"syanten": "^1.5.0",
 		"uuid": "^3.3.3",
-		"ws": "^7.1.2",
-		"protobufjs": "^6.11.2"
+		"ws": "^7.1.2"
 	},
 	"devDependencies": {
 		"@types/cors": "^2.8.6",

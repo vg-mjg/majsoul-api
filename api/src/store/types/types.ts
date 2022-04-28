@@ -257,8 +257,15 @@ export interface User<Id = any> {
 	scopes: string[];
 }
 
+export interface Cookie {
+	key: string;
+	value: string;
+	expires?: number;
+}
+
 export interface Config<Id = any> {
 	_id: Id;
 	featuredContest?: Id;
 	googleRefreshToken?: string;
+	loginCookies?: Cookie[];
 }
