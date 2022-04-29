@@ -268,4 +268,6 @@ export interface Config<Id = any> {
 	featuredContest?: Id;
 	googleRefreshToken?: string;
 	loginCookies?: Cookie[];
+	userAgent?: string;
+	passportToken?: string;
 }

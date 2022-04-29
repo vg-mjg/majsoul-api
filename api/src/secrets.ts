@@ -6,6 +6,7 @@ export interface ISecrets {
 	majsoul: {
 		uid: string;
 		accessToken: string;
+		passportToken?: string;
 	};
 	google: {
 		clientId: string;

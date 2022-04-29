@@ -12,21 +12,49 @@ import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
 import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse";
 import fetch, { HeadersInit } from "node-fetch";
+import * as UserAgent from "user-agents";
+import { Passport } from "./majsoul";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 
-const sharedSpoofHeaders = {
+async function getOrGenerateUserAgent(mongoStore: store.Store): Promise<string> {
+	const [config] = await mongoStore.configCollection.find().toArray();
+	if (!config.userAgent) {
+		config.userAgent = new UserAgent({
+			platform: process.platform === "win32" ? "Win32" : "Linux x86_64"
+		}).toString();
+
+		await mongoStore.configCollection.updateOne(
+			{
+				_id: config._id,
+			},
+			{
+				$set: {
+					userAgent: config.userAgent
+				}
+			}
+		);
+	}
+	return config.userAgent;
 }
 
-async function getPassport(userId: string, accessToken: string, existingCookies: store.Cookie[]): Promise<{
+async function getPassport(
+	{userId, accessToken, userAgent, existingCookies }: {
+		userId: string;
+		accessToken: string;
+		userAgent: string;
+		existingCookies: store.Cookie[];
+	}
+): Promise<{
 	passport: majsoul.Passport,
 	loginCookies: store.Cookie[]
 }> {
-	if (!existingCookies.length) {
-		existingCookies.push(
-		);
-	}
+	const sharedSpoofHeaders = {
+		"User-Agent": userAgent
+	};
+
+	console.log(sharedSpoofHeaders);
 
 	const cookie = (existingCookies)
 		.map(cookie => `${cookie.key}=${cookie.value}`).join(";");
@@ -38,35 +66,70 @@ async function getPassport(userId: string, accessToken: string, existingCookies:
 	}
 
 	if (cookie.length) {
-		optionsHeaders.cookie = cookie;
+		(optionsHeaders as any).cookie = cookie;
 	}
 
-	const headers = (await fetch("https://passport.mahjongsoul.com/user/login", {
-		method: "OPTIONS",
-		headers: optionsHeaders,
-	})).headers.raw();
-	console.log(headers);
-	const newCookies = headers["set-cookie"]
-		?.map(cookie => {
-			const parts = cookie.split(';');
-			const [key, value] = parts[0].split(/=(.*)/s);
-			const expires = parts.find(part => part.trim().startsWith("expires"));
-			return {
-				key,
-				value,
-				expires: expires == null ? (Date.now() + 24 * 60 * 60 * 1000) : Date.parse(expires.split(/=(.*)/s)[1])
-			}
-		}) ?? [];
+	const loginCookies = [...existingCookies];
 
-	console.log(newCookies);
+	try {
+		const headers = (await fetch("https://passport.mahjongsoul.com/user/login", {
+			method: "OPTIONS",
+			headers: optionsHeaders,
+		})).headers.raw();
+		console.log(headers);
 
-	const loginCookies = [...(existingCookies), ...newCookies];
+
+		const cookieTime = Date.now();
+
+		const newCookies = headers["set-cookie"]
+			?.map(cookie => {
+				const parts = cookie.split(';').map(part => part.trim().split(/=(.*)/s));
+				const [key, value] = parts[0];
+
+				const maxAgePart = parts.find(([key]) => key.startsWith("Max-Age"));
+
+				if (maxAgePart) {
+					const maxAge = parseInt(maxAgePart[1]);
+					if (!isNaN(maxAge)) {
+						return {
+							key,
+							value,
+							expires: cookieTime + maxAge * 1000
+						}
+					}
+				}
+
+				const expires = parts.find(([key]) => key.startsWith("expires"));
+				if (!expires) {
+					return {
+						key,
+						value,
+						expires: cookieTime + 24 * 60 * 60 * 1000
+					}
+				}
+
+				return {
+					key,
+					value,
+					expires: Date.parse(expires[1])
+				}
+			}) ?? [];
+
+		console.log(newCookies);
+
+		loginCookies.push(...newCookies);
+	} catch (e) {
+		console.log(e)
+		return {
+			passport: null,
+			loginCookies
+		}
+	}
 
 	const joinedCookies = loginCookies
 		.map(cookie => `${cookie.key}=${cookie.value}`).join(";");
 
 	console.log(joinedCookies);
-
 
 	try {
 		const passport = await (await fetch("https://passport.mahjongsoul.com/user/login", {
@@ -107,24 +170,55 @@ async function main() {
 		process.exit(1);
 	}
 
+	const userAgent = await getOrGenerateUserAgent(mongoStore);
 	const [config] = await mongoStore.configCollection.find().toArray();
+
 	const expireDeadline = Date.now() + 60 * 1000;
 	const existingCookies = (config.loginCookies ?? []).filter(cookie => !cookie.expires || cookie.expires > expireDeadline);
-	const {passport, loginCookies} = (await getPassport(secrets.majsoul.uid, secrets.majsoul.accessToken, existingCookies)) ?? {};
+	const {passport: dynamicPassport, loginCookies} = (await getPassport(
+		{
+			userId: secrets.majsoul.uid,
+			accessToken: secrets.majsoul.accessToken,
+			userAgent,
+			existingCookies,
+		}
+	)) ?? {};
 
 	await mongoStore.configCollection.updateOne(
 		{
 			_id: config._id,
 		},
 		{
-			loginCookies
+			$set: {
+				loginCookies
+			},
 		}
 	);
 
-	if (!passport) {
+	if (dynamicPassport) {
+		await mongoStore.configCollection.updateOne(
+			{
+				_id: config._id,
+			},
+			{
+				$set: {
+					passportToken: dynamicPassport.accessToken
+				},
+			}
+		);
+	}
+
+	const passportToken = dynamicPassport?.accessToken ?? config.passportToken ?? secrets.majsoul.passportToken;
+
+	if (!passportToken) {
 		console.log("failed to aquire passport");
 		process.exit(1);
 	}
+
+	const passport: Passport  = {
+		accessToken: passportToken,
+		uid: secrets.majsoul.uid,
+	};
 
 	const apiResources = await majsoul.Api.retrieveApiResources();
 	console.log(`Using api version ${apiResources.pbVersion}`);
