@@ -388,12 +388,13 @@ export class RestApi {
 
 		this.app.get('/contests/:id/images',
 			param("id").isMongoId(),
-			withData<{ id: string }, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			query("large").isBoolean().optional({nullable: false}),
+			withData<{ id: string, large: "true" | "false" }, any, store.Contest<ObjectId>>(async (data, req, res) => {
 				const contest = await this.findContest(data.id, {
 					projection: {
 						_id: true,
 						"teams._id": true,
-						"teams.image": true
+						[`teams.image${data.large === "true" ? "Large" : ""}`]: true,
 					}
 				});
 
@@ -1697,6 +1698,7 @@ export class RestApi {
 				param("id").isMongoId(),
 				param("teamId").isMongoId(),
 				body(nameofTeam('image')).isString().optional({ nullable: true }),
+				body(nameofTeam('imageLarge')).isString().optional({ nullable: true }),
 				body(nameofTeam('name')).isString().optional({ nullable: true }),
 				body(nameofTeam('players')).isArray().optional(),
 				body(`${nameofTeam('players')}.*._id`).isMongoId(),
