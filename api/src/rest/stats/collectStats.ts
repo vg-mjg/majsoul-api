@@ -24,13 +24,10 @@ export function collectStats(
 	version: StatsVersion,
 	players?: Record<string, ObjectId | boolean>): (Stats & GamePlayerIds)[] {
 	const baseStatsData = generateBaseStatsData(game);
-	if (version = StatsVersion.Undefined) {
-		return null;
-	}
 
 	return selectPlayers(game, players).map(player => {
 		const baseStats = collectBaseStats(game, player, baseStatsData);
-		if (version === StatsVersion.None) {
+		if (version === StatsVersion.None || version === StatsVersion.Undefined) {
 			return {
 				version: StatsVersion.None,
 				...player,

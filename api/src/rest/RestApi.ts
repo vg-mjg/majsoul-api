@@ -618,16 +618,20 @@ export class RestApi {
 
 			const cursor = this.mongoStore.gamesCollection.find(filter);
 
-			cursor.project({
-				rounds: false,
-			});
+			if (!req.query?.stats) {
+				cursor.project({
+					rounds: false,
+				});
+			}
 
 			if (req.query?.last) {
 				const last = parseInt(req.query.last as string);
-				if (last) {
+				if (last && !isNaN(last)) {
 					cursor.sort({ end_time: -1 })
-						.limit(last);
+						.limit(Math.min(last, 64));
 				}
+			} else {
+				cursor.limit(64);
 			}
 
 			try {
@@ -636,13 +640,21 @@ export class RestApi {
 					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
 				).toArray();
 
-				res.send(games.map(game => ({
-					...game,
-					sessionId: sessionMap.find((session) =>
-						game.end_time >= session.startSession.scheduledTime
-						&& (session.endSession == null || game.end_time < session.endSession.scheduledTime)
-					)?.startSession?._id
-				})));
+				res.send(
+					games.map(game => ({
+						...game,
+						sessionId: sessionMap.find((session) =>
+							game.end_time >= session.startSession.scheduledTime
+							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime)
+						)?.startSession?._id
+					})).map(game => {
+						if (req.query?.stats) {
+							(game as any).stats = collectStats(game, minimumVersion(game), game.players.reduce((total, next) => (total[next._id.toHexString()] = true, total), {})).map(stats => stats?.stats);
+							delete game.rounds;
+						}
+						return game;
+					})
+				);
 			} catch (error) {
 				console.log(error);
 				res.status(500).send(error)
