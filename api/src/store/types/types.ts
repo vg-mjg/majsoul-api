@@ -9,6 +9,7 @@ export enum GameResultVersion {
 	First,
 	Second,
 	Third,
+	Fourth,
 }
 
 export const latestGameResultVersion = Object.values(GameResultVersion).length / 2 - 1 as GameResultVersion;
@@ -82,6 +83,7 @@ export interface AgariInfo {
 	extras: number;
 	winner: number;
 	value: number;
+	riichi?: boolean;
 	han: Han[];
 }
 
@@ -128,7 +130,7 @@ export function isAgariYakuman(
 	}
 
 	let { value } = agari;
-	if (agari.han.findIndex(han => han === Han.Riichi || han === Han.Double_Riichi) >= 0) {
+	if (agari.han.findIndex(han => han === Han.Riichi || han === Han.Double_Riichi || agari.riichi) >= 0) {
 		value += config?.riichiStickValue ?? 1000;
 	}
 

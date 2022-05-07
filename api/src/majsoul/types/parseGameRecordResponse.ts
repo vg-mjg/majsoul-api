@@ -47,6 +47,7 @@ function getAgariRecord(record: any, hule: lq.IHuleInfo, round: RoundInfo): Agar
 		: hule.point_rong - (hule.liqi ? 1000 : 0);
 	return {
 		extras: record.delta_scores[hule.seat] - value - (hule.liqi ? 1000 : 0),
+		riichi: hule.liqi,
 		value,
 		winner: hule.seat,
 		han: (hule.fans as any[]).map(f => {
