@@ -526,6 +526,28 @@ export class RestApi {
 			})
 		);
 
+		this.app.get('/contests/:id/sessions/active',
+			param("id").isMongoId(),
+			withData<{ id: string }, any, Session<ObjectId>>(async (data, req, res) => {
+				const phaseInfo = await this.getPhases(data.id);
+
+				if (!phaseInfo.contest) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const now = Date.now();
+
+				const phases = await this.getLeaguePhaseData(phaseInfo);
+				res.send(
+					phases
+						.reduce((total, next) => total.concat(next.sessions), [] as Session<ObjectId>[])
+						.filter(session => session.scheduledTime < now)
+						.reverse()[0]
+				);
+			})
+		);
+
 		this.app.get<any, store.Config<ObjectId>>('/config', (req, res) => {
 			this.mongoStore.configCollection.find()
 				.project({
