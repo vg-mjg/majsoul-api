@@ -86,7 +86,7 @@ function YakumanList(props: {yakumen: Rest.YakumanInformation[]}) {
 				</Col>
 
 				<Col md="auto" className="mr-3">
-					{player.displayName ?? player.nickname}
+					{player.nickname}
 				</Col>
 
 				<Col md="auto" className="mr-3">
