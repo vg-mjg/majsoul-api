@@ -765,6 +765,7 @@ export class RestApi {
 						projection: {
 							_id: true,
 							nickname: true,
+							displayName: true,
 							majsoulId: true,
 						}
 					}
@@ -777,7 +778,7 @@ export class RestApi {
 							return {
 								han: agari.han,
 								player: {
-									nickname: player.nickname,
+									nickname: player.displayName ?? player.nickname,
 									_id: player._id.toHexString(),
 									zone: Majsoul.Api.getPlayerZone(player.majsoulId)
 								},
@@ -1974,6 +1975,38 @@ export class RestApi {
 				})
 			)
 
+			.patch('/players/:id',
+				param("id").isMongoId(),
+				body(nameofPlayer("displayName")).isString().optional({nullable: true}),
+				withData<Partial<store.Player<string | ObjectId> & {id: string}>, any, Store.Player<ObjectId>>(async (data, req, res) => {
+					const player = await this.mongoStore.playersCollection.findOneAndUpdate(
+						{
+							_id: ObjectId.createFromHexString(data.id as string)
+						},
+						data.displayName == null
+							? {
+								$unset: {
+									displayName: true
+								}
+							}
+							: {
+								$set: {
+									displayName: data.displayName
+								}
+							},
+						{
+							returnOriginal: false
+						}
+					);
+
+					if (!player.ok) {
+						res.status(404).send();
+					}
+
+					res.send(player.value);
+				})
+			)
+
 			.put('/players/',
 				body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
 				withData<Partial<store.Player<string | ObjectId>>, any, Store.Player<ObjectId>>(async (data, req, res) => {
@@ -2339,7 +2372,7 @@ export class RestApi {
 		const playerResults = players.map<PlayerTourneyStandingInformation>(player => ({
 			player: {
 				_id: player._id.toHexString(),
-				nickname: player.nickname,
+				nickname: player.displayName ?? player.nickname,
 				zone: Majsoul.Api.getPlayerZone(player.majsoulId),
 			},
 			rank: 0,

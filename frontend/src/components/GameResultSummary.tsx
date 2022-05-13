@@ -34,7 +34,8 @@ function GameSeat(props: {
 	const player = playerId == null
 		? {
 			_id: null as string,
-			nickname: `AI (${(levelToString(props.game.config?.aiLevel) as string)})`
+			nickname: `AI (${(levelToString(props.game.config?.aiLevel) as string)})`,
+			displayName: null as string,
 		}
 		: contest?.players?.find(p => p._id === playerId._id);
 
@@ -85,7 +86,7 @@ function GameSeat(props: {
 						borderBottom: playerInformation?.team?.color ? `solid 3px #${playerInformation.team.color}` : "none"
 					}}
 				>
-					{player.nickname}
+					{player.displayName ?? player.nickname}
 				</div>
 			</Col>
 			<Col md="auto" style={{ minWidth: "112px", backgroundColor: `rgb(${scoreColor.r}, ${scoreColor.g}, ${scoreColor.b})` }} className="rounded-right">
