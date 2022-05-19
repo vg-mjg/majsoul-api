@@ -11,6 +11,7 @@ import { Rest } from "majsoul-api";
 import { css } from "astroturf";
 import clsx from "clsx";
 import * as globalStyles from "./styles.sass";
+import { PaipuLink } from "./PaipuLink";
 
 function getYakumanName(han: Han[]): string[] {
 	const names = han.map(h => {
@@ -94,7 +95,7 @@ function YakumanList(props: {yakumen: Rest.YakumanInformation[]}) {
 				</Col>
 
 				<Col md="auto">
-					<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
+					<PaipuLink majsoulId={game.majsoulId} />
 				</Col>
 			</Row>
 			)

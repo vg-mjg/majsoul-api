@@ -79,7 +79,7 @@ function generateBaseStatsData(game: Store.GameResult<ObjectId>): BaseStatsShare
 function collectBaseStats(game: Store.GameResult<ObjectId>, player: PlayerData, data: BaseStatsSharedData): BaseStats['stats'] {
 	return {
 		gamesPlayed: 1,
-		totalHands: game.rounds.length,
+		totalHands: game.rounds?.length ?? 0,
 		totalRank: data.standings[player.seat]
 	};
 }

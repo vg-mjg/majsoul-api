@@ -19,6 +19,7 @@ import * as globalStyles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
 import { ContestTeam, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
+import { PaipuLink } from "./PaipuLink";
 
 export interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
 	scoreRanking?: Rest.PlayerScoreTypeRanking['details'];
@@ -171,7 +172,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 								</Col>
 
 								<Col md="auto">
-									<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
+									<PaipuLink majsoulId={game.majsoulId} />
 								</Col>
 							</Row>;
 						})}

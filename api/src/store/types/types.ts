@@ -107,7 +107,7 @@ export interface GameResult<Id = any> {
 		riichiStickValue?: number;
 	}
 	contestMajsoulId?: number;
-	majsoulId: string;
+	majsoulId?: string;
 	start_time?: number;
 	end_time?: number;
 	finalScore?: FinalScore[];

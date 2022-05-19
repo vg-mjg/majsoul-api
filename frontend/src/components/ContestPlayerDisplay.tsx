@@ -12,6 +12,7 @@ import { fetchContestPlayerGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
+import { PaipuLink } from "./PaipuLink";
 
 export function ContestPlayerDisplay(props: {
 	contestId: string;
@@ -93,7 +94,7 @@ export function ContestPlayerDisplay(props: {
 							</Col>
 
 							<Col md="auto">
-								<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
+								<PaipuLink majsoulId={game.majsoulId} />
 							</Col>
 						</Row>;
 					})}

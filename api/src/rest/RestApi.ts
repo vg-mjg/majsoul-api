@@ -25,7 +25,6 @@ import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
 import { AgariInfo, ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo, TourneyScoringTypeDetails } from '../store';
-import { games } from 'googleapis/build/src/apis/games';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -575,7 +574,10 @@ export class RestApi {
 						},
 						{
 							contestMajsoulId: { $exists: true },
-						}
+						},
+						{
+							majsoulId: { $exists: false },
+						},
 					]
 				}]
 			};
@@ -701,7 +703,8 @@ export class RestApi {
 					hidden: { $ne: true },
 					$or: [
 						{ notFoundOnMajsoul: false },
-						{ contestMajsoulId: { $exists: true } }
+						{ contestMajsoulId: { $exists: true } },
+						{ majsoulId: { $exists: false } },
 					],
 					"players._id": ObjectId.createFromHexString(req.params.playerId)
 				});
@@ -836,7 +839,8 @@ export class RestApi {
 					hidden: { $ne: true },
 					$or: [
 						{ notFoundOnMajsoul: false },
-						{ contestMajsoulId: { $exists: true } }
+						{ contestMajsoulId: { $exists: true } },
+						{ majsoulId: { $exists: false } }
 					],
 				}
 
@@ -997,12 +1001,20 @@ export class RestApi {
 				}
 
 				const games = await this.getGames(query);
-				const commonVersion = games.reduce((total, next) => Math.min(total, minimumVersion(next)) as StatsVersion, latestStatsVersion)
-				const gameStats = games.map(game => collectStats(game, commonVersion, playerMap));
+				const [commonVersion, latestVersion] = games.reduce(
+					([common, latest], next) => (
+						[
+							Math.min(common, minimumVersion(next)) as StatsVersion,
+							Math.max(latest, minimumVersion(next)) as StatsVersion,
+						]
+					),
+					[latestStatsVersion, StatsVersion.Undefined]
+				);
+				const gameStats = games.map(game => collectStats(game, minimumVersion(game), playerMap));
 
 				if (data.team != null) {
 					res.send({
-						[data.team]: mergeStats(gameStats.flat(), commonVersion)
+						[data.team]: mergeStats(gameStats.flat(), latestVersion)
 					});
 					return;
 				}
@@ -1016,7 +1028,7 @@ export class RestApi {
 					return total;
 				}, {} as Record<string, Stats[]>);
 
-				res.send(Object.entries(gamesByPlayer).reduce((total, [key, value]) => (total[key] = mergeStats(value, commonVersion), total), {}));
+				res.send(Object.entries(gamesByPlayer).reduce((total, [key, value]) => (total[key] = mergeStats(value, latestVersion), total), {}));
 			})
 		);
 
@@ -1382,6 +1394,109 @@ export class RestApi {
 					})
 
 					res.send();
+				})
+			)
+
+			.put<any, string>('/games/custom',
+				body(nameofGameResult('contestId')).isMongoId().isString(),
+				logError<any, string>(
+					async (req, res) => {
+						const errors = validationResult(req);
+						if (!errors.isEmpty()) {
+							res.status(400).json({ errors: errors.array() } as any);
+							return;
+						}
+						const data: Partial<store.GameResult<string>> = matchedData(req, { includeOptionals: true });
+						const contestId = new ObjectId(data.contestId);
+						const existingContest = await this.mongoStore.contestCollection.find({ _id: contestId }).toArray();
+						if (existingContest.length <= 0) {
+							res.status(400).send("Contest Id is invalid." as any);
+							return;
+						}
+
+						const now = Date.now();
+
+						const gameResult = await this.mongoStore.gamesCollection.insertOne({
+							contestId,
+							notFoundOnMajsoul: true,
+							start_time: now,
+							end_time: now,
+						});
+
+						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
+					}
+				)
+			)
+
+			.patch('/games/custom/:id',
+				param("id").isMongoId(),
+				body(nameofGameResult("finalScore")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
+				body(`${nameofGameResult("finalScore")}.*.score`).isInt().not().isString(),
+				body(`${nameofGameResult("finalScore")}.*.uma`).isInt().not().isString(),
+				body(nameofGameResult("players")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
+				body(`${nameofGameResult("players")}.*._id`).isMongoId(),
+				withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
+					const gameId = new ObjectId(data.id);
+					const [game] = await this.mongoStore.gamesCollection.find({
+						_id: gameId,
+						majsoulId: {
+							$exists: false,
+						}
+					}).toArray();
+
+					if (!game) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (key === "id") {
+							continue;
+						}
+
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+
+						if (key === "players") {
+							update.$set[key] = data[key].map(({_id}) => ({
+								_id: ObjectID.createFromHexString(_id)
+							}))
+							continue;
+						}
+
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const result = await this.mongoStore.gamesCollection.findOneAndUpdate(
+						{
+							_id: gameId
+						},
+						update,
+						{
+							returnOriginal: false,
+						}
+					);
+
+					res.send(result.value);
 				})
 			)
 

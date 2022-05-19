@@ -49,12 +49,17 @@ function mergeAllStats<T extends Stats>(stats: T[], createStats: () => T['stats'
 			const totalChild = totalChildren.shift();
 			const nextChild = nextChildren.shift();
 			for (const key in totalChild) {
+				if (nextChild[key] === undefined) {
+					continue;
+				}
+
 				if (isNaN(totalChild[key])) {
 					totalChildren.push(totalChild[key]);
 					nextChildren.push(nextChild[key]);
 					continue;
 				}
-				totalChild[key] += nextChild[key];
+
+				totalChild[key] += (nextChild[key] ?? 0);
 			}
 		}
 		return total;

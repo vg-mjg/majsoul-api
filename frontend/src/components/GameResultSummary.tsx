@@ -15,6 +15,7 @@ import clsx from "clsx";
 import { updateGame } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import { TourneyContestPhaseSubtype } from "majsoul-api/dist/store/types";
+import { PaipuLink } from "./PaipuLink";
 
 function GameSeat(props: {
 	seat: number,
@@ -149,7 +150,7 @@ export function GameResultSummary(props: {
 				</div>
 			</Col>}
 			<Col md="auto">
-				<a href={`https://mahjongsoul.game.yo-star.com/?paipu=${props.game.majsoulId}`} rel="noreferrer" target="_blank">{t("viewOnMajsoul")}</a>
+				<PaipuLink majsoulId={props.game.majsoulId} />
 			</Col>
 		</Row>
 		{props.game.players
