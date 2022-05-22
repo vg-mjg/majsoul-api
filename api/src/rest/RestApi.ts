@@ -1751,17 +1751,6 @@ export class RestApi {
 						const teamIds = data.plannedMatches.map(match => match.teams.map(team => team._id as string)).flat();
 						const uniqueTeams = new Set(teamIds.map(id => id));
 
-						if (uniqueTeams.size !== teamIds.length) {
-							res.status(400).send("Teams cannot be in two matches at once!" as any);
-							return;
-						}
-
-						data.plannedMatches = data.plannedMatches.map(match => ({
-							teams: match.teams.map(team => ({
-								_id: new ObjectId(team._id)
-							}))
-						}));
-
 						const sessionId = new ObjectId(data.id);
 
 						const [session] = await this.mongoStore.sessionsCollection.find({
@@ -1776,7 +1765,7 @@ export class RestApi {
 						const [contest] = await this.mongoStore.contestCollection.find({
 							_id: session.contestId,
 							"teams._id": {
-								$all: teamIds.map(id => new ObjectId(id))
+								$all: Array.from(uniqueTeams).map(id => new ObjectId(id))
 							}
 						}).toArray();
 

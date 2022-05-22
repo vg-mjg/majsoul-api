@@ -83,9 +83,11 @@ export function Session(props: {
 			.filter(game => token || !game.hidden)
 			.sort((a, b) => a.start_time - b.start_time)
 			.map((game) => {
-				const info = findPlayerInformation(game.players[0]._id, teams);
-				const matchIndex = props.session.plannedMatches
-					.findIndex(match => match.teams.find(team => team._id === info?.team?._id) != null);
+				const playerInfo = game.players.map(player => findPlayerInformation(player._id, teams));
+				const matchIndex = props.session.plannedMatches.map((match, index) => ({
+					index,
+					strenght: match.teams.filter(team => playerInfo.find(player => player?.team?._id === team._id) != null).length,
+				})).sort((a, b) => a.strength - b.strength)[0]?.index ?? 0;
 
 				matchMap[matchIndex] ??= 0;
 
