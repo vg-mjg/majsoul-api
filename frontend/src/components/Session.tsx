@@ -87,7 +87,7 @@ export function Session(props: {
 				const matchIndex = props.session.plannedMatches.map((match, index) => ({
 					index,
 					strength: match.teams.filter(team => playerInfo.find(player => player?.team?._id === team._id) != null).length,
-				})).sort((a, b) => a.strength - b.strength)[0]?.index ?? 0;
+				})).sort((a, b) => b.strength - a.strength)[0]?.index ?? 0;
 
 				matchMap[matchIndex] ??= 0;
 
