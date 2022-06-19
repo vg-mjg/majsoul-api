@@ -412,7 +412,9 @@ async function main() {
 					return;
 				}
 
-				console.log(next, contestId);
+				if (next == null) {
+					return;
+				}
 
 				mongoStore.gamesCollection.updateMany(
 					{
