@@ -209,6 +209,7 @@ async function main() {
 	}
 
 	const passportToken = dynamicPassport?.accessToken ?? config.passportToken ?? secrets.majsoul.passportToken;
+	console.log(dynamicPassport?.accessToken, config.passportToken, secrets.majsoul.passportToken);
 
 	if (!passportToken) {
 		console.log("failed to aquire passport");
@@ -410,6 +411,9 @@ async function main() {
 					);
 					return;
 				}
+
+				console.log(next, contestId);
+
 				mongoStore.gamesCollection.updateMany(
 					{
 						contestMajsoulId: next
