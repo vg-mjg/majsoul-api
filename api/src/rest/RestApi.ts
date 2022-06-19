@@ -1450,6 +1450,8 @@ export class RestApi {
 
 			.patch('/games/custom/:id',
 				param("id").isMongoId(),
+				body(nameofGameResult("start_time")).not().isString().bail().isInt({ min: 0 }).optional(),
+				body(nameofGameResult("end_time")).not().isString().bail().isInt({ min: 0 }).optional(),
 				body(nameofGameResult("finalScore")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
 				body(`${nameofGameResult("finalScore")}.*.score`).isInt().not().isString(),
 				body(`${nameofGameResult("finalScore")}.*.uma`).isInt().not().isString(),
