@@ -1,8 +1,7 @@
-import * as util from 'util';
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -12,7 +11,7 @@ import * as expressJwt from 'express-jwt';
 import { concat, defer, from, Observable, of } from 'rxjs';
 import { map, mergeAll, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
-import { Majsoul, Store } from '..';
+import { Majsoul, Rest, Store } from '..';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { getSecrets } from '../secrets';
@@ -276,6 +275,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
+const nameofNicknameOverrides = nameofFactory<store.Contest['nicknameOverrides'][0]>();
 const nameofPlayer = nameofFactory<store.Player<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>();
@@ -660,6 +660,12 @@ export class RestApi {
 
 			try {
 				const games = await this.correctGames(await cursor.toArray());
+				const playersMap = (await this.namePlayers(
+					await this.mongoStore.playersCollection.find({
+						_id: {$in: games.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectID[])}
+					}).toArray(),
+					contestIds?.length ? ObjectId.createFromHexString(contestIds[0]) : null
+				)).reduce((total, next) => (total[next._id] = next, total), {} as Record<string, PlayerInformation>);
 				const contests = await this.mongoStore.contestCollection.find(
 					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
 				).toArray();
@@ -670,7 +676,13 @@ export class RestApi {
 						sessionId: sessionMap.find((session) =>
 							game.end_time >= session.startSession.scheduledTime
 							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime)
-						)?.startSession?._id
+						)?.startSession?._id,
+						players: game.players.map(player => player._id
+							? playersMap[player._id.toHexString()] as any
+							: {
+								nickname: null,
+							}
+						)
 					})).map(game => {
 						if (req.query?.stats) {
 							(game as any).stats = collectStats(game, minimumVersion(game), game.players.reduce((total, next) => (total[next._id.toHexString()] = true, total), {})).map(stats => stats?.stats);
@@ -758,33 +770,34 @@ export class RestApi {
 						}
 					});
 
-				const playerMap = (await this.mongoStore.playersCollection.find(
-					{
-						_id: {
-							$in: yakumanGames.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => game.players[agari.winner]._id)).flat()
-						},
-					},
-					{
-						projection: {
-							_id: true,
-							nickname: true,
-							displayName: true,
-							majsoulId: true,
-						}
-					}
-				).toArray()).reduce((total, next) => (total[next._id.toHexString()] = next, total), {} as Record<string, store.Player>)
+				const playerMap = (
+					await this.namePlayers(
+						await this.mongoStore.playersCollection.find(
+							{
+								_id: {
+									$in: yakumanGames.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => game.players[agari.winner]._id)).flat()
+								},
+							},
+							{
+								projection: {
+									_id: true,
+									nickname: true,
+									displayName: true,
+									majsoulId: true,
+								}
+							}
+						).toArray(),
+						contestId,
+					)
+				).reduce((total, next) => (total[next._id] = next, total), {} as Record<string, PlayerInformation>)
 
 				res.send(
 					yakumanGames
 						.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => {
 							const player = playerMap[game.players[agari.winner]._id.toHexString()];
 							return {
+								player,
 								han: agari.han,
-								player: {
-									nickname: player.displayName ?? player.nickname,
-									_id: player._id.toHexString(),
-									zone: Majsoul.Api.getPlayerZone(player.majsoulId)
-								},
 								game: {
 									endTime: game.end_time,
 									majsoulId: game.majsoulId,
@@ -912,14 +925,18 @@ export class RestApi {
 					};
 				}
 
-				const players = await this.mongoStore.playersCollection.find(
-					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id).concat(playerIds) } },
-					{ projection: { majsoulId: 0 } }
-				).toArray();
+				const players = await this.namePlayers(
+					await this.mongoStore.playersCollection.find(
+						{ _id: { $in: Object.values(playerGameInfo).map(p => p._id).concat(playerIds) } },
+						{ projection: { majsoulId: 0 } }
+					).toArray(),
+					null,
+					contest
+				);
 
 				res.send(
 					players.map(player => ({
-						...playerGameInfo[player._id.toHexString()],
+						...playerGameInfo[player._id],
 						...player,
 						team: {
 							teams: Object.entries(sakiTeams[contestMajsoulFriendlyId] ?? {})
@@ -1195,6 +1212,9 @@ export class RestApi {
 				body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
+				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
+				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
 				oneOf([
 					body(nameofContest('tourneyType')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)).optional(),
 					body(nameofContest('tourneyType')).not().isString().bail().isArray({ min: 1 }).optional(),
@@ -2408,6 +2428,29 @@ export class RestApi {
 		return `${type.type}`;
 	}
 
+	private async namePlayers(players: store.Player<ObjectID>[], contestId: ObjectID, contest?: store.Contest): Promise<Rest.PlayerInformation[]> {
+		if (!contest) {
+			contest = (await this.mongoStore.contestCollection.find(
+				{
+					_id: contestId
+				},
+				{
+					projection: {
+						nicknameOverrides: true,
+					}
+				}
+			).toArray())[0];
+		}
+
+		const overrides = contest?.nicknameOverrides?.reduce((total, next) => (total[next._id] = next.nickname, total), {} as Record<string, string>) ?? {};
+
+		return players?.map(player => ({
+			_id: player._id.toHexString(),
+			nickname: overrides?.[player._id.toHexString()] ?? player.displayName ?? player.nickname,
+			zone: Majsoul.Api.getPlayerZone(player.majsoulId),
+		})) ?? [];
+	}
+
 	private async getTourneyPhaseData({
 		contest,
 		transitions,
@@ -2469,23 +2512,23 @@ export class RestApi {
 			}
 		}
 
-		let players = await this.mongoStore.playersCollection.find({
-			_id: { $in: Object.keys(resultsByType[contestTypes[0].id]).map(ObjectId.createFromHexString) }
-		}).toArray();
+		let players = await this.namePlayers(
+			await this.mongoStore.playersCollection.find({
+				_id: { $in: Object.keys(resultsByType[contestTypes[0].id]).map(ObjectId.createFromHexString) }
+			}).toArray(),
+			null,
+			contest
+		);
 
 		const playerResults = players.map<PlayerTourneyStandingInformation>(player => ({
-			player: {
-				_id: player._id.toHexString(),
-				nickname: player.displayName ?? player.nickname,
-				zone: Majsoul.Api.getPlayerZone(player.majsoulId),
-			},
+			player,
 			rank: 0,
-			totalMatches: resultsByType[contestTypes[0].id][player._id.toHexString()].totalMatches,
+			totalMatches: resultsByType[contestTypes[0].id][player._id].totalMatches,
 			qualificationType: contestTypes[0].id,
 			rankingDetails: {
 				type: PlayerRankingType.Score,
 				details: scoreTypes.reduce((total, type) => {
-					const result = resultsByType[type.id][player._id.toHexString()];
+					const result = resultsByType[type.id][player._id];
 					total[type.id] = {
 						score: result.score,
 						highlightedGameIds: result.highlightedGameIds,
@@ -2509,14 +2552,14 @@ export class RestApi {
 		);
 
 		if (contest.subtype === store.TourneyContestPhaseSubtype.TeamQualifier && contest.teams) {
-			const freeAgents = players.filter(player => !contest.teams.find(team => team.players?.find(teamPlayer => player._id.equals(teamPlayer._id))))
-				.map(player => playerResults[player._id.toHexString()]);
+			const freeAgents = players.filter(player => !contest.teams.find(team => team.players?.find(teamPlayer => player._id === teamPlayer._id.toHexString())))
+				.map(player => playerResults[player._id]);
 
 			const scoreRankings = {} as Record<string, PlayerScoreTypeRanking>;
 			const teams = [
 				{
 					id: null,
-					playerIds: players.map(player => player._id.toHexString())
+					playerIds: players.map(player => player._id)
 				},
 				...contest.teams.map(team => ({
 					id: team._id.toHexString(),

@@ -229,6 +229,11 @@ export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Contest
 	initialPhaseName?: string;
 	spreadsheetId?: string;
 	transitions?: ContestPhaseTransition<Id>[];
+
+	nicknameOverrides?: {
+		_id: string;
+		nickname: string;
+	}[];
 }
 
 export interface ContestTeam<Id = any> {

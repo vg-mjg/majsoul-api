@@ -67,6 +67,10 @@ function PlayerSearch(props: {
 	const [searchString, setSearchString] = React.useState<string>();
 	const [searchTaskId, setSearchTaskId] = React.useState<any>();
 	const [players, setPlayers] = React.useState<Store.Player<string>[]>([]);
+
+	const { contestId } = React.useContext(ContestContext);
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+
 	React.useEffect(() => {
 		if (searchTaskId) {
 			clearTimeout(searchTaskId);
@@ -118,7 +122,7 @@ function PlayerSearch(props: {
 						{player.nickname}
 					</Col>
 					<Col className="text-right">
-						{player.displayName}
+						{contest.nicknameOverrides?.find(override => override._id === player._id)?.nickname ?? player.displayName}
 					</Col>
 				</Row>
 			)
@@ -133,7 +137,8 @@ function Team(props: {
 	maxPlaceLength: number,
 }): JSX.Element {
 	const { contestId } = React.useContext(ContestContext);
-	const showTeamLogo = useSelector((state: IState) => state.contestsById[contestId]?.subtype !== TourneyContestPhaseSubtype.TeamQualifier);
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+	const showTeamLogo = contest?.subtype !== TourneyContestPhaseSubtype.TeamQualifier;
 
 	const token = useSelector((state: IState) => state.user?.token);
 	const [name, setName] = React.useState<string>();
@@ -266,8 +271,9 @@ function Team(props: {
 				{players == null
 					? <LoadingSpinner />
 					: <Container className="p-0">
-						{[...players].sort((a, b) => (b.tourneyScore ?? 0) - (a.tourneyScore ?? 0)).map(player =>
-							<Row key={player._id} className="no-gutters py-1">
+						{[...players].sort((a, b) => (b.tourneyScore ?? 0) - (a.tourneyScore ?? 0)).map(player => {
+							const nickname = contest.nicknameOverrides?.find(override => override._id === player._id)?.nickname ?? player.displayName ?? player.nickname;
+							return <Row key={player._id} className="no-gutters py-1">
 								<Col md="auto" style={{ minWidth: `${(props.maxPlaceLength + 1) * 1.25}rem` }} className="mr-3" />
 								<Col md="auto" style={{ minWidth: 64 }} className="mr-3">
 									{token && <BsX
@@ -279,16 +285,16 @@ function Team(props: {
 									className={clsx("text-left", globalStyles.linkDark)}
 									onClick={() => {
 										setStatsRequest({ player: player._id });
-										setSelectedPlayerName(player.displayName ?? player.nickname);
+										setSelectedPlayerName(nickname);
 									}}
 								>
-									{player.displayName ?? player.nickname}
+									{nickname}
 								</Col>
 								<Col className="text-right">
 									{(player.tourneyScore ?? 0) / 1000}
 								</Col>
 							</Row>
-						)}
+						})}
 					</Container>
 				}
 				{token &&

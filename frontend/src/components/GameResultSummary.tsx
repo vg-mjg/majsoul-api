@@ -31,20 +31,8 @@ function GameSeat(props: {
 		return null;
 	}
 
-	const playerId = props.game.players[props.seat];
-	const player = playerId == null
-		? {
-			_id: null as string,
-			nickname: `AI (${(levelToString(props.game.config?.aiLevel) as string)})`,
-			displayName: null as string,
-		}
-		: contest?.players?.find(p => p._id === playerId._id);
-
-	if (player == null) {
-		return null;
-	}
-
-	const playerInformation = findPlayerInformation(player._id, teams);
+	const player = props.game.players[props.seat];
+	const playerInformation = findPlayerInformation(player?._id, teams);
 
 	const scoreColor = pickColorGradient(
 		props.game.finalScore[props.seat].uma > 0 ? "93c47d" : "e06666",
@@ -87,7 +75,7 @@ function GameSeat(props: {
 						borderBottom: playerInformation?.team?.color ? `solid 3px #${playerInformation.team.color}` : "none"
 					}}
 				>
-					{player.displayName ?? player.nickname}
+					{player.nickname ?? `AI (${(levelToString(props.game.config?.aiLevel) as string)})`}
 				</div>
 			</Col>
 			<Col md="auto" style={{ minWidth: "112px", backgroundColor: `rgb(${scoreColor.r}, ${scoreColor.g}, ${scoreColor.b})` }} className="rounded-right">
