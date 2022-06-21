@@ -2736,7 +2736,12 @@ export class RestApi {
 				const playerData = total[playerId] ??= {
 					score: 0,
 					totalMatches: 0,
+					highlightedGameIds: [],
 				};
+
+				if (playerData.highlightedGameIds.length < maxGames) {
+					playerData.highlightedGameIds.push(next._id.toHexString());
+				}
 
 				playerData.totalMatches++;
 				const score = next.finalScore[seat].uma;
@@ -2746,9 +2751,10 @@ export class RestApi {
 			}
 			return total;
 		}, {} as Record<string, {
-			totalMatches: number,
-			rank?: number,
-			score: number,
+			totalMatches: number;
+			rank?: number;
+			score: number;
+			highlightedGameIds: string[];
 		}>);
 
 		return Object.entries(playerResults)
@@ -2763,6 +2769,7 @@ export class RestApi {
 				rank: result.rank + 1,
 				score: result.score,
 				totalMatches: result.totalMatches,
+				highlightedGameIds: result.highlightedGameIds
 			};
 			return total;
 		}, {} as Record<string, PlayerContestTypeResults>);
