@@ -173,6 +173,7 @@ export interface ContestPhaseShared<Id = any> {
 	tagline?: string;
 	taglineAlternate?: string;
 	anthem?: string;
+	normaliseScores?: boolean;
 }
 
 export interface LeagueContestPhase<Id = any> {

@@ -273,6 +273,11 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 	}
 }
 
+interface ContestOption {
+	contestId?: ObjectID;
+	contest?: Store.Contest<ObjectID>;
+};
+
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofNicknameOverrides = nameofFactory<store.Contest['nicknameOverrides'][0]>();
@@ -583,20 +588,27 @@ export class RestApi {
 			};
 
 			const contestIds = (req.query.contests as string)?.split(' ');
+			let contestsFilter = null as Store.Contest<ObjectId>[];
 			if (contestIds) {
-				const contests = await this.mongoStore.contestCollection.find(
+				 contestsFilter = await this.mongoStore.contestCollection.find(
 					{
 						$or: [
 							{ majsoulFriendlyId: { $in: contestIds.map(id => parseInt(id)) } },
 							{ _id: { $in: contestIds.map(id => ObjectId.isValid(id) ? ObjectId.createFromHexString(id) : null) } },
 						]
+					},
+					{
+						projection: {
+							_id: true,
+							normaliseScores: true,
+						}
 					}
 				).toArray();
 
 				filter.$and.push(
 					{
 						$or: contestIds.map(string => ({
-							contestId: { $in: contests.map(p => p._id) }
+							contestId: { $in: contestsFilter.map(p => p._id) }
 						}))
 					}
 				);
@@ -659,7 +671,7 @@ export class RestApi {
 			}
 
 			try {
-				const games = await this.correctGames(await cursor.toArray());
+				const games = await this.adjustGames(await cursor.toArray(), { contest: contestsFilter?.length === 1 ? contestsFilter[0] : null});
 				const playersMap = (await this.namePlayers(
 					await this.mongoStore.playersCollection.find({
 						_id: {$in: games.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectID[])}
@@ -829,6 +841,7 @@ export class RestApi {
 						'teams.players._id': true,
 						majsoulFriendlyId: true,
 						bonusPerGame: true,
+						normaliseScores: true,
 					}
 				});
 
@@ -863,7 +876,7 @@ export class RestApi {
 					}
 				}
 
-				const games = await this.getGames(gameQuery);
+				const games = await this.getGames(gameQuery, {contest});
 
 				let gameLimit = parseInt(data.gameLimit);
 				if (isNaN(gameLimit)) {
@@ -1212,6 +1225,7 @@ export class RestApi {
 				body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest('normaliseScores')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
@@ -2196,7 +2210,7 @@ export class RestApi {
 			contestId: contest._id,
 			end_time: timeWindow,
 			hidden: { $ne: true }
-		});
+		}, {contest});
 
 		return games.reduce<Record<string, number>>((total, game) => {
 			game.finalScore.forEach((score, index) => {
@@ -2248,6 +2262,7 @@ export class RestApi {
 				initialPhaseName: true,
 				maxGames: true,
 				subtype: true,
+				normaliseScores: true,
 			}
 		});
 
@@ -2464,7 +2479,7 @@ export class RestApi {
 				: [ {type: contest.tourneyType == null ? TourneyContestScoringType.Cumulative : contest.tourneyType } ]
 		).map(type => ({...type, id: this.generateScoringTypeId(type)}));
 
-		const games = await this.correctGames(
+		const games = await this.adjustGames(
 			await this.mongoStore.gamesCollection.find(
 				{
 					contestId: contest._id,
@@ -2474,7 +2489,8 @@ export class RestApi {
 						end_time: 1
 					}
 				}
-			).toArray()
+			).toArray(),
+			{contest}
 		);
 
 		const scoreTypeSet: Record<string, TourneyContestScoringDetailsWithId> = {};
@@ -2836,41 +2852,74 @@ export class RestApi {
 		}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	private async correctGames(games: store.GameResult<ObjectId>[]): Promise<store.GameResult<ObjectId>[]> {
+	private async adjustGames(games: store.GameResult<ObjectId>[], options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
 		const corrections = await this.mongoStore.gameCorrectionsCollection.find({
 			gameId: {
 				$in: games.map(game => game._id)
 			}
 		}).toArray();
 
-		if (!corrections.length) {
-			return games;
-		}
+		if (corrections.length) {
+			const gameMap = games.reduce(
+				(total, next) => (total[next._id.toHexString()] = next, total),
+				{} as Record<string, store.GameResult<ObjectId>>
+			);
 
-		const gameMap = games.reduce(
-			(total, next) => (total[next._id.toHexString()] = next, total),
-			{} as Record<string, store.GameResult<ObjectId>>
-		);
+			for (const correction of corrections) {
+				const game = gameMap[correction.gameId.toHexString()];
+				for(let i = 0; i < game.finalScore.length; i++) {
+					const umaCorrection = correction.finalScore[i].uma
+					if (!isNaN(umaCorrection)) {
+						game.finalScore[i].uma += umaCorrection;
+					}
 
-		for (const correction of corrections) {
-			const game = gameMap[correction.gameId.toHexString()];
-			for(let i = 0; i < game.finalScore.length; i++) {
-				const umaCorrection = correction.finalScore[i].uma
-				if (!isNaN(umaCorrection)) {
-					game.finalScore[i].uma += umaCorrection;
-				}
-
-				const scoreCorrection = correction.finalScore[i].score
-				if (!isNaN(scoreCorrection)) {
-					game.finalScore[i].score += scoreCorrection;
+					const scoreCorrection = correction.finalScore[i].score
+					if (!isNaN(scoreCorrection)) {
+						game.finalScore[i].score += scoreCorrection;
+					}
 				}
 			}
 		}
+
+		let contest = options?.contest;
+		if (contest == null) {
+			if (!options?.contestId) {
+				return games;
+			}
+
+			const [existingContest] = await this.mongoStore.contestCollection.find(
+				{_id: options.contestId},
+				{
+					projection: {
+						normaliseScores: true,
+					}
+				}
+			).toArray();
+
+			if (!existingContest) {
+				return games;
+			}
+
+			contest = existingContest;
+		}
+
+		if (contest.normaliseScores) {
+			for (const game of games) {
+				const lowestScore = game.finalScore.reduce((lowest, next) => (lowest < next.uma ? lowest : next.uma), Number.POSITIVE_INFINITY);
+				for (const score of game.finalScore) {
+					score.uma -= lowestScore;
+				}
+			}
+		}
+
 		return games;
 	}
 
-	private async getGames(query: FilterQuery<store.GameResult<ObjectId>>): Promise<store.GameResult<ObjectId>[]> {
+	private async getGames(query: FilterQuery<store.GameResult<ObjectId>>, options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
 		const games = await this.mongoStore.gamesCollection.find(query).toArray();
-		return await this.correctGames(games);
+		return await this.adjustGames(games, {
+			contestId: Array.isArray(query.contestId) ? null : query.contestId as ObjectID,
+			...options
+		});
 	}
 }
