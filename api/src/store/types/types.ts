@@ -216,6 +216,7 @@ export interface TourneyContestPhase {
 	tourneyType?: TourneyContestScoringType | TourneyScoringInfo[];
 	maxGames?: number;
 	bonusPerGame?: number;
+	gacha?: boolean;
 }
 
 export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhase<Id> & TourneyContestPhase)

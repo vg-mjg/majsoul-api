@@ -1226,6 +1226,7 @@ export class RestApi {
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('normaliseScores')).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest('gacha')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
