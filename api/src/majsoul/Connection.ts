@@ -54,7 +54,7 @@ export class Connection {
 				this.errorSubject.next(event);
 			}
 			this.socket.on("close", (a, b) => {
-				this.errorSubject.next();
+				this.errorSubject.next(null);
 			});
 			this.socket.on("error", (e) => {
 				this.errorSubject.next(e);

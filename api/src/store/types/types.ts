@@ -1,6 +1,5 @@
 import { Han } from "../../majsoul/types/Han";
 import { Player as MajsoulPlayer, Contest as MajsoulContest } from "../../majsoul/types/types";
-import { ContestPhaseTransition } from "./ContestPhaseTransition";
 import { DrawStatus } from "./DrawStatus";
 import { Wind } from "./Wind";
 
@@ -197,11 +196,11 @@ export interface TourneyScoringTypeDetails {
 	typeDetails?: ConsecutiveScoringDetails;
 };
 
-export type TourneyScoringInfo = TourneyScoringTypeDetails & TourneyScoringSharedInfo;
+export type TourneyScoringInfoPart = TourneyScoringTypeDetails & TourneyScoringSharedInfo;
 
 interface TourneyScoringSharedInfo {
 	places?: number;
-	suborder?: TourneyScoringInfo[];
+	suborder?: TourneyScoringInfoPart[];
 	reverse?: boolean;
 }
 
@@ -210,10 +209,12 @@ interface ConsecutiveScoringDetails {
 	gamesToCount?: number;
 }
 
+export type TourneyContestScoringInfo = TourneyContestScoringType | TourneyScoringInfoPart[];
+
 export interface TourneyContestPhase {
 	type?: ContestType.Tourney;
 	subtype?: TourneyContestPhaseSubtype;
-	tourneyType?: TourneyContestScoringType | TourneyScoringInfo[];
+	tourneyType?: TourneyContestScoringInfo;
 	maxGames?: number;
 	bonusPerGame?: number;
 	gacha?: boolean;
@@ -280,4 +281,18 @@ export interface Config<Id = any> {
 	loginCookies?: Cookie[];
 	userAgent?: string;
 	passportToken?: string;
+}
+
+export interface ContestPhaseTransition<Id = string> {
+	name?: string;
+	_id: Id;
+	startTime: number;
+	teams?: {
+		top?: number;
+	};
+	score?: {
+		half?: true;
+		nil?: true;
+	};
+	scoringTypes?: TourneyContestScoringInfo;
 }

@@ -8,8 +8,8 @@ import * as path from "path";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import * as expressJwt from 'express-jwt';
-import { concat, defer, from, Observable, of } from 'rxjs';
-import { map, mergeAll, mergeScan, pairwise, tap, toArray } from 'rxjs/operators';
+import { concat, defer, from, Observable, of, lastValueFrom } from 'rxjs';
+import { map, mergeWith, mergeAll, mergeScan, pairwise, scan, toArray } from 'rxjs/operators';
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
 import { Majsoul, Rest, Store } from '..';
 import { google } from 'googleapis';
@@ -23,7 +23,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfo, TourneyScoringTypeDetails } from '../store';
+import { AgariInfo, ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -288,8 +288,8 @@ const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
 const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 const nameofGameCorrection = nameofFactory<store.GameCorrection<ObjectId>>();
-const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfo>();
-const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfo['typeDetails']>();
+const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfoPart>();
+const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfoPart['typeDetails']>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -1230,22 +1230,7 @@ export class RestApi {
 				body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
-				oneOf([
-					body(nameofContest('tourneyType')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)).optional(),
-					body(nameofContest('tourneyType')).not().isString().bail().isArray({ min: 1 }).optional(),
-				]),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('findWorst')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('gamesToCount')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('reverse')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}`).not().isString().bail().isArray().optional({ nullable: true }),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('type')}`)
-					.not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('places')}`)
-					.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-				body(`${nameofContest('tourneyType')}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('reverse')}`)
-					.not().isString().bail().isBoolean().optional({ nullable: true }),
+				...scoringTypeFilter(nameofContest('tourneyType')),
 				async (req, res) => {
 					const errors = validationResult(req);
 					if (!errors.isEmpty()) {
@@ -2048,6 +2033,7 @@ export class RestApi {
 				body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
 				body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
 				body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
+				...scoringTypeFilter(nameofTransition('scoringTypes')),
 				withData<
 					Partial<store.ContestPhaseTransition> & {
 						id: string,
@@ -2275,6 +2261,7 @@ export class RestApi {
 			{
 				name: contest?.initialPhaseName ?? "予選",
 				startTime: 0,
+				scoringTypes: contest.tourneyType
 			} as ContestPhaseTransition<ObjectID>,
 			...(contest.transitions ?? [])
 		].sort((a, b) => a.startTime - b.startTime);
@@ -2388,7 +2375,7 @@ export class RestApi {
 			player: SharedGroupRankingData;
 			_id: string;
 		}[],
-		contestTypes: (TourneyScoringInfo & {id: string})[],
+		contestTypes: (TourneyScoringInfoPart & {id: string})[],
 		resultsByType: Record<string, Record<string, PlayerContestTypeResults>>,
 		rank = null,
 	) {
@@ -2469,30 +2456,43 @@ export class RestApi {
 		})) ?? [];
 	}
 
-	private async getTourneyPhaseData({
+	private getTourneyPhaseData({
 		contest,
 		transitions,
 		phases
 	}: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
-		const contestTypes: (TourneyScoringInfo & {id:string})[] = (
-			Array.isArray(contest.tourneyType)
-				? contest.tourneyType
-				: [ {type: contest.tourneyType == null ? TourneyContestScoringType.Cumulative : contest.tourneyType } ]
-		).map(type => ({...type, id: this.generateScoringTypeId(type)}));
+		return lastValueFrom(from(phases).pipe(
+			scan((total, next) => ({
+				...total,
+				...next,
+				scoringTypes: transitions[next.index].scoringTypes ?? total.scoringTypes
+			} as TourneyPhase<ObjectID>), {} as TourneyPhase<ObjectID>),
+			mergeWith(of(null as TourneyPhase<ObjectID>)),
+			pairwise(),
+			map(([phase, nextPhase]) => from(this.getTourneyPhaseStandings(contest, phase, nextPhase)).pipe(
+				map(standings => ({
+					...phase,
+					...standings
+				}))
+			)),
+			mergeAll(),
+			toArray()
+		));
+	};
 
-		const games = await this.adjustGames(
-			await this.mongoStore.gamesCollection.find(
-				{
-					contestId: contest._id,
-				},
-				{
-					sort: {
-						end_time: 1
-					}
-				}
-			).toArray(),
-			{contest}
-		);
+	private async getTourneyPhaseStandings(
+		contest: Store.Contest<ObjectId>,
+		phase: TourneyPhase<ObjectID>,
+		nextPhase: TourneyPhase<ObjectID>
+	): Promise<{
+		standings: PlayerTourneyStandingInformation[],
+		scoringTypes: (TourneyScoringInfoPart & {id:string})[]
+	}> {
+		const contestTypes: (TourneyScoringInfoPart & {id:string})[] = (
+			Array.isArray(phase.scoringTypes)
+				? phase.scoringTypes
+				: [ {type: phase.scoringTypes == null ? TourneyContestScoringType.Cumulative : phase.scoringTypes } ]
+		).map(type => ({...type, id: this.generateScoringTypeId(type)}));
 
 		const scoreTypeSet: Record<string, TourneyContestScoringDetailsWithId> = {};
 		const scoreTypeLevels = [...contestTypes];
@@ -2514,18 +2514,37 @@ export class RestApi {
 			}
 		}
 
-		const scoreTypes = Object.values(scoreTypeSet);
+		const scoringTypes = Object.values(scoreTypeSet);
+
+		const games = await this.adjustGames(
+			await this.mongoStore.gamesCollection.find(
+				{
+					contestId: contest._id,
+					end_time: {
+						$gte: phase.startTime,
+						$lt: nextPhase?.startTime ?? Number.POSITIVE_INFINITY
+					}
+				},
+				{
+					sort: {
+						end_time: 1
+					}
+				}
+			).toArray(),
+			{contest}
+		);
 		const resultsByType = {} as Record<string, Record<string, PlayerContestTypeResults>>;
-		for (const type of scoreTypes) {
+		const maxGames = contest.maxGames ?? Infinity;
+		for (const type of scoringTypes) {
 			switch (type.type) {
 				case TourneyContestScoringType.Consecutive: {
-					resultsByType[type.id] = this.getConsectutiveResults(type, games, contest);
+					resultsByType[type.id] = this.getConsectutiveResults(type, games, maxGames);
 					break;
 				} case TourneyContestScoringType.Cumulative: {
-					resultsByType[type.id] = this.getCumulativeResults(games, contest);
+					resultsByType[type.id] = this.getCumulativeResults(games, maxGames);
 					break;
 				} case TourneyContestScoringType.Kans: {
-					resultsByType[type.id] = this.getKanResults(games, contest);
+					resultsByType[type.id] = this.getKanResults(games, maxGames);
 					break;
 				}
 			}
@@ -2546,7 +2565,7 @@ export class RestApi {
 			qualificationType: contestTypes[0].id,
 			rankingDetails: {
 				type: PlayerRankingType.Score,
-				details: scoreTypes.reduce((total, type) => {
+				details: scoringTypes.reduce((total, type) => {
 					const result = resultsByType[type.id][player._id];
 					total[type.id] = {
 						score: result.score,
@@ -2570,7 +2589,7 @@ export class RestApi {
 			resultsByType
 		);
 
-		if (contest.subtype === store.TourneyContestPhaseSubtype.TeamQualifier && contest.teams) {
+		if (phase.subtype === store.TourneyContestPhaseSubtype.TeamQualifier && contest.teams) {
 			const freeAgents = players.filter(player => !contest.teams.find(team => team.players?.find(teamPlayer => player._id === teamPlayer._id.toHexString())))
 				.map(player => playerResults[player._id]);
 
@@ -2607,7 +2626,7 @@ export class RestApi {
 					}
 				}
 
-				for (const scoreType of [...scoreTypes]) {
+				for (const scoreType of [...scoringTypes]) {
 					teamPlayerResults.sort((a, b) => scoreRankings[a.player._id].details[scoreType.id].rank - scoreRankings[b.player._id].details[scoreType.id].rank);
 					let rank = 1;
 					for (const player of teamPlayerResults) {
@@ -2653,26 +2672,20 @@ export class RestApi {
 			result.hasMetRequirements = true;
 		}
 
-		return [{
-			index: 0,
-			subtype: contest.subtype,
-			name: contest?.initialPhaseName ?? "予選",
-			startTime: contest.startTime,
-			scoringTypes: scoreTypes,
-			standings: Object.values(playerResults)
-				.sort((a, b) => a.rank - b.rank)
-		}];
-	};
+		return {
+			scoringTypes,
+			standings: Object.values(playerResults).sort((a, b) => a.rank - b.rank),
+		}
+	}
 
 	private getConsectutiveResults(
 		scoringDetails: TourneyScoringTypeDetails,
 		games: GameResult[],
-		contest: store.Contest
+		maxGames: number
 	): Record<string, PlayerContestTypeResults> {
 		const gamesToCount = scoringDetails?.typeDetails?.gamesToCount ?? 5;
 		const scoreFlip = scoringDetails?.typeDetails?.findWorst ? -1 : 1;
 		const playerResults = games.reduce((total, next) => {
-			const maxGames = contest.maxGames ?? Infinity;
 			for (let seat = 0; seat < next.players.length; seat++) {
 				if (!next.players[seat]) {
 					continue;
@@ -2741,8 +2754,7 @@ export class RestApi {
 		}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	private getCumulativeResults(games: GameResult[], contest: store.Contest): Record<string, PlayerContestTypeResults> {
-		const maxGames = contest.maxGames ?? Infinity;
+	private getCumulativeResults(games: GameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
 		const playerResults = games.reduce((total, next) => {
 			for (let seat = 0; seat < next.players.length; seat++) {
 				if (!next.players[seat]) {
@@ -2792,8 +2804,7 @@ export class RestApi {
 		}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	private getKanResults(games: GameResult[], contest: store.Contest): Record<string, PlayerContestTypeResults> {
-		const maxGames = contest.maxGames ?? Infinity;
+	private getKanResults(games: GameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
 		const playerResults = games.reduce((total, next) => {
 			for (let seat = 0; seat < next.players.length; seat++) {
 				if (!next.players[seat]) {
@@ -2923,4 +2934,25 @@ export class RestApi {
 			...options
 		});
 	}
+}
+
+function scoringTypeFilter(propName: string) {
+	return [
+		oneOf([
+			body(propName).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)).optional(),
+			body(propName).not().isString().bail().isArray({ min: 1 }).optional(),
+		]),
+		body(`${propName}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+		body(`${propName}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('findWorst')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('gamesToCount')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType('reverse')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType('suborder')}`).not().isString().bail().isArray().optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('type')}`)
+			.not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('places')}`)
+			.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('reverse')}`)
+			.not().isString().bail().isBoolean().optional({ nullable: true }),
+	];
 }
