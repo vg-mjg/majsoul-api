@@ -91,48 +91,52 @@ export function ContestSummary(props: {
 		<Container>
 			<ContestHeader contest={contest} />
 			<ContestMetadataEditor contestId={contest._id} />
-			{contest.type === ContestType.League
-				? <LeagueContestSummary contest={contest} />
-				: <TourneyContestSummary contestId={contest._id} />
-			}
+			<PhaseSelector>
+				{contest.type === ContestType.League
+					? <LeagueContestSummary />
+					: <TourneyContestSummary />
+				}
+			</PhaseSelector>
 			<YakumanDisplay contestId={contest._id} />
 		</Container>
 	</ContestContext.Provider>
 }
 
-function TourneyContestSummary(props: { contestId: string }): JSX.Element {
+const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({selectedPhase, hasPhases, phaseRequestState}) => {
 	const token = useSelector((state: IState) => state.user?.token);
+
+	const { contestId } = React.useContext(ContestContext);
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];
 		}
 
 		return Object.values(state.games)
-			.filter(game => game.contestId === props.contestId)
+			.filter(game => game.contestId === contestId)
 			.sort((a, b) => b.start_time - a.start_time)
 			.slice(0, 4);
 	});
-
-	const contest = useSelector((state: IState) => state.contestsById[props.contestId]);
 
 	const dispatch = useDispatch();
 
 	React.useEffect(() => {
 		fetchGames({
-			contestIds: [props.contestId],
+			contestIds: [contestId],
 			last: 4,
 		}).then(games => dispatchGamesRetrievedAction(dispatch, games));
-	}, [props.contestId]);
+	}, [contestId]);
 
 	if (contest == null) {
 		return null;
 	}
 
 	return <>
-		<Row className="mt-3">
+		<Row className={clsx(hasPhases || "mt-3")}>
 			{contest.majsoulFriendlyId === 236728
-				? <BracketPlayerStandings contestId={props.contestId} />
-				: <PhaseStandings />
+				? <BracketPlayerStandings contestId={contestId} />
+				: <PhaseStandings phase={selectedPhase} isLoading={phaseRequestState !== RequestState.Complete} />
 			}
 		</Row>
 		<Row className="px-4 py-3 justify-content-end" >
@@ -171,7 +175,10 @@ function SessionSection(props: {
 	</>
 }
 
-function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
+const PhaseSelector: React.FC = ({children}) =>  {
+	const { contestId } = React.useContext(ContestContext);
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+
 	const [phaseRequestState, setPhaseRequestState] = React.useState(RequestState.Initial);
 	const history = useHistory();
 	const hash = parseInt(useLocation().hash.toLowerCase().substr(1));
@@ -198,32 +205,10 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		});
 	}, [contest.phases, selectedPhaseIndex]);
 
-	const sessions = selectedPhase?.sessions ?? [];
-
-	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
-	const nextSession = sessions[nextSessionIndex];
-	const currentSession = nextSessionIndex < 0 ? sessions[sessions.length - 1] : sessions[nextSessionIndex - 1];
-
-	const currentSessionGames = useSelector((state: IState) =>
-		Object.entries(state.games ?? {})
-			.filter(([key, game]) =>
-				game.contestId === contest?._id
-				&& game.sessionId === currentSession?._id
-			)
-	);
-
-	const currentSessionComplete = currentSessionGames.length >= 4;
-
-	const [selectedSessionIndex, setSelectedSessionIndex] = React.useState<number>();
-
-	const onSessionSelect = React.useCallback((index: number) => {
-		setSelectedSessionIndex(index - 1)
-	}, [setSelectedSessionIndex]);
-
-	const { t } = useTranslation();
+	const hasPhases = contest?.phases?.length > 1;
 
 	return <>
-		{contest.phases && contest.phases.length > 1 &&
+		{ hasPhases &&
 			<Row className="mt-3" >
 				<Col className="p-0 overflow-hidden rounded-top">
 					<TabNavigator
@@ -241,14 +226,63 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 				</Col>
 			</Row>
 		}
-		<Row className={clsx((!contest.phases || !contest.phases.length) && "mt-3" || "rounded-bottom bg-dark")}>
+		{
+			React.Children.map(children, child => React.cloneElement(child as React.ReactElement, {
+				hasPhases,
+				phaseRequestState,
+				selectedPhase,
+			} as PhaseSelectorChildProps))
+		}
+	</>
+}
+
+interface PhaseSelectorChildProps {
+	hasPhases?: boolean;
+	selectedPhase?: Rest.LeaguePhase;
+	phaseRequestState?: RequestState;
+}
+
+const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
+	hasPhases,
+	phaseRequestState,
+	selectedPhase,
+}) => {
+	const { contestId } = React.useContext(ContestContext);
+	const teams = useSelector((state: IState) => state.contestsById[contestId]?.teams);
+
+	const sessions = selectedPhase?.sessions ?? [];
+
+	const nextSessionIndex = sessions.findIndex(session => session.scheduledTime > Date.now());
+	const nextSession = sessions[nextSessionIndex];
+	const currentSession = nextSessionIndex < 0 ? sessions[sessions.length - 1] : sessions[nextSessionIndex - 1];
+
+	const currentSessionGames = useSelector((state: IState) =>
+		Object.entries(state.games ?? {})
+			.filter(([key, game]) =>
+				game.contestId === contestId
+				&& game.sessionId === currentSession?._id
+			)
+	);
+
+	const currentSessionComplete = currentSessionGames.length >= 4;
+
+	const [selectedSessionIndex, setSelectedSessionIndex] = React.useState<number>();
+
+	const onSessionSelect = React.useCallback((index: number) => {
+		setSelectedSessionIndex(index - 1)
+	}, [setSelectedSessionIndex]);
+
+	const { t } = useTranslation();
+
+	return <>
+		<Row className={clsx(!hasPhases && "mt-3" || "rounded-bottom bg-dark")}>
 			<Teams
 				teamScores={currentSession?.aggregateTotals ?? selectedPhase?.aggregateTotals}
 				isLoading={phaseRequestState !== RequestState.Complete}
 			/>
 		</Row>
 		<Row className="mt-3">
-			<LeagueStandingChart phase={selectedPhase} teams={contest.teams} onSessionSelect={onSessionSelect} />
+			<LeagueStandingChart phase={selectedPhase} teams={teams} onSessionSelect={onSessionSelect} />
 		</Row>
 		<SessionSection session={sessions[selectedSessionIndex]} title={t("league.sessions.selected")} />
 		<SessionSection session={currentSessionComplete ? null : currentSession} title={t("league.sessions.current")} />
@@ -256,7 +290,7 @@ function LeagueContestSummary({ contest }: { contest: Contest }): JSX.Element {
 		<SessionSection session={currentSessionComplete ? currentSession : null} title={t("league.sessions.recent")} />
 		<Row className="mt-4">
 			<Col className="text-center">
-				<Link className="h5 text-dark" to={`/contests/${contest._id}/sessions`}><u>{t("league.sessions.more")}</u></Link>
+				<Link className="h5 text-dark" to={`/contests/${contestId}/sessions`}><u>{t("league.sessions.more")}</u></Link>
 			</Col>
 		</Row>
 	</>

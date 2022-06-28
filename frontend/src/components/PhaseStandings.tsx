@@ -3,7 +3,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
-import { fetchActivePhase } from "src/api/Contests";
+import { fetchActivePhase, fetchPhase } from "src/api/Contests";
 import { IndividualPlayerStandings, IndividualPlayerStandingsProps } from "./IndividualPlayerStandings";
 import { ContestContext } from "./Contest/ContestProvider";
 import Accordion from "react-bootstrap/Accordion";
@@ -254,16 +254,8 @@ const TeamRankingDisplay: React.FC<{
 	</>
 }
 
-export const PhaseStandings: React.FC = () => {
-	const [phase, setPhase] = React.useState<TourneyPhase>(null);
-	const { contestId } = React.useContext(ContestContext);
-
-	React.useEffect(() => {
-		setPhase(null);
-		fetchActivePhase(contestId).then(setPhase);
-	}, [contestId]);
-
-	if (!phase) {
+export const PhaseStandings: React.FC<{phase: TourneyPhase, isLoading: boolean}>= ({phase, isLoading}) => {
+	if (!phase || isLoading) {
 		return <Container className="rounded-bottom bg-dark text-light text-center px-3 py-4">
 			<Row>
 				<Col>

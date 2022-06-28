@@ -459,7 +459,8 @@ export class RestApi {
 					return;
 				}
 
-				res.sendStatus(500);
+				const phases = await this.getTourneyPhaseData(phaseInfo);
+				res.send(phases);
 			})
 		);
 
@@ -479,11 +480,6 @@ export class RestApi {
 					const phases = await this.getLeaguePhaseData(phaseInfo);
 					res.send(phases.reverse().find(phase => phase.startTime < now));
 					return;
-				}
-
-				if (phaseInfo.contest.tourneyType === TourneyContestScoringType.Cumulative) {
-					res.status(500).send("Tourney subtype is not supported" as any);
-					return
 				}
 
 				const phases = await this.getTourneyPhaseData(phaseInfo);
@@ -508,7 +504,9 @@ export class RestApi {
 					return;
 				}
 
-				const phases = await this.getLeaguePhaseData(phaseInfo);
+				const phases = ((phaseInfo.contest.type === ContestType.League)
+					? await this.getLeaguePhaseData(phaseInfo)
+					: await this.getTourneyPhaseData(phaseInfo)) as Phase[];
 				res.send(phases.find(phase => phase.index === index));
 			})
 		);
@@ -2533,6 +2531,7 @@ export class RestApi {
 			).toArray(),
 			{contest}
 		);
+
 		const resultsByType = {} as Record<string, Record<string, PlayerContestTypeResults>>;
 		const maxGames = contest.maxGames ?? Infinity;
 		for (const type of scoringTypes) {

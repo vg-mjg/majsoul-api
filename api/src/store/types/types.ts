@@ -189,6 +189,7 @@ export enum TourneyContestScoringType {
 	Cumulative,
 	Consecutive,
 	Kans,
+	EliminationBrackets,
 }
 
 export interface TourneyScoringTypeDetails {
