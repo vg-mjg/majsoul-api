@@ -383,10 +383,36 @@ export class RestApi {
 					res.status(404).send();
 					return;
 				}
-
 				const { phases } = await this.getPhases(data.id);
 
-				res.send({ ...contest, phases });
+				const restContest: Rest.Contest = {
+					...contest,
+					phases,
+					teams: undefined
+				};
+
+
+				if (contest.teams) {
+					const players = await this.mongoStore.playersCollection.find({
+						_id: {
+							$in: contest.teams.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectID[])
+						}
+					}).toArray();
+
+					const namedPlayers = await this.namePlayers(players, contest._id, contest);
+
+					const playerMap = namedPlayers.reduce(
+						(total, next) => (total[next._id] = next, total),
+						{} as Record<string, PlayerInformation>
+					);
+
+					restContest.teams = contest.teams.map(team => ({
+						...team,
+						players: team.players.map(player => playerMap[player._id.toHexString()])
+					}));
+				}
+
+				res.send(restContest);
 			})
 		);
 
@@ -1873,7 +1899,7 @@ export class RestApi {
 					{
 						id: string;
 						teamId: string;
-					} & Partial<store.ContestTeam<ObjectId | string>>,
+					} & Partial<store.ContestTeam<string>>,
 					any,
 					store.ContestTeam<ObjectId>
 				>(async (data, req, res) => {
@@ -1886,11 +1912,12 @@ export class RestApi {
 					const teamId = new ObjectId(data.teamId);
 
 					if (data.players) {
-						for (const player of data.players) {
-							player._id = new ObjectId(player._id);
-						}
+						data.players = data.players.map(player => ({
+							_id: ObjectId.createFromHexString(player._id)
+						})) as any;
+
 						const players = await this.mongoStore.playersCollection.find({
-							_id: { $in: data.players.map(player => player._id as ObjectId) }
+							_id: { $in: data.players.map(player => player._id as any as ObjectID) }
 						}).toArray();
 						if (players.length !== data.players.length) {
 							res.status(400).send(

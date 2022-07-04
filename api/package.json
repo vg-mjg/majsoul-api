@@ -19,7 +19,7 @@
 		"cors": "^2.8.5",
 		"express": "^4.17.1",
 		"express-jwt": "^6.0.0",
-		"express-validator": "^6.6.1",
+		"express-validator": "^6.14.2",
 		"googleapis": "^51.0.0",
 		"install": "^0.13.0",
 		"jsonwebtoken": "^8.5.1",

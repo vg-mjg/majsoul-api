@@ -84,8 +84,11 @@ export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
 
 export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>;
 
-export type Contest<Id = any> = Store.Contest<Id> & {
+export type Contest<Id = any> = Omit<Store.Contest<Id>, "teams"> & {
 	phases: PhaseMetadata[];
+	teams?: (Omit<Store.ContestTeam<Id>, "players"> & {
+		players: PlayerInformation[]
+	})[];
 }
 
 export interface YakumanInformation {
