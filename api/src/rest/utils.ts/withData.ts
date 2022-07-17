@@ -11,7 +11,7 @@ export function withData<DataType, RequestType, ResponseType>(
 			return;
 		}
 		await callback(
-			matchedData(request, { includeOptionals: true }) as DataType,
+			matchedData(request, { includeOptionals: false }) as DataType,
 			request,
 			response
 		);

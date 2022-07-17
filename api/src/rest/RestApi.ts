@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -280,6 +280,7 @@ interface ContestOption {
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
+const nameofEliminationBracketSettings = nameofFactory<store.EliminationBracketSettings>();
 const nameofNicknameOverrides = nameofFactory<store.Contest['nicknameOverrides'][0]>();
 const nameofPlayer = nameofFactory<store.Player<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
@@ -303,7 +304,7 @@ const seededPlayerNames: Record<string, string[]> = {
 interface PhaseInfo {
 	contest: store.Contest<ObjectID>,
 	transitions: ContestPhaseTransition<ObjectID>[],
-	phases: PhaseMetadata<ObjectID>[]
+	phases: Store.ContestPhase<ObjectID>[]
 }
 
 interface PlayerContestTypeResults {
@@ -311,7 +312,7 @@ interface PlayerContestTypeResults {
 	rank: number;
 	score: number;
 	totalMatches: number;
-	highlightedGameIds?: string[],
+	highlightedGameIds?: string[];
 }
 
 export class RestApi {
@@ -383,11 +384,11 @@ export class RestApi {
 					res.status(404).send();
 					return;
 				}
-				const { phases } = await this.getPhases(data.id);
+				const phaseMetadata = await this.getPhases(data.id);
 
 				const restContest: Rest.Contest = {
 					...contest,
-					phases,
+					phases: this.createRestPhases(phaseMetadata),
 					teams: undefined
 				};
 
@@ -1237,19 +1238,23 @@ export class RestApi {
 			.patch<any, store.Contest<ObjectId>>('/contests/:id',
 				param("id").isMongoId(),
 				body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
+				body(nameofContest('spreadsheetId')).isString().bail().optional({ nullable: true }),
+
 				body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
 				body(nameofContest('subtype')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestPhaseSubtype)).optional(),
 				body(nameofContest('anthem')).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
-				body(nameofContest('spreadsheetId')).isString().bail().optional({ nullable: true }),
 				body(nameofContest('tagline')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
 				body(nameofContest('taglineAlternate')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
+				body(nameofContest('normaliseScores')).not().isString().bail().isBoolean().optional({ nullable: true }),
+
+				...eliminationBracketSettingsFilter(),
+
 				body(nameofContest('displayName')).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
 				body(nameofContest('initialPhaseName')).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
 				body(nameofContest('maxGames')).not().isString().bail().isInt({ gt: 0, max: 50 }).optional({ nullable: true }),
 				body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
-				body(nameofContest('normaliseScores')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('gacha')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
@@ -2058,6 +2063,7 @@ export class RestApi {
 				body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
 				body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
 				body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
+				...eliminationBracketSettingsFilter(),
 				...scoringTypeFilter(nameofTransition('scoringTypes')),
 				withData<
 					Partial<store.ContestPhaseTransition> & {
@@ -2075,10 +2081,32 @@ export class RestApi {
 					const transition: ContestPhaseTransition<ObjectId> = {
 						_id: new ObjectId(),
 						startTime: data.startTime,
-						name: data.name,
-						score: data.score,
-						teams: data.teams,
 					}
+
+					if (data.name != null) {
+						transition.name = data.name;
+					}
+
+					if (data.score != null) {
+						transition.score = data.score;
+					}
+
+					if (data.teams != null) {
+						transition.teams = data.teams;
+					}
+
+					if (data.scoringTypes != null) {
+						transition.scoringTypes = data.scoringTypes;
+					}
+
+					if (data.eliminationBracketSettings != null) {
+						transition.eliminationBracketSettings = data.eliminationBracketSettings;
+					}
+
+					if (data.eliminationBracketTargetPlayers != null) {
+						transition.eliminationBracketTargetPlayers = data.eliminationBracketTargetPlayers;
+					}
+
 
 					if (contest.transitions) {
 						this.mongoStore.contestCollection.findOneAndUpdate(
@@ -2275,6 +2303,8 @@ export class RestApi {
 				maxGames: true,
 				subtype: true,
 				normaliseScores: true,
+				eliminationBracketSettings: true,
+				eliminationBracketTargetPlayers: true,
 			}
 		});
 
@@ -2282,31 +2312,65 @@ export class RestApi {
 			return null;
 		}
 
+		const phases: Store.ContestPhase<ObjectID>[] = [{
+			...contest,
+			name: contest.initialPhaseName ?? "予選",
+		}];
+
 		const transitions = [
 			{
-				name: contest?.initialPhaseName ?? "予選",
+				name: phases[0].name,
 				startTime: 0,
-				scoringTypes: contest.tourneyType
+				scoringTypes: phases[0].tourneyType
 			} as ContestPhaseTransition<ObjectID>,
 			...(contest.transitions ?? [])
 		].sort((a, b) => a.startTime - b.startTime);
 
+		for(const transition of transitions.slice(1)) {
+			const nextPhase = {
+				...phases[phases.length - 1],
+			};
+
+			if (transition.name) {
+				nextPhase.name = transition.name;
+			}
+
+			if (transition.scoringTypes) {
+				nextPhase.tourneyType = transition.scoringTypes;
+			}
+
+			if (transition.eliminationBracketSettings) {
+				nextPhase.eliminationBracketSettings = transition.eliminationBracketSettings;
+			}
+
+			if (transition.eliminationBracketTargetPlayers) {
+				nextPhase.eliminationBracketTargetPlayers = transition.eliminationBracketTargetPlayers;
+			}
+
+			phases.push(nextPhase);
+		}
+
 		return {
 			contest,
 			transitions,
-			phases: transitions.map(({ startTime, name }, index) => ({
-				index,
-				name,
-				startTime
-			}))
+			phases
 		};
 	}
 
-	private async getLeaguePhaseData({
-		contest,
-		transitions,
-		phases
-	}: PhaseInfo): Promise<LeaguePhase<ObjectID>[]> {
+	private createRestPhases(phaseInfo: PhaseInfo): Rest.PhaseMetadata[] {
+		return phaseInfo?.phases?.map((phase, index) => ({
+			name: phase.name,
+			startTime: phaseInfo.transitions[index].startTime,
+			index
+		})) ?? [];
+	}
+
+	private async getLeaguePhaseData(phaseInfo: PhaseInfo): Promise<LeaguePhase<ObjectID>[]> {
+		const {
+			contest,
+			transitions
+		} = phaseInfo;
+		const phases = this.createRestPhases(phaseInfo);
 		const sessions = (await this.getSessions(contest).pipe(toArray()).toPromise())
 			.sort((a, b) => a.scheduledTime - b.scheduledTime);
 		return from(phases.concat(null)).pipe(
@@ -2481,20 +2545,16 @@ export class RestApi {
 		})) ?? [];
 	}
 
-	private getTourneyPhaseData({
-		contest,
-		transitions,
-		phases
-	}: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
+	private getTourneyPhaseData(phaseInfo: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
+		const {
+			contest,
+			phases: storePhases
+		} = phaseInfo;
+		const phases = this.createRestPhases(phaseInfo);
 		return lastValueFrom(from(phases).pipe(
-			scan((total, next) => ({
-				...total,
-				...next,
-				scoringTypes: transitions[next.index].scoringTypes ?? total.scoringTypes
-			} as TourneyPhase<ObjectID>), {} as TourneyPhase<ObjectID>),
 			mergeWith(of(null as TourneyPhase<ObjectID>)),
 			pairwise(),
-			map(([phase, nextPhase]) => from(this.getTourneyPhaseStandings(contest, phase, nextPhase)).pipe(
+			map(([phase, nextPhase], index) => from(this.getTourneyPhaseStandings(contest, phase, nextPhase, storePhases[index])).pipe(
 				map(standings => ({
 					...phase,
 					...standings
@@ -2508,15 +2568,17 @@ export class RestApi {
 	private async getTourneyPhaseStandings(
 		contest: Store.Contest<ObjectId>,
 		phase: TourneyPhase<ObjectID>,
-		nextPhase: TourneyPhase<ObjectID>
+		nextPhase: TourneyPhase<ObjectID>,
+		storePhase: Store.ContestPhase<ObjectID>,
 	): Promise<{
-		standings: PlayerTourneyStandingInformation[],
-		scoringTypes: (TourneyScoringInfoPart & {id:string})[]
+		standings: PlayerTourneyStandingInformation[];
+		scoringTypes: (TourneyScoringInfoPart & {id:string})[];
+		eliminationLevels?: EliminationLevel[];
 	}> {
 		const contestTypes: (TourneyScoringInfoPart & {id:string})[] = (
-			Array.isArray(phase.scoringTypes)
-				? phase.scoringTypes
-				: [ {type: phase.scoringTypes == null ? TourneyContestScoringType.Cumulative : phase.scoringTypes } ]
+			Array.isArray(storePhase.tourneyType)
+				? storePhase.tourneyType
+				: [ { type: storePhase.tourneyType ?? TourneyContestScoringType.Cumulative } ]
 		).map(type => ({...type, id: this.generateScoringTypeId(type)}));
 
 		const scoreTypeSet: Record<string, TourneyContestScoringDetailsWithId> = {};
@@ -2561,6 +2623,7 @@ export class RestApi {
 
 		const resultsByType = {} as Record<string, Record<string, PlayerContestTypeResults>>;
 		const maxGames = contest.maxGames ?? Infinity;
+		let eliminationLevels : EliminationLevel[];
 		for (const type of scoringTypes) {
 			switch (type.type) {
 				case TourneyContestScoringType.Consecutive: {
@@ -2572,6 +2635,9 @@ export class RestApi {
 				} case TourneyContestScoringType.Kans: {
 					resultsByType[type.id] = this.getKanResults(games, maxGames);
 					break;
+				} case TourneyContestScoringType.EliminationBrackets: {
+					eliminationLevels = await this.getEliminationLevels(contest, storePhase, games);
+					resultsByType[type.id] = this.getEliminationBracketResults(eliminationLevels);
 				}
 			}
 		}
@@ -2890,6 +2956,130 @@ export class RestApi {
 		}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
+	private async getEliminationLevels(contest: store.Contest<ObjectId>, phase: Store.ContestPhase<ObjectId>, games: GameResult[]): Promise<EliminationLevel[]> {
+		const eliminationLevels: EliminationLevel[] = [];
+		const targetPlayers = phase.eliminationBracketTargetPlayers ?? 32;
+
+		let gamesPerMatch = 1;
+		let winnersPerMatch = 2;
+		let currentPlayers = 1;
+		do {
+			const levelIndex = eliminationLevels.length;
+
+			gamesPerMatch = phase.eliminationBracketSettings?.[levelIndex]?.gamesPerMatch ?? gamesPerMatch;
+			winnersPerMatch = phase.eliminationBracketSettings?.[levelIndex]?.winnersPerMatch ?? winnersPerMatch;
+
+			const level = {
+				levelNumber: levelIndex,
+				completedMatches: [],
+				requiredMatches: Math.ceil(currentPlayers / winnersPerMatch),
+				winnersPerMatch,
+				gamesPerMatch,
+			};
+
+			currentPlayers = level.requiredMatches * 4;
+
+			eliminationLevels.push(level);
+		} while(currentPlayers < targetPlayers);
+
+		const eliminationLevelsReversed = [...eliminationLevels];
+		const gamesCopy = [...games];
+
+		const playerNameRequest = {} as Record<string, EliminationMatchDetails[]>;
+
+		while (eliminationLevelsReversed.length && gamesCopy.length) {
+			const level = eliminationLevelsReversed.pop();
+			const matches = {} as Record<string, EliminationMatchDetails>;
+			while (level.completedMatches.length < level.requiredMatches) {
+				const game = gamesCopy.shift();
+				const matchId = game.players.map(player => player._id.toHexString()).sort().reduce((total, id) => total + id, "");
+
+				if (!(matchId in matches)) {
+					matches[matchId] = {
+						games: [],
+						players: [],
+					};
+
+					for (const player of game.players) {
+						playerNameRequest[player._id.toHexString()] ??= [];
+						playerNameRequest[player._id.toHexString()].push(matches[matchId]);
+					}
+
+				}
+
+				matches[matchId].games.push(game);
+
+				if (matches[matchId].games.length >= level.gamesPerMatch) {
+					level.completedMatches.push(matches[matchId]);
+				}
+
+				if (!gamesCopy.length) {
+					break;
+				}
+			}
+		}
+
+		const players = await this.mongoStore.playersCollection.find({
+			_id: { $in: Object.keys(playerNameRequest).map(ObjectID.createFromHexString) }
+		}).toArray();
+
+		for (const player of await this.namePlayers(players, contest._id, contest)) {
+			for (const request of playerNameRequest[player._id]) {
+				request.players.push(player);
+			}
+		}
+
+		return eliminationLevels;
+	}
+
+	private getEliminationBracketResults(eliminationLevels: EliminationLevel[]): Record<string, PlayerContestTypeResults> {
+		const results = {} as Record<string, PlayerContestTypeResults>;
+		let rank = 0;
+		const losers = [] as {score: number, player: PlayerInformation}[];
+		for (const level of eliminationLevels) {
+			for (const match of level.completedMatches) {
+				const scores = match.players.reduce(
+					(total, next) => (total[next._id] = {score: 0, player: next}, total),
+					{} as Record<string, {score: number, player: PlayerInformation}>
+				);
+
+				for (const game of match.games) {
+					game.players.forEach((player, index) => {
+						const playerId = player._id.toHexString();
+						scores[playerId].score += game.finalScore[index].uma;
+						results[playerId] ??= {
+							playerId,
+							rank: 0,
+							score: 0,
+							totalMatches: 0,
+							highlightedGameIds: []
+						}
+						results[playerId].totalMatches++;
+						results[playerId].highlightedGameIds.push(game._id.toHexString());
+					});
+				}
+
+				const sortedPlayers = Object.values(scores).sort((a, b) => b.score - a.score);
+
+				losers.push(...sortedPlayers.slice(level.levelNumber === 0 ? 0 : level.winnersPerMatch));
+			}
+
+			losers.sort((a, b) => b.score - a.score);
+
+			while (losers.length) {
+				const loser = losers.shift();
+				results[loser.player._id].rank = ++rank;
+				results[loser.player._id].score = loser.score;
+			}
+
+			if (level.completedMatches.length < level.requiredMatches) {
+				rank += 4 * (level.requiredMatches - level.completedMatches.length);
+			}
+		}
+
+		return results;
+	}
+
 	private async adjustGames(games: store.GameResult<ObjectId>[], options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
 		const corrections = await this.mongoStore.gameCorrectionsCollection.find({
 			gameId: {
@@ -2980,5 +3170,14 @@ function scoringTypeFilter(propName: string) {
 			.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('reverse')}`)
 			.not().isString().bail().isBoolean().optional({ nullable: true }),
+	];
+}
+
+function eliminationBracketSettingsFilter() {
+	return [
+		body(nameofContest('eliminationBracketTargetPlayers')).not().isString().bail().isInt({ min: 4 }).optional({ nullable: true }),
+		body(nameofContest('eliminationBracketSettings')).not().isString().isObject().optional({ nullable: true }),
+		body(`${nameofContest('eliminationBracketSettings')}.*.${nameofEliminationBracketSettings('gamesPerMatch')}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
+		body(`${nameofContest('eliminationBracketSettings')}.*.${nameofEliminationBracketSettings('winnersPerMatch')}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
 	];
 }

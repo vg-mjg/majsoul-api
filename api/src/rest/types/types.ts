@@ -69,6 +69,19 @@ export interface PlayerTeamRanking {
 	}>
 }
 
+export interface EliminationMatchDetails {
+	players: PlayerInformation[];
+	games: Store.GameResult[];
+}
+
+export interface EliminationLevel {
+	levelNumber: number;
+	gamesPerMatch: number;
+	completedMatches: EliminationMatchDetails[];
+	requiredMatches: number;
+	winnersPerMatch: number;
+}
+
 export type PlayerTourneyStandingInformation = SharedGroupRankingData & {
 	player: PlayerInformation;
 	hasMetRequirements?: boolean;
@@ -80,6 +93,7 @@ export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
 	scoringTypes?: TourneyContestScoringDetailsWithId[];
 	standings?: PlayerTourneyStandingInformation[];
 	subtype?: TourneyContestPhaseSubtype;
+	eliminationLevels?: EliminationLevel[];
 }
 
 export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>;

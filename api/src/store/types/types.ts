@@ -167,8 +167,8 @@ export enum SupportedLocales {
 
 export type LocalisedString = string | Record<SupportedLocales, string>
 
-export interface ContestPhaseShared<Id = any> {
-	_id: Id;
+export interface ContestPhaseShared {
+	name?: string;
 	tagline?: string;
 	taglineAlternate?: string;
 	anthem?: string;
@@ -212,6 +212,11 @@ interface ConsecutiveScoringDetails {
 
 export type TourneyContestScoringInfo = TourneyContestScoringType | TourneyScoringInfoPart[];
 
+export interface EliminationBracketSettings {
+	winnersPerMatch?: number;
+	gamesPerMatch?: number;
+}
+
 export interface TourneyContestPhase {
 	type?: ContestType.Tourney;
 	subtype?: TourneyContestPhaseSubtype;
@@ -219,12 +224,14 @@ export interface TourneyContestPhase {
 	maxGames?: number;
 	bonusPerGame?: number;
 	gacha?: boolean;
+	eliminationBracketSettings?: Record<number, EliminationBracketSettings>;
+	eliminationBracketTargetPlayers?: number;
 }
 
-export type ContestPhase<Id = any> = ContestPhaseShared<Id> & (LeagueContestPhase<Id> & TourneyContestPhase)
+export type ContestPhase<Id = any> = ContestPhaseShared & (LeagueContestPhase<Id> & TourneyContestPhase)
 
-export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<ContestPhase<Id>, "type"> {
-	type?: ContestType
+export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<ContestPhase<Id>, "name"> {
+	_id: Id;
 	track?: boolean;
 	adminPlayerFetchRequested?: boolean;
 
@@ -296,4 +303,6 @@ export interface ContestPhaseTransition<Id = string> {
 		nil?: true;
 	};
 	scoringTypes?: TourneyContestScoringInfo;
+	eliminationBracketSettings?: Record<number, EliminationBracketSettings>;
+	eliminationBracketTargetPlayers?: number;
 }
