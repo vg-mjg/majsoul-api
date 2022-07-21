@@ -6,7 +6,7 @@ import * as store from "./store";
 import { Credentials } from 'google-auth-library';
 import { getSecrets } from "./secrets";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
@@ -14,6 +14,8 @@ import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse
 import fetch, { HeadersInit } from "node-fetch";
 import * as UserAgent from "user-agents";
 import { Passport } from "./majsoul";
+import { GachaPull, GameResult, TourneyContestScoringType } from "./store";
+import * as seedrandom from "seedrandom";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
@@ -514,6 +516,116 @@ async function main() {
 			share(),
 		);
 
+		tracker.PhaseInfo$.pipe(
+			tap(console.log),
+			filter(({contest}) => contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0),
+			tap(console.log),
+			map(({phases, contest}) => {
+				phases.sort((a, b) => b.startTime - a.startTime);
+				return tracker.RecordedGames$.pipe(
+					map(game => {
+						const phaseIndex = phases.findIndex(phase => phase.startTime > game.start_time);
+						const phase = phases[(phaseIndex < 1 ? phases.length - 1 : phaseIndex - 1)];
+						return {
+							game,
+							phase,
+						}
+					}),
+					filter(({phase}) => (phase.tourneyType === TourneyContestScoringType.Gacha)),
+					map((data) =>
+						defer(() => from(mongoStore.gachaCollection.find({gameId: data.game._id}).toArray()).pipe(
+							zipWith(from([data]))
+						))
+					),
+					mergeAll(),
+					filter(([gachas]) => gachas.length <= 0),
+					map(([_, data]) => data),
+					withLatestFrom(from([contest])),
+				)
+			 }),
+			mergeAll()
+		).pipe(
+			map(([{game, phase}, contest]) => {
+				const seed = [game._id.toHexString(), game.end_time, game.finalScore.map(score => score.score).join("")].join(":");
+				console.log(`Rolling gacha for game id ${game.majsoulId} seed ${seed}`);
+				const rand = seedrandom(seed);
+
+				if (contest.normaliseScores) {
+					const lowestScore = game.finalScore.reduce((lowest, next) => (lowest < next.uma ? lowest : next.uma), Number.POSITIVE_INFINITY);
+					for (const score of game.finalScore) {
+						score.uma -= lowestScore;
+					}
+				}
+
+				const possibleRollsPerPlayer = game.finalScore.filter(score => score.uma > 1000).map((score, index) => [
+					...rollGachaForScore(rand, contest, game, index, score.uma)
+				].filter(roll => roll.length));
+				const uniqueGroups = new Set(possibleRollsPerPlayer.flat().flat().filter(roll => roll.group.unique).map(roll => roll.group._id));
+				return from([{game, phase, contest}]).pipe(
+					zipWith(defer(() =>
+						uniqueGroups.size
+							? from(
+								mongoStore.gachaCollection.find({gachaGroupId: {$in: [...uniqueGroups]}}).toArray()
+							).pipe(
+								map(pulls =>
+									pulls.length
+										? defer(() =>
+											from(mongoStore.gamesCollection.find(
+												{
+													gameId: { $in: [...new Set(pulls.map(pull => pull.gameId))] },
+													contestId: contest._id,
+												},
+												{
+													projection: {
+														_id: true,
+													}
+												}
+											).toArray()).pipe(
+												map(gamesInContest => from(
+													[pulls.filter(pull => gamesInContest.find(game => game._id.equals(pull.gameId)))]
+												)),
+												mergeAll(),
+											)
+										)
+										: from([[]] as GachaPull<ObjectId>[][])
+								),
+								mergeAll(),
+							)
+							: from([[]] as GachaPull<ObjectId>[][])
+					)),
+					map(([data, existingGacha]) => {
+						const gachaGroupMap = existingGacha.reduce(addRollToMap, {} as RollMap);
+
+						const pulls = [
+							{
+								gameId: data.game._id
+							}
+						] as GachaPull[];
+
+						for (const player of possibleRollsPerPlayer) {
+							for (const rollOption of player) {
+								const correctRoll = rollOption.find(roll =>
+									!roll.group.unique
+										|| (
+											gachaGroupMap[roll.group._id.toHexString()]?.total < roll.group.cards.length
+												&& gachaGroupMap[roll.group._id.toHexString()].players[roll.pull.playerId.toHexString()]?.length === 0
+										)
+
+								);
+								pulls.push(correctRoll.pull);
+								addRollToMap(gachaGroupMap, correctRoll.pull);
+							}
+						}
+
+						return pulls;
+					})
+				)
+			}),
+			mergeAll(),
+		).subscribe((gachaPulls) => {
+			mongoStore.gachaCollection.insertMany(gachaPulls);
+		});
+
 		spreadsheet$.subscribe(async ([spreadsheetId]) => {
 			const spreadsheet = new Spreadsheet(spreadsheetId, googleAuth);
 			try {
@@ -595,3 +707,42 @@ function createContestIds$(mongoStore: store.Store): Observable<ObjectId> {
 }
 
 main().catch(e => console.log(e));
+
+function * rollGachaForScore(rand: seedrandom.PRNG, contest: Store.Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number){
+	while (uma > 1000) {
+		const roll = rand();
+		yield contest.gacha.groups.filter(group => group.onePer * roll < 1).map(group => (
+			{
+				group,
+				pull: {
+					gameId: game._id,
+					playerId: game.players[index]._id,
+					gachaCardId: group.cards[(rand() * group.cards.length) | 0]._id
+				} as GachaPull<ObjectId>
+			}));
+		uma -= 1000;
+	}
+}
+
+type RollMap = Record<string, {total: number, players: Record<string, GachaPull<ObjectId>[]>}>;
+
+function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
+	const groupId = next.gachaGroupId?.toHexString();
+	if (groupId === null) {
+		return total;
+	}
+
+	const playerId = next.playerId?.toHexString();
+	if (playerId === null) {
+		return total;
+	}
+
+	total[groupId] ??= {
+		total: 0,
+		players: {}
+	};
+	total[groupId].total++;
+	total[groupId].players[playerId] ??= [];
+	total[groupId].players[playerId].push(next);
+	return total;
+}

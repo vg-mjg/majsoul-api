@@ -1,5 +1,5 @@
 import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection } from "./types/types";
+import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection, GachaPull } from "./types/types";
 import { Observable, Subject } from "rxjs";
 
 interface Migration {
@@ -15,6 +15,7 @@ export class Store {
 	public playersCollection: Collection<Player<ObjectId>>;
 	public configCollection: Collection<Config<ObjectId>>;
 	public userCollection: Collection<User<ObjectId>>;
+	public gachaCollection: Collection<GachaPull<ObjectId>>;
 
 	private readonly contestChangesSubject = new Subject<ChangeEvent<Contest<ObjectId>>>();
 	private readonly configChangesSubject = new Subject<ChangeEvent<Config<ObjectId>>>();
@@ -58,6 +59,7 @@ export class Store {
 		this.sessionsCollection.createIndex({ scheduledTime: -1 });
 		this.playersCollection = await majsoulDb.collection("players");
 		this.configCollection = await majsoulDb.collection("config");
+		this.gachaCollection = await majsoulDb.collection("gacha");
 
 		this.contestStream = this.contestCollection.watch().on("change", change => this.contestChangesSubject.next(change));
 		this.configStream = this.configCollection.watch().on("change", change => this.configChangesSubject.next(change));

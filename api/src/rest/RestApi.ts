@@ -23,7 +23,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../store';
+import { AgariInfo, buildContestPhases, ContestPhaseTransition, ContestType, GachaPull, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -291,6 +291,9 @@ const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 const nameofGameCorrection = nameofFactory<store.GameCorrection<ObjectId>>();
 const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfoPart>();
 const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfoPart['typeDetails']>();
+const nameofGacha = nameofFactory<store.Contest<ObjectID>['gacha']>();
+const nameofGachaGroup = nameofFactory<store.GachaGroup<ObjectID>>();
+const nameofGachaCard = nameofFactory<store.GachaCard<ObjectID>>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -299,12 +302,6 @@ const seededPlayerNames: Record<string, string[]> = {
 		"Meido",
 		"amegumo",
 	]
-}
-
-interface PhaseInfo {
-	contest: store.Contest<ObjectID>,
-	transitions: ContestPhaseTransition<ObjectID>[],
-	phases: Store.ContestPhase<ObjectID>[]
 }
 
 interface PlayerContestTypeResults {
@@ -1255,10 +1252,20 @@ export class RestApi {
 				body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 				body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
-				body(nameofContest('gacha')).not().isString().bail().isBoolean().optional({ nullable: true }),
 				body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
+
+				body(nameofContest('gacha')).not().isString().bail().isObject().optional({ nullable: true }),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}`).not().isString().bail().isArray({min: 1}),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('onePer')}`).not().isString().bail().isInt({min: 1}),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('_id')}`).isMongoId().optional(),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('unique')}`).not().isString().bail().isBoolean().optional(),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}`).not().isString().bail().isArray({min: 1}),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('_id')}`).isMongoId().optional(),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('icon')}`).isString().bail(),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('image')}`).isString().bail().optional(),
+
 				...scoringTypeFilter(nameofContest('tourneyType')),
 				async (req, res) => {
 					const errors = validationResult(req);
@@ -1301,6 +1308,35 @@ export class RestApi {
 						if (data[key] === null) {
 							update.$unset ??= {};
 							update.$unset[key] = true;
+							continue;
+						}
+
+						if (key === nameofContest("gacha")) {
+							update.$set ??= {};
+							update.$set[key] ??= {
+								groups: data.gacha.groups.map(group => {
+									const groupDto = {
+										_id: group._id == null ? new ObjectId() : ObjectId.createFromHexString(group._id),
+										onePer: group.onePer,
+										cards: group.cards.map(card => {
+											const cardDto = {
+												_id: card._id == null ? new ObjectId() : ObjectId.createFromHexString(card._id),
+												icon: card.icon,
+											} as store.GachaCard<ObjectId>;
+
+											if (card.image != null) {
+												cardDto.image = card.image;
+											}
+											return cardDto;
+										}),
+									} as store.GachaGroup<ObjectId>;
+
+									if (group.unique != null) {
+										groupDto.unique = group.unique;
+									}
+									return groupDto;
+								})
+							} as store.Contest<ObjectId>['gacha'];
 							continue;
 						}
 
@@ -1674,8 +1710,8 @@ export class RestApi {
 						return;
 					}
 
-					const data: Partial<store.Contest<string>> = matchedData(req, { includeOptionals: true });
-					const contestId = new ObjectId(data._id);
+					const data: Partial<store.Contest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+					const contestId = ObjectId.createFromHexString(data.id);
 
 					await this.mongoStore.configCollection.findOneAndUpdate(
 						{ featuredContest: contestId },
@@ -1694,6 +1730,31 @@ export class RestApi {
 							trackedContest: true
 						}
 					})
+
+					res.send();
+				})
+			)
+
+			.delete<any, void>('/contests/:id/gacha',
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+
+					const data: Partial<store.Contest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+					const contestId = ObjectId.createFromHexString(data.id);
+
+					const games = await this.mongoStore.gamesCollection.find(
+						{ contestId },
+						{ projection: {_id: true} }
+					).toArray();
+
+					const result = await this.mongoStore.gachaCollection.deleteMany(
+						{ gameId: {$in: games.map(game => game._id)} },
+					);
 
 					res.send();
 				})
@@ -2289,7 +2350,7 @@ export class RestApi {
 		);
 	}
 
-	private async getPhases(contestId: string): Promise<PhaseInfo> {
+	private async getPhases(contestId: string): Promise<Store.PhaseInfo<ObjectID>> {
 		const contest = await this.findContest(contestId, {
 			projection: {
 				_id: true,
@@ -2308,64 +2369,18 @@ export class RestApi {
 			}
 		});
 
-		if (contest == null) {
-			return null;
-		}
-
-		const phases: Store.ContestPhase<ObjectID>[] = [{
-			...contest,
-			name: contest.initialPhaseName ?? "予選",
-		}];
-
-		const transitions = [
-			{
-				name: phases[0].name,
-				startTime: 0,
-				scoringTypes: phases[0].tourneyType
-			} as ContestPhaseTransition<ObjectID>,
-			...(contest.transitions ?? [])
-		].sort((a, b) => a.startTime - b.startTime);
-
-		for(const transition of transitions.slice(1)) {
-			const nextPhase = {
-				...phases[phases.length - 1],
-			};
-
-			if (transition.name) {
-				nextPhase.name = transition.name;
-			}
-
-			if (transition.scoringTypes) {
-				nextPhase.tourneyType = transition.scoringTypes;
-			}
-
-			if (transition.eliminationBracketSettings) {
-				nextPhase.eliminationBracketSettings = transition.eliminationBracketSettings;
-			}
-
-			if (transition.eliminationBracketTargetPlayers) {
-				nextPhase.eliminationBracketTargetPlayers = transition.eliminationBracketTargetPlayers;
-			}
-
-			phases.push(nextPhase);
-		}
-
-		return {
-			contest,
-			transitions,
-			phases
-		};
+		return buildContestPhases(contest);
 	}
 
-	private createRestPhases(phaseInfo: PhaseInfo): Rest.PhaseMetadata[] {
+	private createRestPhases(phaseInfo: Store.PhaseInfo<ObjectID>): Rest.PhaseMetadata[] {
 		return phaseInfo?.phases?.map((phase, index) => ({
 			name: phase.name,
-			startTime: phaseInfo.transitions[index].startTime,
-			index
+			startTime: phase.startTime,
+			index: phase.index,
 		})) ?? [];
 	}
 
-	private async getLeaguePhaseData(phaseInfo: PhaseInfo): Promise<LeaguePhase<ObjectID>[]> {
+	private async getLeaguePhaseData(phaseInfo: Store.PhaseInfo<ObjectID>): Promise<LeaguePhase<ObjectID>[]> {
 		const {
 			contest,
 			transitions
@@ -2545,7 +2560,7 @@ export class RestApi {
 		})) ?? [];
 	}
 
-	private getTourneyPhaseData(phaseInfo: PhaseInfo): Promise<TourneyPhase<ObjectID>[]> {
+	private getTourneyPhaseData(phaseInfo: Store.PhaseInfo<ObjectID>): Promise<TourneyPhase<ObjectID>[]> {
 		const {
 			contest,
 			phases: storePhases

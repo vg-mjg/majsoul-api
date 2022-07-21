@@ -1,9 +1,10 @@
 import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as store from "./store";
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil } from 'rxjs/operators';
+import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap, mergeMap } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { nameofContest } from "./connector";
+import { buildContestPhases } from './store';
 
 export class ContestTracker {
 	private contestDeleted$: Observable<any>;
@@ -203,6 +204,35 @@ export class ContestTracker {
 			)
 		).pipe(
 			distinctUntilChanged(),
+			takeUntil(this.ContestDeleted$)
+		);
+	}
+
+	public get PhaseInfo$() {
+		const projection = {
+			type: true,
+			tourneyType: true,
+			transitions: true,
+			subtype: true,
+			normaliseScores: true,
+			eliminationBracketSettings: true,
+			eliminationBracketTargetPlayers: true
+		};
+
+		return merge(
+			from([null]),
+			this.ContestUpdates$.pipe(
+				filter(event => !!event.updateDescription.removedFields.find(field => projection[field])
+					|| !!Object.keys(event.updateDescription.updatedFields).find(field => projection[field])),
+			),
+		).pipe(
+			mergeMap(() => defer(() => from(this.mongoStore.contestCollection.findOne({ _id: this.id }, { projection: {
+				...projection,
+				gacha: true,
+				normaliseScores: true,
+			} })))),
+			map(buildContestPhases),
+			filter(phases => !!phases),
 			takeUntil(this.ContestDeleted$)
 		);
 	}

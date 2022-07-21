@@ -173,6 +173,8 @@ export interface ContestPhaseShared {
 	taglineAlternate?: string;
 	anthem?: string;
 	normaliseScores?: boolean;
+	startTime: number;
+	index: number;
 }
 
 export interface LeagueContestPhase<Id = any> {
@@ -190,6 +192,7 @@ export enum TourneyContestScoringType {
 	Consecutive,
 	Kans,
 	EliminationBrackets,
+	Gacha,
 }
 
 export interface TourneyScoringTypeDetails {
@@ -217,20 +220,17 @@ export interface EliminationBracketSettings {
 	gamesPerMatch?: number;
 }
 
-export interface TourneyContestPhase {
+export interface TourneyContestPhase extends PhaseTransitionShared {
 	type?: ContestType.Tourney;
 	subtype?: TourneyContestPhaseSubtype;
 	tourneyType?: TourneyContestScoringInfo;
 	maxGames?: number;
 	bonusPerGame?: number;
-	gacha?: boolean;
-	eliminationBracketSettings?: Record<number, EliminationBracketSettings>;
-	eliminationBracketTargetPlayers?: number;
 }
 
 export type ContestPhase<Id = any> = ContestPhaseShared & (LeagueContestPhase<Id> & TourneyContestPhase)
 
-export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<ContestPhase<Id>, "name"> {
+export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Omit<Omit<ContestPhase<Id>, "name">, "startTime">, "index"> {
 	_id: Id;
 	track?: boolean;
 	adminPlayerFetchRequested?: boolean;
@@ -245,6 +245,10 @@ export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Contest
 		_id: string;
 		nickname: string;
 	}[];
+
+	gacha?: {
+		groups: GachaGroup<Id>[];
+	}
 }
 
 export interface ContestTeam<Id = any> {
@@ -291,7 +295,7 @@ export interface Config<Id = any> {
 	passportToken?: string;
 }
 
-export interface ContestPhaseTransition<Id = string> {
+export interface ContestPhaseTransition<Id = string> extends PhaseTransitionShared {
 	name?: string;
 	_id: Id;
 	startTime: number;
@@ -303,6 +307,36 @@ export interface ContestPhaseTransition<Id = string> {
 		nil?: true;
 	};
 	scoringTypes?: TourneyContestScoringInfo;
+}
+
+export interface GachaCard<Id = any> {
+	_id: Id;
+	image?: string;
+	icon: string;
+}
+
+export interface GachaGroup<Id = any> {
+	_id: Id;
+	cards: GachaCard<Id>[];
+	onePer: number;
+	unique?: boolean;
+}
+
+export interface PhaseTransitionShared {
 	eliminationBracketSettings?: Record<number, EliminationBracketSettings>;
 	eliminationBracketTargetPlayers?: number;
+}
+
+export interface GachaPull<Id = any> {
+	_id: Id;
+	gameId: Id;
+	playerId?: Id;
+	gachaCardId?: Id;
+	gachaGroupId?: Id;
+}
+
+export interface PhaseInfo<Id = any> {
+	contest: Contest<Id>,
+	transitions: ContestPhaseTransition<Id>[],
+	phases: ContestPhase<Id>[]
 }

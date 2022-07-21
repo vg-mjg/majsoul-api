@@ -16,6 +16,7 @@
 	"author": "",
 	"license": "MIT",
 	"dependencies": {
+		"@types/seedrandom": "^3.0.2",
 		"cors": "^2.8.5",
 		"express": "^4.17.1",
 		"express-jwt": "^6.0.0",
@@ -27,6 +28,7 @@
 		"node-fetch": "^2.6.1",
 		"protobufjs": "^6.11.2",
 		"rxjs": "^7.5.5",
+		"seedrandom": "^3.0.5",
 		"syanten": "^1.5.0",
 		"user-agents": "^1.0.1001",
 		"uuid": "^3.3.3",
