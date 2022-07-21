@@ -1286,7 +1286,7 @@ export class RestApi {
 				body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
 
 				body(nameofContest('gacha')).not().isString().bail().isObject().optional({ nullable: true }),
-				body(`${nameofContest('gacha')}.${nameofGacha('groups')}`).not().isString().bail().isArray({min: 1}),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}`).not().isString().bail().isArray().optional(),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('onePer')}`).not().isString().bail().isInt({min: 1}),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('_id')}`).isMongoId().optional(),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('name')}`).isString(),
@@ -1307,7 +1307,7 @@ export class RestApi {
 						$set?: {},
 						$unset?: {},
 					} = {};
-					const data: Partial<store.Contest<string>> = matchedData(req, { includeOptionals: true });
+					const data: Partial<store.Contest<string>> = matchedData(req, { includeOptionals: false });
 
 					if (data.majsoulFriendlyId != null) {
 						try {
@@ -1343,6 +1343,7 @@ export class RestApi {
 						}
 
 						if (key === nameofContest("gacha")) {
+							console.log(data[key]);
 							update.$set ??= {};
 							update.$set[key] ??= {
 								groups: data.gacha.groups.map(group => {
@@ -1651,6 +1652,105 @@ export class RestApi {
 						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
 					}
 				)
+			)
+
+			.put('/contests/:id/gacha/:groupId',
+				param("id").isMongoId(),
+				param("groupId").isMongoId(),
+				body("icon").isString(),
+				withData<{
+					id: string,
+					groupId: string,
+					icon: string
+				}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+					const contest = await this.findContest(data.id, {
+						projection: {
+							gacha: true,
+						}
+					});
+
+					if (contest === null) {
+						res.status(404).send();
+						return;
+					}
+
+					if (!contest.gacha) {
+						res.status(400).send();
+					}
+
+					const groupId = ObjectId.createFromHexString(data.groupId);
+					const group = contest.gacha.groups.find(group => group._id.equals(groupId));
+
+					if (!group) {
+						res.status(400).send();
+					}
+
+					group.cards.push({
+						_id: new ObjectId(),
+						icon: data.icon
+					});
+
+					const result = await this.mongoStore.contestCollection.updateOne(
+						{
+							_id: contest._id,
+						},
+						{ $set: { gacha: contest.gacha } }
+					);
+
+					res.send();
+				})
+			)
+
+			.patch('/contests/:id/gacha/:gachaId',
+				param("id").isMongoId(),
+				param("gachaId").isMongoId(),
+				body("icon").isString().optional(),
+				body("image").isString().optional(),
+				withData<{
+					id: string,
+					gachaId: string,
+					icon?: string,
+					image?: string,
+				}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+					const contest = await this.findContest(data.id, {
+						projection: {
+							gacha: true,
+						}
+					});
+
+					if (contest === null) {
+						res.status(404).send();
+						return;
+					}
+
+					if (!contest.gacha) {
+						res.status(400).send();
+					}
+
+					const cardId = ObjectId.createFromHexString(data.gachaId);
+					const card = contest.gacha.groups.map(group => group.cards).flat().find(card => card._id.equals(cardId));
+
+					if (!card) {
+						res.status(404).send();
+					}
+
+					if (data.icon) {
+						card.icon = data.icon;
+					}
+
+					if (data.image) {
+						card.image = data.image;
+					}
+
+					const result = await this.mongoStore.contestCollection.updateOne(
+						{
+							_id: contest._id,
+						},
+						{ $set: { gacha: contest.gacha } }
+					);
+
+					res.send();
+				})
 			)
 
 			.patch('/corrections/:id',
