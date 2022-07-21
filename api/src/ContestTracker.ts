@@ -1,10 +1,11 @@
 import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as store from "./store";
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap, mergeMap } from 'rxjs/operators';
+import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap, mergeMap, scan, debounce, debounceTime } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { nameofContest } from "./connector";
 import { buildContestPhases } from './store';
+import { GameRecord } from './majsoul';
 
 export class ContestTracker {
 	private contestDeleted$: Observable<any>;
@@ -234,6 +235,14 @@ export class ContestTracker {
 			map(buildContestPhases),
 			filter(phases => !!phases),
 			takeUntil(this.ContestDeleted$)
+		);
+	}
+
+	public get GachaDeleted$(): Observable<never> {
+		return this.mongoStore.GachaChanges.pipe(
+			filter(changeEvent => changeEvent.operationType === "delete"),
+			debounceTime(5000),
+			map(() => undefined as never)
 		);
 	}
 }

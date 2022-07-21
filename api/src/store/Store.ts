@@ -20,10 +20,12 @@ export class Store {
 	private readonly contestChangesSubject = new Subject<ChangeEvent<Contest<ObjectId>>>();
 	private readonly configChangesSubject = new Subject<ChangeEvent<Config<ObjectId>>>();
 	private readonly gameChangesSubject = new Subject<ChangeEvent<GameResult<ObjectId>>>();
+	private readonly gachaChangesSubject = new Subject<ChangeEvent<GachaPull<ObjectId>>>();
 	private readonly playerChangesSubject = new Subject<ChangeEvent<Player<ObjectId>>>();
 	private contestStream: ChangeStream<Contest<ObjectId>>;
 	private configStream: ChangeStream<Config<ObjectId>>;
 	private gameStream: ChangeStream<GameResult<ObjectId>>;
+	private gachaStream: ChangeStream<GachaPull<ObjectId>>;
 	private playerStream: ChangeStream<GameResult<ObjectId>>;
 
 	public get ContestChanges(): Observable<ChangeEvent<Contest<ObjectId>>> {
@@ -36,6 +38,10 @@ export class Store {
 
 	public get GameChanges(): Observable<ChangeEvent<GameResult<ObjectId>>> {
 		return this.gameChangesSubject;
+	}
+
+	public get GachaChanges(): Observable<ChangeEvent<GachaPull<ObjectId>>> {
+		return this.gachaChangesSubject;
 	}
 
 	public get PlayerChanges(): Observable<ChangeEvent<Player<ObjectId>>> {
@@ -64,6 +70,7 @@ export class Store {
 		this.contestStream = this.contestCollection.watch().on("change", change => this.contestChangesSubject.next(change));
 		this.configStream = this.configCollection.watch().on("change", change => this.configChangesSubject.next(change));
 		this.gameStream = this.gamesCollection.watch().on("change", change => this.gameChangesSubject.next(change));
+		this.gachaStream = this.gachaCollection.watch().on("change", change => this.gachaChangesSubject.next(change));
 		this.playerStream = this.playersCollection.watch().on("change", change => this.playerChangesSubject.next(change));
 
 		if ((await this.configCollection.countDocuments()) < 1) {

@@ -6,7 +6,7 @@ import * as store from "./store";
 import { Credentials } from 'google-auth-library';
 import { getSecrets } from "./secrets";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap, mergeWith, combineLatestWith } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
@@ -517,10 +517,14 @@ async function main() {
 		);
 
 		tracker.PhaseInfo$.pipe(
-			tap(console.log),
-			filter(({contest}) => contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0),
-			tap(console.log),
-			map(({phases, contest}) => {
+			filter(({contest}) => (console.log(contest), contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0)),
+			combineLatestWith(
+				merge (
+					from([null as never]),
+					tracker.GachaDeleted$
+				)
+			),
+			map(([{phases, contest}]) => {
 				phases.sort((a, b) => b.startTime - a.startTime);
 				return tracker.RecordedGames$.pipe(
 					map(game => {
