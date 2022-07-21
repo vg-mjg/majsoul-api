@@ -438,7 +438,35 @@ export class RestApi {
 				}
 
 				res.send(contest);
-			}));
+			})
+		);
+
+		this.app.get('/contests/:id/gacha/:gachaId',
+			param("id").isMongoId(),
+			param("gachaId").isMongoId(),
+			withData<{ id: string, gachaId: string, teams: string }, any, store.Contest<ObjectId>>(async (data, req, res) => {
+				const contest = await this.findContest(data.id, {
+					projection: {
+						gacha: true,
+					}
+				});
+
+				if (contest === null) {
+					res.status(404).send();
+					return;
+				}
+
+				const cardId = ObjectId.createFromHexString(data.gachaId);
+
+				const card = contest.gacha.groups.map(group => group.cards).flat().find(card => card._id.equals(cardId));
+				if (!card) {
+					res.status(404).send();
+					return;
+				}
+
+				res.send(card);
+			})
+		);
 
 		this.app.get<any, store.GameResult<ObjectId>>('/games/:id',
 			param("id").isMongoId(),
@@ -3026,7 +3054,7 @@ export class RestApi {
 
 			let group = [] as GachaPull<ObjectId>[];
 			while (true) {
-				const pull = rollsPerPlayer[player.playerId].shift();
+				const pull = rollsPerPlayer[player.playerId].pop();
 				if (group[0]?.gachaGroupId && !group[0].gachaGroupId.equals(pull?.gachaGroupId)) {
 					player.gachaPulls.push({
 						name: groupMap[group[0]?.gachaGroupId.toHexString()].name,

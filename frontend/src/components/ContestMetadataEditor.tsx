@@ -453,7 +453,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 							spreadsheetId,
 							track,
 							adminPlayerFetchRequested
-						}).then(contest => dispatchContestPatchedAction(dispatch, contest));
+						}).then(contest => dispatchContestPatchedAction(dispatch, contest as any));
 					}}
 				>Save</Button>
 			</Col>

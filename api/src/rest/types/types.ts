@@ -1,6 +1,6 @@
 import { Store } from "../..";
 import { Han, PlayerZone } from "../../majsoul";
-import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestScoringType, TourneyContestPhaseSubtype, TourneyScoringTypeDetails } from "../../store/types/types";
+import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestScoringType, TourneyContestPhaseSubtype, TourneyScoringTypeDetails, ContestType } from "../../store/types/types";
 
 export * from "./stats";
 
@@ -104,7 +104,8 @@ export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
 
 export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>;
 
-export type Contest<Id = any> = Omit<Store.Contest<Id>, "teams"> & {
+export type Contest<Id = any> = Omit<Omit<Store.Contest<Id>, "teams">, "type"> & {
+	type?: ContestType;
 	phases: PhaseMetadata[];
 	teams?: (Omit<Store.ContestTeam<Id>, "players"> & {
 		players: PlayerInformation[]

@@ -11,6 +11,11 @@ export function fetchContestImages(contestId: string): Promise<Store.Contest<str
 		.then(response => response.json());
 }
 
+export function fetchContestGachaCard(contestId: string, gachaId: string): Promise<Store.GachaCard<string>> {
+	return fetch(buildApiUrl(`contests/${contestId}/images/${gachaId}`).toString())
+		.then(response => response.json());
+}
+
 export function fetchContests(): Promise<Store.Contest<string>[]> {
 	return fetch(buildApiUrl(`contests`).toString())
 		.then(response => response.json())
