@@ -9,7 +9,7 @@ import { fetchContestPlayerGames } from "src/api/Games";
 import { fetchContestGachaCard } from "src/api/Contests";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId } from "majsoul-api/dist/rest";
+import { GachaData, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId } from "majsoul-api/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
 import { PlayerZone } from "majsoul-api/dist/majsoul/types";
@@ -19,7 +19,7 @@ import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
-import { ContestTeam, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
+import { ContestTeam, GachaCard, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
 import { PaipuLink } from "./PaipuLink";
 import { css } from "astroturf";
 
@@ -106,6 +106,19 @@ const styles = css`
 		width: 24px;
 		height: 24px;
 	}
+
+	.gachaImageContainer {
+		display: flex;
+		flex: 1;
+		justify-content: center;
+	}
+
+	.gachaImage {
+		border-radius: 32px;
+		width: 512px;
+		height: 512px;
+		margin: 32px;
+	}
 `;
 
 const GachaIcon: React.FC<{cardId: string}> = ({cardId}) => {
@@ -127,6 +140,29 @@ const GachaGroup: React.FC<{group: Rest.GachaData}> = ({group}) => {
 		{group.cards.slice(0, 10).filter(card => !!card).map((card, index) => <GachaIcon key={`${card}-${index}`} cardId={card} />)}
 		{group.cards.length > 10 && <div className={styles.gachaNumber}>x{group.cards.length}</div>}
 	</div>;
+}
+
+const GachaImage: React.FC<{gachaData: GachaData[]}> = ({gachaData}) => {
+	const { contestId } = useContext(ContestContext);
+	const contest = useSelector((state: IState) => state.contestsById[contestId]);
+	const cardMap = contest.gacha.groups.reduce(
+		(total, next) => (
+			next.cards.reduce((total, next) => (total[next._id] = next, total), total), total
+		),
+		{} as Record<string, GachaCard>
+	);
+
+	const card = gachaData.map(data => data.cards).flat().find(card => cardMap[card].image);
+
+	if (!card) {
+		return null;
+	}
+
+	return <Row>
+		<div className={styles.gachaImageContainer}>
+			<img src={cardMap[card].image} className={styles.gachaImage} />
+		</div>
+	</Row>
 }
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
@@ -181,9 +217,9 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 						</Col>
 						{
 							selectedScoreType.type === TourneyContestScoringType.Gacha &&
-							<Col md="auto">
-								<div className={styles.gacha}> {props.scoreRanking[selectedScoreType.id].gachaData.map(group => <GachaGroup key={group.name} group={group}/>)}</div>
-							</Col>
+								<Col md="auto">
+									<div className={styles.gacha}> {props.scoreRanking[selectedScoreType.id].gachaData.map(group => <GachaGroup key={group.name} group={group}/>)}</div>
+								</Col>
 						}
 					</Row>
 				</Container>
@@ -197,6 +233,10 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
 				{ viewDetails && <Container>
+					{
+						selectedScoreType.type === TourneyContestScoringType.Gacha &&
+							<GachaImage gachaData={props.scoreRanking[selectedScoreType.id].gachaData} />
+					}
 					<Row>
 						<Stats
 							request={{player: props.player._id}}
