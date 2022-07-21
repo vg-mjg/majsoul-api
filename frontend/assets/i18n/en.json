@@ -20,7 +20,6 @@
 			}
 		}
 	},
-
 	"tourney": {
 		"allPlayers": "All Players",
 		"scoreType": {
@@ -30,10 +29,11 @@
 				"best": "Best Consecutive",
 				"worst": "Worst Consecutive"
 			},
-			"kans": "Kans"
+			"kans": "Kans",
+			"gacha": "Gacha",
+			"eliminationBrackets": "Elimination Brackets"
 		}
 	},
-
 	"stats": {
 		"terminology": {
 			"riichi": "Riichi",
@@ -113,7 +113,6 @@
 			"more": "View Schedule"
 		}
 	},
-
 	"session": {
 		"matches": "Matches",
 		"games": "Games",
