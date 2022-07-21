@@ -6,7 +6,7 @@ import * as store from "./store";
 import { Credentials } from 'google-auth-library';
 import { getSecrets } from "./secrets";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap, mergeWith, combineLatestWith } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap, mergeMap, combineLatestWith, scan, debounce, debounceTime } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
@@ -561,74 +561,16 @@ async function main() {
 					}
 				}
 
-				const possibleRollsPerPlayer = game.finalScore.filter(score => score.uma > 1000).map((score, index) => [
+				contest.gacha.groups.sort((a, b) => a.priority - b.priority);
+
+				const possibleRollsPerPlayer = game.finalScore.map((score, index) => [
 					...rollGachaForScore(rand, contest, game, index, score.uma)
 				].filter(roll => roll.length));
-				const uniqueGroups = new Set(possibleRollsPerPlayer.flat().flat().filter(roll => roll.group.unique).map(roll => roll.group._id));
-				return from([{game, phase, contest}]).pipe(
-					zipWith(defer(() =>
-						uniqueGroups.size
-							? from(
-								mongoStore.gachaCollection.find({gachaGroupId: {$in: [...uniqueGroups]}}).toArray()
-							).pipe(
-								map(pulls =>
-									pulls.length
-										? defer(() =>
-											from(mongoStore.gamesCollection.find(
-												{
-													gameId: { $in: [...new Set(pulls.map(pull => pull.gameId))] },
-													contestId: contest._id,
-												},
-												{
-													projection: {
-														_id: true,
-													}
-												}
-											).toArray()).pipe(
-												map(gamesInContest => from(
-													[pulls.filter(pull => gamesInContest.find(game => game._id.equals(pull.gameId)))]
-												)),
-												mergeAll(),
-											)
-										)
-										: from([[]] as GachaPull<ObjectId>[][])
-								),
-								mergeAll(),
-							)
-							: from([[]] as GachaPull<ObjectId>[][])
-					)),
-					map(([data, existingGacha]) => {
-						const gachaGroupMap = existingGacha.reduce(addRollToMap, {} as RollMap);
 
-						const pulls = [
-							{
-								gameId: data.game._id
-							}
-						] as GachaPull[];
-
-						for (const player of possibleRollsPerPlayer) {
-							for (const rollOption of player) {
-								const correctRoll = rollOption.find(roll =>
-									!roll.group.unique
-										|| (
-											gachaGroupMap[roll.group._id.toHexString()]?.total < roll.group.cards.length
-												&& gachaGroupMap[roll.group._id.toHexString()].players[roll.pull.playerId.toHexString()]?.length === 0
-										)
-
-								);
-								pulls.push(correctRoll.pull);
-								addRollToMap(gachaGroupMap, correctRoll.pull);
-							}
-						}
-
-						return pulls;
-					})
-				)
+				return () => validatePossibleRolls(mongoStore, game, contest, possibleRollsPerPlayer, rand);
 			}),
-			mergeAll(),
-		).subscribe((gachaPulls) => {
-			mongoStore.gachaCollection.insertMany(gachaPulls);
-		});
+			scan((total, next) => total.then(next),  Promise.resolve())
+		).subscribe(() => {});
 
 		spreadsheet$.subscribe(async ([spreadsheetId]) => {
 			const spreadsheet = new Spreadsheet(spreadsheetId, googleAuth);
@@ -713,7 +655,7 @@ function createContestIds$(mongoStore: store.Store): Observable<ObjectId> {
 main().catch(e => console.log(e));
 
 function * rollGachaForScore(rand: seedrandom.PRNG, contest: Store.Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number){
-	while (uma > 1000) {
+	while (uma >= 1000) {
 		const roll = rand();
 		yield contest.gacha.groups.filter(group => group.onePer * roll < 1).map(group => (
 			{
@@ -721,6 +663,7 @@ function * rollGachaForScore(rand: seedrandom.PRNG, contest: Store.Contest<Objec
 				pull: {
 					gameId: game._id,
 					playerId: game.players[index]._id,
+					gachaGroupId: group._id,
 					gachaCardId: group.cards[(rand() * group.cards.length) | 0]._id
 				} as GachaPull<ObjectId>
 			}));
@@ -732,12 +675,12 @@ type RollMap = Record<string, {total: number, players: Record<string, GachaPull<
 
 function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 	const groupId = next.gachaGroupId?.toHexString();
-	if (groupId === null) {
+	if (groupId == null) {
 		return total;
 	}
 
 	const playerId = next.playerId?.toHexString();
-	if (playerId === null) {
+	if (playerId == null) {
 		return total;
 	}
 
@@ -749,4 +692,73 @@ function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 	total[groupId].players[playerId] ??= [];
 	total[groupId].players[playerId].push(next);
 	return total;
+}
+
+async function validatePossibleRolls(
+	mongoStore: store.Store,
+	game: store.GameResult<ObjectId>,
+	contest: store.Contest<ObjectId>,
+	possibleRollsPerPlayer: { group: store.GachaGroup<ObjectId>; pull: store.GachaPull<ObjectId>; }[][][],
+	rand: seedrandom.PRNG,
+): Promise<any> {
+	const uniqueGroups = new Set(possibleRollsPerPlayer.flat().flat().filter(roll => roll.group.unique).map(roll => roll.group._id));
+
+	const matchingGacha = uniqueGroups.size
+		? await mongoStore.gachaCollection.find({gachaGroupId: {$in: [...uniqueGroups]}}).toArray()
+		: [];
+
+	const gamesInContest = matchingGacha.length
+		? await mongoStore.gamesCollection.find(
+			{
+				_id: { $in: [...new Set(matchingGacha.map(pull => pull.gameId))] },
+				contestId: contest._id,
+			},
+			{
+				projection: {
+					_id: true,
+					contestId: true,
+				}
+			}
+		).toArray()
+		: [];
+
+	const existingGacha = matchingGacha.filter(pull => gamesInContest.find(game => game._id.equals(pull.gameId)))
+
+	const gachaGroupMap = existingGacha.reduce(addRollToMap, {} as RollMap);
+
+	const pulls = [
+		{
+			gameId: game._id
+		}
+	] as GachaPull[];
+
+	for (const player of possibleRollsPerPlayer) {
+		for (const rollOption of player) {
+			const correctRoll = rollOption.find(roll =>
+				!roll.group.unique
+					|| (
+						(gachaGroupMap[roll.group._id.toHexString()]?.total ?? 0) < roll.group.cards.length
+							&& (gachaGroupMap[roll.group._id.toHexString()]?.players[roll.pull.playerId.toHexString()]?.length ?? 0) === 0
+					)
+
+			);
+
+			if (!correctRoll) {
+				continue;
+			}
+
+			if (correctRoll.group.unique) {
+				const selectedGroupMembers = existingGacha.filter(gacha => gacha.gachaGroupId.equals(correctRoll.group._id));
+				const uniqueOptions = correctRoll.group.cards.filter(card => !selectedGroupMembers.find(existing => existing.gachaCardId.equals(card._id)));
+				correctRoll.pull.gachaCardId = uniqueOptions[Math.floor(rand() * uniqueOptions.length)]._id;
+			}
+
+			pulls.push(correctRoll.pull);
+			existingGacha.push(correctRoll.pull);
+			addRollToMap(gachaGroupMap, correctRoll.pull);
+		}
+	}
+
+	console.log("write pulls", pulls[0]?.gameId);
+	await mongoStore.gachaCollection.insertMany(pulls);
 }

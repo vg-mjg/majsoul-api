@@ -163,7 +163,7 @@ export class ContestTracker {
 
 	public get RecordedGames$() {
 		return merge(
-			defer(() => from(this.mongoStore.gamesCollection.find({ contestId: this.id }).toArray()))
+			defer(() => from(this.mongoStore.gamesCollection.find({ contestId: this.id }, {sort: { start_time: 1 }}).toArray()))
 				.pipe(mergeAll()),
 			this.GamesCreated$.pipe(
 				map(event => event.fullDocument)
@@ -217,7 +217,8 @@ export class ContestTracker {
 			subtype: true,
 			normaliseScores: true,
 			eliminationBracketSettings: true,
-			eliminationBracketTargetPlayers: true
+			eliminationBracketTargetPlayers: true,
+			gacha: true,
 		};
 
 		return merge(
@@ -227,11 +228,7 @@ export class ContestTracker {
 					|| !!Object.keys(event.updateDescription.updatedFields).find(field => projection[field])),
 			),
 		).pipe(
-			mergeMap(() => defer(() => from(this.mongoStore.contestCollection.findOne({ _id: this.id }, { projection: {
-				...projection,
-				gacha: true,
-				normaliseScores: true,
-			} })))),
+			mergeMap(() => defer(() => from(this.mongoStore.contestCollection.findOne({ _id: this.id }, { projection })))),
 			map(buildContestPhases),
 			filter(phases => !!phases),
 			takeUntil(this.ContestDeleted$)

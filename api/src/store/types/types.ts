@@ -320,6 +320,8 @@ export interface GachaGroup<Id = any> {
 	cards: GachaCard<Id>[];
 	onePer: number;
 	unique?: boolean;
+	priority: number;
+	name: string;
 }
 
 export interface PhaseTransitionShared {

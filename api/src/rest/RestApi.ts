@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as cors from "cors";
 import * as store from '../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from './types/types';
+import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, Contest, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails, GachaData } from './types/types';
 import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
 import * as fs from "fs";
 import * as path from "path";
@@ -23,7 +23,7 @@ import { logError } from './utils.ts/logError';
 import { withData } from './utils.ts/withData';
 import { minimumVersion } from './stats/minimumVersion';
 import { escapeRegexp } from './utils.ts/escapeRegexp';
-import { AgariInfo, buildContestPhases, ContestPhaseTransition, ContestType, GachaPull, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../store';
+import { AgariInfo, buildContestPhases, ContestPhaseTransition, ContestType, GachaGroup, GachaPull, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../store';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -310,6 +310,7 @@ interface PlayerContestTypeResults {
 	score: number;
 	totalMatches: number;
 	highlightedGameIds?: string[];
+	gachaPulls?: GachaData[];
 }
 
 export class RestApi {
@@ -1260,6 +1261,8 @@ export class RestApi {
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}`).not().isString().bail().isArray({min: 1}),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('onePer')}`).not().isString().bail().isInt({min: 1}),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('_id')}`).isMongoId().optional(),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('name')}`).isString(),
+				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('priority')}`).not().isString().bail().isInt(),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('unique')}`).not().isString().bail().isBoolean().optional(),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}`).not().isString().bail().isArray({min: 1}),
 				body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('_id')}`).isMongoId().optional(),
@@ -1317,6 +1320,8 @@ export class RestApi {
 								groups: data.gacha.groups.map(group => {
 									const groupDto = {
 										_id: group._id == null ? new ObjectId() : ObjectId.createFromHexString(group._id),
+										name: group.name,
+										priority: group.priority,
 										onePer: group.onePer,
 										cards: group.cards.map(card => {
 											const cardDto = {
@@ -2366,6 +2371,7 @@ export class RestApi {
 				normaliseScores: true,
 				eliminationBracketSettings: true,
 				eliminationBracketTargetPlayers: true,
+				gacha: true,
 			}
 		});
 
@@ -2653,6 +2659,10 @@ export class RestApi {
 				} case TourneyContestScoringType.EliminationBrackets: {
 					eliminationLevels = await this.getEliminationLevels(contest, storePhase, games);
 					resultsByType[type.id] = this.getEliminationBracketResults(eliminationLevels);
+					break;
+				} case TourneyContestScoringType.Gacha: {
+					resultsByType[type.id] = await this.getGachaResults(games, maxGames, contest);
+					break;
 				}
 			}
 		}
@@ -2679,6 +2689,9 @@ export class RestApi {
 						highlightedGameIds: result.highlightedGameIds,
 						rank: result.rank,
 					};
+					if (result.gachaPulls) {
+						total[type.id].gachaData = result.gachaPulls;
+					}
 					return total;
 				}, {} as PlayerScoreTypeRanking['details'])
 			}
@@ -2971,6 +2984,67 @@ export class RestApi {
 		}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
+	private async getGachaResults(games: GameResult[], maxGames: number, contest: store.Contest): Promise<Record<string, PlayerContestTypeResults>> {
+		const results = this.getCumulativeResults(games, maxGames);
+		const rolls = await this.mongoStore.gachaCollection.find({
+			gameId: { $in: games.map(game => game._id) },
+			playerId: { $exists: true },
+		}).toArray();
+
+		const groupMap = contest.gacha.groups.reduce((total, next) => (total[next._id.toHexString()] = next, total), {} as Record<string, GachaGroup>);
+
+		const rollsPerPlayer = rolls.reduce((total, next) => {
+			const playerId = next.playerId.toHexString();
+			total[playerId] ??= [];
+			total[playerId].push(next);
+			return total
+		}, {} as Record<string, GachaPull<ObjectId>[]>);
+
+		const players = Object.values(results);
+
+		for (const playerId in rollsPerPlayer) {
+			bilateralSort(
+				rollsPerPlayer[playerId],
+				(roll) => groupMap[roll.gachaGroupId.toHexString()].priority
+			);
+		}
+
+		for (const group of contest.gacha.groups.sort((a, b) => b.priority - a.priority)) {
+			bilateralSort(
+				players,
+				(player) => rollsPerPlayer[player.playerId]?.filter(roll => roll.gachaGroupId.equals(group._id))?.length ?? 0
+			)
+		}
+
+		players.forEach((player, index) => {
+			player.rank = index + 1;
+			player.gachaPulls = [];
+
+			if (!rollsPerPlayer[player.playerId]) {
+				return;
+			}
+
+			let group = [] as GachaPull<ObjectId>[];
+			while (true) {
+				const pull = rollsPerPlayer[player.playerId].shift();
+				if (group[0]?.gachaGroupId && !group[0].gachaGroupId.equals(pull?.gachaGroupId)) {
+					player.gachaPulls.push({
+						name: groupMap[group[0]?.gachaGroupId.toHexString()].name,
+						cards: group.map(card => card.gachaCardId.toHexString()),
+					})
+					group = [];
+				}
+
+				if (!pull) {
+					break;
+				}
+
+				group.push(pull);
+			}
+		});
+		return results;
+	}
+
 	private async getEliminationLevels(contest: store.Contest<ObjectId>, phase: Store.ContestPhase<ObjectId>, games: GameResult[]): Promise<EliminationLevel[]> {
 		const eliminationLevels: EliminationLevel[] = [];
 		const targetPlayers = phase.eliminationBracketTargetPlayers ?? 32;
@@ -3195,4 +3269,12 @@ function eliminationBracketSettingsFilter() {
 		body(`${nameofContest('eliminationBracketSettings')}.*.${nameofEliminationBracketSettings('gamesPerMatch')}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
 		body(`${nameofContest('eliminationBracketSettings')}.*.${nameofEliminationBracketSettings('winnersPerMatch')}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
 	];
+}
+
+function bilateralSort<T>(array: T[], sortFunction: (item: T) => number, options?: {ascending: boolean}): T[] {
+	if (options?.ascending) {
+		return array.sort((a, b) => sortFunction(a) - sortFunction(b));
+	}
+
+	return array.sort((a, b) => sortFunction(b) - sortFunction(a));
 }

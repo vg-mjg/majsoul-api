@@ -48,12 +48,18 @@ export enum PlayerRankingType {
 
 export type TourneyContestScoringDetailsWithId = TourneyScoringTypeDetails & {id: string};
 
+export interface GachaData {
+	name: string;
+	cards: string[];
+}
+
 export interface PlayerScoreTypeRanking {
 	type: PlayerRankingType.Score;
 	details: Record<string, {
 		rank: number;
 		score: number;
 		highlightedGameIds?: string[];
+		gachaData?: GachaData[];
 	}>;
 }
 
