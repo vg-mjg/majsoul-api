@@ -1701,6 +1701,51 @@ export class RestApi {
 				})
 			)
 
+			.patch('/contests/:id/gachaGroup/:groupId',
+				param("id").isMongoId(),
+				param("groupId").isMongoId(),
+				body("onePer").not().isString().bail().isInt({min: 1}).optional(),
+				withData<{
+					id: string,
+					groupId: string,
+					onePer: number,
+				}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+					const contest = await this.findContest(data.id, {
+						projection: {
+							gacha: true,
+						}
+					});
+
+					if (contest === null) {
+						res.status(404).send();
+						return;
+					}
+
+					if (!contest.gacha) {
+						res.status(400).send();
+					}
+
+					const groupId = ObjectId.createFromHexString(data.groupId);
+					const group = contest.gacha.groups.find(group => group._id.equals(groupId));
+
+					if (!group) {
+						res.status(400).send();
+					}
+
+					if (data.onePer) {
+						group.onePer = data.onePer;
+					}
+					const result = await this.mongoStore.contestCollection.updateOne(
+						{
+							_id: contest._id,
+						},
+						{ $set: { gacha: contest.gacha } }
+					);
+
+					res.send();
+				})
+			)
+
 			.patch('/contests/:id/gacha/:gachaId',
 				param("id").isMongoId(),
 				param("gachaId").isMongoId(),

@@ -6,7 +6,7 @@ import * as store from "./store";
 import { Credentials } from 'google-auth-library';
 import { getSecrets } from "./secrets";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap, mergeMap, combineLatestWith, scan, debounce, debounceTime } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap, mergeMap, combineLatestWith, scan, debounce, debounceTime, switchAll } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker";
@@ -547,7 +547,7 @@ async function main() {
 					withLatestFrom(from([contest])),
 				)
 			 }),
-			mergeAll()
+			switchAll()
 		).pipe(
 			map(([{game, phase}, contest]) => {
 				const seed = [game._id.toHexString(), game.end_time, game.finalScore.map(score => score.score).join("")].join(":");

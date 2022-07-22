@@ -1,7 +1,7 @@
 import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
 import * as store from "./store";
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap, mergeMap, scan, debounce, debounceTime } from 'rxjs/operators';
+import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap, mergeMap, scan, debounce, debounceTime, throttleTime } from 'rxjs/operators';
 import { Majsoul, Store } from ".";
 import { nameofContest } from "./connector";
 import { buildContestPhases } from './store';
@@ -238,7 +238,7 @@ export class ContestTracker {
 	public get GachaDeleted$(): Observable<never> {
 		return this.mongoStore.GachaChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "delete"),
-			debounceTime(5000),
+			throttleTime(5000),
 			map(() => undefined as never)
 		);
 	}
