@@ -30,6 +30,7 @@ import { useTranslation } from "react-i18next";
 import { PhaseStandings } from "./PhaseStandings";
 import { ContestContext } from "./Contest/ContestProvider";
 import clsx from "clsx";
+import { css } from "astroturf";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -102,6 +103,17 @@ export function ContestSummary(props: {
 	</ContestContext.Provider>
 }
 
+const styles = css`
+	.gachaPreview {
+		background-color: black;
+		flex-wrap: wrap;
+		display: flex;
+		> img {
+			width: 48px;
+		}
+	}
+`;
+
 const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({selectedPhase, hasPhases, phaseRequestState}) => {
 	const token = useSelector((state: IState) => state.user?.token);
 
@@ -133,6 +145,11 @@ const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({selectedPhase
 	}
 
 	return <>
+		{token && contest.gacha && <div className={styles.gachaPreview}>
+			{contest.gacha.groups.map(group => group.cards).flat()
+				.filter(card => card.image)
+				.map((card, index) => <img key={card._id} title={`${index}: ${card._id}`} src={card.image}/>)}
+		</div>}
 		<Row className={clsx(hasPhases || "mt-3")}>
 			{contest.majsoulFriendlyId === 236728
 				? <BracketPlayerStandings contestId={contestId} />
