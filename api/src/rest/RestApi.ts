@@ -8,8 +8,9 @@ import * as expressJwt from 'express-jwt';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { getSecrets } from '../secrets';
-import { ContestRoute } from './routes/contest/ContestRoute';
+import { contestRoute } from './routes/contest/ContestRoute';
 import { RouteState } from './routes/RouteState';
+import { registerAdminMethods, registerPublicMethods } from './routes/Route';
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -73,20 +74,17 @@ export class RestApi {
 			return;
 		}
 
-
-
-		const routes = new ContestRoute();
-		routes.setState(new RouteState(
+		const state = new RouteState(
 			this.mongoStore,
 			oauth2Client,
 			privateKey,
-		));
+		);
 
-		routes.registerPublicMethods(app);
+		registerPublicMethods(contestRoute, state, app);
 
-
-
-		routes.registerAdminMethods(
+		registerAdminMethods(
+			contestRoute,
+			state,
 			app.use(
 				expressJwt({
 					secret: publicKey,
@@ -107,4 +105,3 @@ export class RestApi {
 		);
 	}
 }
-

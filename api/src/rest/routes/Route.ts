@@ -1,31 +1,53 @@
 import * as express from 'express';
 
-export abstract class Route<State> implements Route<State> {
-	protected state: State;
-	protected readonly childRoutes?: Route<State>[];
+export type RouteMethodRegister<State> = (app: express.Express, state: State) => express.Express;
 
-	constructor( childRoutes?: Route<State>[]){
-		this.childRoutes = childRoutes ?? [];
-	}
+export interface Route<State> {
+	childRoutes?: Route<State>[];
+	publicMethods?: RouteMethodRegister<State>[];
+	adminMethods?: RouteMethodRegister<State>[];
+}
 
-	public setState(state: State): void {
-		this.state = state;
-		for(const child of this.childRoutes) {
-			child.setState(state);
-		}
-	}
-
-	public registerPublicMethods(app: express.Express): express.Express {
-		for(const child of this.childRoutes) {
-			app = child.registerPublicMethods(app);
-		}
+function registerMethods<State>(
+	route: Route<State>,
+	state: State,
+	app: express.Express,
+	methodAccessCallback: (route: Route<State>) => RouteMethodRegister<State>[]
+): express.Express {
+	if (!route) {
 		return app;
 	}
 
-	public registerAdminMethods(app: express.Express): express.Express {
-		for(const child of this.childRoutes) {
-			app = child.registerPublicMethods(app);
-		}
-		return app;
+	const methods = methodAccessCallback(route) ?? [];
+
+	for (const method of methods) {
+		app = method(app, state);
 	}
+
+	const childRoutes = route.childRoutes ?? [];
+
+	for (const childRoute of childRoutes) {
+		app = registerMethods(childRoute, state, app, methodAccessCallback);
+	}
+
+	return app;
+}
+
+const publicMethodsAccessor = <State>(route: Route<State>) => route.publicMethods;
+const adminMethodsAccessor = <State>(route: Route<State>) => route.adminMethods;
+
+export function registerPublicMethods<State>(
+	route: Route<State>,
+	state: State,
+	app: express.Express,
+): express.Express {
+	return registerMethods(route, state, app, publicMethodsAccessor);
+}
+
+export function registerAdminMethods<State>(
+	route: Route<State>,
+	state: State,
+	app: express.Express,
+): express.Express {
+	return registerMethods(route, state, app, adminMethodsAccessor);
 }
