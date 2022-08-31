@@ -10,7 +10,7 @@ import { Passport } from "../types/types";
 
 export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
-		return (await fetch(path)).json();
+		return (await fetch(path)).json() as Promise<T>;
 	}
 
 	private readonly protobufRoot: Root;

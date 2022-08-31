@@ -1,4 +1,4 @@
-import { ChangeEvent, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
+import { ChangeStreamDocument, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
 import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection, GachaPull } from "./types/types";
 import { Observable, Subject } from "rxjs";
 
@@ -17,34 +17,34 @@ export class Store {
 	public userCollection: Collection<User<ObjectId>>;
 	public gachaCollection: Collection<GachaPull<ObjectId>>;
 
-	private readonly contestChangesSubject = new Subject<ChangeEvent<Contest<ObjectId>>>();
-	private readonly configChangesSubject = new Subject<ChangeEvent<Config<ObjectId>>>();
-	private readonly gameChangesSubject = new Subject<ChangeEvent<GameResult<ObjectId>>>();
-	private readonly gachaChangesSubject = new Subject<ChangeEvent<GachaPull<ObjectId>>>();
-	private readonly playerChangesSubject = new Subject<ChangeEvent<Player<ObjectId>>>();
+	private readonly contestChangesSubject = new Subject<ChangeStreamDocument<Contest<ObjectId>>>();
+	private readonly configChangesSubject = new Subject<ChangeStreamDocument<Config<ObjectId>>>();
+	private readonly gameChangesSubject = new Subject<ChangeStreamDocument<GameResult<ObjectId>>>();
+	private readonly gachaChangesSubject = new Subject<ChangeStreamDocument<GachaPull<ObjectId>>>();
+	private readonly playerChangesSubject = new Subject<ChangeStreamDocument<Player<ObjectId>>>();
 	private contestStream: ChangeStream<Contest<ObjectId>>;
 	private configStream: ChangeStream<Config<ObjectId>>;
 	private gameStream: ChangeStream<GameResult<ObjectId>>;
 	private gachaStream: ChangeStream<GachaPull<ObjectId>>;
-	private playerStream: ChangeStream<GameResult<ObjectId>>;
+	private playerStream: ChangeStream<Player<ObjectId>>;
 
-	public get ContestChanges(): Observable<ChangeEvent<Contest<ObjectId>>> {
+	public get ContestChanges(): Observable<ChangeStreamDocument<Contest<ObjectId>>> {
 		return this.contestChangesSubject;
 	}
 
-	public get ConfigChanges(): Observable<ChangeEvent<Config<ObjectId>>> {
+	public get ConfigChanges(): Observable<ChangeStreamDocument<Config<ObjectId>>> {
 		return this.configChangesSubject;
 	}
 
-	public get GameChanges(): Observable<ChangeEvent<GameResult<ObjectId>>> {
+	public get GameChanges(): Observable<ChangeStreamDocument<GameResult<ObjectId>>> {
 		return this.gameChangesSubject;
 	}
 
-	public get GachaChanges(): Observable<ChangeEvent<GachaPull<ObjectId>>> {
+	public get GachaChanges(): Observable<ChangeStreamDocument<GachaPull<ObjectId>>> {
 		return this.gachaChangesSubject;
 	}
 
-	public get PlayerChanges(): Observable<ChangeEvent<Player<ObjectId>>> {
+	public get PlayerChanges(): Observable<ChangeStreamDocument<Player<ObjectId>>> {
 		return this.playerChangesSubject;
 	}
 
@@ -115,7 +115,7 @@ export class Store {
 						: this.playersCollection.findOneAndUpdate(
 							{ majsoulId: player.majsoulId },
 							{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
-							{ upsert: true, returnOriginal: false, projection: { _id: true } }
+							{ upsert: true, returnDocument: "after", projection: { _id: true } }
 						)
 				)
 			)).map(p => p?.value),

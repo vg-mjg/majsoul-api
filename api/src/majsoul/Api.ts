@@ -1,6 +1,5 @@
-import * as uuidv4 from "uuid/v4";
+import { v4 as uuidv4 } from 'uuid';
 import { Root } from "protobufjs";
-import fetch from "node-fetch";
 import { from, interval, merge, Observable, of, pipe, using } from 'rxjs';
 import { catchError, filter, map, mergeAll, timeout } from 'rxjs/operators';
 import { Contest, Passport, Player } from "./types/types";
@@ -12,11 +11,11 @@ import { RpcService } from "./Service";
 import { ApiResources } from "./ApiResources";
 import { GameRecord } from "./types/GameRecordResponse";
 import { PlayerZone } from "./types";
+import fetch from 'node-fetch';
 import { lq } from "./types/liqi";
-
 export class Api {
 	private static async getRes<T>(path: string): Promise<T> {
-		return (await fetch(path)).json();
+		return (await fetch(path)).json() as Promise<T>;
 	}
 
 	public static async retrieveApiResources(): Promise<ApiResources> {

@@ -1,6 +1,6 @@
 import * as store from '../../store';
 import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails, GachaData } from '../types/types';
-import { ObjectId, FilterQuery, Condition, FindOneOptions, ObjectID } from 'mongodb';
+import { ObjectId, Filter, Condition, FindOptions } from 'mongodb';
 import { concat, defer, from, Observable, of, lastValueFrom } from 'rxjs';
 import { map, mergeWith, mergeAll, mergeScan, pairwise, scan, toArray } from 'rxjs/operators';
 import { Majsoul, Rest, Store } from '../..';
@@ -18,7 +18,7 @@ export class RouteState {
 		public privateKey: Buffer,
 	) {}
 
-	public findContest(contestId: string, options?: FindOneOptions): Promise<store.Contest<ObjectId>> {
+	public findContest(contestId: string, options?: FindOptions): Promise<store.Contest<ObjectId>> {
 		return this.mongoStore.contestCollection.findOne(
 			{
 				$or: [
@@ -91,7 +91,7 @@ export class RouteState {
 		);
 	}
 
-	public async getPhases(contestId: string): Promise<Store.PhaseInfo<ObjectID>> {
+	public async getPhases(contestId: string): Promise<Store.PhaseInfo<ObjectId>> {
 		const contest = await this.findContest(contestId, {
 			projection: {
 				_id: true,
@@ -114,7 +114,7 @@ export class RouteState {
 		return buildContestPhases(contest);
 	}
 
-	public createRestPhases(phaseInfo: Store.PhaseInfo<ObjectID>): Rest.PhaseMetadata[] {
+	public createRestPhases(phaseInfo: Store.PhaseInfo<ObjectId>): Rest.PhaseMetadata[] {
 		return phaseInfo?.phases?.map((phase, index) => ({
 			name: phase.name,
 			startTime: phase.startTime,
@@ -122,7 +122,7 @@ export class RouteState {
 		})) ?? [];
 	}
 
-	public async getLeaguePhaseData(phaseInfo: Store.PhaseInfo<ObjectID>): Promise<LeaguePhase<ObjectID>[]> {
+	public async getLeaguePhaseData(phaseInfo: Store.PhaseInfo<ObjectId>): Promise<LeaguePhase<ObjectId>[]> {
 		const {
 			contest,
 			transitions
@@ -186,9 +186,9 @@ export class RouteState {
 							aggregateTotals,
 						})
 						return total;
-					}, [] as Session<ObjectID>[]),
+					}, [] as Session<ObjectId>[]),
 					aggregateTotals: startingTotals,
-				} as LeaguePhase<ObjectID>);
+				} as LeaguePhase<ObjectId>);
 			}, {
 				sessions: [{
 					aggregateTotals: (contest.teams ?? []).reduce(
@@ -196,7 +196,7 @@ export class RouteState {
 						{} as Record<string, number>
 					)
 				}]
-			} as LeaguePhase<ObjectID>, 1),
+			} as LeaguePhase<ObjectId>, 1),
 			toArray(),
 		).toPromise();
 	}
@@ -279,7 +279,7 @@ export class RouteState {
 		return `${type.type}`;
 	}
 
-	public async namePlayers(players: store.Player<ObjectID>[], contestId: ObjectID, contest?: store.Contest): Promise<Rest.PlayerInformation[]> {
+	public async namePlayers(players: store.Player<ObjectId>[], contestId: ObjectId, contest?: store.Contest): Promise<Rest.PlayerInformation[]> {
 		if (!contest) {
 			contest = (await this.mongoStore.contestCollection.find(
 				{
@@ -302,14 +302,14 @@ export class RouteState {
 		})) ?? [];
 	}
 
-	public getTourneyPhaseData(phaseInfo: Store.PhaseInfo<ObjectID>): Promise<TourneyPhase<ObjectID>[]> {
+	public getTourneyPhaseData(phaseInfo: Store.PhaseInfo<ObjectId>): Promise<TourneyPhase<ObjectId>[]> {
 		const {
 			contest,
 			phases: storePhases
 		} = phaseInfo;
 		const phases = this.createRestPhases(phaseInfo);
 		return lastValueFrom(from(phases).pipe(
-			mergeWith(of(null as TourneyPhase<ObjectID>)),
+			mergeWith(of(null as TourneyPhase<ObjectId>)),
 			pairwise(),
 			map(([phase, nextPhase], index) => from(this.getTourneyPhaseStandings(contest, phase, nextPhase, storePhases[index])).pipe(
 				map(standings => ({
@@ -324,9 +324,9 @@ export class RouteState {
 
 	public async getTourneyPhaseStandings(
 		contest: Store.Contest<ObjectId>,
-		phase: TourneyPhase<ObjectID>,
-		nextPhase: TourneyPhase<ObjectID>,
-		storePhase: Store.ContestPhase<ObjectID>,
+		phase: TourneyPhase<ObjectId>,
+		nextPhase: TourneyPhase<ObjectId>,
+		storePhase: Store.ContestPhase<ObjectId>,
 	): Promise<{
 		standings: PlayerTourneyStandingInformation[];
 		scoringTypes: (TourneyScoringInfoPart & {id:string})[];
@@ -845,7 +845,7 @@ export class RouteState {
 		}
 
 		const players = await this.mongoStore.playersCollection.find({
-			_id: { $in: Object.keys(playerNameRequest).map(ObjectID.createFromHexString) }
+			_id: { $in: Object.keys(playerNameRequest).map(ObjectId.createFromHexString) }
 		}).toArray();
 
 		for (const player of await this.namePlayers(players, contest._id, contest)) {
@@ -968,10 +968,10 @@ export class RouteState {
 		return games;
 	}
 
-	public async getGames(query: FilterQuery<store.GameResult<ObjectId>>, options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
+	public async getGames(query: Filter<store.GameResult<ObjectId>>, options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
 		const games = await this.mongoStore.gamesCollection.find(query).toArray();
 		return await this.adjustGames(games, {
-			contestId: Array.isArray(query.contestId) ? null : query.contestId as ObjectID,
+			contestId: Array.isArray(query.contestId) ? null : query.contestId as ObjectId,
 			...options
 		});
 	}

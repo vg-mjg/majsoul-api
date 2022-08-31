@@ -4,13 +4,12 @@ import * as store from '../store';
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
-import * as expressJwt from 'express-jwt';
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
 import { getSecrets } from '../secrets';
 import { contestRoute } from './routes/contest/ContestRoute';
 import { RouteState } from './routes/RouteState';
 import { registerAdminMethods, registerPublicMethods } from './routes/Route';
+import { expressjwt } from 'express-jwt';
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -86,7 +85,7 @@ export class RestApi {
 			contestRoute,
 			state,
 			app.use(
-				expressJwt({
+				expressjwt({
 					secret: publicKey,
 					audience: "riichi.moe",
 					issuer: "riichi.moe",

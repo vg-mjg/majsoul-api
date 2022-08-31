@@ -95,7 +95,7 @@ interface RonRecord extends AgariInfo {
 }
 
 export interface GameCorrection<Id = any> {
-	_id: Id;
+	_id?: Id;
 	gameId: Id;
 	finalScore?: FinalScore[];
 }
@@ -111,7 +111,7 @@ export interface GameResult<Id = any> {
 	end_time?: number;
 	finalScore?: FinalScore[];
 	rounds?: RoundResult[];
-	_id: Id;
+	_id?: Id;
 	contestId: Id;
 	players?: Player<Id>[];
 	notFoundOnMajsoul?: boolean;
@@ -142,7 +142,7 @@ export function isAgariYakuman(
 
 export interface Session<Id = any> {
 	name?: string;
-	_id: Id;
+	_id?: Id;
 	contestId: Id;
 	scheduledTime: number;
 	plannedMatches: Match<Id>[];
@@ -150,7 +150,7 @@ export interface Session<Id = any> {
 }
 
 export interface Player<Id = any> extends Partial<MajsoulPlayer> {
-	_id: Id;
+	_id?: Id;
 	majsoulFriendlyId?: number;
 	displayName?: string;
 }
@@ -231,7 +231,7 @@ export interface TourneyContestPhase extends PhaseTransitionShared {
 export type ContestPhase<Id = any> = ContestPhaseShared & (LeagueContestPhase<Id> & TourneyContestPhase)
 
 export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Omit<Omit<ContestPhase<Id>, "name">, "startTime">, "index"> {
-	_id: Id;
+	_id?: Id;
 	track?: boolean;
 	adminPlayerFetchRequested?: boolean;
 
@@ -271,7 +271,7 @@ export interface Match<Id = any> {
 }
 
 export interface User<Id = any> {
-	_id: Id;
+	_id?: Id;
 	nickname: string;
 	password: {
 		salt: string;
@@ -287,7 +287,7 @@ export interface Cookie {
 }
 
 export interface Config<Id = any> {
-	_id: Id;
+	_id?: Id;
 	featuredContest?: Id;
 	googleRefreshToken?: string;
 	loginCookies?: Cookie[];

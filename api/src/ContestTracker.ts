@@ -1,4 +1,4 @@
-import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
+import { ChangeStreamInsertDocument, ChangeStreamDocument, ObjectId, ChangeStreamUpdateDocument } from 'mongodb';
 import * as store from "./store";
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
 import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, tap, mergeMap, scan, debounce, debounceTime, throttleTime } from 'rxjs/operators';
@@ -9,8 +9,8 @@ import { GameRecord } from './majsoul';
 
 export class ContestTracker {
 	private contestDeleted$: Observable<any>;
-	private contestUpdates$: Observable<ChangeEventUpdate<store.Contest<ObjectId>>>;
-	private gamesCreated$: Observable<ChangeEventCR<store.GameResult<ObjectId>>>;
+	private contestUpdates$: Observable<ChangeStreamUpdateDocument<store.Contest<ObjectId>>>;
+	private gamesCreated$: Observable<ChangeStreamInsertDocument<store.GameResult<ObjectId>>>;
 	constructor(
 		public readonly id: ObjectId,
 		private readonly mongoStore: Store.Store,
@@ -29,22 +29,22 @@ export class ContestTracker {
 		).pipe(first(), share());
 	}
 
-	private get ContestUpdates$(): Observable<ChangeEventUpdate<store.Contest<ObjectId>>> {
+	private get ContestUpdates$(): Observable<ChangeStreamUpdateDocument<store.Contest<ObjectId>>> {
 		return this.contestUpdates$ ??= this.mongoStore.ContestChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "update"
 				&& changeEvent.documentKey._id.equals(this.id)
 			),
 			share()
-		) as Observable<ChangeEventUpdate<store.Contest<ObjectId>>>;
+		) as Observable<ChangeStreamUpdateDocument<store.Contest<ObjectId>>>;
 	}
 
-	private get GamesCreated$(): Observable<ChangeEventCR<store.GameResult<ObjectId>>> {
+	private get GamesCreated$(): Observable<ChangeStreamInsertDocument<store.GameResult<ObjectId>>> {
 		return this.gamesCreated$ ??= this.mongoStore.GameChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "insert"
 				&& changeEvent.fullDocument.contestId.equals(this.id)
 			),
 			share()
-		) as Observable<ChangeEventCR<store.GameResult<ObjectId>>>;
+		) as Observable<ChangeStreamInsertDocument<store.GameResult<ObjectId>>>;
 	}
 
 	public get NotFoundOnMajsoul$(): Observable<boolean> {

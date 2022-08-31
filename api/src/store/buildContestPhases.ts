@@ -1,12 +1,12 @@
-import { ObjectID } from "mongodb";
+import { ObjectId } from "mongodb";
 import { Contest, ContestPhase, ContestPhaseTransition, PhaseInfo } from "./types";
 
-export function buildContestPhases(contest: Contest<ObjectID>): PhaseInfo<ObjectID> {
+export function buildContestPhases(contest: Contest<ObjectId>): PhaseInfo<ObjectId> {
 		if (contest == null) {
 			return null;
 		}
 
-		const phases: ContestPhase<ObjectID>[] = [{
+		const phases: ContestPhase<ObjectId>[] = [{
 			...contest,
 			name: contest.initialPhaseName ?? "予選",
 			index: 0,
@@ -18,7 +18,7 @@ export function buildContestPhases(contest: Contest<ObjectID>): PhaseInfo<Object
 				name: phases[0].name,
 				startTime: 0,
 				scoringTypes: phases[0].tourneyType
-			} as ContestPhaseTransition<ObjectID>,
+			} as ContestPhaseTransition<ObjectId>,
 			...(contest.transitions ?? [])
 		].sort((a, b) => a.startTime - b.startTime);
 

@@ -1,8 +1,8 @@
-import { ObjectID } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { Store } from '..';
 
 
 export interface ContestOption {
-	contestId?: ObjectID;
-	contest?: Store.Contest<ObjectID>;
+	contestId?: ObjectId;
+	contest?: Store.Contest<ObjectId>;
 }

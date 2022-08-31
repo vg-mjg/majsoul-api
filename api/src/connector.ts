@@ -1,5 +1,5 @@
 import { Spreadsheet } from "./google";
-import { ChangeEventCR, ChangeEventUpdate, ObjectId } from 'mongodb';
+import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from 'mongodb';
 import { Api as AdminApi } from "./majsoul/admin/Api";
 import * as majsoul from "./majsoul";
 import * as store from "./store";
@@ -147,7 +147,7 @@ async function getPassport(
 				"token": accessToken,
 				"deviceId": `web|${userId}`
 			})
-		})).json();
+		})).json() as majsoul.Passport;
 
 		return {
 			passport,
@@ -283,7 +283,7 @@ async function main() {
 			filter(change => change.operationType === "update"
 				&& change.updateDescription.updatedFields.googleRefreshToken !== undefined
 			),
-			map((updateEvent: ChangeEventUpdate<store.Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
+			map((updateEvent: ChangeStreamUpdateDocument<store.Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
 		),
 		defer(
 			() => from(
@@ -311,7 +311,7 @@ async function main() {
 			filter(change => change.operationType === "insert"
 				&& change.fullDocument.majsoulFriendlyId != null
 			),
-			map((insertEvent: ChangeEventCR<store.Player<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<store.Player<ObjectId>>) => insertEvent.fullDocument)
 		),
 		defer(() => from(
 			mongoStore.playersCollection.find({
@@ -370,7 +370,7 @@ async function main() {
 				&& change.fullDocument.contestMajsoulId == null
 				&& change.fullDocument.majsoulId != null
 			),
-			map((insertEvent: ChangeEventCR<store.GameResult<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<store.GameResult<ObjectId>>) => insertEvent.fullDocument)
 		),
 		defer(() => from(
 			mongoStore.gamesCollection.find({
@@ -642,7 +642,7 @@ function createContestIds$(mongoStore: store.Store): Observable<ObjectId> {
 	return merge(
 		mongoStore.ContestChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "insert"),
-			map((changeEvent: ChangeEventCR<store.Contest<ObjectId>>) => changeEvent.documentKey._id)
+			map((changeEvent: ChangeStreamInsertDocument<store.Contest<ObjectId>>) => changeEvent.documentKey._id)
 		),
 		defer(() => from(mongoStore.contestCollection.find().toArray()))
 			.pipe(
