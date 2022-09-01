@@ -1,15 +1,15 @@
-import * as store from '../../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails, GachaData } from '../types/types';
+import * as store from '../../store/index.js';
+import { GameResult, Session, LeaguePhase, PlayerTourneyStandingInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from '../types/types.js';
 import { ObjectId, Filter, Condition, FindOptions } from 'mongodb';
 import { concat, defer, from, Observable, of, lastValueFrom } from 'rxjs';
-import { map, mergeWith, mergeAll, mergeScan, pairwise, scan, toArray } from 'rxjs/operators';
-import { Majsoul, Rest, Store } from '../..';
-import { AgariInfo, buildContestPhases, ContestPhaseTransition, ContestType, GachaGroup, GachaPull, GameCorrection, isAgariYakuman, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../../store';
-import { ContestOption } from '../ContestOption';
-import { PlayerContestTypeResults } from '../PlayerContestTypeResults';
-import { bilateralSort } from '../utils/bilateralSort';
+import { map, mergeWith, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
+import { Rest, Store } from '../../index.js';
+import { buildContestPhases, GachaGroup, GachaPull, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../../store/index.js';
+import { ContestOption } from '../ContestOption.js';
+import { PlayerContestTypeResults } from '../PlayerContestTypeResults.js';
+import { bilateralSort } from '../utils/bilateralSort.js';
 import { OAuth2Client } from 'google-auth-library';
-
+import { MajsoulApi } from "majsoul";
 
 export class RouteState {
 	constructor(
@@ -298,7 +298,7 @@ export class RouteState {
 		return players?.map(player => ({
 			_id: player._id.toHexString(),
 			nickname: overrides?.[player._id.toHexString()] ?? player.displayName ?? player.nickname,
-			zone: Majsoul.Api.getPlayerZone(player.majsoulId),
+			zone: MajsoulApi.getPlayerZone(player.majsoulId),
 		})) ?? [];
 	}
 

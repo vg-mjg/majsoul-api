@@ -1,6 +1,6 @@
 import * as express from 'express';
 import { matchedData, validationResult } from 'express-validator';
-import { logError } from './logError';
+import { logError } from './logError.js';
 
 export function withData<DataType, RequestType, ResponseType>(
 	callback: (data: DataType, request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void) {

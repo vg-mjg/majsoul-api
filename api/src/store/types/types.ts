@@ -1,7 +1,7 @@
-import { Han } from "../../majsoul/types/Han";
-import { Player as MajsoulPlayer, Contest as MajsoulContest } from "../../majsoul/types/types";
-import { DrawStatus } from "./DrawStatus";
-import { Wind } from "./Wind";
+import { Han } from "majsoul";
+import { Player as MajsoulPlayer, Contest as MajsoulContest } from "majsoul";
+import { DrawStatus } from "./DrawStatus.js";
+import { Wind } from "./Wind.js";
 
 export enum GameResultVersion {
 	None,

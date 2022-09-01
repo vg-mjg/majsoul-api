@@ -1,21 +1,21 @@
-import * as store from '../../../store';
-import { GameResult, Session, ContestPlayer, Phase, PhaseMetadata, LeaguePhase, PlayerTourneyStandingInformation, YakumanInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from '../../types/types';
+import * as store from '../../../store/index.js';
+import { GameResult, Session, ContestPlayer, Phase, YakumanInformation, PlayerInformation } from '../../types/types.js';
 import { ObjectId, Filter, Condition } from 'mongodb';
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
 import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
-import {  Rest, Store } from '../../..';
-import { latestStatsVersion, StatsVersion } from '../../types/stats/StatsVersion';
-import { Stats } from '../../types/stats';
-import { collectStats } from '../../stats/collectStats';
-import { mergeStats } from '../../stats/mergeStats';
-import { logError } from '../../utils/logError';
-import { withData } from '../../utils/withData';
-import { minimumVersion } from '../../stats/minimumVersion';
-import { escapeRegexp } from '../../utils/escapeRegexp';
-import { AgariInfo,  ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman } from '../../../store';
-import { Route } from '../Route';
-import { RouteState } from '../RouteState';
+import {  Rest, Store } from '../../../index.js';
+import { latestStatsVersion, StatsVersion } from '../../types/stats/StatsVersion.js';
+import { Stats } from '../../types/stats/index.js';
+import { collectStats } from '../../stats/collectStats.js';
+import { mergeStats } from '../../stats/mergeStats.js';
+import { logError } from '../../utils/logError.js';
+import { withData } from '../../utils/withData.js';
+import { minimumVersion } from '../../stats/minimumVersion.js';
+import { escapeRegexp } from '../../utils/escapeRegexp.js';
+import { AgariInfo,  ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman } from '../../../store/index.js';
+import { Route } from '../Route.js';
+import { RouteState } from '../RouteState.js';
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {

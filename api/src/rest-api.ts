@@ -1,6 +1,6 @@
-import { RestApi } from "./rest/RestApi";
-import * as store from "./store";
-import { getSecrets } from "./secrets";
+import { RestApi } from "./rest/RestApi.js";
+import * as store from "./store/index.js";
+import { getSecrets } from "./secrets.js";
 
 async function main () {
 	const secrets = getSecrets();

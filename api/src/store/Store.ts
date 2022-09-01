@@ -1,5 +1,5 @@
 import { ChangeStreamDocument, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection, GachaPull } from "./types/types";
+import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection, GachaPull } from "./types/types.js";
 import { Observable, Subject } from "rxjs";
 
 interface Migration {

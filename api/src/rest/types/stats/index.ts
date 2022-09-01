@@ -1,5 +1,5 @@
-import { BaseStats } from "./BaseStats";
-import { FirstStats } from "./FirstStats";
-import { KhanStats } from "./KhanStats";
+import { BaseStats } from "./BaseStats.js";
+import { FirstStats } from "./FirstStats.js";
+import { KhanStats } from "./KhanStats.js";
 
 export type Stats = BaseStats | FirstStats | KhanStats;

@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "NodeNext",
+		"noImplicitAny": false,
+		"allowSyntheticDefaultImports": true, // for imports of liqi types
+		"removeComments": true,
+		"declaration": true,
+		"preserveConstEnums": true,
+		"sourceMap": true,
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"lib": ["ES2022"],
+		"resolveJsonModule": true
+	}
+}

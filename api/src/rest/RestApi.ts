@@ -1,14 +1,14 @@
-import * as express from 'express';
-import * as cors from "cors";
-import * as store from '../store';
-import * as fs from "fs";
-import * as path from "path";
-import * as crypto from "crypto";
+import express from 'express';
+import cors from "cors";
+import * as store from '../store/index.js';
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 import { google } from 'googleapis';
-import { getSecrets } from '../secrets';
-import { contestRoute } from './routes/contest/ContestRoute';
-import { RouteState } from './routes/RouteState';
-import { registerAdminMethods, registerPublicMethods } from './routes/Route';
+import { getSecrets } from '../secrets.js';
+import { contestRoute } from './routes/contest/ContestRoute.js';
+import { RouteState } from './routes/RouteState.js';
+import { registerAdminMethods, registerPublicMethods } from './routes/Route.js';
 import { expressjwt } from 'express-jwt';
 
 export class RestApi {

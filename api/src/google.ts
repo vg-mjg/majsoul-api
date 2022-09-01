@@ -1,10 +1,9 @@
 import { google, sheets_v4 } from 'googleapis';
-import * as majsoul from "./majsoul";
-import * as store from "./store";
 import { ObjectId } from 'mongodb';
 import { OAuth2Client } from 'google-auth-library';
-import { Observable, of, Subject } from 'rxjs';
-import { AgariInfo, DrawStatus, RoundInfo, Wind } from './store';
+import { Observable, Subject } from 'rxjs';
+import { AgariInfo, ContestTeam, DrawStatus, GameResult, Player, RoundInfo, Wind } from './store/index.js';
+import { Han } from 'majsoul';
 
 interface IHandDescription {
 	round: RoundInfo;
@@ -152,7 +151,7 @@ export class Spreadsheet {
 		return this.recordedGameDetailIds.indexOf(id) >= 0;
 	}
 
-	public addGame(game: store.GameResult<ObjectId>) {
+	public addGame(game: GameResult<ObjectId>) {
 		if (this.isGameRecorded(game.majsoulId)) {
 			console.log(`Game ${game.majsoulId} already recorded`);
 			return;
@@ -261,7 +260,7 @@ export class Spreadsheet {
 		this.buffer.send(requests);
 	}
 
-	public addGameDetails(game: store.GameResult<ObjectId>) {
+	public addGameDetails(game: GameResult<ObjectId>) {
 		if (this.isGameDetailRecorded(game.majsoulId)) {
 			console.log(`Game ${game.majsoulId} already recorded`);
 			return;
@@ -290,7 +289,7 @@ export class Spreadsheet {
 							value: hand.round.dealership === winner ? 12000 : 8000,
 							extras: 0,
 							winner,
-							han: [majsoul.Han.Mangan_at_Draw]
+							han: [Han.Mangan_at_Draw]
 						},
 						result: "Draw"
 					}]
@@ -406,7 +405,7 @@ export class Spreadsheet {
 										map[next] = (map[next] || 0) + 1;
 										return map;
 									}, {}))
-										.map(kvp => `${majsoul.Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
+										.map(kvp => `${Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
 										.map(h => h.replace(/_/g, " "))
 										.join(", ")
 								}
@@ -447,7 +446,7 @@ export class Spreadsheet {
 		this.buffer.send(requests);
 	}
 
-	public updateTeams(teams: store.ContestTeam<ObjectId>[], players: Record<string, store.Player<ObjectId>>) {
+	public updateTeams(teams: ContestTeam<ObjectId>[], players: Record<string, Player<ObjectId>>) {
 		const requests: sheets_v4.Schema$Request[] = [
 			{
 				insertDimension: {

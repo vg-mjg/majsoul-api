@@ -1,4 +1,4 @@
-import { StatsVersion } from "./StatsVersion";
+import { StatsVersion } from "./StatsVersion.js";
 
 export interface BaseStats {
 	version: StatsVersion.None;

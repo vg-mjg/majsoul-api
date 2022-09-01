@@ -1,12 +1,12 @@
 import { ObjectId } from 'mongodb';
-import { Store } from '../..';
-import { StatsVersion } from '../types/stats/StatsVersion';
-import { Stats } from '../types/stats';
-import { BaseStats } from '../types/stats/BaseStats';
-import { AgariCategories, createStats, FirstStats } from '../types/stats/FirstStats';
-import { Han } from '../../majsoul';
-import { DrawStatus, HandStatus } from '../../store';
-import { KhanStats } from '../types/stats/KhanStats';
+import { Store } from '../../index.js';
+import { StatsVersion } from '../types/stats/StatsVersion.js';
+import { Stats } from '../types/stats/index.js';
+import { BaseStats } from '../types/stats/BaseStats.js';
+import { AgariCategories, createStats, FirstStats } from '../types/stats/FirstStats.js';
+import { Han } from 'majsoul';
+import { DrawStatus, HandStatus } from '../../store/index.js';
+import { KhanStats } from '../types/stats/KhanStats.js';
 
 interface PlayerData {
 	playerId: ObjectId;

@@ -1,8 +1,5 @@
-import { Store } from "../..";
-import { Han, PlayerZone } from "../../majsoul";
-import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestScoringType, TourneyContestPhaseSubtype, TourneyScoringTypeDetails, ContestType } from "../../store/types/types";
-
-export * from "./stats";
+import { Han, PlayerZone } from "majsoul";
+import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestPhaseSubtype, TourneyScoringTypeDetails, ContestType, ContestTeam, Contest as StoreContest } from "../../store/types/types.js";
 
 export interface GameResult<Id = any> extends StoreGameResult<Id> {
 	sessionId?: Id;
@@ -77,7 +74,7 @@ export interface PlayerTeamRanking {
 
 export interface EliminationMatchDetails {
 	players: PlayerInformation[];
-	games: Store.GameResult[];
+	games: StoreGameResult[];
 }
 
 export interface EliminationLevel {
@@ -104,10 +101,10 @@ export interface TourneyPhase<Id = string> extends PhaseMetadata<Id> {
 
 export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>;
 
-export type Contest<Id = any> = Omit<Omit<Store.Contest<Id>, "teams">, "type"> & {
+export type Contest<Id = any> = Omit<Omit<StoreContest<Id>, "teams">, "type"> & {
 	type?: ContestType;
 	phases: PhaseMetadata[];
-	teams?: (Omit<Store.ContestTeam<Id>, "players"> & {
+	teams?: (Omit<ContestTeam<Id>, "players"> & {
 		players: PlayerInformation[]
 	})[];
 }

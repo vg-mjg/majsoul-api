@@ -1,3 +1,3 @@
-export * from "./types";
-export * from "./Store";
-export * from "./buildContestPhases";
+export * from "./types/index.js";
+export * from "./Store.js";
+export * from "./buildContestPhases.js";

@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { Store } from '../..';
-import { StatsVersion } from '../types/stats/StatsVersion';
-import { GameResultVersion } from '../../store/types/types';
+import { Store } from '../../index.js';
+import { StatsVersion } from '../types/stats/StatsVersion.js';
+import { GameResultVersion } from '../../store/types/types.js';
 
 export function minimumVersion(game: Store.GameResult<ObjectId>): StatsVersion {
 	if (game.version == null) {

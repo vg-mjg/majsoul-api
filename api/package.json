@@ -1,20 +1,13 @@
 {
-	"name": "majsoul-api",
+	"name": "api",
+	"type": "module",
 	"version": "1.0.0",
-	"description": "",
-	"typings": "dist/index.d.ts",
-	"module": "dist/index.js",
 	"scripts": {
 		"dev": "tsc --watch",
 		"connect": "node -r source-map-support/register --insecure-http-parser ./dist/connector.js",
 		"rest": "node -r source-map-support/register ./dist/rest-api.js",
-		"proto:fetch": "curl https://mahjongsoul.game.yo-star.com/v0.10.63.w/res/proto/liqi.json > src/majsoul/types/liqi.json",
-		"proto:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/majsoul/types/liqi.json | pbts --no-comments -o src/majsoul/types/liqi.d.ts -",
-		"proto:admin:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/majsoul/admin/types/proto.json | pbts --no-comments -o src/majsoul/admin/types/proto.d.ts -",
 		"cert:create": "openssl req -x509 -newkey rsa:4096 -keyout dist/riichi.key.pem -out dist/riichi.crt.pem -sha256 -days 365 -nodes"
 	},
-	"author": "",
-	"license": "MIT",
 	"dependencies": {
 		"@types/cors": "^2.8.6",
 		"@types/express": "^4.17.6",
@@ -22,34 +15,27 @@
 		"@types/jsonwebtoken": "^8.5.0",
 		"@types/node-fetch": "^2.5.7",
 		"@types/seedrandom": "^3.0.2",
-		"@types/ws": "^8.5.3",
 		"cors": "^2.8.5",
 		"express": "^4.17.1",
 		"express-jwt": "^7.7.5",
 		"express-validator": "^6.14.2",
 		"googleapis": "^107.0.0",
-		"install": "^0.13.0",
 		"jsonwebtoken": "^8.5.1",
+		"majsoul": "1.0.0",
 		"mongodb": "^4.9.0",
-		"node-fetch": "^3.2.10",
+		"node-fetch": "3.2.8",
 		"protobufjs": "^7.1.0",
 		"rxjs": "^7.5.5",
 		"seedrandom": "^3.0.5",
 		"syanten": "^1.5.0",
 		"typescript": "^4.2.3",
 		"user-agents": "^1.0.1001",
-		"uuid": "^8.3.2",
-		"ws": "^8.8.1"
+		"uuid": "^8.3.2"
 	},
 	"devDependencies": {
 		"@types/jest": "^29.0.0",
-		"eslint": "^8.23.0",
 		"jest": "^29.0.1",
 		"source-map-support": "^0.5.19",
 		"ts-jest": "^28.0.8"
-	},
-	"engines": {
-		"npm": ">=8.15.0",
-		"node": ">=16.17.0"
 	}
 }

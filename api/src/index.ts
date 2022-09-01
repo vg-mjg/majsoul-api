@@ -1,3 +1,2 @@
-export * as Majsoul from "./majsoul";
-export * as Store from "./store";
-export * as Rest from "./rest";
+export * as Store from "./store/index.js";
+export * as Rest from "./rest/index.js";

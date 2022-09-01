@@ -1,8 +1,8 @@
-import { StatsVersion } from '../types/stats/StatsVersion';
-import { Stats } from '../types/stats';
-import { BaseStats } from '../types/stats/BaseStats';
-import { createStats, FirstStats } from '../types/stats/FirstStats';
-import { createKhanStats, KhanStats } from '../types/stats/KhanStats';
+import { StatsVersion } from '../types/stats/StatsVersion.js';
+import { Stats } from '../types/stats/index.js';
+import { BaseStats } from '../types/stats/BaseStats.js';
+import { createStats, FirstStats } from '../types/stats/FirstStats.js';
+import { createKhanStats, KhanStats } from '../types/stats/KhanStats.js';
 
 export function mergeStats(stats: Stats[], version: StatsVersion): Stats {
 	switch (version) {

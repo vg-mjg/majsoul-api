@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { Contest, ContestPhase, ContestPhaseTransition, PhaseInfo } from "./types";
+import { Contest, ContestPhase, ContestPhaseTransition, PhaseInfo } from "./types/index.js";
 
 export function buildContestPhases(contest: Contest<ObjectId>): PhaseInfo<ObjectId> {
 		if (contest == null) {

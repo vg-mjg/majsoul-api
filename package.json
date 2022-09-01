@@ -1,0 +1,16 @@
+{
+	"name": "riichi",
+	"private": true,
+	"packageManager": "yarn@3.2.3",
+	"engines": {
+		"npm": ">=8.15.0",
+		"node": ">=16.17.0"
+	},
+	"workspaces": [
+		"api",
+		"majsoul"
+	],
+	"devDependencies": {
+		"eslint": "^8.23.0"
+	}
+}

@@ -1,6 +1,6 @@
-import { KanStatics } from "../../../store";
-import { createStats, FirstStats } from "./FirstStats";
-import { StatsVersion } from "./StatsVersion";
+import { KanStatics } from "../../../store/index.js";
+import { createStats, FirstStats } from "./FirstStats.js";
+import { StatsVersion } from "./StatsVersion.js";
 
 export interface KhanStats {
 	version: StatsVersion.Khan;

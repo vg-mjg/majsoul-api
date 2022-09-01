@@ -1,26 +1,23 @@
-import { Spreadsheet } from "./google";
+import { Spreadsheet } from "./google.js";
 import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from 'mongodb';
-import { Api as AdminApi } from "./majsoul/admin/Api";
-import * as majsoul from "./majsoul";
-import * as store from "./store";
+import { MajsoulAdminApi, Passport, MajsoulApi } from "majsoul";
 import { Credentials } from 'google-auth-library';
-import { getSecrets } from "./secrets";
+import { getSecrets } from "./secrets.js";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, tap, mergeMap, combineLatestWith, scan, debounce, debounceTime, switchAll } from 'rxjs/operators';
-import { Majsoul, Store } from ".";
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, combineLatestWith, scan, switchAll } from 'rxjs/operators';
+import { Store } from "./index.js";
 import { google } from "googleapis";
-import { ContestTracker } from "./ContestTracker";
-import { parseGameRecordResponse } from "./majsoul/types/parseGameRecordResponse";
+import { ContestTracker } from "./ContestTracker.js";
+import { parseGameRecordResponse } from "./connector/parseGameRecordResponse.js";
 import fetch, { HeadersInit } from "node-fetch";
 import * as UserAgent from "user-agents";
-import { Passport } from "./majsoul";
-import { GachaPull, GameResult, TourneyContestScoringType } from "./store";
-import * as seedrandom from "seedrandom";
+import { GachaPull, GameResult, TourneyContestScoringType } from "./store/index.js";
+import seedrandom from "seedrandom";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
-export const nameofContest = nameofFactory<store.Contest<ObjectId>>();
+export const nameofContest = nameofFactory<Store.Contest<ObjectId>>();
 
-async function getOrGenerateUserAgent(mongoStore: store.Store): Promise<string> {
+async function getOrGenerateUserAgent(mongoStore: Store.Store): Promise<string> {
 	const [config] = await mongoStore.configCollection.find().toArray();
 	if (!config.userAgent) {
 		config.userAgent = new UserAgent({
@@ -46,11 +43,11 @@ async function getPassport(
 		userId: string;
 		accessToken: string;
 		userAgent: string;
-		existingCookies: store.Cookie[];
+		existingCookies: Store.Cookie[];
 	}
 ): Promise<{
-	passport: majsoul.Passport,
-	loginCookies: store.Cookie[]
+	passport: Passport,
+	loginCookies: Store.Cookie[]
 }> {
 	const sharedSpoofHeaders = {
 		"User-Agent": userAgent
@@ -147,7 +144,7 @@ async function getPassport(
 				"token": accessToken,
 				"deviceId": `web|${userId}`
 			})
-		})).json() as majsoul.Passport;
+		})).json() as Passport;
 
 		return {
 			passport,
@@ -164,7 +161,7 @@ async function getPassport(
 async function main() {
 	const secrets = getSecrets();
 
-	const mongoStore = new store.Store();
+	const mongoStore = new Store.Store();
 	try {
 		await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 	} catch (error) {
@@ -223,10 +220,10 @@ async function main() {
 		uid: secrets.majsoul.uid,
 	};
 
-	const apiResources = await majsoul.Api.retrieveApiResources();
+	const apiResources = await MajsoulApi.retrieveApiResources();
 	console.log(`Using api version ${apiResources.pbVersion}`);
-	const adminApi = new AdminApi();
-	const api = new majsoul.Api(apiResources);
+	const adminApi = new MajsoulAdminApi();
+	const api = new MajsoulApi(apiResources);
 
 	api.notifications.subscribe(n => console.log(n));
 	await api.init();
@@ -283,7 +280,7 @@ async function main() {
 			filter(change => change.operationType === "update"
 				&& change.updateDescription.updatedFields.googleRefreshToken !== undefined
 			),
-			map((updateEvent: ChangeStreamUpdateDocument<store.Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
+			map((updateEvent: ChangeStreamUpdateDocument<Store.Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
 		),
 		defer(
 			() => from(
@@ -311,7 +308,7 @@ async function main() {
 			filter(change => change.operationType === "insert"
 				&& change.fullDocument.majsoulFriendlyId != null
 			),
-			map((insertEvent: ChangeStreamInsertDocument<store.Player<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<Store.Player<ObjectId>>) => insertEvent.fullDocument)
 		),
 		defer(() => from(
 			mongoStore.playersCollection.find({
@@ -370,7 +367,7 @@ async function main() {
 				&& change.fullDocument.contestMajsoulId == null
 				&& change.fullDocument.majsoulId != null
 			),
-			map((insertEvent: ChangeStreamInsertDocument<store.GameResult<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<Store.GameResult<ObjectId>>) => insertEvent.fullDocument)
 		),
 		defer(() => from(
 			mongoStore.gamesCollection.find({
@@ -611,7 +608,7 @@ async function recordGame(
 	contestId: ObjectId,
 	gameId: string,
 	mongoStore: Store.Store,
-	api: Majsoul.Api
+	api: MajsoulApi
 ): Promise<void> {
 	const isRecorded = await mongoStore.isGameRecorded(gameId);
 	if (isRecorded) {
@@ -638,11 +635,11 @@ async function recordGame(
 	mongoStore.recordGame(contestId, gameResult);
 }
 
-function createContestIds$(mongoStore: store.Store): Observable<ObjectId> {
+function createContestIds$(mongoStore: Store.Store): Observable<ObjectId> {
 	return merge(
 		mongoStore.ContestChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "insert"),
-			map((changeEvent: ChangeStreamInsertDocument<store.Contest<ObjectId>>) => changeEvent.documentKey._id)
+			map((changeEvent: ChangeStreamInsertDocument<Store.Contest<ObjectId>>) => changeEvent.documentKey._id)
 		),
 		defer(() => from(mongoStore.contestCollection.find().toArray()))
 			.pipe(
@@ -695,10 +692,10 @@ function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 }
 
 async function validatePossibleRolls(
-	mongoStore: store.Store,
-	game: store.GameResult<ObjectId>,
-	contest: store.Contest<ObjectId>,
-	possibleRollsPerPlayer: { group: store.GachaGroup<ObjectId>; pull: store.GachaPull<ObjectId>; }[][][],
+	mongoStore: Store.Store,
+	game: Store.GameResult<ObjectId>,
+	contest: Store.Contest<ObjectId>,
+	possibleRollsPerPlayer: { group: Store.GachaGroup<ObjectId>; pull: Store.GachaPull<ObjectId>; }[][][],
 	rand: seedrandom.PRNG,
 ): Promise<any> {
 	const uniqueGroups = new Set(possibleRollsPerPlayer.flat().flat().filter(roll => roll.group.unique).map(roll => roll.group._id));
