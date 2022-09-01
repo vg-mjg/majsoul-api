@@ -1,5 +1,5 @@
 env:
-  browser: true
+  node: true
   es6: true
 extends:
   - "eslint:recommended"
@@ -17,6 +17,8 @@ rules:
   indent:
     - error
     - tab
+  no-unreachable:
+    - off
   quotes:
     - error
     - double
@@ -26,5 +28,4 @@ rules:
   no-unused-vars:
     - off
   "@typescript-eslint/no-unused-vars":
-    - warn
-    - "argsIgnorePattern": "^_"
+    - error

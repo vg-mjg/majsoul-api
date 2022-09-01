@@ -1,21 +1,21 @@
-import * as store from '../../../store/index.js';
-import { GameResult, Session, ContestPlayer, Phase, YakumanInformation, PlayerInformation } from '../../types/types.js';
-import { ObjectId, Filter, Condition } from 'mongodb';
+import * as store from "../../../store/index.js";
+import { GameResult, Session, ContestPlayer, Phase, YakumanInformation, PlayerInformation } from "../../types/types.js";
+import { ObjectId, Filter, Condition } from "mongodb";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
-import { body, matchedData, oneOf, param, query, validationResult } from 'express-validator';
-import {  Rest, Store } from '../../../index.js';
-import { latestStatsVersion, StatsVersion } from '../../types/stats/StatsVersion.js';
-import { Stats } from '../../types/stats/index.js';
-import { collectStats } from '../../stats/collectStats.js';
-import { mergeStats } from '../../stats/mergeStats.js';
-import { logError } from '../../utils/logError.js';
-import { withData } from '../../utils/withData.js';
-import { minimumVersion } from '../../stats/minimumVersion.js';
-import { escapeRegexp } from '../../utils/escapeRegexp.js';
-import { AgariInfo,  ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman } from '../../../store/index.js';
-import { Route } from '../Route.js';
-import { RouteState } from '../RouteState.js';
+import { body, matchedData, oneOf, param, query, validationResult } from "express-validator";
+import {  Rest, Store } from "../../../index.js";
+import { latestStatsVersion, StatsVersion } from "../../types/stats/StatsVersion.js";
+import { Stats } from "../../types/stats/index.js";
+import { collectStats } from "../../stats/collectStats.js";
+import { mergeStats } from "../../stats/mergeStats.js";
+import { logError } from "../../utils/logError.js";
+import { withData } from "../../utils/withData.js";
+import { minimumVersion } from "../../stats/minimumVersion.js";
+import { escapeRegexp } from "../../utils/escapeRegexp.js";
+import { AgariInfo,  ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman } from "../../../store/index.js";
+import { Route } from "../Route.js";
+import { RouteState } from "../RouteState.js";
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -263,12 +263,12 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 			"Gorona",
 		]
 	}
-}
+};
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<store.Contest<ObjectId>>();
 const nameofEliminationBracketSettings = nameofFactory<store.EliminationBracketSettings>();
-const nameofNicknameOverrides = nameofFactory<store.Contest['nicknameOverrides'][0]>();
+const nameofNicknameOverrides = nameofFactory<store.Contest["nicknameOverrides"][0]>();
 const nameofPlayer = nameofFactory<store.Player<ObjectId>>();
 const nameofConfig = nameofFactory<store.Config<ObjectId>>();
 const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>();
@@ -277,8 +277,8 @@ const nameofSession = nameofFactory<store.Session<ObjectId>>();
 const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
 const nameofGameCorrection = nameofFactory<store.GameCorrection<ObjectId>>();
 const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfoPart>();
-const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfoPart['typeDetails']>();
-const nameofGacha = nameofFactory<store.Contest<ObjectId>['gacha']>();
+const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfoPart["typeDetails"]>();
+const nameofGacha = nameofFactory<store.Contest<ObjectId>["gacha"]>();
 const nameofGachaGroup = nameofFactory<store.GachaGroup<ObjectId>>();
 const nameofGachaCard = nameofFactory<store.GachaCard<ObjectId>>();
 
@@ -289,11 +289,11 @@ const seededPlayerNames: Record<string, string[]> = {
 		"Meido",
 		"amegumo",
 	]
-}
+};
 
 export const contestRoute: Route<RouteState> = {
 	publicMethods: [
-		(app, state) => app.get<any, store.Contest<ObjectId>[]>('/contests', (req, res) => {
+		(app, state) => app.get<any, store.Contest<ObjectId>[]>("/contests", (req, res) => {
 			state.mongoStore.contestCollection
 				.find()
 				.project<store.Contest<ObjectId>>({
@@ -306,7 +306,7 @@ export const contestRoute: Route<RouteState> = {
 				.catch(error => res.status(500).send(error));
 		}),
 
-		(app, state) => app.get<any, store.Contest<ObjectId>>('/contests/featured', logError(async (req, res) => {
+		(app, state) => app.get<any, store.Contest<ObjectId>>("/contests/featured", logError(async (req, res) => {
 			const [config] = await state.mongoStore.configCollection.find()
 				.project({
 					googleRefreshToken: false
@@ -329,7 +329,7 @@ export const contestRoute: Route<RouteState> = {
 				.catch(error => res.status(500).send(error));
 		})),
 
-		(app, state) => app.get('/contests/:id',
+		(app, state) => app.get("/contests/:id",
 			param("id").isMongoId(),
 			withData<{ id: string; }, any, Rest.Contest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id);
@@ -370,14 +370,14 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/images',
+		(app, state) => app.get("/contests/:id/images",
 			param("id").isMongoId(),
 			query("large").isBoolean().optional({ nullable: false }),
 			query("teams").optional({ nullable: false }),
 			withData<{ id: string; large: "true" | "false"; teams: string; }, any, store.Contest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id, {
 					projection: {
-						[`teams._id`]: true,
+						["teams._id"]: true,
 						[`teams.image${data.large === "true" ? "Large" : ""}`]: true,
 					}
 				});
@@ -388,7 +388,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				if (data.teams) {
-					const teams = data.teams.split(' ');
+					const teams = data.teams.split(" ");
 					contest.teams = contest.teams.filter(team => teams.find(id => team._id.toHexString() === id));
 				}
 
@@ -396,7 +396,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/gacha/:gachaId',
+		(app, state) => app.get("/contests/:id/gacha/:gachaId",
 			param("id").isMongoId(),
 			param("gachaId").isMongoId(),
 			withData<{ id: string; gachaId: string; teams: string; }, any, store.Contest<ObjectId>>(async (data, req, res) => {
@@ -423,7 +423,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get<any, store.GameResult<ObjectId>>('/games/:id',
+		(app, state) => app.get<any, store.GameResult<ObjectId>>("/games/:id",
 			param("id").isMongoId(),
 			withData<{ id: string }, any, store.GameResult<ObjectId>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
@@ -439,7 +439,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/pendingGames',
+		(app, state) => app.get("/contests/:id/pendingGames",
 			param("id").isMongoId(),
 			withData<{ id: string }, any, store.GameResult<ObjectId>[]>(async (data, req, res) => {
 				const games = await state.getGames({
@@ -451,7 +451,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/phases',
+		(app, state) => app.get("/contests/:id/phases",
 			param("id").isMongoId(),
 			withData<{ id: string }, any, Phase<ObjectId>[]>(async (data, req, res) => {
 				const phaseInfo = await state.getPhases(data.id);
@@ -472,7 +472,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/phases/active',
+		(app, state) => app.get("/contests/:id/phases/active",
 			param("id").isMongoId(),
 			withData<{ id: string, phaseIndex: string }, any, Phase<ObjectId>>(async (data, req, res) => {
 				const phaseInfo = await state.getPhases(data.id);
@@ -495,7 +495,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/phases/:phaseIndex',
+		(app, state) => app.get("/contests/:id/phases/:phaseIndex",
 			param("id").isMongoId(),
 			param("phaseIndex").isInt({ min: 0 }),
 			withData<{ id: string, phaseIndex: string }, any, Phase<ObjectId>>(async (data, req, res) => {
@@ -519,7 +519,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/sessions',
+		(app, state) => app.get("/contests/:id/sessions",
 			param("id").isMongoId(),
 			withData<{ id: string }, any, Session<ObjectId>[]>(async (data, req, res) => {
 				const phaseInfo = await state.getPhases(data.id);
@@ -536,7 +536,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/contests/:id/sessions/active',
+		(app, state) => app.get("/contests/:id/sessions/active",
 			param("id").isMongoId(),
 			withData<{ id: string }, any, Session<ObjectId>>(async (data, req, res) => {
 				const phaseInfo = await state.getPhases(data.id);
@@ -558,7 +558,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get<any, store.Config<ObjectId>>('/config', (req, res) => {
+		(app, state) => app.get<any, store.Config<ObjectId>>("/config", (req, res) => {
 			state.mongoStore.configCollection.find()
 				.project({
 					googleRefreshToken: false
@@ -572,11 +572,11 @@ export const contestRoute: Route<RouteState> = {
 				})
 				.catch(error => {
 					console.log(error);
-					res.status(500).send(error)
+					res.status(500).send(error);
 				});
 		}),
 
-		(app, state) => app.get<any, GameResult<ObjectId>[]>('/games', async (req, res) => {
+		(app, state) => app.get<any, GameResult<ObjectId>[]>("/games", async (req, res) => {
 			const filter: Filter<store.GameResult<ObjectId>> = {
 				$and: [{
 					$or: [
@@ -593,10 +593,10 @@ export const contestRoute: Route<RouteState> = {
 				}]
 			};
 
-			const contestIds = (req.query.contests as string)?.split(' ');
+			const contestIds = (req.query.contests as string)?.split(" ");
 			let contestsFilter = null as Store.Contest<ObjectId>[];
 			if (contestIds) {
-				 contestsFilter = await state.mongoStore.contestCollection.find(
+				contestsFilter = await state.mongoStore.contestCollection.find(
 					{
 						$or: [
 							{ majsoulFriendlyId: { $in: contestIds.map(id => parseInt(id)) } },
@@ -620,8 +620,8 @@ export const contestRoute: Route<RouteState> = {
 				);
 			}
 
-			const sessionIds = (req.query?.sessions as string)?.split(' ');
-			let sessionMap: {
+			const sessionIds = (req.query?.sessions as string)?.split(" ");
+			const sessionMap: {
 				startSession: store.Session,
 				endSession: store.Session
 			}[] = [];
@@ -632,7 +632,7 @@ export const contestRoute: Route<RouteState> = {
 
 				const sessionOr = [];
 				for (const session of sessions) {
-					let [startSession, endSession] = await state.mongoStore.sessionsCollection.find(
+					const [startSession, endSession] = await state.mongoStore.sessionsCollection.find(
 						{
 							contestId: session.contestId,
 							scheduledTime: { $gte: session.scheduledTime }
@@ -646,7 +646,7 @@ export const contestRoute: Route<RouteState> = {
 
 					const end_time: Condition<number> = {
 						$gte: startSession.scheduledTime
-					}
+					};
 
 					if (endSession != null) {
 						end_time.$lt = endSession.scheduledTime;
@@ -711,16 +711,16 @@ export const contestRoute: Route<RouteState> = {
 				);
 			} catch (error) {
 				console.log(error);
-				res.status(500).send(error)
+				res.status(500).send(error);
 			}
 		}),
 
-		(app, state) => app.get<any, GameCorrection<ObjectId>[]>('/corrections', async (req, res) => {
+		(app, state) => app.get<any, GameCorrection<ObjectId>[]>("/corrections", async (req, res) => {
 			const corrections = await state.mongoStore.gameCorrectionsCollection.find({}).toArray();
 			res.send(corrections);
 		}),
 
-		(app, state) => app.get<any, {contestId: string, playerId: string}, GameResult[]>('/contests/:contestId/players/:playerId/games', async (req, res) => {
+		(app, state) => app.get<any, {contestId: string, playerId: string}, GameResult[]>("/contests/:contestId/players/:playerId/games", async (req, res) => {
 			try {
 				const contestId = await state.contestExists(req.params.contestId);
 				if (!contestId) {
@@ -745,11 +745,11 @@ export const contestRoute: Route<RouteState> = {
 				})));
 			} catch (error) {
 				console.log(error);
-				res.status(500).send(error)
+				res.status(500).send(error);
 			}
 		}),
 
-		(app, state) => app.get<any, {contestId: string}, YakumanInformation[]>('/contests/:contestId/yakuman', async (req, res) => {
+		(app, state) => app.get<any, {contestId: string}, YakumanInformation[]>("/contests/:contestId/yakuman", async (req, res) => {
 			try {
 				const contestId = await state.contestExists(req.params.contestId);
 				if (!contestId) {
@@ -785,7 +785,7 @@ export const contestRoute: Route<RouteState> = {
 									ron
 								)) || [] as AgariInfo[];
 							}).flat()
-						}
+						};
 					});
 
 				const playerMap = (
@@ -807,7 +807,7 @@ export const contestRoute: Route<RouteState> = {
 						).toArray(),
 						contestId,
 					)
-				).reduce((total, next) => (total[next._id] = next, total), {} as Record<string, PlayerInformation>)
+				).reduce((total, next) => (total[next._id] = next, total), {} as Record<string, PlayerInformation>);
 
 				res.send(
 					yakumanGames
@@ -820,21 +820,21 @@ export const contestRoute: Route<RouteState> = {
 									endTime: game.end_time,
 									majsoulId: game.majsoulId,
 								}
-							}
+							};
 						})).flat()
 				);
 			} catch (error) {
 				console.log(error);
-				res.status(500).send(error)
+				res.status(500).send(error);
 			}
 		}),
 
-		(app, state) => app.get('/contests/:id/players',
-		param("id").isMongoId(),
-		query("gameLimit").isInt({ min: 0 }).optional(),
-		query("ignoredGames").isInt({ min: 0 }).optional(),
-		query("teamId").isMongoId().optional(),
-		withData<{
+		(app, state) => app.get("/contests/:id/players",
+			param("id").isMongoId(),
+			query("gameLimit").isInt({ min: 0 }).optional(),
+			query("ignoredGames").isInt({ min: 0 }).optional(),
+			query("teamId").isMongoId().optional(),
+			withData<{
 			id: string;
 			teamId?: string;
 			gameLimit?: string;
@@ -843,8 +843,8 @@ export const contestRoute: Route<RouteState> = {
 			const contest = await state.findContest(data.id, {
 				projection: {
 					_id: true,
-					'teams._id': true,
-					'teams.players._id': true,
+					"teams._id": true,
+					"teams.players._id": true,
 					majsoulFriendlyId: true,
 					bonusPerGame: true,
 					normaliseScores: true,
@@ -874,12 +874,12 @@ export const contestRoute: Route<RouteState> = {
 					{ contestMajsoulId: { $exists: true } },
 					{ majsoulId: { $exists: false } }
 				],
-			}
+			};
 
 			if (data.teamId) {
 				gameQuery["players._id"] = {
 					$in: playerIds
-				}
+				};
 			}
 
 			const games = await state.getGames(gameQuery, {contest});
@@ -959,7 +959,7 @@ export const contestRoute: Route<RouteState> = {
 					...player,
 					team: {
 						teams: Object.entries(sakiTeams[contestMajsoulFriendlyId] ?? {})
-							.filter(([team, players]) => players.indexOf(player.nickname) >= 0)
+							.filter(([_, players]) => players.indexOf(player.nickname) >= 0)
 							.map(([team, _]) => team),
 						seeded: seededPlayersForContest.indexOf(player.nickname) >= 0,
 					}
@@ -970,7 +970,7 @@ export const contestRoute: Route<RouteState> = {
 			);
 		})),
 
-		(app, state) => app.get('/contests/:id/stats',
+		(app, state) => app.get("/contests/:id/stats",
 			param("id").isMongoId(),
 			oneOf([
 				query("team").isMongoId(),
@@ -1009,7 +1009,7 @@ export const contestRoute: Route<RouteState> = {
 						return;
 					}
 
-					playerMap = (team.players ?? []).reduce((total, next) => (total[next._id.toHexString()] = teamId, total), {} as Record<string, ObjectId | boolean>)
+					playerMap = (team.players ?? []).reduce((total, next) => (total[next._id.toHexString()] = teamId, total), {} as Record<string, ObjectId | boolean>);
 				} else if (data.player != null) {
 					const playerId = new ObjectId(data.player);
 					const [player] = await state.mongoStore.playersCollection.find({
@@ -1023,7 +1023,7 @@ export const contestRoute: Route<RouteState> = {
 
 					playerMap = {
 						[data.player]: true
-					}
+					};
 				}
 
 				if (playerMap) {
@@ -1033,7 +1033,7 @@ export const contestRoute: Route<RouteState> = {
 								$in: Object.keys(playerMap).map(ObjectId.createFromHexString)
 							}
 						}
-					}
+					};
 				}
 
 				const games = await state.getGames(query);
@@ -1068,7 +1068,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get('/players',
+		(app, state) => app.get("/players",
 			query("name").optional(),
 			query("limit").isInt({ gt: 0 }).optional(),
 			withData<{
@@ -1097,10 +1097,10 @@ export const contestRoute: Route<RouteState> = {
 							nickname: 1,
 						}
 					}
-				)
+				);
 
 				if (data.limit) {
-					cursor.limit(parseInt(data.limit))
+					cursor.limit(parseInt(data.limit));
 				}
 
 				res.send(await cursor.toArray());
@@ -1109,27 +1109,27 @@ export const contestRoute: Route<RouteState> = {
 	],
 
 	adminMethods: [
-		(app, state) => app.put<any, store.Contest<string>>('/contests', (req, res) => {
+		(app, state) => app.put<any, store.Contest<string>>("/contests", (req, res) => {
 			state.mongoStore.contestCollection.insertOne({}).then(result => res.send({ _id: result.insertedId.toHexString() }));
 		}),
 
-		(app, state) => app.get('/rigging/google',
+		(app, state) => app.get("/rigging/google",
 			query("state").optional(),
 			withData<{ state?: string }, any, { authUrl: string }>(async (data, req, res) => {
 				const authUrl = state.oauth2Client.generateAuthUrl({
-					access_type: 'offline',
+					access_type: "offline",
 					scope: [
-						'https://www.googleapis.com/auth/spreadsheets'
+						"https://www.googleapis.com/auth/spreadsheets"
 					],
 					state: data.state
 				});
 				res.send({
 					authUrl
-				})
+				});
 			})
 		),
 
-		(app, state) => app.patch('/rigging/google',
+		(app, state) => app.patch("/rigging/google",
 			body("code").isString().isLength({ min: 1 }),
 			withData<{ code: string }, any, void>(async (data, req, res) => {
 				const { tokens } = await state.oauth2Client.getToken(data.code);
@@ -1137,48 +1137,48 @@ export const contestRoute: Route<RouteState> = {
 					$set: {
 						googleRefreshToken: tokens.refresh_token
 					}
-				})
+				});
 				res.send();
 			})
 		),
 
-		(app, state) => app.patch<any, {id: string}, store.Contest<ObjectId>>('/contests/:id',
+		(app, state) => app.patch<any, {id: string}, store.Contest<ObjectId>>("/contests/:id",
 			param("id").isMongoId(),
-			body(nameofContest('majsoulFriendlyId')).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
-			body(nameofContest('spreadsheetId')).isString().bail().optional({ nullable: true }),
+			body(nameofContest("majsoulFriendlyId")).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
+			body(nameofContest("spreadsheetId")).isString().bail().optional({ nullable: true }),
 
-			body(nameofContest('type')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
-			body(nameofContest('subtype')).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestPhaseSubtype)).optional(),
-			body(nameofContest('anthem')).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
-			body(nameofContest('tagline')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
-			body(nameofContest('taglineAlternate')).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
-			body(nameofContest('normaliseScores')).not().isString().bail().isBoolean().optional({ nullable: true }),
+			body(nameofContest("type")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
+			body(nameofContest("subtype")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestPhaseSubtype)).optional(),
+			body(nameofContest("anthem")).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
+			body(nameofContest("tagline")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
+			body(nameofContest("taglineAlternate")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
+			body(nameofContest("normaliseScores")).not().isString().bail().isBoolean().optional({ nullable: true }),
 
 			...eliminationBracketSettingsFilter(),
 
-			body(nameofContest('displayName')).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
-			body(nameofContest('initialPhaseName')).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
-			body(nameofContest('maxGames')).not().isString().bail().isInt({ gt: 0, max: 50 }).optional({ nullable: true }),
-			body(nameofContest('bonusPerGame')).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
-			body(nameofContest('track')).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest('adminPlayerFetchRequested')).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest('nicknameOverrides')).not().isString().bail().isArray().optional({ nullable: true }),
-			body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('_id')}`).isMongoId(),
-			body(`${nameofContest('nicknameOverrides')}.*.${nameofNicknameOverrides('nickname')}`),
+			body(nameofContest("displayName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
+			body(nameofContest("initialPhaseName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
+			body(nameofContest("maxGames")).not().isString().bail().isInt({ gt: 0, max: 50 }).optional({ nullable: true }),
+			body(nameofContest("bonusPerGame")).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
+			body(nameofContest("track")).not().isString().bail().isBoolean().optional({ nullable: true }),
+			body(nameofContest("adminPlayerFetchRequested")).not().isString().bail().isBoolean().optional({ nullable: true }),
+			body(nameofContest("nicknameOverrides")).not().isString().bail().isArray().optional({ nullable: true }),
+			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("_id")}`).isMongoId(),
+			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
 
-			body(nameofContest('gacha')).not().isString().bail().isObject().optional({ nullable: true }),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}`).not().isString().bail().isArray().optional(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('onePer')}`).not().isString().bail().isInt({min: 1}),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('_id')}`).isMongoId().optional(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('name')}`).isString(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('priority')}`).not().isString().bail().isInt(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('unique')}`).not().isString().bail().isBoolean().optional(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}`).not().isString().bail().isArray({min: 1}),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('_id')}`).isMongoId().optional(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('icon')}`).isString().bail(),
-			body(`${nameofContest('gacha')}.${nameofGacha('groups')}.*.${nameofGachaGroup('cards')}.*.${nameofGachaCard('image')}`).isString().bail().optional(),
+			body(nameofContest("gacha")).not().isString().bail().isObject().optional({ nullable: true }),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}`).not().isString().bail().isArray().optional(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("onePer")}`).not().isString().bail().isInt({min: 1}),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("name")}`).isString(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("priority")}`).not().isString().bail().isInt(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("unique")}`).not().isString().bail().isBoolean().optional(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}`).not().isString().bail().isArray({min: 1}),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("_id")}`).isMongoId().optional(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("icon")}`).isString().bail(),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("image")}`).isString().bail().optional(),
 
-			...scoringTypeFilter(nameofContest('tourneyType')),
+			...scoringTypeFilter(nameofContest("tourneyType")),
 			async (req, res) => {
 				const errors = validationResult(req);
 				if (!errors.isEmpty()) {
@@ -1196,7 +1196,7 @@ export const contestRoute: Route<RouteState> = {
 						if (existingGame != null && !existingGame._id.equals(data._id)) {
 							res.status(400).send(`Contest #${existingGame._id.toHexString()} already subscribed to majsoul ID ${data.majsoulFriendlyId}` as any);
 							return;
-						};
+						}
 					} catch (e) {
 						res.status(500).send(e);
 						return;
@@ -1251,7 +1251,7 @@ export const contestRoute: Route<RouteState> = {
 								}
 								return groupDto;
 							})
-						} as store.Contest<ObjectId>['gacha'];
+						} as store.Contest<ObjectId>["gacha"];
 						continue;
 					}
 
@@ -1283,13 +1283,13 @@ export const contestRoute: Route<RouteState> = {
 				}).catch((err) => {
 					console.log(err);
 					res.status(500).send(err);
-				})
+				});
 			}
 		),
 
-		(app, state) => app.put<any, string>('/games',
-			body(nameofGameResult('contestId')).isMongoId().isString(),
-			body(nameofGameResult('majsoulId')).isString(),
+		(app, state) => app.put<any, string>("/games",
+			body(nameofGameResult("contestId")).isMongoId().isString(),
+			body(nameofGameResult("majsoulId")).isString(),
 			logError<any, string>(
 				async (req, res) => {
 					const errors = validationResult(req);
@@ -1322,7 +1322,7 @@ export const contestRoute: Route<RouteState> = {
 			)
 		),
 
-		(app, state) => app.patch('/games/:id',
+		(app, state) => app.patch("/games/:id",
 			param("id").isMongoId(),
 			body(nameofGameResult("hidden")).isBoolean().not().isString().optional({ nullable: true }),
 			withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
@@ -1378,7 +1378,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.delete<any, void>('/games/:id',
+		(app, state) => app.delete<any, void>("/games/:id",
 			param("id").isMongoId(),
 			logError(async (req, res) => {
 				const errors = validationResult(req);
@@ -1391,14 +1391,14 @@ export const contestRoute: Route<RouteState> = {
 
 				const result = await state.mongoStore.gamesCollection.deleteOne({
 					_id: gameId
-				})
+				});
 
 				res.send();
 			})
 		),
 
-		(app, state) => app.put<any, string>('/games/custom',
-			body(nameofGameResult('contestId')).isMongoId().isString(),
+		(app, state) => app.put<any, string>("/games/custom",
+			body(nameofGameResult("contestId")).isMongoId().isString(),
 			logError<any, string>(
 				async (req, res) => {
 					const errors = validationResult(req);
@@ -1428,7 +1428,7 @@ export const contestRoute: Route<RouteState> = {
 			)
 		),
 
-		(app, state) => app.patch('/games/custom/:id',
+		(app, state) => app.patch("/games/custom/:id",
 			param("id").isMongoId(),
 			body(nameofGameResult("start_time")).not().isString().bail().isInt({ min: 0 }).optional(),
 			body(nameofGameResult("end_time")).not().isString().bail().isInt({ min: 0 }).optional(),
@@ -1476,7 +1476,7 @@ export const contestRoute: Route<RouteState> = {
 					if (key === "players") {
 						update.$set[key] = data[key].map(({_id}) => ({
 							_id: ObjectId.createFromHexString(_id)
-						}))
+						}));
 						continue;
 					}
 
@@ -1502,8 +1502,8 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.put<any, string>('/corrections',
-			body(nameofGameCorrection('gameId')).isMongoId().isString(),
+		(app, state) => app.put<any, string>("/corrections",
+			body(nameofGameCorrection("gameId")).isMongoId().isString(),
 			logError<any, string>(
 				async (req, res) => {
 					const errors = validationResult(req);
@@ -1522,7 +1522,7 @@ export const contestRoute: Route<RouteState> = {
 					const existingCorrection = await state.mongoStore.gameCorrectionsCollection.find({ gameId: gameId }).toArray();
 
 					if (existingCorrection.length > 0) {
-						res.status(400).send(`Correction for that game id already exists.` as any);
+						res.status(400).send("Correction for that game id already exists." as any);
 						return;
 					}
 
@@ -1535,7 +1535,7 @@ export const contestRoute: Route<RouteState> = {
 			)
 		),
 
-		(app, state) => app.put('/contests/:id/gacha/:groupId',
+		(app, state) => app.put("/contests/:id/gacha/:groupId",
 			param("id").isMongoId(),
 			param("groupId").isMongoId(),
 			body("icon").isString(),
@@ -1582,7 +1582,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch('/contests/:id/gachaGroup/:groupId',
+		(app, state) => app.patch("/contests/:id/gachaGroup/:groupId",
 			param("id").isMongoId(),
 			param("groupId").isMongoId(),
 			body("onePer").not().isString().bail().isInt({min: 1}).optional(),
@@ -1627,7 +1627,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch('/contests/:id/gacha/:gachaId',
+		(app, state) => app.patch("/contests/:id/gacha/:gachaId",
 			param("id").isMongoId(),
 			param("gachaId").isMongoId(),
 			body("icon").isString().optional(),
@@ -1679,7 +1679,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch('/corrections/:id',
+		(app, state) => app.patch("/corrections/:id",
 			param("id").isMongoId(),
 			body(nameofGameCorrection("finalScore")).isArray().not().isString().optional({ nullable: true }),
 			body(`${nameofGameCorrection("finalScore")}.*.uma`).isInt().not().isString().optional({ nullable: true }),
@@ -1737,7 +1737,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.delete<any, void>('/corrections/:id',
+		(app, state) => app.delete<any, void>("/corrections/:id",
 			param("id").isMongoId(),
 			logError(async (req, res) => {
 				const errors = validationResult(req);
@@ -1750,13 +1750,13 @@ export const contestRoute: Route<RouteState> = {
 
 				const result = await state.mongoStore.gameCorrectionsCollection.deleteOne({
 					_id: correctionId
-				})
+				});
 
 				res.send();
 			})
 		),
 
-		(app, state) => app.delete<any, void>('/contests/:id',
+		(app, state) => app.delete<any, void>("/contests/:id",
 			param("id").isMongoId(),
 			logError(async (req, res) => {
 				const errors = validationResult(req);
@@ -1776,7 +1776,7 @@ export const contestRoute: Route<RouteState> = {
 
 				const result = await state.mongoStore.contestCollection.deleteOne({
 					_id: contestId
-				})
+				});
 
 				await state.mongoStore.configCollection.findOneAndUpdate({
 					trackedContest: contestId
@@ -1784,13 +1784,13 @@ export const contestRoute: Route<RouteState> = {
 					$unset: {
 						trackedContest: true
 					}
-				})
+				});
 
 				res.send();
 			})
 		),
 
-		(app, state) => app.delete<any, void>('/contests/:id/gacha',
+		(app, state) => app.delete<any, void>("/contests/:id/gacha",
 			param("id").isMongoId(),
 			logError(async (req, res) => {
 				const errors = validationResult(req);
@@ -1815,15 +1815,15 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch<any, store.Config<ObjectId>>('/config',
-			body(nameofConfig('featuredContest')).isMongoId().optional({ nullable: true }),
+		(app, state) => app.patch<any, store.Config<ObjectId>>("/config",
+			body(nameofConfig("featuredContest")).isMongoId().optional({ nullable: true }),
 			withData<Partial<store.Config<string>>, any, store.Config<ObjectId>>(async (data, req, res) => {
 				if (data.featuredContest != null) {
 					const existingContest = await state.mongoStore.contestCollection.findOne({ _id: new ObjectId(data.featuredContest) });
 					if (existingContest == null) {
 						res.status(400).send(`Featured contest #${data._id} doesn't exist.` as any);
 						return;
-					};
+					}
 				}
 
 				const update: {
@@ -1876,7 +1876,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.put('/sessions',
+		(app, state) => app.put("/sessions",
 			body(nameofSession("contestId")).isMongoId(),
 			withData<Partial<store.Session<string | ObjectId>>, any, Partial<store.Session<ObjectId>>>(async (data, req, res) => {
 				const contestId = await state.contestExists(data.contestId as string);
@@ -1905,7 +1905,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch('/sessions/:id',
+		(app, state) => app.patch("/sessions/:id",
 			param("id").isMongoId(),
 			body(nameofSession("scheduledTime")).not().isString().bail().isInt({ min: 0 }).optional(),
 			body(nameofSession("name")).isString().optional({ nullable: true }),
@@ -1991,7 +1991,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.delete('/sessions/:id',
+		(app, state) => app.delete("/sessions/:id",
 			param("id").isMongoId(),
 			withData<{ id: string }, any, store.Session<ObjectId>>(async (data, req, res) => {
 				const result = await state.mongoStore.sessionsCollection.deleteOne(
@@ -2007,16 +2007,16 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch('/contests/:id/teams/:teamId',
+		(app, state) => app.patch("/contests/:id/teams/:teamId",
 			param("id").isMongoId(),
 			param("teamId").isMongoId(),
-			body(nameofTeam('image')).isString().optional({ nullable: true }),
-			body(nameofTeam('imageLarge')).isString().optional({ nullable: true }),
-			body(nameofTeam('name')).isString().optional({ nullable: true }),
-			body(nameofTeam('players')).isArray().optional(),
-			body(`${nameofTeam('players')}.*._id`).isMongoId(),
-			body(nameofTeam('anthem')).isString().optional({ nullable: true }),
-			body(nameofTeam('color')).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({ nullable: true }),
+			body(nameofTeam("image")).isString().optional({ nullable: true }),
+			body(nameofTeam("imageLarge")).isString().optional({ nullable: true }),
+			body(nameofTeam("name")).isString().optional({ nullable: true }),
+			body(nameofTeam("players")).isArray().optional(),
+			body(`${nameofTeam("players")}.*._id`).isMongoId(),
+			body(nameofTeam("anthem")).isString().optional({ nullable: true }),
+			body(nameofTeam("color")).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({ nullable: true }),
 			body(nameofTeam("contrastBadgeFont")).isBoolean().not().isString().optional({ nullable: true }),
 			withData<
 				{
@@ -2092,11 +2092,11 @@ export const contestRoute: Route<RouteState> = {
 				}).catch((err) => {
 					console.log(err);
 					res.status(500).send(err);
-				})
+				});
 			}
-		)),
+			)),
 
-		(app, state) => app.put('/contests/:id/teams/',
+		(app, state) => app.put("/contests/:id/teams/",
 			param("id").isMongoId(),
 			withData<
 				{
@@ -2125,13 +2125,13 @@ export const contestRoute: Route<RouteState> = {
 						}
 					},
 					{ returnDocument: "after", projection: { teams: true } }
-				)
+				);
 
 				res.send(team);
 			}
-		)),
+			)),
 
-		(app, state) => app.delete('/contests/:id/teams/:teamId',
+		(app, state) => app.delete("/contests/:id/teams/:teamId",
 			param("id").isMongoId(),
 			param("teamId").isMongoId(),
 			withData<
@@ -2168,11 +2168,11 @@ export const contestRoute: Route<RouteState> = {
 						}
 					},
 					{ returnDocument: "after", projection: { teams: true } }
-				)
+				);
 
 				res.send();
 			}
-		)),
+			)),
 
 		(app, state) => app.put("/contests/:id/transitions",
 			param("id").isMongoId(),
@@ -2182,7 +2182,7 @@ export const contestRoute: Route<RouteState> = {
 			body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
 			body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
 			...eliminationBracketSettingsFilter(),
-			...scoringTypeFilter(nameofTransition('scoringTypes')),
+			...scoringTypeFilter(nameofTransition("scoringTypes")),
 			withData<
 				Partial<store.ContestPhaseTransition> & {
 					id: string,
@@ -2199,7 +2199,7 @@ export const contestRoute: Route<RouteState> = {
 				const transition: ContestPhaseTransition<ObjectId> = {
 					_id: new ObjectId(),
 					startTime: data.startTime,
-				}
+				};
 
 				if (data.name != null) {
 					transition.name = data.name;
@@ -2273,7 +2273,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch('/players/:id',
+		(app, state) => app.patch("/players/:id",
 			param("id").isMongoId(),
 			body(nameofPlayer("displayName")).isString().optional({nullable: true}),
 			withData<Partial<store.Player<string | ObjectId> & {id: string}>, any, Store.Player<ObjectId>>(async (data, req, res) => {
@@ -2305,7 +2305,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.put('/players/',
+		(app, state) => app.put("/players/",
 			body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
 			withData<Partial<store.Player<string | ObjectId>>, any, Store.Player<ObjectId>>(async (data, req, res) => {
 				const result = await state.mongoStore.playersCollection.insertOne({
@@ -2340,7 +2340,7 @@ export const contestRoute: Route<RouteState> = {
 				},
 				state.privateKey,
 				{
-					algorithm: 'RS256',
+					algorithm: "RS256",
 					issuer: "riichi.moe",
 					audience: "riichi.moe",
 					expiresIn: "1d",
@@ -2354,10 +2354,10 @@ export const contestRoute: Route<RouteState> = {
 					}
 					res.send(token);
 				});
-			}
+		}
 		),
 	],
-}
+};
 
 function scoringTypeFilter(propName: string) {
 	return [
@@ -2365,26 +2365,26 @@ function scoringTypeFilter(propName: string) {
 			body(propName).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)).optional(),
 			body(propName).not().isString().bail().isArray({ min: 1 }).optional(),
 		]),
-		body(`${propName}.*.${nameofTourneyScoringType('type')}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
-		body(`${propName}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('findWorst')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
-		body(`${propName}.*.${nameofTourneyScoringType('typeDetails')}.${nameofTourneyScoringTypeDetails('gamesToCount')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-		body(`${propName}.*.${nameofTourneyScoringType('places')}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-		body(`${propName}.*.${nameofTourneyScoringType('reverse')}`).not().isString().bail().isBoolean().optional({ nullable: true }),
-		body(`${propName}.*.${nameofTourneyScoringType('suborder')}`).not().isString().bail().isArray().optional({ nullable: true }),
-		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('type')}`)
+		body(`${propName}.*.${nameofTourneyScoringType("type")}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+		body(`${propName}.*.${nameofTourneyScoringType("typeDetails")}.${nameofTourneyScoringTypeDetails("findWorst")}`).not().isString().bail().isBoolean().optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType("typeDetails")}.${nameofTourneyScoringTypeDetails("gamesToCount")}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType("places")}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType("reverse")}`).not().isString().bail().isBoolean().optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType("suborder")}`).not().isString().bail().isArray().optional({ nullable: true }),
+		body(`${propName}.*.${nameofTourneyScoringType("suborder")}.*.${nameofTourneyScoringType("type")}`)
 			.not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
-		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('places')}`)
+		body(`${propName}.*.${nameofTourneyScoringType("suborder")}.*.${nameofTourneyScoringType("places")}`)
 			.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-		body(`${propName}.*.${nameofTourneyScoringType('suborder')}.*.${nameofTourneyScoringType('reverse')}`)
+		body(`${propName}.*.${nameofTourneyScoringType("suborder")}.*.${nameofTourneyScoringType("reverse")}`)
 			.not().isString().bail().isBoolean().optional({ nullable: true }),
 	];
 }
 
 function eliminationBracketSettingsFilter() {
 	return [
-		body(nameofContest('eliminationBracketTargetPlayers')).not().isString().bail().isInt({ min: 4 }).optional({ nullable: true }),
-		body(nameofContest('eliminationBracketSettings')).not().isString().isObject().optional({ nullable: true }),
-		body(`${nameofContest('eliminationBracketSettings')}.*.${nameofEliminationBracketSettings('gamesPerMatch')}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
-		body(`${nameofContest('eliminationBracketSettings')}.*.${nameofEliminationBracketSettings('winnersPerMatch')}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
+		body(nameofContest("eliminationBracketTargetPlayers")).not().isString().bail().isInt({ min: 4 }).optional({ nullable: true }),
+		body(nameofContest("eliminationBracketSettings")).not().isString().isObject().optional({ nullable: true }),
+		body(`${nameofContest("eliminationBracketSettings")}.*.${nameofEliminationBracketSettings("gamesPerMatch")}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
+		body(`${nameofContest("eliminationBracketSettings")}.*.${nameofEliminationBracketSettings("winnersPerMatch")}`).not().isString().bail().isInt({ min: 1 }).optional({ nullable: true }),
 	];
 }

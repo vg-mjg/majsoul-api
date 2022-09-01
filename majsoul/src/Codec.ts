@@ -5,7 +5,8 @@ export class Codec {
 	public static decodePaipuId(paipu: string): string {
 		let e = "";
 		for (let i = "0".charCodeAt(0), n = "a".charCodeAt(0), a = 0; a < paipu.length; a++) {
-			let r = paipu.charAt(a), s = r.charCodeAt(0), o = -1;
+			let o = -1;
+			const r = paipu.charAt(a), s = r.charCodeAt(0);
 			s >= i && s < i + 10 ? o = s - i : s >= n && s < n + 26 && (o = s - n + 10), e += -1 != o ? (o = (o + 55 - a) % 36) < 10 ? String.fromCharCode(o + i) : String.fromCharCode(o + n - 10) : r;
 		}
 		return e;
@@ -54,7 +55,7 @@ export class Codec {
 	private readonly wrapper: Type;
 
 	constructor(private readonly protobufRoot: Root) {
-		this.wrapper = protobufRoot.lookupType('Wrapper');
+		this.wrapper = protobufRoot.lookupType("Wrapper");
 	}
 
 	public decode<T = any>(data: Buffer): T {

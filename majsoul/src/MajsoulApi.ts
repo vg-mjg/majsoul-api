@@ -1,7 +1,7 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 import { Root } from "protobufjs";
-import { from, interval, merge, Observable, of, pipe, using } from 'rxjs';
-import { catchError, filter, map, mergeAll, timeout } from 'rxjs/operators';
+import { from, interval, merge, Observable, of, using } from "rxjs";
+import { catchError, filter, map, mergeAll, timeout } from "rxjs/operators";
 import { Contest, Passport, Player } from "./types/types.js";
 import { Codec } from "./Codec.js";
 import { MessageType } from "./types/MessageType.js";
@@ -11,7 +11,7 @@ import { RpcService } from "./Service.js";
 import { ApiResources } from "./ApiResources.js";
 import { GameRecord } from "./types/GameRecordResponse.js";
 import { PlayerZone } from "./types/PlayerZone.js";
-import fetch from 'node-fetch';
+import fetch from "node-fetch";
 import type { lq } from "./types/liqi.js";
 
 export class MajsoulApi {
@@ -52,12 +52,12 @@ export class MajsoulApi {
 	public readonly notifications: Observable<any>;
 
 	constructor(private readonly apiResources: ApiResources) {
-		this.protobufRoot = Root.fromJSON(this.apiResources.protobufDefinition);
-		this.clientVersion = `web-${this.apiResources.version.slice(0, -2)}`;
+		this.protobufRoot = Root.fromJSON(apiResources.protobufDefinition);
+		this.clientVersion = `web-${apiResources.version.slice(0, -2)}`;
 		console.log(`Client version: [${this.clientVersion}]`);
 		this.codec = new Codec(this.protobufRoot);
-		const serverIndex = Math.floor(Math.random() * this.apiResources.serverList.servers.length);
-		this.connection = new Connection(`wss://${this.apiResources.serverList.servers[serverIndex]}`);
+		const serverIndex = Math.floor(Math.random() * apiResources.serverList.servers.length);
+		this.connection = new Connection(`wss://${apiResources.serverList.servers[serverIndex]}`);
 		this.notifications = this.connection.messages.pipe(filter(message => message.type === MessageType.Notification), map(message => this.codec.decode(message.data)));
 		this.rpc = new RpcImplementation(this.connection, this.protobufRoot);
 		this.lobbyService = this.rpc.getService("Lobby");
@@ -123,7 +123,7 @@ export class MajsoulApi {
 		const reqOauth2Check: lq.IReqOauth2Check = {
 			type,
 			access_token: respOauth2Auth.access_token
-		}
+		};
 
 		let respOauth2Check = await this.lobbyService.rpcCall<lq.IReqOauth2Check, lq.IResOauth2Check>("oauth2Check", reqOauth2Check);
 		if (!respOauth2Check.has_account) {
@@ -139,13 +139,13 @@ export class MajsoulApi {
 				access_token: respOauth2Auth.access_token,
 				reconnect: false,
 				device: {
-					platform: 'pc',
-					hardware: 'pc',
-					os: 'windows',
-					os_version: 'win10',
+					platform: "pc",
+					hardware: "pc",
+					os: "windows",
+					os_version: "win10",
 					is_browser: true,
-					software: 'Chrome',
-					sale_platform: 'web'
+					software: "Chrome",
+					sale_platform: "web"
 				},
 				random_key: uuidv4(),
 				client_version: { resource: this.apiResources.version },
@@ -154,7 +154,7 @@ export class MajsoulApi {
 		);
 
 		if (!respOauth2Login.account) {
-			throw Error(`Couldn't log in to user id`);
+			throw Error("Couldn't log in to user id");
 		}
 		console.log(`Logged in as ${respOauth2Login.account.nickname} account id ${respOauth2Login.account_id}`);
 		console.log("Connection ready");
@@ -187,6 +187,7 @@ export class MajsoulApi {
 	}[]> {
 		let nextIndex = undefined;
 		const idLog = {};
+		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			const resp = await this.lobbyService.rpcCall<lq.IReqFetchCustomizedContestGameRecords, lq.IResFetchCustomizedContestGameRecords>(
 				"fetchCustomizedContestGameRecords",
@@ -234,7 +235,7 @@ export class MajsoulApi {
 						{ unique_id: id }
 					).then((resp) => {
 						console.log(`tracking room '${id}'`, resp);
-					});;
+					});
 				} else {
 					this.contestSystemMessagesSubscriptions[id]++;
 				}
@@ -266,7 +267,7 @@ export class MajsoulApi {
 			return {
 				majsoulId: player.account_id,
 				nickname: player.nickname
-			}
+			};
 		} catch (e) {
 			console.log(e);
 			return null;
@@ -288,9 +289,9 @@ export class MajsoulApi {
 					details.records.length > 0
 						? details.records
 						: (details.actions
-								.filter(action => action.type === 1)
-								.map(action => action.result))
-					).map(item => this.codec.decode(item as Buffer))
+							.filter(action => action.type === 1)
+							.map(action => action.result))
+				).map(item => this.codec.decode(item as Buffer))
 			};
 		}
 		catch (e) {

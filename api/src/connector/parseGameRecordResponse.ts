@@ -4,19 +4,19 @@ import syanten from "syanten";
 import { GameRecord, Han } from "majsoul";
 import { lq } from "majsoul";
 
-function handValue(hule: any, dealer_seat: number, honba: number, np: number): number {
-	//won't work with pao
-	let val = (np - 1) * 100 * honba;
-	if (hule.zimo) {
-		if (dealer_seat == hule.seat)
-			val += (np - 1) * hule.point_zimo_xian;
-		else
-			val += hule.point_zimo_qin + (np - 2) * hule.point_zimo_xian;
-	} else
-		val += (np - 2) * hule.point_rong;
+// function handValue(hule: any, dealer_seat: number, honba: number, np: number): number {
+// 	//won't work with pao
+// 	let val = (np - 1) * 100 * honba;
+// 	if (hule.zimo) {
+// 		if (dealer_seat == hule.seat)
+// 			val += (np - 1) * hule.point_zimo_xian;
+// 		else
+// 			val += hule.point_zimo_qin + (np - 2) * hule.point_zimo_xian;
+// 	} else
+// 		val += (np - 2) * hule.point_rong;
 
-	return val;
-}
+// 	return val;
+// }
 
 const suitKeyMap: Record<string, number> = { m: 0, p: 1, s: 2, z: 3 };
 function handShanten(hand: string[]): number {
@@ -34,7 +34,7 @@ function handShanten(hand: string[]): number {
 		}
 
 		hai[suitKeyMap[t[1]]][num - 1]++;
-	};
+	}
 
 	return syanten(hai);
 }
@@ -61,7 +61,7 @@ function getAgariRecord(record: any, hule: lq.IHuleInfo, round: RoundInfo): Agar
 
 export function parseGameRecordResponse(game: GameRecord): GameResult {
 	if (!game?.data_url && !game?.data?.length) {
-		console.log(`No data in response`);
+		console.log("No data in response");
 		return null;
 	}
 
@@ -82,200 +82,200 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 	for (let i = 0; i < game.records.length; i++) {
 		const record = game.records[i];
 		switch (record.constructor.name) {
-			case "RecordNewRound": {
-				const recordNewRound = record as lq.RecordNewRound;
+		case "RecordNewRound": {
+			const recordNewRound = record as lq.RecordNewRound;
 
-				round = {
-					round: recordNewRound.chang,
-					dealership: recordNewRound.ju,
-					repeat: recordNewRound.ben
-				};
+			round = {
+				round: recordNewRound.chang,
+				dealership: recordNewRound.ju,
+				repeat: recordNewRound.ben
+			};
 
-				kan_lock = new Set();
+			kan_lock = new Set();
 
-				losingSeat = null;
-				playerStats = [];
-				for (let p = 0; p < numberOfPlayers; p++) {
-					playerStats[p] = {
-						haipaiShanten: handShanten(recordNewRound['tiles' + p]),
-						calls: {
-							kans: {
-								ankan: 0,
-								daiminkan: 0,
-								rinshan: 0,
-								shouminkan: 0,
-								shouminkanRobbed: 0,
-							},
-							total: 0,
-							repeatOpportunities: 0,
-							opportunities: 0,
+			losingSeat = null;
+			playerStats = [];
+			for (let p = 0; p < numberOfPlayers; p++) {
+				playerStats[p] = {
+					haipaiShanten: handShanten(recordNewRound["tiles" + p]),
+					calls: {
+						kans: {
+							ankan: 0,
+							daiminkan: 0,
+							rinshan: 0,
+							shouminkan: 0,
+							shouminkanRobbed: 0,
 						},
-						finalHandState: {
-							status: HandStatus.Closed
-						}
-					};
-				}
+						total: 0,
+						repeatOpportunities: 0,
+						opportunities: 0,
+					},
+					finalHandState: {
+						status: HandStatus.Closed
+					}
+				};
+			}
+			break;
+		}
+		case "RecordDiscardTile": {
+			const recordDiscardTile = record as lq.RecordDiscardTile;
+			losingSeat = recordDiscardTile.seat;
+
+			if (recordDiscardTile.is_wliqi || recordDiscardTile.is_liqi) {
+				playerStats[recordDiscardTile.seat].finalHandState = {
+					status: HandStatus.Riichi,
+					index: playerStats.filter(player => player.finalHandState.status === HandStatus.Riichi).length,
+					furiten: recordDiscardTile.zhenting[recordDiscardTile.seat]
+				};
+			}
+
+			//calls
+			if (game.data.length <= i) {
+				console.log("Game record ends with Discard event");
 				break;
 			}
-			case "RecordDiscardTile": {
-				const recordDiscardTile = record as lq.RecordDiscardTile;
-				losingSeat = recordDiscardTile.seat;
 
-				if (recordDiscardTile.is_wliqi || recordDiscardTile.is_liqi) {
-					playerStats[recordDiscardTile.seat].finalHandState = {
-						status: HandStatus.Riichi,
-						index: playerStats.filter(player => player.finalHandState.status === HandStatus.Riichi).length,
-						furiten: recordDiscardTile.zhenting[recordDiscardTile.seat]
-					}
-				}
-
-				//calls
-				if (game.data.length <= i) {
-					console.log("Game record ends with Discard event");
-					break;
-				}
-
-				if (!recordDiscardTile.operations) {
-					break;
-				}
-
-				const recordNext = game.records[i + 1];
-				if (!recordNext) {
-					break;
-				}
-
-				if (recordNext.constructor.name === "RecordHule") {
-					//somebody ronned. nobody could call anyways
-					break;
-				}
-
-				if (recordNext.constructor.name === "RecordChiPengGang") {
-					const nextRecordChiPengGang = recordNext as lq.RecordChiPengGang;
-					//somebody called
-					if (nextRecordChiPengGang.type !== 0) {//somebody chii'd. count all
-						playerStats[nextRecordChiPengGang.seat].calls.opportunities++;
-						break;
-					}
-				}
-
-				//ignoring ron calls, get list of seats that can call
-				const callOpportunities = recordDiscardTile.operations
-					.filter(x => x.operation_list.find(op => op.type !== 9) != null)
-					.reduce((total, next) => (total.add(next.seat), total), new Set<number>());
-
-				for (const player of callOpportunities) {
-					playerStats[player].calls.opportunities++;
-				};
-
+			if (!recordDiscardTile.operations) {
 				break;
-			} case "RecordDealTile": {
-				const recordDealTile = record as lq.RecordDealTile;
-				//shouminkan/ankan opportunity (types 4/6)
-				if (!recordDealTile.operation?.operation_list) {
+			}
+
+			const recordNext = game.records[i + 1];
+			if (!recordNext) {
+				break;
+			}
+
+			if (recordNext.constructor.name === "RecordHule") {
+				//somebody ronned. nobody could call anyways
+				break;
+			}
+
+			if (recordNext.constructor.name === "RecordChiPengGang") {
+				const nextRecordChiPengGang = recordNext as lq.RecordChiPengGang;
+				//somebody called
+				if (nextRecordChiPengGang.type !== 0) {//somebody chii'd. count all
+					playerStats[nextRecordChiPengGang.seat].calls.opportunities++;
 					break;
 				}
+			}
 
-				const kans = recordDealTile.operation.operation_list.filter(e => (4 == e.type || 6 == e.type));
-				for (const kan of kans) {
-					if (kan_lock.has(kan.combination[0])) {
-						playerStats[recordDealTile.seat].calls.repeatOpportunities++;
-						continue;
-					}
-					playerStats[recordDealTile.seat].calls.opportunities++;
-					kan_lock.add(kan.combination[0]);
-				}
+			//ignoring ron calls, get list of seats that can call
+			const callOpportunities = recordDiscardTile.operations
+				.filter(x => x.operation_list.find(op => op.type !== 9) != null)
+				.reduce((total, next) => (total.add(next.seat), total), new Set<number>());
+
+			for (const player of callOpportunities) {
+				playerStats[player].calls.opportunities++;
+			}
+
+			break;
+		} case "RecordDealTile": {
+			const recordDealTile = record as lq.RecordDealTile;
+			//shouminkan/ankan opportunity (types 4/6)
+			if (!recordDealTile.operation?.operation_list) {
 				break;
-			} case "RecordAnGangAddGang": {
-				const recordAnGangAddGang = record as lq.RecordAnGangAddGang;
-				playerStats[recordAnGangAddGang.seat].calls.total++;
-				switch (recordAnGangAddGang.type) {
-					case 2: {
-						playerStats[recordAnGangAddGang.seat].calls.kans.shouminkan++;
-						break;
-					}
-					case 3: {
-						playerStats[recordAnGangAddGang.seat].calls.kans.ankan++;
-						break;
-					}
+			}
+
+			const kans = recordDealTile.operation.operation_list.filter(e => (4 == e.type || 6 == e.type));
+			for (const kan of kans) {
+				if (kan_lock.has(kan.combination[0])) {
+					playerStats[recordDealTile.seat].calls.repeatOpportunities++;
+					continue;
 				}
-				losingSeat = recordAnGangAddGang.seat;
+				playerStats[recordDealTile.seat].calls.opportunities++;
+				kan_lock.add(kan.combination[0]);
+			}
+			break;
+		} case "RecordAnGangAddGang": {
+			const recordAnGangAddGang = record as lq.RecordAnGangAddGang;
+			playerStats[recordAnGangAddGang.seat].calls.total++;
+			switch (recordAnGangAddGang.type) {
+			case 2: {
+				playerStats[recordAnGangAddGang.seat].calls.kans.shouminkan++;
 				break;
-			} case "RecordChiPengGang": {
-				const recordChiPengGang = record as lq.RecordChiPengGang;
-				playerStats[recordChiPengGang.seat].calls.total++;
-
-				if (recordChiPengGang.type === 2) {
-					playerStats[recordChiPengGang.seat].calls.kans.daiminkan++;
-				}
-
-				if (playerStats[recordChiPengGang.seat].finalHandState.status === HandStatus.Open) {
-					break;
-				}
-
-				playerStats[recordChiPengGang.seat].finalHandState = {
-					status: HandStatus.Open
-				}
+			}
+			case 3: {
+				playerStats[recordAnGangAddGang.seat].calls.kans.ankan++;
 				break;
-			} case "RecordNoTile": {
-				const recordNoTile = record as lq.RecordNoTile;
+			}
+			}
+			losingSeat = recordAnGangAddGang.seat;
+			break;
+		} case "RecordChiPengGang": {
+			const recordChiPengGang = record as lq.RecordChiPengGang;
+			playerStats[recordChiPengGang.seat].calls.total++;
 
+			if (recordChiPengGang.type === 2) {
+				playerStats[recordChiPengGang.seat].calls.kans.daiminkan++;
+			}
+
+			if (playerStats[recordChiPengGang.seat].finalHandState.status === HandStatus.Open) {
+				break;
+			}
+
+			playerStats[recordChiPengGang.seat].finalHandState = {
+				status: HandStatus.Open
+			};
+			break;
+		} case "RecordNoTile": {
+			const recordNoTile = record as lq.RecordNoTile;
+
+			rounds.push({
+				round,
+				draw: {
+					playerDrawStatus: (recordNoTile.players as any[]).map((player, index) => {
+						if (recordNoTile.liujumanguan && (recordNoTile.scores as any[]).find(score => score.seat === index)) {
+							return DrawStatus.Nagashi_Mangan;
+						}
+						return player.tingpai ? DrawStatus.Tenpai : DrawStatus.Noten;
+					})
+				},
+				playerStats
+			});
+			break;
+		} case "RecordHule": {
+			const recordHule = record as lq.RecordHule;
+
+			if (recordHule.hules[0].zimo) {
+				const hule = recordHule.hules[0];
+				const agariInfo = getAgariRecord(record, hule, round);
 				rounds.push({
 					round,
-					draw: {
-						playerDrawStatus: (recordNoTile.players as any[]).map((player, index) => {
-							if (recordNoTile.liujumanguan && (recordNoTile.scores as any[]).find(score => score.seat === index)) {
-								return DrawStatus.Nagashi_Mangan;
-							}
-							return player.tingpai ? DrawStatus.Tenpai : DrawStatus.Noten;
-						})
+					tsumo: {
+						...agariInfo,
+						dealerValue: hule.point_zimo_qin,
 					},
 					playerStats
 				});
-				break;
-			} case "RecordHule": {
-				const recordHule = record as lq.RecordHule;
 
-				if (recordHule.hules[0].zimo) {
-					const hule = recordHule.hules[0];
-					const agariInfo = getAgariRecord(record, hule, round);
-					rounds.push({
-						round,
-						tsumo: {
-							...agariInfo,
-							dealerValue: hule.point_zimo_qin,
-						},
-						playerStats
-					});
-
-					if (agariInfo.han?.find(h => h === Han.After_a_Kan)) {
-						playerStats[hule.seat].calls.kans.rinshan++;
-					}
-					break;
+				if (agariInfo.han?.find(h => h === Han.After_a_Kan)) {
+					playerStats[hule.seat].calls.kans.rinshan++;
 				}
-
-				let chankan = false;
-				rounds.push({
-					round,
-					rons: (recordHule.hules).map(hule => {
-						const agariInfo = getAgariRecord(record, hule, round);
-						if (agariInfo.han?.find(h => h === Han.Robbing_a_Kan)) {
-							chankan = true;
-						}
-
-						return {
-							...agariInfo,
-							loser: losingSeat
-						};
-					}),
-					playerStats
-				});
-
-				if (chankan) {
-					playerStats[losingSeat].calls.kans.shouminkanRobbed++;
-				}
-
 				break;
 			}
+
+			let chankan = false;
+			rounds.push({
+				round,
+				rons: (recordHule.hules).map(hule => {
+					const agariInfo = getAgariRecord(record, hule, round);
+					if (agariInfo.han?.find(h => h === Han.Robbing_a_Kan)) {
+						chankan = true;
+					}
+
+					return {
+						...agariInfo,
+						loser: losingSeat
+					};
+				}),
+				playerStats
+			});
+
+			if (chankan) {
+				playerStats[losingSeat].calls.kans.shouminkanRobbed++;
+			}
+
+			break;
+		}
 		}
 	}
 
@@ -302,7 +302,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 				_id: null,
 				nickname: account.nickname,
 				majsoulId: account.account_id,
-			}
+			};
 		}),
 		finalScore: players.map(playerItem => ({
 			score: playerItem.part_point_1,

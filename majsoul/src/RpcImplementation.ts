@@ -1,5 +1,5 @@
 import { Root, Method, RPCImplCallback, Type } from "protobufjs";
-import { Subscription } from 'rxjs';
+import { Subscription } from "rxjs";
 import { Codec } from "./Codec.js";
 import { MessageType } from "./types/MessageType.js";
 import { Connection } from "./Connection.js";
@@ -15,7 +15,7 @@ export class RpcImplementation {
 	private index = 0;
 
 	constructor(private readonly connection: Connection, private readonly protobufRoot: Root) {
-		this.wrapper = protobufRoot.lookupType('Wrapper');
+		this.wrapper = protobufRoot.lookupType("Wrapper");
 		this.dataSubscription = connection.messages.subscribe((message) => {
 			if (message.type !== MessageType.Response) {
 				return;

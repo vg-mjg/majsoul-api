@@ -1,5 +1,5 @@
 import { ChangeStreamDocument, ChangeStream, Collection, MongoClient, ObjectId } from "mongodb";
-import { Contest, GameResult, Player, User, Session, Config, GameResultVersion, latestGameResultVersion, GameCorrection, GachaPull } from "./types/types.js";
+import { Contest, GameResult, Player, User, Session, Config, latestGameResultVersion, GameCorrection, GachaPull } from "./types/types.js";
 import { Observable, Subject } from "rxjs";
 
 interface Migration {
@@ -49,14 +49,14 @@ export class Store {
 	}
 
 	public async init(username: string, password: string): Promise<void> {
-		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? 'majsoul_mongo' : 'localhost'}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
+		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? "majsoul_mongo" : "localhost"}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`;
 		const client = new MongoClient(url);
 
 		await client.connect();
 
 		console.log("Connected successfully to server");
 
-		const majsoulDb = client.db('majsoul');
+		const majsoulDb = client.db("majsoul");
 
 		this.contestCollection = await majsoulDb.collection("contests");
 		this.gamesCollection = await majsoulDb.collection("games");
@@ -77,7 +77,7 @@ export class Store {
 			this.configCollection.insertOne({});
 		}
 
-		const oauthDb = client.db('oauth');
+		const oauthDb = client.db("oauth");
 		this.userCollection = await oauthDb.collection("users", {});
 	}
 

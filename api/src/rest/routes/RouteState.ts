@@ -1,14 +1,14 @@
-import * as store from '../../store/index.js';
-import { GameResult, Session, LeaguePhase, PlayerTourneyStandingInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from '../types/types.js';
-import { ObjectId, Filter, Condition, FindOptions } from 'mongodb';
-import { concat, defer, from, Observable, of, lastValueFrom } from 'rxjs';
-import { map, mergeWith, mergeAll, mergeScan, pairwise, toArray } from 'rxjs/operators';
-import { Rest, Store } from '../../index.js';
-import { buildContestPhases, GachaGroup, GachaPull, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from '../../store/index.js';
-import { ContestOption } from '../ContestOption.js';
-import { PlayerContestTypeResults } from '../PlayerContestTypeResults.js';
-import { bilateralSort } from '../utils/bilateralSort.js';
-import { OAuth2Client } from 'google-auth-library';
+import * as store from "../../store/index.js";
+import { GameResult, Session, LeaguePhase, PlayerTourneyStandingInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from "../types/types.js";
+import { ObjectId, Filter, Condition, FindOptions } from "mongodb";
+import { concat, defer, from, Observable, of, lastValueFrom } from "rxjs";
+import { map, mergeWith, mergeAll, mergeScan, pairwise, toArray } from "rxjs/operators";
+import { Rest, Store } from "../../index.js";
+import { buildContestPhases, GachaGroup, GachaPull, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from "../../store/index.js";
+import { ContestOption } from "../ContestOption.js";
+import { PlayerContestTypeResults } from "../PlayerContestTypeResults.js";
+import { bilateralSort } from "../utils/bilateralSort.js";
+import { OAuth2Client } from "google-auth-library";
 import { MajsoulApi } from "majsoul";
 
 export class RouteState {
@@ -28,7 +28,7 @@ export class RouteState {
 			},
 			options ?? {
 				projection: {
-					'teams.image': false,
+					"teams.image": false,
 					sessions: false,
 				}
 			}
@@ -45,7 +45,7 @@ export class RouteState {
 		};
 
 		if (endSession) {
-			timeWindow.$lt = endSession.scheduledTime
+			timeWindow.$lt = endSession.scheduledTime;
 		}
 
 		const games = await this.getGames({
@@ -98,8 +98,8 @@ export class RouteState {
 				type: true,
 				tourneyType: true,
 				startTime: true,
-				'teams._id': true,
-				'teams.players._id': true,
+				"teams._id": true,
+				"teams.players._id": true,
 				transitions: true,
 				initialPhaseName: true,
 				maxGames: true,
@@ -115,7 +115,7 @@ export class RouteState {
 	}
 
 	public createRestPhases(phaseInfo: Store.PhaseInfo<ObjectId>): Rest.PhaseMetadata[] {
-		return phaseInfo?.phases?.map((phase, index) => ({
+		return phaseInfo?.phases?.map((phase) => ({
 			name: phase.name,
 			startTime: phase.startTime,
 			index: phase.index,
@@ -184,7 +184,7 @@ export class RouteState {
 							...next,
 							totals: filteredTotals,
 							aggregateTotals,
-						})
+						});
 						return total;
 					}, [] as Session<ObjectId>[]),
 					aggregateTotals: startingTotals,
@@ -207,7 +207,7 @@ export class RouteState {
 		};
 
 		for (const type in details) {
-			details[type] = {...details[type]}
+			details[type] = {...details[type]};
 		}
 
 		return {
@@ -320,7 +320,7 @@ export class RouteState {
 			mergeAll(),
 			toArray()
 		));
-	};
+	}
 
 	public async getTourneyPhaseStandings(
 		contest: Store.Contest<ObjectId>,
@@ -348,12 +348,12 @@ export class RouteState {
 					type: scoreTypeLevel.type,
 					typeDetails: scoreTypeLevel.typeDetails,
 					id,
-				}
-			};
+				};
+			}
 
 			if (scoreTypeLevel.suborder) {
 				scoreTypeLevels.push(
-					...scoreTypeLevel.suborder?.map(type => ({...type, id: this.generateScoringTypeId(type)}))
+					...scoreTypeLevel.suborder?.map(type => ({...type, id: this.generateScoringTypeId(type)})) ?? []
 				);
 			}
 		}
@@ -383,27 +383,27 @@ export class RouteState {
 		let eliminationLevels : EliminationLevel[];
 		for (const type of scoringTypes) {
 			switch (type.type) {
-				case TourneyContestScoringType.Consecutive: {
-					resultsByType[type.id] = this.getConsectutiveResults(type, games, maxGames);
-					break;
-				} case TourneyContestScoringType.Cumulative: {
-					resultsByType[type.id] = this.getCumulativeResults(games, maxGames);
-					break;
-				} case TourneyContestScoringType.Kans: {
-					resultsByType[type.id] = this.getKanResults(games, maxGames);
-					break;
-				} case TourneyContestScoringType.EliminationBrackets: {
-					eliminationLevels = await this.getEliminationLevels(contest, storePhase, games);
-					resultsByType[type.id] = this.getEliminationBracketResults(eliminationLevels);
-					break;
-				} case TourneyContestScoringType.Gacha: {
-					resultsByType[type.id] = await this.getGachaResults(games, maxGames, contest);
-					break;
-				}
+			case TourneyContestScoringType.Consecutive: {
+				resultsByType[type.id] = this.getConsectutiveResults(type, games, maxGames);
+				break;
+			} case TourneyContestScoringType.Cumulative: {
+				resultsByType[type.id] = this.getCumulativeResults(games, maxGames);
+				break;
+			} case TourneyContestScoringType.Kans: {
+				resultsByType[type.id] = this.getKanResults(games, maxGames);
+				break;
+			} case TourneyContestScoringType.EliminationBrackets: {
+				eliminationLevels = await this.getEliminationLevels(contest, storePhase, games);
+				resultsByType[type.id] = this.getEliminationBracketResults(eliminationLevels);
+				break;
+			} case TourneyContestScoringType.Gacha: {
+				resultsByType[type.id] = await this.getGachaResults(games, maxGames, contest);
+				break;
+			}
 			}
 		}
 
-		let players = await this.namePlayers(
+		const players = await this.namePlayers(
 			await this.mongoStore.playersCollection.find({
 				_id: { $in: Object.keys(resultsByType[contestTypes[0].id]).map(ObjectId.createFromHexString) }
 			}).toArray(),
@@ -429,12 +429,12 @@ export class RouteState {
 						total[type.id].gachaData = result.gachaPulls;
 					}
 					return total;
-				}, {} as PlayerScoreTypeRanking['details'])
+				}, {} as PlayerScoreTypeRanking["details"])
 			}
 		})).reduce(
 			(total, next) => (total[next.player._id] = next, total),
 			{} as Record<string, PlayerTourneyStandingInformation>
-		)
+		);
 
 		this.rankPlayersUsingContestRules(
 			Object.values(playerResults).map(player => ({
@@ -463,7 +463,7 @@ export class RouteState {
 
 			for (const team of teams) {
 				const teamPlayerResults = [
-					...team.playerIds?.map(player => playerResults[player]),
+					...team.playerIds?.map(player => playerResults[player]) ?? [],
 					...freeAgents
 				].filter(player => player) ?? [];
 				for (const result of teamPlayerResults) {
@@ -472,14 +472,14 @@ export class RouteState {
 						result.rankingDetails = {
 							type: PlayerRankingType.Team,
 							details: {}
-						}
+						};
 					}
 
 					result.rankingDetails.details[team.id] = {
 						rank: 0,
 						qualificationType: null,
 						scoreRanking: this.copyScoreRanking(scoreRankings[result.player._id])
-					}
+					};
 				}
 
 				for (const scoreType of [...scoringTypes]) {
@@ -531,7 +531,7 @@ export class RouteState {
 		return {
 			scoringTypes,
 			standings: Object.values(playerResults).sort((a, b) => a.rank - b.rank),
-		}
+		};
 	}
 
 	public getConsectutiveResults(
@@ -569,14 +569,14 @@ export class RouteState {
 				playerData.score += score;
 				if (playerData.totalMatches > gamesToCount) {
 					const removedGame = playerData.currentSequence.shift();
-					playerData.score -= removedGame.score
+					playerData.score -= removedGame.score;
 					if (playerData.score * scoreFlip > playerData.maxScore * scoreFlip) {
 						playerData.maxScore = playerData.score;
-						playerData.maxSequence = playerData.currentSequence.map(game => game.id)
+						playerData.maxSequence = playerData.currentSequence.map(game => game.id);
 					}
 				} else {
 					playerData.maxSequence.push(next._id.toHexString());
-					playerData.maxScore = playerData.score
+					playerData.maxScore = playerData.score;
 				}
 			}
 			return total;
@@ -599,15 +599,15 @@ export class RouteState {
 				return result;
 			})
 			.reduce((total, [id, result]) => {
-			total[id] = {
-				playerId: id,
-				rank: result.rank,
-				score: result.maxScore,
-				totalMatches: result.totalMatches,
-				highlightedGameIds: result.maxSequence,
-			};
-			return total;
-		}, {} as Record<string, PlayerContestTypeResults>);
+				total[id] = {
+					playerId: id,
+					rank: result.rank,
+					score: result.maxScore,
+					totalMatches: result.totalMatches,
+					highlightedGameIds: result.maxSequence,
+				};
+				return total;
+			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
 	public getCumulativeResults(games: GameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
@@ -649,15 +649,15 @@ export class RouteState {
 				return result;
 			})
 			.reduce((total, [id, result]) => {
-			total[id] = {
-				playerId: id,
-				rank: result.rank + 1,
-				score: result.score,
-				totalMatches: result.totalMatches,
-				highlightedGameIds: result.highlightedGameIds
-			};
-			return total;
-		}, {} as Record<string, PlayerContestTypeResults>);
+				total[id] = {
+					playerId: id,
+					rank: result.rank + 1,
+					score: result.score,
+					totalMatches: result.totalMatches,
+					highlightedGameIds: result.highlightedGameIds
+				};
+				return total;
+			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
 	public getKanResults(games: GameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
@@ -709,15 +709,15 @@ export class RouteState {
 				return result;
 			})
 			.reduce((total, [id, result]) => {
-			total[id] = {
-				playerId: id,
-				rank: result.rank + 1,
-				score: result.score,
-				highlightedGameIds: result.gamesWithKans,
-				totalMatches: result.totalMatches,
-			};
-			return total;
-		}, {} as Record<string, PlayerContestTypeResults>);
+				total[id] = {
+					playerId: id,
+					rank: result.rank + 1,
+					score: result.score,
+					highlightedGameIds: result.gamesWithKans,
+					totalMatches: result.totalMatches,
+				};
+				return total;
+			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
 	public async getGachaResults(games: GameResult[], maxGames: number, contest: store.Contest): Promise<Record<string, PlayerContestTypeResults>> {
@@ -733,7 +733,7 @@ export class RouteState {
 			const playerId = next.playerId.toHexString();
 			total[playerId] ??= [];
 			total[playerId].push(next);
-			return total
+			return total;
 		}, {} as Record<string, GachaPull<ObjectId>[]>);
 
 		const players = Object.values(results);
@@ -749,7 +749,7 @@ export class RouteState {
 			bilateralSort(
 				players,
 				(player) => rollsPerPlayer[player.playerId]?.filter(roll => roll.gachaGroupId.equals(group._id))?.length ?? 0
-			)
+			);
 		}
 
 		players.forEach((player, index) => {
@@ -761,13 +761,14 @@ export class RouteState {
 			}
 
 			let group = [] as GachaPull<ObjectId>[];
+			// eslint-disable-next-line no-constant-condition
 			while (true) {
 				const pull = rollsPerPlayer[player.playerId].pop();
 				if (group[0]?.gachaGroupId && !group[0].gachaGroupId.equals(pull?.gachaGroupId)) {
 					player.gachaPulls.push({
 						name: groupMap[group[0]?.gachaGroupId.toHexString()].name,
 						cards: group.map(card => card.gachaCardId.toHexString()),
-					})
+					});
 					group = [];
 				}
 
@@ -878,7 +879,7 @@ export class RouteState {
 							score: 0,
 							totalMatches: 0,
 							highlightedGameIds: []
-						}
+						};
 						results[playerId].totalMatches++;
 						results[playerId].highlightedGameIds.push(game._id.toHexString());
 					});
@@ -921,12 +922,12 @@ export class RouteState {
 			for (const correction of corrections) {
 				const game = gameMap[correction.gameId.toHexString()];
 				for(let i = 0; i < game.finalScore.length; i++) {
-					const umaCorrection = correction.finalScore[i].uma
+					const umaCorrection = correction.finalScore[i].uma;
 					if (!isNaN(umaCorrection)) {
 						game.finalScore[i].uma += umaCorrection;
 					}
 
-					const scoreCorrection = correction.finalScore[i].score
+					const scoreCorrection = correction.finalScore[i].score;
 					if (!isNaN(scoreCorrection)) {
 						game.finalScore[i].score += scoreCorrection;
 					}

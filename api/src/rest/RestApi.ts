@@ -1,19 +1,19 @@
-import express from 'express';
+import express from "express";
 import cors from "cors";
-import * as store from '../store/index.js';
+import * as store from "../store/index.js";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { google } from 'googleapis';
-import { getSecrets } from '../secrets.js';
-import { contestRoute } from './routes/contest/ContestRoute.js';
-import { RouteState } from './routes/RouteState.js';
-import { registerAdminMethods, registerPublicMethods } from './routes/Route.js';
-import { expressjwt } from 'express-jwt';
+import { google } from "googleapis";
+import { getSecrets } from "../secrets.js";
+import { contestRoute } from "./routes/contest/ContestRoute.js";
+import { RouteState } from "./routes/RouteState.js";
+import { registerAdminMethods, registerPublicMethods } from "./routes/Route.js";
+import { expressjwt } from "express-jwt";
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
-		return new Promise<Buffer>((res, rej) => fs.readFile(path.join(RestApi.keyLocation, keyName), (err, key) => {
+		return new Promise<Buffer>((res) => fs.readFile(path.join(RestApi.keyLocation, keyName), (err, key) => {
 			if (err) {
 				console.log("couldn't load private key for auth tokens, disabling rigging");
 				console.log(err);
@@ -38,7 +38,7 @@ export class RestApi {
 		const oauth2Client = new google.auth.OAuth2(
 			secrets.google.clientId,
 			secrets.google.clientSecret,
-			`${process.env.NODE_ENV === "production" ? "https" : `http`}://${process.env.NODE_ENV === "production" ? "riichi.moe" : `localhost:8080`}/rigging/google`
+			`${process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.NODE_ENV === "production" ? "riichi.moe" : "localhost:8080"}/rigging/google`
 		);
 
 		if (root?.username != null && root?.password != null) {
@@ -61,7 +61,7 @@ export class RestApi {
 			);
 		}
 
-		app.listen(9515, () => console.log(`Express started`));
+		app.listen(9515, () => console.log("Express started"));
 
 		let privateKey: Buffer, publicKey: Buffer;
 		try {
@@ -95,8 +95,8 @@ export class RestApi {
 					method: "GET"
 				})
 			).use(function (err, req, res, next) {
-				if (err.name === 'UnauthorizedError') {
-					res.status(401).send('token invalid');
+				if (err.name === "UnauthorizedError") {
+					res.status(401).send("token invalid");
 					return;
 				}
 				next();

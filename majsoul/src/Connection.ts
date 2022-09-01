@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable } from "rxjs";
 import { Codec } from "./Codec.js";
 import { MessageType } from "./types/MessageType.js";
 import url from "url";
@@ -48,17 +48,17 @@ export class Connection {
 
 			this.socket.onerror = (event) => {
 				this.errorSubject.next(event);
-				console.log(`websocker onerror`, event);
-			}
+				console.log("websocker onerror", event);
+			};
 			this.socket.onclose = (event) => {
 				this.errorSubject.next(event);
-			}
-			this.socket.on("close", (a, b) => {
+			};
+			this.socket.on("close", () => {
 				this.errorSubject.next(null);
 			});
 			this.socket.on("error", (e) => {
 				this.errorSubject.next(e);
-				console.log(`websocket error`, e);
+				console.log("websocket error", e);
 			});
 			this.socket.on("open", () => resolve());
 		});

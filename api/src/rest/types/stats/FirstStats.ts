@@ -79,10 +79,10 @@ function createAgariStats(): AgariCategories<AgariStats> {
 			points: 0,
 			total: 0,
 		}
-	}
+	};
 }
 
-export function createStats(): FirstStats['stats'] {
+export function createStats(): FirstStats["stats"] {
 	return {
 		gamesPlayed: 0,
 		totalHands: 0,
@@ -125,5 +125,5 @@ export function createStats(): FirstStats['stats'] {
 			open: 0,
 			riichi: 0,
 		},
-	}
+	};
 }

@@ -198,7 +198,7 @@ export enum TourneyContestScoringType {
 export interface TourneyScoringTypeDetails {
 	type: TourneyContestScoringType;
 	typeDetails?: ConsecutiveScoringDetails;
-};
+}
 
 export type TourneyScoringInfoPart = TourneyScoringTypeDetails & TourneyScoringSharedInfo;
 

@@ -1,12 +1,12 @@
-import { ObjectId } from 'mongodb';
-import { Store } from '../../index.js';
-import { StatsVersion } from '../types/stats/StatsVersion.js';
-import { Stats } from '../types/stats/index.js';
-import { BaseStats } from '../types/stats/BaseStats.js';
-import { AgariCategories, createStats, FirstStats } from '../types/stats/FirstStats.js';
-import { Han } from 'majsoul';
-import { DrawStatus, HandStatus } from '../../store/index.js';
-import { KhanStats } from '../types/stats/KhanStats.js';
+import { ObjectId } from "mongodb";
+import { Store } from "../../index.js";
+import { StatsVersion } from "../types/stats/StatsVersion.js";
+import { Stats } from "../types/stats/index.js";
+import { BaseStats } from "../types/stats/BaseStats.js";
+import { AgariCategories, createStats, FirstStats } from "../types/stats/FirstStats.js";
+import { Han } from "majsoul";
+import { DrawStatus, HandStatus } from "../../store/index.js";
+import { KhanStats } from "../types/stats/KhanStats.js";
 
 interface PlayerData {
 	playerId: ObjectId;
@@ -32,7 +32,7 @@ export function collectStats(
 				version: StatsVersion.None,
 				...player,
 				stats: baseStats,
-			}
+			};
 		}
 
 		const firstStats = collectFirstStats(game, player, baseStats);
@@ -41,7 +41,7 @@ export function collectStats(
 				version: StatsVersion.First,
 				...player,
 				stats: firstStats,
-			}
+			};
 		}
 
 		const khanStats = collectKhanStats(game, player, firstStats);
@@ -73,10 +73,10 @@ function generateBaseStatsData(game: Store.GameResult<ObjectId>): BaseStatsShare
 			.map((score, seat) => ({ ...score, seat }))
 			.sort((a, b) => b.score - a.score)
 			.reduce((total, next, rank) => (total[next.seat] = rank + 1, total), [] as number[])
-	}
+	};
 }
 
-function collectBaseStats(game: Store.GameResult<ObjectId>, player: PlayerData, data: BaseStatsSharedData): BaseStats['stats'] {
+function collectBaseStats(game: Store.GameResult<ObjectId>, player: PlayerData, data: BaseStatsSharedData): BaseStats["stats"] {
 	return {
 		gamesPlayed: 1,
 		totalHands: game.rounds?.length ?? 0,
@@ -95,8 +95,8 @@ function selectCategory<T>(handStatus: HandStatus, agariStats: AgariCategories<T
 function collectFirstStats(
 	game: Store.GameResult<ObjectId>,
 	player: PlayerData,
-	baseStats: BaseStats['stats'],
-): FirstStats['stats'] {
+	baseStats: BaseStats["stats"],
+): FirstStats["stats"] {
 	return {
 		...game.rounds.reduce((total, round) => {
 			const stats = round.playerStats[player.seat];
@@ -138,50 +138,50 @@ function collectFirstStats(
 			}
 
 			switch (stats.finalHandState.status) {
-				case HandStatus.Riichi: {
-					total.riichi.total++;
+			case HandStatus.Riichi: {
+				total.riichi.total++;
 
-					if (stats.finalHandState.furiten) {
-						total.riichi.furiten++;
-					}
-
-					const index = stats.finalHandState.index;
-
-					if (index === 0) {
-						total.riichi.first++;
-					} else {
-						total.riichi.chase++;
-					}
-
-					if (round.playerStats.find(otherStats =>
-						otherStats.finalHandState.status === HandStatus.Riichi
-						&& otherStats.finalHandState.index > index
-					)) {
-						total.riichi.chased++;
-					}
-
-					if (win) {
-						const uraDora = win.han.filter(han => han === Han.Ura_Dora).length;
-						total.uraDora += uraDora;
-						if (uraDora > 0) {
-							total.riichi.uraHit++;
-						}
-						if (win.han.find(han => han === Han.Ippatsu)) {
-							total.riichi.ippatsu++;
-						}
-					} else if (round.draw) {
-						total.draws.riichi++;
-					}
-
-					break;
-				} case HandStatus.Open: {
-					total.calls.openedHands++;
-
-					if (round.draw) {
-						total.draws.open++;
-					}
-					break;
+				if (stats.finalHandState.furiten) {
+					total.riichi.furiten++;
 				}
+
+				const index = stats.finalHandState.index;
+
+				if (index === 0) {
+					total.riichi.first++;
+				} else {
+					total.riichi.chase++;
+				}
+
+				if (round.playerStats.find(otherStats =>
+					otherStats.finalHandState.status === HandStatus.Riichi
+						&& otherStats.finalHandState.index > index
+				)) {
+					total.riichi.chased++;
+				}
+
+				if (win) {
+					const uraDora = win.han.filter(han => han === Han.Ura_Dora).length;
+					total.uraDora += uraDora;
+					if (uraDora > 0) {
+						total.riichi.uraHit++;
+					}
+					if (win.han.find(han => han === Han.Ippatsu)) {
+						total.riichi.ippatsu++;
+					}
+				} else if (round.draw) {
+					total.draws.riichi++;
+				}
+
+				break;
+			} case HandStatus.Open: {
+				total.calls.openedHands++;
+
+				if (round.draw) {
+					total.draws.open++;
+				}
+				break;
+			}
 			}
 
 			return total;
@@ -193,9 +193,9 @@ function collectFirstStats(
 function collectKhanStats(
 	game: Store.GameResult<ObjectId>,
 	player: PlayerData,
-	firstStats: FirstStats['stats'],
-): KhanStats['stats'] {
-	const khanStats = firstStats as KhanStats['stats'];
+	firstStats: FirstStats["stats"],
+): KhanStats["stats"] {
+	const khanStats = firstStats as KhanStats["stats"];
 	khanStats.calls.kans = {
 		ankan: 0,
 		daiminkan: 0,

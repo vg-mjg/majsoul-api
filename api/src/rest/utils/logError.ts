@@ -1,4 +1,4 @@
-import * as express from 'express';
+import * as express from "express";
 
 export function logError<RequestType, ResponseType>(callback: (request: express.Request, response: express.Response<ResponseType>) => Promise<void> | void) {
 	return async (request: express.Request, response: express.Response<ResponseType>) => {

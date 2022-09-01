@@ -1,5 +1,5 @@
-import { ObjectId } from 'mongodb';
-import { Store } from '../index.js';
+import { ObjectId } from "mongodb";
+import { Store } from "../index.js";
 
 
 export interface ContestOption {

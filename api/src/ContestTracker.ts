@@ -1,9 +1,9 @@
-import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from 'mongodb';
+import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from "mongodb";
 import * as store from "./store/index.js";
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, mergeMap, throttleTime } from 'rxjs/operators';
+import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, mergeMap, throttleTime } from "rxjs/operators";
 import { nameofContest } from "./connector.js";
-import { MajsoulApi } from 'majsoul';
+import { MajsoulApi } from "majsoul";
 
 export class ContestTracker {
 	private contestDeleted$: Observable<any>;

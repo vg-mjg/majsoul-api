@@ -49,7 +49,7 @@ export class MajsoulAdminApi {
 		const reqOauth2Check: lq.IReqContestManageOauth2Login = {
 			type,
 			access_token: respOauth2Auth.access_token
-		}
+		};
 
 		const respOauth2Check = await this.contestManagerApiService.rpcCall<lq.IReqContestManageOauth2Login, lq.IResContestManageOauth2Login>("oauth2LoginContestManager", reqOauth2Check);
 		console.log(respOauth2Check);

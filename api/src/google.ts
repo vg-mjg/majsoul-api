@@ -1,9 +1,9 @@
-import { google, sheets_v4 } from 'googleapis';
-import { ObjectId } from 'mongodb';
-import { OAuth2Client } from 'google-auth-library';
-import { Observable, Subject } from 'rxjs';
-import { AgariInfo, ContestTeam, DrawStatus, GameResult, Player, RoundInfo, Wind } from './store/index.js';
-import { Han } from 'majsoul';
+import { google, sheets_v4 } from "googleapis";
+import { ObjectId } from "mongodb";
+import { OAuth2Client } from "google-auth-library";
+import { Observable, Subject } from "rxjs";
+import { AgariInfo, ContestTeam, DrawStatus, GameResult, Player, RoundInfo, Wind } from "./store/index.js";
+import { Han } from "majsoul";
 
 interface IHandDescription {
 	round: RoundInfo;
@@ -57,7 +57,7 @@ export class Spreadsheet {
 			blue: 0,
 			alpha: 1,
 		}
-	}
+	};
 
 	private static readonly gameResultsSheetName = "Riichi Robots Games";
 	private static readonly gameDetailsSheetName = "Riichi Robots Game Details";
@@ -78,7 +78,7 @@ export class Spreadsheet {
 		public readonly spreadsheetId: string,
 		oAuth2Client: OAuth2Client,
 	) {
-		this.sheets = google.sheets({version: 'v4', auth: oAuth2Client});
+		this.sheets = google.sheets({version: "v4", auth: oAuth2Client});
 		this.buffer.Chunks$.subscribe((chunk) => {
 			this.uploadTask = this.uploadTask
 				.then(async () => {
@@ -129,7 +129,7 @@ export class Spreadsheet {
 			{
 				spreadsheetId: this.spreadsheetId,
 				range: `${Spreadsheet.gameResultsSheetName}!A:A`,
-				valueRenderOption: 'UNFORMATTED_VALUE',
+				valueRenderOption: "UNFORMATTED_VALUE",
 			}
 		)).data;
 		this.recordedGameIds = gameResultsIds.values?.slice(1).map(v => v[0]).filter(v => isNaN(v)) ?? [];
@@ -137,7 +137,7 @@ export class Spreadsheet {
 			{
 				spreadsheetId: this.spreadsheetId,
 				range: `${Spreadsheet.gameDetailsSheetName}!A:A`,
-				valueRenderOption: 'UNFORMATTED_VALUE',
+				valueRenderOption: "UNFORMATTED_VALUE",
 			}
 		)).data;
 		this.recordedGameDetailIds = gameDetailsIds.values?.slice(1).map(v => v[0]).filter(v => Object.values(Wind).indexOf(v) < 0) ?? [];
@@ -215,10 +215,11 @@ export class Spreadsheet {
 						rowIndex: 2,
 					},
 					rows: game.finalScore.map((player, i) => ({
-						values: [,
+						values: [
+							undefined,
 							{ userEnteredValue: {
 								numberValue: game.end_time / (60*60*24*1000) + 25569 },
-								userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
+							userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
 							},
 							{ userEnteredValue: { formulaValue: `=VLOOKUP("${game.players[i]._id.toHexString()}"; 'Riichi Robots Teams'!A:C; 3; FALSE)` } },
 							{ userEnteredValue: { numberValue: player.score } },
@@ -292,18 +293,18 @@ export class Spreadsheet {
 							han: [Han.Mangan_at_Draw]
 						},
 						result: "Draw"
-					}]
+					}];
 				}
 				return [{
 					round: hand.round,
 					agari: hand.tsumo,
 					result: "Tsumo"
-				}]
+				}];
 			}).flat();
 
-		hands.forEach(hand => {
-			//console.log(`${Wind[hand.round.round]}${hand.round.dealership+1}.${hand.round.repeat} ${isNaN(hand.agari.winner) ? "" : game.players[hand.agari.winner].name} ${hand.result} ${hand.agari.value} + ${hand.agari.extras}`);
-		})
+		// hands.forEach(hand => {
+		// 	console.log(`${Wind[hand.round.round]}${hand.round.dealership+1}.${hand.round.repeat} ${isNaN(hand.agari.winner) ? "" : game.players[hand.agari.winner].name} ${hand.result} ${hand.agari.value} + ${hand.agari.extras}`);
+		// });
 
 		const requests: sheets_v4.Schema$Request[] = [
 			{
@@ -366,11 +367,11 @@ export class Spreadsheet {
 						values: [
 							{ userEnteredValue: {
 								numberValue: game.end_time / (60*60*24*1000) + 25569 },
-								userEnteredFormat: {
-									horizontalAlignment: "LEFT",
-									textFormat: { bold: true },
-									numberFormat: { type: "DATE_TIME" }
-								}
+							userEnteredFormat: {
+								horizontalAlignment: "LEFT",
+								textFormat: { bold: true },
+								numberFormat: { type: "DATE_TIME" }
+							}
 							}
 						]
 					}]
@@ -402,13 +403,13 @@ export class Spreadsheet {
 							} },
 							{ userEnteredValue: {
 								stringValue: Object.entries(hand.agari.han.reduce((map, next) => {
-										map[next] = (map[next] || 0) + 1;
-										return map;
-									}, {}))
-										.map(kvp => `${Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
-										.map(h => h.replace(/_/g, " "))
-										.join(", ")
-								}
+									map[next] = (map[next] || 0) + 1;
+									return map;
+								}, {}))
+									.map(kvp => `${Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
+									.map(h => h.replace(/_/g, " "))
+									.join(", ")
+							}
 							},
 						]
 					})).flat()

@@ -1,10 +1,10 @@
 import { Spreadsheet } from "./google.js";
-import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from 'mongodb';
+import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from "mongodb";
 import { MajsoulAdminApi, Passport, MajsoulApi } from "majsoul";
-import { Credentials } from 'google-auth-library';
+import { Credentials } from "google-auth-library";
 import { getSecrets } from "./secrets.js";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, combineLatestWith, scan, switchAll } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, combineLatestWith, scan, switchAll } from "rxjs/operators";
 import { Store } from "./index.js";
 import { google } from "googleapis";
 import { ContestTracker } from "./ContestTracker.js";
@@ -62,7 +62,7 @@ async function getPassport(
 
 	const optionsHeaders: HeadersInit = {
 		...sharedSpoofHeaders,
-	}
+	};
 
 	if (cookie.length) {
 		(optionsHeaders as any).cookie = cookie;
@@ -82,7 +82,7 @@ async function getPassport(
 
 		const newCookies = headers["set-cookie"]
 			?.map(cookie => {
-				const parts = cookie.split(';').map(part => part.trim().split(/=(.*)/s));
+				const parts = cookie.split(";").map(part => part.trim().split(/=(.*)/s));
 				const [key, value] = parts[0];
 
 				const maxAgePart = parts.find(([key]) => key.startsWith("Max-Age"));
@@ -94,7 +94,7 @@ async function getPassport(
 							key,
 							value,
 							expires: cookieTime + maxAge * 1000
-						}
+						};
 					}
 				}
 
@@ -104,25 +104,25 @@ async function getPassport(
 						key,
 						value,
 						expires: cookieTime + 24 * 60 * 60 * 1000
-					}
+					};
 				}
 
 				return {
 					key,
 					value,
 					expires: Date.parse(expires[1])
-				}
+				};
 			}) ?? [];
 
 		console.log(newCookies);
 
 		loginCookies.push(...newCookies);
 	} catch (e) {
-		console.log(e)
+		console.log(e);
 		return {
 			passport: null,
 			loginCookies
-		}
+		};
 	}
 
 	const joinedCookies = loginCookies
@@ -135,8 +135,8 @@ async function getPassport(
 			method: "POST",
 			headers: {
 				...sharedSpoofHeaders,
-				'Accept': 'application/json',
-				'Content-Type': 'application/json',
+				"Accept": "application/json",
+				"Content-Type": "application/json",
 				cookies: joinedCookies
 			},
 			body: JSON.stringify({
@@ -149,12 +149,12 @@ async function getPassport(
 		return {
 			passport,
 			loginCookies,
-		}
+		};
 	} catch {
 		return {
 			loginCookies,
 			passport: null,
-		}
+		};
 	}
 }
 
@@ -272,7 +272,7 @@ async function main() {
 
 	googleTokenValid$.subscribe(tokenIsValid => {
 		console.log(`google token is ${tokenIsValid ? "" : "in"}valid`);
-	})
+	});
 
 	// oauth token
 	merge(
@@ -292,7 +292,7 @@ async function main() {
 		)
 	).subscribe(refresh_token => {
 		if (googleAuth.credentials.refresh_token === refresh_token || refresh_token == null) {
-			console.log(`refresh token not valid in database`);
+			console.log("refresh token not valid in database");
 			return;
 		}
 
@@ -357,8 +357,8 @@ async function main() {
 					}
 				}
 			);
-		})
-	})
+		});
+	});
 
 	// custom game id search
 	merge(
@@ -465,10 +465,10 @@ async function main() {
 					console.log(`Inserting ${newPlayers.length} players`);
 
 					await mongoStore.playersCollection.insertMany(
-							newPlayers.map(player => ({
-								nickname: player.nickname,
-								majsoulId: player.account_id,
-							}))
+						newPlayers.map(player => ({
+							nickname: player.nickname,
+							majsoulId: player.account_id,
+						}))
 					);
 
 				} finally {
@@ -530,7 +530,7 @@ async function main() {
 						return {
 							game,
 							phase,
-						}
+						};
 					}),
 					filter(({phase}) => (phase.tourneyType === TourneyContestScoringType.Gacha)),
 					map((data) =>
@@ -542,11 +542,11 @@ async function main() {
 					filter(([gachas]) => gachas.length <= 0),
 					map(([_, data]) => data),
 					withLatestFrom(from([contest])),
-				)
-			 }),
+				);
+			}),
 			switchAll()
 		).pipe(
-			map(([{game, phase}, contest]) => {
+			map(([{game}, contest]) => {
 				const seed = [game._id.toHexString(), game.end_time, game.finalScore.map(score => score.score).join("")].join(":");
 				console.log(`Rolling gacha for game id ${game.majsoulId} seed ${seed}`);
 				const rand = seedrandom(seed);
@@ -584,7 +584,7 @@ async function main() {
 			).subscribe(game => {
 				spreadsheet.addGame(game);
 				spreadsheet.addGameDetails(game);
-			})
+			});
 
 			tracker.Teams$.pipe(
 				takeUntil(spreadsheet$),
@@ -600,7 +600,7 @@ async function main() {
 					players.reduce((total, next) => (total[next._id.toHexString()] = next, total), {})
 				);
 			});
-		})
+		});
 	});
 }
 
@@ -618,7 +618,7 @@ async function recordGame(
 
 	const gameRecord = await api.getGame(gameId);
 	if (gameRecord == null) {
-		console.log(`game #${gameId} not found!`)
+		console.log(`game #${gameId} not found!`);
 
 		mongoStore.gamesCollection.updateOne(
 			{ majsoulId: gameId },
@@ -629,7 +629,7 @@ async function recordGame(
 
 	const gameResult = parseGameRecordResponse(gameRecord);
 	if (gameResult == null) {
-		console.log(`game #${gameId} couldn't be parsed!`)
+		console.log(`game #${gameId} couldn't be parsed!`);
 	}
 
 	mongoStore.recordGame(contestId, gameResult);
@@ -719,7 +719,7 @@ async function validatePossibleRolls(
 		).toArray()
 		: [];
 
-	const existingGacha = matchingGacha.filter(pull => gamesInContest.find(game => game._id.equals(pull.gameId)))
+	const existingGacha = matchingGacha.filter(pull => gamesInContest.find(game => game._id.equals(pull.gameId)));
 
 	const gachaGroupMap = existingGacha.reduce(addRollToMap, {} as RollMap);
 

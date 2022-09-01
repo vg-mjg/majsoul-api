@@ -1,4 +1,4 @@
-import { GachaData } from './types/types.js';
+import { GachaData } from "./types/types.js";
 
 
 export interface PlayerContestTypeResults {
