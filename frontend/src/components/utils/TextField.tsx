@@ -1,6 +1,6 @@
 import * as React from "react";
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import { useState } from "react";
 import clsx from "clsx";
@@ -30,7 +30,7 @@ export function TextField(props: {
 
 	return <Container>
 		<Form.Group as={Row} className="no-gutters">
-		{ props.label &&
+			{ props.label &&
 			<Form.Label
 				column
 				className="mr-2 font-weight-bold"
@@ -39,37 +39,37 @@ export function TextField(props: {
 			>
 				{props.label}
 			</Form.Label>
-		}
-		<Col>
-			<Form.Control
-				id={props.id}
-				plaintext={!props.isLocked && !isEditing}
-				readOnly={!props.isLocked && !isEditing}
-				isInvalid={!isValid}
-				type={props.type}
-				className={clsx((props.label && !inline) && "text-right", !isEditing && " text-light", props.className)}
-				value={value === undefined ? props.fallbackValue ?? "" : value === null ? "" : value}
-				placeholder={placeholder}
-				onChange={event => {
-					const changeResult = onChange(value, event.target.value);
-					if (changeResult == null){
-						setValue(event.target.value);
-						setIsValid(true);
-						return;
-					}
+			}
+			<Col>
+				<Form.Control
+					id={props.id}
+					plaintext={!props.isLocked && !isEditing}
+					readOnly={!props.isLocked && !isEditing}
+					isInvalid={!isValid}
+					type={props.type}
+					className={clsx((props.label && !inline) && "text-right", !isEditing && " text-light", props.className)}
+					value={value === undefined ? props.fallbackValue ?? "" : value === null ? "" : value}
+					placeholder={placeholder}
+					onChange={(event: any) => {
+						const changeResult = onChange(value, event.target.value);
+						if (changeResult == null){
+							setValue(event.target.value);
+							setIsValid(true);
+							return;
+						}
 
-					setValue((changeResult as any).value);
-					setIsValid((changeResult as any).isValid);
-				}}
-				onFocus={(event: any) => setIsEditing(true)}
-				onBlur={(event: any) => {
-					setIsEditing(false);
-					const commitValue = onCommit(value === "" ? null : value, isValid);
-					if (commitValue !== value) {
-						setValue(commitValue);
-					}
-				}} />
-		</Col>
-	</Form.Group>
+						setValue((changeResult as any).value);
+						setIsValid((changeResult as any).isValid);
+					}}
+					onFocus={() => setIsEditing(true)}
+					onBlur={() => {
+						setIsEditing(false);
+						const commitValue = onCommit(value === "" ? null : value, isValid);
+						if (commitValue !== value) {
+							setValue(commitValue);
+						}
+					}} />
+			</Col>
+		</Form.Group>
 	</Container>;
 }

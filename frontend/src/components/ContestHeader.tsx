@@ -1,15 +1,15 @@
 import * as React from "react";
 import { Contest } from "../State";
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import { SongPlayer } from "./utils/SongPlayer";
 import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { contestName } from "./utils";
 import clsx from "clsx";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import { hashCode } from "../api/utils";
 
-const classes = css`
+const classes = stylesheet`
 	.tagline {
 		line-height: 18px;
 	}

@@ -1,14 +1,14 @@
 import * as React from "react";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Accordion from 'react-bootstrap/Accordion';
-import { Han } from "majsoul-api/dist/majsoul/types";
-import { fetchYakuman } from "src/api/Games";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Accordion from "react-bootstrap/Accordion";
+import { Han } from "majsoul/dist/types/Han";
+import { fetchYakuman } from "../api/Games";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { Rest } from "majsoul-api";
-import { css } from "astroturf";
+import { Rest } from "backend";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
 import * as globalStyles from "./styles.sass";
 import { PaipuLink } from "./PaipuLink";
@@ -66,7 +66,7 @@ function getYakumanName(han: Han[]): string[] {
 	return names.length ? names : ["数え"];
 }
 
-const styles = css`
+const styles = stylesheet`
 	.yakumanEntry {
 		&:not(:last-child) {
 			border-bottom: solid white 1px;
@@ -79,7 +79,7 @@ function YakumanList(props: {yakumen: Rest.YakumanInformation[]}) {
 	return <Container className="p-0">
 		{props.yakumen.length > 0 ?
 			props.yakumen.map(({ game, han, player }, index) => <Row
-				className={clsx(`no-gutters align-items-center pb-1 mb-1`, styles.yakumanEntry)}
+				className={clsx("no-gutters align-items-center pb-1 mb-1", styles.yakumanEntry)}
 				key={index}
 			>
 				<Col style={{ fontSize: "1.5em" }}>
@@ -100,12 +100,12 @@ function YakumanList(props: {yakumen: Rest.YakumanInformation[]}) {
 			</Row>
 			)
 			:
-			<Row className={`no-gutters text-center pb-1 mb-1`}>
+			<Row className={"no-gutters text-center pb-1 mb-1"}>
 				<Col>
 					<div className="h4 font-weight-bold m-0">未だ無し</div>
 				</Col>
 			</Row>}
-	</Container>
+	</Container>;
 }
 
 const RECENT_LENGTH = 5;

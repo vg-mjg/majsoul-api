@@ -1,4 +1,4 @@
-import { Rest, Store } from "majsoul-api";
+import { Rest, Store } from "backend";
 import { buildApiUrl } from "./utils";
 
 interface FetchContestPlayerParams {
@@ -40,7 +40,7 @@ export async function fetchPlayers(params: {
 	limit?: number;
 	name?: string;
 }): Promise<Array<Store.Player<string>>> {
-	const url = buildApiUrl(`players/`);
+	const url = buildApiUrl("players/");
 	const queryParameters: Record<string, string> = {};
 	if (params.limit != null) {
 		queryParameters.limit = params.limit.toString();

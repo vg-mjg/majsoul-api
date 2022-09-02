@@ -1,16 +1,16 @@
 import * as React from "react";
 import { IState } from "../State";
-import { Store } from "majsoul-api";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import { Store } from "backend";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import { useSelector } from "react-redux";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
 import { TeamImage } from "./TeamImage";
 
 
-const styles = css`
+const styles = stylesheet`
 	.teamScoreWide {
 		min-width: 6.5rem;
 	}
@@ -45,12 +45,12 @@ function Team(props : {
 	totalScore?: number,
 }): JSX.Element {
 	return <Container
-		className={`font-weight-bold p-0 rounded bg-primary text-dark border border-2`}
+		className={"font-weight-bold p-0 rounded bg-primary text-dark border border-2"}
 	>
-		<Row className={`no-gutters`} style={{lineHeight: "40px", textAlign: "center"}}>
+		<Row className={"no-gutters"} style={{lineHeight: "40px", textAlign: "center"}}>
 			<Col
 				md="auto"
-				className={`rounded-left`}
+				className={"rounded-left"}
 				style={{minWidth: "40px", boxSizing: "content-box"}}
 			>
 				<TeamImage team={props.team}/>
@@ -65,7 +65,7 @@ function Team(props : {
 				<div
 					className={clsx("text-capitalize", styles.teamName)}
 					style={{
-						borderBottom: `3px solid #${props.team.color ?? 'fff'}`
+						borderBottom: `3px solid #${props.team.color ?? "fff"}`
 					}}
 				>
 					{props.team.name}
@@ -108,7 +108,7 @@ export function Match(props: {
 		{teamsArray.map(team =>
 			<Row key={team._id} className={rowStyle}>
 				<Col className={cellStyle}>
-				<Team team={team} score={totals[team._id]} totalScore={props.aggregateTotals[team._id]}></Team>
+					<Team team={team} score={totals[team._id]} totalScore={props.aggregateTotals[team._id]}></Team>
 				</Col>
 			</Row>
 		)}

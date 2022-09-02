@@ -1,9 +1,9 @@
 import * as React from "react";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Spinner from 'react-bootstrap/Spinner';
-import { Rest } from "majsoul-api";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Spinner from "react-bootstrap/Spinner";
+import { Rest } from "backend";
 import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
 import { useSelector } from "react-redux";
 import { IState } from "src/State";

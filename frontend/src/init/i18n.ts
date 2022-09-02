@@ -1,8 +1,8 @@
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import * as en from 'assets/i18n/en.json';
-import * as ja from 'assets/i18n/ja.json';
-import { setDayjsLocale } from './dayjs';
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import * as en from "../../assets/i18n/en.json";
+import * as ja from "../../assets/i18n/ja.json";
+import { setDayjsLocale } from "./dayjs";
 
 const localeKey = "__riichi_locale";
 

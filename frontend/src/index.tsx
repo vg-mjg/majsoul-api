@@ -9,16 +9,16 @@ import { GamesRetrievedAction } from "./actions/games/GamesRetrievedAction";
 import { RiggingTokenAcquired } from "./actions/rigging/RiggingTokenAcquired";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
-import Container from 'react-bootstrap/Container';
+import Container from "react-bootstrap/Container";
 import * as styles from "./components/styles.sass";
 import "./bootstrap.sass";
-import { Rest } from "majsoul-api";
-import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage';
-import { PersistGate } from 'redux-persist/integration/react'
+import { Rest } from "backend";
+import { persistStore, persistReducer } from "redux-persist";
+import storage from "redux-persist/lib/storage";
+import { PersistGate } from "redux-persist/integration/react";
 import * as _ from "lodash";
 
-import YouTube from 'react-youtube';
+import YouTube from "react-youtube";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { toRecord } from "./components/utils";
@@ -96,7 +96,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						}, {}
 					)
 				},
-			}
+			};
 		} case ActionType.RiggingTokenAcquired: {
 			const riggingTokenGetAction = action as RiggingTokenAcquired;
 			return {
@@ -104,7 +104,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				user: {
 					token: riggingTokenGetAction.token,
 				}
-			}
+			};
 		} case ActionType.LoggedOut: {
 			if (state.user) {
 				return { ...state, user: undefined };
@@ -119,7 +119,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						...{ [action.team._id]: { ...action.team } }
 					}
 				})
-			}
+			};
 		} case ActionType.ContestSessionsRetrieved: {
 			return {
 				...state,
@@ -130,7 +130,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						sessionsById: toRecord(action.sessions, "_id"),
 					}
 				)
-			}
+			};
 		} case ActionType.SessionPatched: {
 			return {
 				...state,
@@ -147,7 +147,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						}
 					}
 				)
-			}
+			};
 		} case ActionType.ContestPlayersRetrieved: {
 			const getContestPlayers = action as ContestPlayersRetrievedAction;
 			return {
@@ -155,7 +155,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 				...updatedContestRecord(state, getContestPlayers.contestId, {
 					players: getContestPlayers.players
 				})
-			}
+			};
 		} case ActionType.ContestsIndexRetrieved: {
 			return {
 				...state,
@@ -169,7 +169,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						"_id"
 					)
 				}
-			}
+			};
 		} case ActionType.ContestPatched: {
 			const originalContest = state.contestsById[action.contest._id];
 			return {
@@ -184,12 +184,12 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						}
 					}
 				}
-			}
+			};
 		} case ActionType.ContestCreated: {
 			return {
 				...state,
 				...updatedContestRecord(state, action.contest._id, action.contest)
-			}
+			};
 		} case ActionType.TeamCreated: {
 			return {
 				...state,
@@ -199,7 +199,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						[action.team._id]: action.team
 					}
 				})
-			}
+			};
 		} case ActionType.TeamDeleted: {
 			return {
 				...state,
@@ -209,7 +209,7 @@ function contestReducer(state: IState, action: MajsoulAction): IState {
 						"_id"
 					)
 				})
-			}
+			};
 		}
 	}
 
@@ -235,7 +235,7 @@ const store = createStore(
 		},
 	} as IState as any,
 	composeEnhancers(),
-)
+);
 
 const persistor = persistStore(store);
 
@@ -243,7 +243,7 @@ function ContestFromRoute(): JSX.Element {
 	const { id } = useParams<{
 		id: string;
 	}>();
-	return <ContestSummary contestId={id} />
+	return <ContestSummary contestId={id} />;
 }
 
 function LatestContestSummary(): JSX.Element {
@@ -255,14 +255,14 @@ function LatestContestSummary(): JSX.Element {
 		});
 	}, [dispatch]);
 
-	return <ContestSummary contestId={contestId} />
+	return <ContestSummary contestId={contestId} />;
 }
 
 function ContestSessionsFromRoute() {
 	const { id } = useParams<{
 		id: string;
 	}>();
-	return <ContestSessions contestId={id} />
+	return <ContestSessions contestId={id} />;
 }
 
 function GoogleAuthReceiver(): JSX.Element {
@@ -275,7 +275,7 @@ function GoogleAuthReceiver(): JSX.Element {
 			writeGoogleAuthCode(token, code);
 		}
 	}, [token, code]);
-	return <Redirect to="/" />
+	return <Redirect to="/" />;
 }
 
 function Footer() {
@@ -315,7 +315,7 @@ function Footer() {
 				{i18n.language === "ja" ? "English" : "日本語"}
 			</div>
 		</Col>
-	</Row>
+	</Row>;
 }
 
 ReactDOM.render(

@@ -1,8 +1,8 @@
-import { Rest, Store } from "majsoul-api";
+import { Rest, Store } from "backend";
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export async function createSession(token: string, contestId: string): Promise<Store.Session> {
-	const url = buildApiUrl(`sessions/`);
+	const url = buildApiUrl("sessions/");
 	const response = await fetch(
 		url.toString(),
 		{

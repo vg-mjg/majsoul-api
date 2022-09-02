@@ -1,27 +1,26 @@
 import * as React from "react";
 import { LeagueStandingChart } from "./league/LeagueStandingChart";
-import { IState, Contest } from "../State";
+import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import { Session } from "./Session";
 import { Teams } from "./Teams";
 import { GameResultSummary } from "./GameResultSummary";
-import { ContestType } from "majsoul-api/dist/store/types/types";
 import { ContestMetadataEditor } from "./ContestMetadataEditor";
 import { YakumanDisplay } from "./YakumanDisplay";
 import { BracketPlayerStandings } from "./BracketPlayerStandings";
 import { contestName } from "./utils";
-import { fetchGames } from "src/api/Games";
-import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
-import { fetchContestPlayers } from "src/api/Players";
-import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
-import { fetchContestImages, fetchContestSummary, fetchActivePhase, fetchPhase } from "src/api/Contests";
-import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
+import { fetchGames } from "../api/Games";
+import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
+import { fetchContestPlayers } from "../api/Players";
+import { dispatchContestPlayersRetrieved } from "../actions/players/ContestPlayersRetrievedAction";
+import { fetchContestImages, fetchContestSummary, fetchPhase } from "../api/Contests";
+import { dispatchContestSummaryRetrievedAction } from "../actions/contests/ContestSummaryRetrievedAction";
 import { Link, useHistory, useLocation } from "react-router-dom";
-import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
-import { Rest } from "majsoul-api";
+import { dispatchContestImagesFetchedAction } from "../actions/contests/ContestImagesFetchedAction";
+import type { Rest } from "backend";
 import { ContestHeader } from "./ContestHeader";
 import { TabNavigator } from "./TabNavigator";
 import { RequestState } from "./utils/RequestState";
@@ -30,7 +29,8 @@ import { useTranslation } from "react-i18next";
 import { PhaseStandings } from "./PhaseStandings";
 import { ContestContext } from "./Contest/ContestProvider";
 import clsx from "clsx";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
+import { ContestType } from "backend/dist/store/types/types";
 
 export function ContestSummary(props: {
 	contestId: string;
@@ -51,14 +51,14 @@ export function ContestSummary(props: {
 		fetchContestImages(props.contestId)
 			.then(contest => {
 				setImageRequestState(RequestState.Complete);
-				dispatchContestImagesFetchedAction(dispatch, contest)
+				dispatchContestImagesFetchedAction(dispatch, contest);
 			});
 		fetchContestSummary(props.contestId).then(contest => {
 			setContestRequestState(RequestState.Complete);
 			fetchContestPlayers({
 				contestId: props.contestId
 			}).then(players => dispatchContestPlayersRetrieved(dispatch, props.contestId, players));
-			dispatchContestSummaryRetrievedAction(dispatch, contest)
+			dispatchContestSummaryRetrievedAction(dispatch, contest);
 		});
 	}, [props.contestId]);
 
@@ -100,10 +100,10 @@ export function ContestSummary(props: {
 			</PhaseSelector>
 			<YakumanDisplay contestId={contest._id} />
 		</Container>
-	</ContestContext.Provider>
+	</ContestContext.Provider>;
 }
 
-const styles = css`
+const styles = stylesheet`
 	.gachaPreview {
 		background-color: black;
 		flex-wrap: wrap;
@@ -171,8 +171,8 @@ const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({selectedPhase
 				</Row>
 			</Container>
 		</Row>
-	</>
-}
+	</>;
+};
 
 function SessionSection(props: {
 	session: Rest.Session<string>;
@@ -189,10 +189,10 @@ function SessionSection(props: {
 		<Row>
 			<Session session={props.session} forceDetails />
 		</Row>
-	</>
+	</>;
 }
 
-const PhaseSelector: React.FC = ({children}) =>  {
+const PhaseSelector: React.FC<React.PropsWithChildren> = ({children}) =>  {
 	const { contestId } = React.useContext(ContestContext);
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
 
@@ -218,7 +218,7 @@ const PhaseSelector: React.FC = ({children}) =>  {
 		setPhaseRequestState(RequestState.Started);
 		fetchPhase(contest._id, selectedPhaseIndex).then(phase => {
 			setPhaseRequestState(RequestState.Complete);
-			setSelectedPhase(phase)
+			setSelectedPhase(phase);
 		});
 	}, [contest.phases, selectedPhaseIndex]);
 
@@ -250,8 +250,8 @@ const PhaseSelector: React.FC = ({children}) =>  {
 				selectedPhase,
 			} as PhaseSelectorChildProps))
 		}
-	</>
-}
+	</>;
+};
 
 interface PhaseSelectorChildProps {
 	hasPhases?: boolean;
@@ -286,7 +286,7 @@ const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
 	const [selectedSessionIndex, setSelectedSessionIndex] = React.useState<number>();
 
 	const onSessionSelect = React.useCallback((index: number) => {
-		setSelectedSessionIndex(index - 1)
+		setSelectedSessionIndex(index - 1);
 	}, [setSelectedSessionIndex]);
 
 	const { t } = useTranslation();
@@ -310,5 +310,5 @@ const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
 				<Link className="h5 text-dark" to={`/contests/${contestId}/sessions`}><u>{t("league.sessions.more")}</u></Link>
 			</Col>
 		</Row>
-	</>
-}
+	</>;
+};

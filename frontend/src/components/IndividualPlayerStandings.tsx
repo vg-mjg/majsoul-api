@@ -1,30 +1,29 @@
 import * as React from "react";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import { Rest, Store } from "majsoul-api";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import type { Rest } from "backend";
 import Accordion from "react-bootstrap/Accordion";
 import { getSeatCharacter } from "./GameResultSummary";
-import { fetchContestPlayerGames } from "src/api/Games";
-import { fetchContestGachaCard } from "src/api/Contests";
+import { fetchContestPlayerGames } from "../api/Games";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { GachaData, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId } from "majsoul-api/dist/rest";
+import { GachaData, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId } from "backend/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
-import { PlayerZone } from "majsoul-api/dist/majsoul/types";
+import { PlayerZone } from "majsoul/dist/types/PlayerZone";
 import { Stats } from "./Stats/Stats";
 import { useContext } from "react";
 import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
-import { ContestTeam, GachaCard, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
+import { ContestTeam, GachaCard, TourneyContestScoringType } from "backend/dist/store/types/types";
 import { PaipuLink } from "./PaipuLink";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 
 export interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
-	scoreRanking?: Rest.PlayerScoreTypeRanking['details'];
+	scoreRanking?: Rest.PlayerScoreTypeRanking["details"];
 }
 
 const zoneMap: Record<PlayerZone, {
@@ -47,7 +46,7 @@ const zoneMap: Record<PlayerZone, {
 		name: "不明",
 		color: "#000000"
 	}
-}
+};
 
 const Zone: React.FC<{
 	zone: PlayerZone
@@ -64,8 +63,8 @@ const Zone: React.FC<{
 		}}>
 			{name}
 		</Badge>
-	</h4>
-}
+	</h4>;
+};
 
 
 export function TeamIcon(props: {
@@ -78,11 +77,11 @@ export function TeamIcon(props: {
 		}}>
 			{props.team.name}
 		</Badge>
-	</h4>
+	</h4>;
 }
 
 
-const styles = css`
+const styles = stylesheet`
 	.gacha {
 		display: inline-flex;
 	}
@@ -133,14 +132,14 @@ const GachaIcon: React.FC<{cardId: string}> = ({cardId}) => {
 	return <div className={styles.gachaIconContainer}>
 		<img src={card.icon} className={styles.gachaIcon} />
 	</div>;
-}
+};
 
 const GachaGroup: React.FC<{group: Rest.GachaData}> = ({group}) => {
 	return <div className={styles.gachaGroup}>
 		{group.cards.slice(0, 10).filter(card => !!card).map((card, index) => <GachaIcon key={`${card}-${index}`} cardId={card} />)}
 		{group.cards.length > 10 && <div className={styles.gachaNumber}>x{group.cards.length}</div>}
 	</div>;
-}
+};
 
 const GachaImage: React.FC<{gachaData: GachaData[]}> = ({gachaData}) => {
 	const { contestId } = useContext(ContestContext);
@@ -162,8 +161,8 @@ const GachaImage: React.FC<{gachaData: GachaData[]}> = ({gachaData}) => {
 		<div className={styles.gachaImageContainer}>
 			<img src={cardMap[card].image} className={styles.gachaImage} />
 		</div>
-	</Row>
-}
+	</Row>;
+};
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
 	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
@@ -178,7 +177,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 		? Object.values(contest.teams).find(team => team?.players?.find(player => player._id === props.player._id))
 		: null;
 
-	const [games, setGames] = React.useState<Rest.GameResult[]>([])
+	const [games, setGames] = React.useState<Rest.GameResult[]>([]);
 	const [viewDetails, setViewDetails] = React.useState(false);
 
 	const [loadGames, setLoadGames] = React.useState(false);

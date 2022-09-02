@@ -1,4 +1,4 @@
-import { Han, PlayerZone } from "majsoul";
+import type { Han, PlayerZone } from "majsoul";
 import { Session as StoreSession, GameResult as StoreGameResult, Player, TourneyContestPhaseSubtype, TourneyScoringTypeDetails, ContestType, ContestTeam, Contest as StoreContest } from "../../store/types/types.js";
 
 export interface GameResult<Id = any> extends StoreGameResult<Id> {

@@ -1,22 +1,18 @@
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-const path = require('path');
+var HtmlWebpackPlugin = require("html-webpack-plugin");
+const path = require("path");
 
 module.exports = env => {
 	if (!env) {
-		env = {}
+		env = {};
 	}
 	return {
 		entry: ["./src/bootstrap.sass", "./src/index.tsx"],
-		mode: env.production ? 'production' : 'development',
+		mode: env.production ? "production" : "development",
 		devtool: "source-map",
 		devServer: {
 			historyApiFallback: true
 		},
 		resolve: {
-			modules: [
-				path.resolve(__dirname),
-				'node_modules',
-			],
 			extensions: [".ts", ".tsx", ".js", ".json"]
 		},
 		module: {
@@ -30,7 +26,7 @@ module.exports = env => {
 						},
 						{
 							loader: "astroturf/loader",
-							options: { extension: '.module.scss' },
+							options: { extension: ".module.scss" },
 						}
 					]
 				},
@@ -49,33 +45,33 @@ module.exports = env => {
 							loader: "css-loader",
 							options: { modules: true }
 						},
-						'sass-loader'
+						"sass-loader"
 					],
 				},
 				{
 					include: path.join(__dirname, "src/bootstrap.sass"),
 					use: [{
-						loader: 'style-loader', // inject CSS to page
+						loader: "style-loader", // inject CSS to page
 					}, {
-						loader: 'css-loader', // translates CSS into CommonJS modules
+						loader: "css-loader", // translates CSS into CommonJS modules
 					}, {
-						loader: 'postcss-loader', // Run postcss actions
+						loader: "postcss-loader", // Run postcss actions
 						options: {
 							plugins: function () { // postcss plugins, can be exported to postcss.config.js
 								return [
-									require('autoprefixer')
+									require("autoprefixer")
 								];
 							}
 						}
 					}, {
-						loader: 'sass-loader' // compiles Sass to CSS
+						loader: "sass-loader" // compiles Sass to CSS
 					}]
 				},
 				{
 					test: /\.(mp3|wav)$/i,
 					use: [
 						{
-							loader: 'file-loader',
+							loader: "file-loader",
 						},
 					],
 				},
@@ -83,7 +79,7 @@ module.exports = env => {
 					test: /\.(png|jp(e*)g|svg)$/,
 					use: [
 						{
-							loader: 'url-loader',
+							loader: "url-loader",
 							// options: {
 							// 	limit: 8000, // Convert images < 8kb to base64 strings
 							// 	name: 'images/[hash]-[name].[ext]'
@@ -95,7 +91,7 @@ module.exports = env => {
 		},
 		optimization: {
 			splitChunks: {
-				chunks: 'all'
+				chunks: "all"
 			}
 		},
 		plugins: [

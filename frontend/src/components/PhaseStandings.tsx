@@ -1,27 +1,26 @@
 import * as React from "react";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Spinner from 'react-bootstrap/Spinner';
-import { fetchActivePhase, fetchPhase } from "src/api/Contests";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Spinner from "react-bootstrap/Spinner";
 import { IndividualPlayerStandings, IndividualPlayerStandingsProps } from "./IndividualPlayerStandings";
 import { ContestContext } from "./Contest/ContestProvider";
 import Accordion from "react-bootstrap/Accordion";
 import { ArrowToggle } from "./utils/ArrowToggle";
 import { TabNavigator } from "./TabNavigator";
-import { TourneyContestPhaseSubtype, TourneyContestScoringType, TourneyScoringTypeDetails } from "majsoul-api/dist/store/types";
 import { useHistory, useLocation } from "react-router";
 import clsx from "clsx";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
-import { PlayerRankingType, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId, TourneyPhase } from "majsoul-api/dist/rest/types/types";
 import { Teams } from "./Teams";
+import { TourneyContestScoringDetailsWithId, PlayerTourneyStandingInformation, PlayerRankingType, TourneyPhase } from "backend/dist/rest";
+import { TourneyContestPhaseSubtype, TourneyContestScoringType } from "backend/dist/store";
 
 interface TypeGroup {
 	type: TourneyContestScoringDetailsWithId;
 	standings: IndividualPlayerStandingsProps[];
-};
+}
 
 function groupByType(
 	standings: IndividualPlayerStandingsProps[],
@@ -57,14 +56,14 @@ const GroupedStandingsSection: React.FC<{
 			{groups.map((group, index) => <React.Fragment key={index}>
 				{ (index !== 0 || scoreTypes[previousItem?.qualificationType]?.type !== group.type.type)
 						&& <div className="h4 mt-2 mb-3">{t(getScoreTitleKey(group.type))}</div> }
-					<StandingsSection standings={group.standings} scoreTypes={scoreTypes} scoreTypeId={scoreTypeId} />
-				</React.Fragment>
+				<StandingsSection standings={group.standings} scoreTypes={scoreTypes} scoreTypeId={scoreTypeId} />
+			</React.Fragment>
 			)}
 		</>;
 	}
 
 	return <StandingsSection standings={standings} scoreTypeId={scoreTypeId} scoreTypes={scoreTypes} />;
-}
+};
 
 const StandingsSection: React.FC<{
 	standings: IndividualPlayerStandingsProps[];
@@ -73,12 +72,12 @@ const StandingsSection: React.FC<{
 }>= ({standings, scoreTypes, scoreTypeId}) => {
 	return <>
 		{standings
-			.map((data, index) => <Row key={data.player._id} className={`mt-3 no-gutters`} style={{ maxWidth: 640, margin: "auto" }}>
+			.map((data, index) => <Row key={data.player._id} className={"mt-3 no-gutters"} style={{ maxWidth: 640, margin: "auto" }}>
 				<IndividualPlayerStandings {...data} scoreTypeId={scoreTypeId} scoreTypes={scoreTypes} />
 			</Row>
 			)}
 	</>;
-}
+};
 
 const ScoreRankingDisplay: React.FC<{
 	standings: PlayerTourneyStandingInformation[];
@@ -139,10 +138,10 @@ const ScoreRankingDisplay: React.FC<{
 										title: t("tourney.scoreType.combined"),
 									},
 									...contestScoreTypes.map(scoreType => ({
-											key: scoreType.id,
-											title: t(getScoreTitleKey(scoreType))
+										key: scoreType.id,
+										title: t(getScoreTitleKey(scoreType))
 									}))
-							]
+								]
 							}
 							onTabChanged={(key) => {
 								setShowMore(false);
@@ -174,7 +173,7 @@ const ScoreRankingDisplay: React.FC<{
 			}
 		</Accordion>
 	</>;
-}
+};
 
 const TeamRankingDisplay: React.FC<{
 	phase: TourneyPhase;
@@ -235,24 +234,24 @@ const TeamRankingDisplay: React.FC<{
 			}
 			<Row className="no-gutters">
 				<Col>
-				<TabNavigator
-					tabs={
-						teams.map(team => ({
-							key: team._id,
-							title: team.name,
-						}))
-					}
-					onTabChanged={(key) => {
-						setSelectedTeam(key);
-					}}
-					activeTab={selectedTeam}
-				/>
+					<TabNavigator
+						tabs={
+							teams.map(team => ({
+								key: team._id,
+								title: team.name,
+							}))
+						}
+						onTabChanged={(key) => {
+							setSelectedTeam(key);
+						}}
+						activeTab={selectedTeam}
+					/>
 				</Col>
 			</Row>
 		</Container>
 		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam === "allPlayers" ? null : selectedTeam} scoreTypes={props.scoreTypes} />}
-	</>
-}
+	</>;
+};
 
 export const PhaseStandings: React.FC<{phase: TourneyPhase, isLoading: boolean}>= ({phase, isLoading}) => {
 	if (!phase || isLoading) {
@@ -277,7 +276,7 @@ export const PhaseStandings: React.FC<{phase: TourneyPhase, isLoading: boolean}>
 	}
 
 	return <ScoreRankingDisplay standings={phase.standings} scoreTypes={scoreTypes} />;
-}
+};
 
 function getScoreTitleKey(scoreType: TourneyContestScoringDetailsWithId): string {
 	const typeKey = `tourney.scoreType.${TourneyContestScoringType[scoreType.type].toLowerCase()}`;

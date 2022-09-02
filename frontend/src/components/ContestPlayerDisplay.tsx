@@ -1,18 +1,16 @@
 import * as React from "react";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import { Rest } from "majsoul-api";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import { Rest } from "backend";
 import { useDispatch, useSelector } from "react-redux";
 import Accordion from "react-bootstrap/Accordion";
 import { TeamIcon } from "./TeamIcon";
-import { IState } from "src/State";
 import { getSeatCharacter } from "./GameResultSummary";
-import { fetchContestPlayerGames } from "src/api/Games";
-import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { PaipuLink } from "./PaipuLink";
+import { Dispatch, AnyAction } from "redux";
 
 export function ContestPlayerDisplay(props: {
 	contestId: string;
@@ -102,3 +100,11 @@ export function ContestPlayerDisplay(props: {
 		</Accordion.Collapse>
 	</Accordion>;
 }
+function fetchContestPlayerGames(contestId: string, _id: any) {
+	throw new Error("Function not implemented.");
+}
+
+function dispatchGamesRetrievedAction(dispatch: Dispatch<AnyAction>, games: any) {
+	throw new Error("Function not implemented.");
+}
+

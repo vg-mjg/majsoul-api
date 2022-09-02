@@ -1,5 +1,5 @@
 import { Action, Dispatch } from "redux";
-import { Rest } from "majsoul-api";
+import { Rest } from "backend";
 import { ActionType } from "../ActionType";
 
 export interface GamesRetrievedAction extends Action<ActionType.GamesRetrieved> {

@@ -1,5 +1,5 @@
 import { Action, Dispatch } from "redux";
-import { Store } from "majsoul-api";
+import { Store } from "backend";
 import { ActionType } from "../ActionType";
 
 export interface TeamCreatedAction extends Action<ActionType.TeamCreated> {

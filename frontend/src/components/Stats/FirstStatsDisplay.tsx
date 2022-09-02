@@ -3,14 +3,15 @@ import { Pie } from "../utils/Chart";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { AgariCategories } from "majsoul-api/dist/rest/types/stats/FirstStats";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
 import * as globalStyles from "../styles.sass";
 import { useTranslation } from "react-i18next";
-import { KhanStats } from "majsoul-api/dist/rest/types/stats/KhanStats";
 
-const styles = css`
+import { KhanStats } from "backend/dist/rest/types/stats/KhanStats";
+import { AgariCategories } from "backend/dist/rest/types/stats/FirstStats";
+
+const styles = stylesheet`
 	.chartContainer {
 		box-sizing: border-box;
 	}
@@ -33,7 +34,7 @@ function StatField(props: {
 			<Col className="font-weight-bold text-left">{props.label}</Col>
 			<Col sm="auto">{props.value}</Col>
 		</Row>
-	</Container>
+	</Container>;
 }
 
 interface StatDisplayProps {
@@ -84,7 +85,7 @@ function StatsColumn(props: StatsGroup & {
 		{props.fields?.map((stat) =>
 			<StatField key={stat.label} label={stat.label} value={stat.value} />
 		)}
-	</Container>
+	</Container>;
 }
 
 function FirstStatsPage(props: StatsPageProps): JSX.Element {
@@ -128,7 +129,7 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 				graphData={props.graphData.map(({ label, data }) => ({ label, ...data[1] }))}
 			/>
 		</Col>
-	</Row>
+	</Row>;
 }
 
 function getAgariCategories<T>(agariCategories: AgariCategories<T>): T[] {
@@ -154,13 +155,13 @@ function SwapPageButton(props: {
 }): JSX.Element {
 	return <div className={clsx(globalStyles.linkDark, "h5", props.isSelected && "font-weight-bold")} onClick={props.onClick}>
 		{props.children}
-	</div>
+	</div>;
 }
 
-export const FirstStatsDisplay = React.memo(function ({
+export const FirstStatsDisplay = React.memo(function FirstStatsDisplay({
 	stats,
 }: {
-	stats: KhanStats['stats'];
+	stats: KhanStats["stats"];
 }): JSX.Element {
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 
@@ -175,7 +176,7 @@ export const FirstStatsDisplay = React.memo(function ({
 			dama: getAgariCategories(stats.dealins.dama).reduce((total, next) => total + next.total, 0),
 			open: getAgariCategories(stats.dealins.open).reduce((total, next) => total + next.total, 0),
 			riichi: getAgariCategories(stats.dealins.riichi).reduce((total, next) => total + next.total, 0),
-		}
+		};
 
 		const dealingOpponentStats = getAgariCategories(stats.dealins).reduce((total, next) => {
 			total.dama += next.dama.total;
@@ -186,7 +187,7 @@ export const FirstStatsDisplay = React.memo(function ({
 			dama: 0,
 			riichi: 0,
 			open: 0,
-		})
+		});
 
 		const totalDealins = getAgariCategories(stats.dealins).reduce(
 			(total, next) => total + getAgariCategories(next).reduce((total, next) => total + next.total, 0),
@@ -461,5 +462,5 @@ export const FirstStatsDisplay = React.memo(function ({
 				</Col>
 			)}
 		</Row>
-	</Container>
+	</Container>;
 });

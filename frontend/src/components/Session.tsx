@@ -1,15 +1,15 @@
 import * as React from "react";
 import { findPlayerInformation, IState } from "../State";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import { CountdownTimer } from "./CountdownTimer";
 import { Match } from "./Match";
 import { useSelector, useDispatch } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import { Rest } from "majsoul-api";
+import { Rest } from "backend";
 import { fetchGames } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
 import Accordion from "react-bootstrap/Accordion";
@@ -95,7 +95,7 @@ export function Session(props: {
 					...game,
 					matchIndex,
 					index: matchMap[matchIndex]++
-				}
+				};
 			});
 
 		const mostGames = Object.entries(matchMap)
@@ -110,7 +110,7 @@ export function Session(props: {
 			total[index] = next;
 			return total;
 		}
-			, new Array<Rest.GameResult<string>>(mostGames * numberOfMatches + (matchMap[-1] ?? 0)).fill(null))
+		, new Array<Rest.GameResult<string>>(mostGames * numberOfMatches + (matchMap[-1] ?? 0)).fill(null));
 	}, [teams, games, token]);
 
 	const dispatch = useDispatch();
@@ -167,7 +167,7 @@ export function Session(props: {
 			? gamesFetchedStatus === GamesFetchStatus.Fetched && games.length === 0
 				? SessionState.Current
 				: SessionState.Completed
-			: SessionState.Future
+			: SessionState.Future;
 
 	return <Container
 		fluid
@@ -191,15 +191,15 @@ export function Session(props: {
 							className={`py-0${(!token || !editTime) ? " text-light" : ""}`}
 							value={`${utcMoment ?? utcStartMomentText}`}
 							onChange={event => {
-								setUtcMoment(event.target.value)
-								setTimeIsValid(!dayjs(event.target.value).isValid())
+								setUtcMoment(event.target.value);
+								setTimeIsValid(!dayjs(event.target.value).isValid());
 							}}
 							onFocus={(event: any) => setEditTime(true)}
 							onBlur={(event: any) => {
 								if (timeIsInvalid) {
-									setUtcMoment(null)
+									setUtcMoment(null);
 								} else {
-									setUtcMoment(dayjs(event.target.value).tz("UTC").format("LT l z"))
+									setUtcMoment(dayjs(event.target.value).tz("UTC").format("LT l z"));
 								}
 								setEditTime(false);
 							}}

@@ -1,5 +1,5 @@
-import { AILevel } from "majsoul-api/dist/majsoul/types";
-import { Contest } from "src/State";
+import { AILevel } from "majsoul/dist/types/types";
+import { Contest } from "../../State.js";
 
 export function levelToString(aiLevel: AILevel): string {
 	switch (aiLevel) {
@@ -30,7 +30,7 @@ export function toRecord<
 	if (array == null) {
 		return {};
 	}
-	return array.reduce((acc, item) => (acc[item[selector]] = item, acc), {} as Record<T[K], T>)
+	return array.reduce((acc, item) => (acc[item[selector]] = item, acc), {} as Record<T[K], T>);
 }
 
 
@@ -45,7 +45,7 @@ function hslStyle(hsl: { h: number, s: number, l: number }) {
 }
 
 function invertHex(hex: string): string {
-	return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
+	return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase();
 }
 
 export function hexToRgb(hex: string): RGBColor {

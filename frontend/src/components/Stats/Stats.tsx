@@ -1,10 +1,10 @@
-import * as React from 'react'
-import { Rest } from "majsoul-api";
-import { fetchStats, StatsRequest } from '../../api/Contests';
-import { ContestContext } from '../Contest/ContestProvider';
-import { LoadingSpinner } from '../utils/LoadingSpinner';
-import { VersionedStatsDisplay } from './VersionedStatsDisplay';
-import Container from 'react-bootstrap/Container';
+import * as React from "react";
+import { Rest } from "backend";
+import { fetchStats, StatsRequest } from "../../api/Contests";
+import { ContestContext } from "../Contest/ContestProvider";
+import { LoadingSpinner } from "../utils/LoadingSpinner";
+import { VersionedStatsDisplay } from "./VersionedStatsDisplay";
+import Container from "react-bootstrap/Container";
 
 export const Stats: React.FC<{
 	request: StatsRequest;
@@ -28,7 +28,7 @@ export const Stats: React.FC<{
 			request
 		).then(stats => {
 			setStats(stats[targetId]);
-		})
+		});
 	}, [contestId, targetId]);
 
 	if (hideResults) {
@@ -36,8 +36,8 @@ export const Stats: React.FC<{
 	}
 
 	if (!stats) {
-		return <Container className={loadingSpinnerClassName}><LoadingSpinner/></Container>
+		return <Container className={loadingSpinnerClassName}><LoadingSpinner/></Container>;
 	}
 
-	return <VersionedStatsDisplay stats={stats} />
-}
+	return <VersionedStatsDisplay stats={stats} />;
+};

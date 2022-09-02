@@ -1,12 +1,12 @@
 import * as React from "react";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { i18n } from "src/init/i18n";
+import { i18n } from "../init/i18n";
 
 const calendarSetting: Record<string, object> = {
 	en: createCountdownCalendarSettings("en"),
 	ja: createCountdownCalendarSettings("ja"),
-}
+};
 
 function createCountdownCalendarSettings(locale: string) {
 	return {
@@ -43,7 +43,7 @@ function createCountdownCalendarSettings(locale: string) {
 			}
 			return this.format(i18n.t("time.countdown.sameElse.after"));
 		},
-	}
+	};
 }
 
 export function CountdownTimer(props: {

@@ -1,6 +1,6 @@
 import { css } from "astroturf";
 import clsx from "clsx";
-import { Rest } from "majsoul-api";
+import { Rest } from "backend";
 import * as React from "react";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
@@ -71,7 +71,7 @@ function SessionsPagination(props: {
 			return;
 		}
 		props.onActivePageChanged(pageNumber);
-	}, [props.onActivePageChanged])
+	}, [props.onActivePageChanged]);
 
 	return <Pagination className={styles.pagination}>
 		<Link className={styles.backLink} to={`/contests/${props.contestId}/`}>
@@ -89,7 +89,7 @@ function SessionsPagination(props: {
 				{pageNumber + 1}
 			</Pagination.Item>,
 		)}
-	</Pagination>
+	</Pagination>;
 }
 
 export function ContestSessions(props: {
@@ -182,5 +182,5 @@ export function ContestSessions(props: {
 				/>
 			</Col>
 		</Row>
-	</Container>
+	</Container>;
 }

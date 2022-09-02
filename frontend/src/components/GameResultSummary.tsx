@@ -1,9 +1,9 @@
 import * as React from "react";
 import { findPlayerInformation, IState } from "../State";
-import { Rest } from "majsoul-api";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
+import { Rest } from "backend";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 import * as styles from "./styles.sass";
 import { useDispatch, useSelector } from "react-redux";
 import { levelToString, pickColorGradient } from "./utils";
@@ -14,7 +14,7 @@ import { css } from "astroturf";
 import clsx from "clsx";
 import { updateGame } from "src/api/Games";
 import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
-import { TourneyContestPhaseSubtype } from "majsoul-api/dist/store/types";
+import { TourneyContestPhaseSubtype } from "majsoul/dist/store/types";
 import { PaipuLink } from "./PaipuLink";
 
 function GameSeat(props: {
@@ -40,8 +40,8 @@ function GameSeat(props: {
 		Math.min(Math.abs(props.game.finalScore[props.seat].uma / 1000 / 50), 1)
 	);
 
-	return <Container className={`font-weight-bold p-0 rounded bg-primary text-dark border border-2`}>
-		<Row className={`no-gutters`} style={{ lineHeight: "40px", textAlign: "center" }}>
+	return <Container className={"font-weight-bold p-0 rounded bg-primary text-dark border border-2"}>
+		<Row className={"no-gutters"} style={{ lineHeight: "40px", textAlign: "center" }}>
 			<Col
 				md="auto"
 				className={`${(styles as any)[`seat-${props.seat}`]} rounded-left border-right border-2`}
@@ -118,7 +118,7 @@ export function GameResultSummary(props: {
 	const rowStyle = "pl-1 no-gutters";
 
 	if (!props.game) {
-		return null
+		return null;
 	}
 
 
@@ -132,7 +132,7 @@ export function GameResultSummary(props: {
 					updateGame(token, props.game._id, { hidden: !props.game.hidden })
 						.then(game => {
 							dispatchGamesRetrievedAction(dispatch, [game]);
-						})
+						});
 				}}>
 					{props.game.hidden ? "Show" : "Hide"}
 				</div>

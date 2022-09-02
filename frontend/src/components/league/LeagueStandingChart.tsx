@@ -1,10 +1,10 @@
 import * as React from "react";
 import { Line } from "../utils/Chart";
 import { defaults, ChartData } from "chart.js";
-import { Store, Rest } from "majsoul-api";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import * as dayjs from 'dayjs';
+import { Store, Rest } from "backend";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 
 defaults.color = "white";
@@ -21,8 +21,8 @@ function createData(
 			if (session.name) {
 				return session.name;
 			}
-			const time = dayjs(session.scheduledTime).tz('UTC');
-			return `${time.hour() === 18 ? 'EU' : 'US'} ${time.format('D/M')}`
+			const time = dayjs(session.scheduledTime).tz("UTC");
+			return `${time.hour() === 18 ? "EU" : "US"} ${time.format("D/M")}`;
 		})),
 
 		datasets: Object.values(teams ?? {})
@@ -36,9 +36,9 @@ function createData(
 					borderColor: color,
 					data: [phase.aggregateTotals[team._id] / 1000].concat(sessions.map(session => session.aggregateTotals[team._id] / 1000)),
 					yAxisID: "y",
-				}
+				};
 			})
-	}
+	};
 }
 
 export function LeagueStandingChart(props: {
@@ -94,5 +94,5 @@ export function LeagueStandingChart(props: {
 				}
 			></Line>
 		</Row>
-	</Container>
+	</Container>;
 }

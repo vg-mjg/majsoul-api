@@ -1,8 +1,8 @@
-import { Rest } from "majsoul-api";
+import { Rest } from "backend";
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export async function createGame(token: string, game: Partial<Rest.GameResult<string>>): Promise<string> {
-	const url = buildApiUrl(`games/`);
+	const url = buildApiUrl("games/");
 	const response = await fetch(
 		url.toString(),
 		{
@@ -55,14 +55,14 @@ export function fetchGames(params: {
 	last?: number;
 	contestIds?: string[];
 }): Promise<Rest.GameResult<string>[]> {
-	const url = buildApiUrl(`games`);
+	const url = buildApiUrl("games");
 	const queryParameters: Record<string, string> = {};
 	if (params.sessionIds != null) {
-		queryParameters.sessions = params.sessionIds?.join('+');
+		queryParameters.sessions = params.sessionIds?.join("+");
 	}
 
 	if (params.contestIds != null) {
-		queryParameters.contests = params.contestIds?.join('+');
+		queryParameters.contests = params.contestIds?.join("+");
 	}
 
 	if (params.last != null) {
@@ -77,7 +77,7 @@ export function fetchGames(params: {
 
 export function fetchYakuman(contestId: string): Promise<Rest.YakumanInformation[]> {
 	return fetch(buildApiUrl(`contests/${contestId}/yakuman`).toString())
-		.then(response => response.json())
+		.then(response => response.json());
 }
 
 export function fetchContestPlayerGames(contestId: string, playerId: string): Promise<Rest.GameResult<string>[]> {

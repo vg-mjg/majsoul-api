@@ -1,6 +1,6 @@
 import * as React from "react";
 import { IState, Contest } from "../State";
-import { Store, Rest } from 'majsoul-api';
+import { Store, Rest } from "majsoul-api";
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -14,9 +14,9 @@ import { dispatchTeamDeletedAction } from "src/actions/teams/TeamDeletedAction";
 import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
 import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
 import { fetchContestPlayers, fetchPlayers } from "src/api/Players";
-import { css } from 'astroturf';
+import { css } from "astroturf";
 import clsx from "clsx";
-import { BsChevronCompactDown, BsChevronCompactUp, BsX } from 'react-icons/bs';
+import { BsChevronCompactDown, BsChevronCompactUp, BsX } from "react-icons/bs";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
@@ -24,7 +24,7 @@ import { StatsRequest } from "src/api/Contests";
 import * as globalStyles from "./styles.sass";
 import { Stats } from "./Stats/Stats";
 import { ContestContext } from "./Contest/ContestProvider";
-import { TourneyContestPhaseSubtype } from "majsoul-api/dist/store/types";
+import { TourneyContestPhaseSubtype } from "majsoul/dist/store/types";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -45,7 +45,7 @@ export function jpNumeral(value: number): string {
 
 		const stringDigit = digit > 0 ? (digit).toLocaleString("zh-u-nu-hanidec") : "";
 
-		rep = `${stringDigit}${counters[0]}${rep}`
+		rep = `${stringDigit}${counters[0]}${rep}`;
 	}
 	return rep;
 }
@@ -86,8 +86,8 @@ function PlayerSearch(props: {
 				name: searchString,
 				limit: 10,
 			}).then(players => setPlayers(players
-				.filter(player => props.excludedPlayerIds.indexOf(player._id) < 0)))
-		}, 1000))
+				.filter(player => props.excludedPlayerIds.indexOf(player._id) < 0)));
+		}, 1000));
 	}, [searchString, props.excludedPlayerIds]);
 
 	return <Container>
@@ -102,7 +102,7 @@ function PlayerSearch(props: {
 					return {
 						value: newValue,
 						isValid: true,
-					}
+					};
 				}}
 			/>
 		</Row>
@@ -127,7 +127,7 @@ function PlayerSearch(props: {
 				</Row>
 			)
 		}
-	</Container>
+	</Container>;
 }
 
 function Team(props: {
@@ -181,7 +181,7 @@ function Team(props: {
 
 	const onAccordionSelect = React.useCallback((selectedKey: string) => {
 		setViewDetails(selectedKey === "0");
-	}, [setViewDetails])
+	}, [setViewDetails]);
 
 	const dispatch = useDispatch();
 
@@ -207,7 +207,7 @@ function Team(props: {
 						<Badge variant={props.placing === 1 ? "danger" : props.placing > 4 ? "secondary" : "success"}>
 							<b>
 								{jpNumeral(props.placing)}位
-								</b>
+							</b>
 						</Badge>
 					</h3>
 				</Col>
@@ -225,7 +225,7 @@ function Team(props: {
 								if (input.files && input.files[0]) {
 									reader.onload = function (e) {
 										setImage(e.target.result.toString());
-									}
+									};
 									reader.readAsDataURL(input.files[0]);
 								}
 							}}
@@ -293,7 +293,7 @@ function Team(props: {
 								<Col className="text-right">
 									{(player.tourneyScore ?? 0) / 1000}
 								</Col>
-							</Row>
+							</Row>;
 						})}
 					</Container>
 				}
@@ -313,7 +313,7 @@ function Team(props: {
 										return {
 											value: newValue,
 											isValid: true,
-										}
+										};
 									}}
 								/>
 							</Col>
@@ -349,7 +349,7 @@ function Team(props: {
 												players: players,
 												color
 											} as Store.ContestTeam
-										).then(team => dispatchTeamPatchedAction(dispatch, contestId, team))
+										).then(team => dispatchTeamPatchedAction(dispatch, contestId, team));
 									}}
 								>Save</Button>
 							</Col>
@@ -367,7 +367,7 @@ function Team(props: {
 										return {
 											value: newValue,
 											isValid: true,
-										}
+										};
 									}}
 								/>
 							</Col>
@@ -409,7 +409,7 @@ function TeamRow(props: {
 		<Col>
 			{props.children}
 		</Col>
-	</Row>
+	</Row>;
 }
 
 function TeamList(props: {
@@ -427,7 +427,7 @@ function TeamList(props: {
 				/>
 			</TeamRow>
 		)}
-	</>
+	</>;
 }
 
 interface TeamData extends Store.ContestTeam<string> {
@@ -483,7 +483,7 @@ export function Teams(props: {
 					<LoadingSpinner />
 				</Col>
 			</Row>
-		</Container>
+		</Container>;
 	}
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">

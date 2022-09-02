@@ -3,11 +3,12 @@ import { useDispatch } from "react-redux";
 import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import { getRiggingToken } from "src/api/Rigging";
-import { dispatchRiggingTokenAcquired } from "src/actions/rigging/RiggingTokenAcquired";
 import { useHistory } from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
+import { dispatchRiggingTokenAcquired } from "../../actions/rigging/RiggingTokenAcquired";
+import { getRiggingToken } from "../../api/Rigging";
+import * as backend from "backend";
 
 export function RiggingLogin() {
 	const [username, setUsername] = React.useState<string>("");
@@ -28,17 +29,17 @@ export function RiggingLogin() {
 			}
 
 			dispatchRiggingTokenAcquired(dispatch, token);
-			history.push('/');
-		})
+			history.push("/");
+		});
 		event.preventDefault();
 	}, [username, password, setPassword]);
 
 	const onUserNameChanged = React.useCallback((event: any) => {
-		setUsername(event.target.value as string)
+		setUsername(event.target.value as string);
 	}, [setPassword]);
 
 	const onPasswordChanged = React.useCallback((event: any) => {
-		setPassword(event.target.value as string)
+		setPassword(event.target.value as string);
 	}, [setPassword]);
 
 	return <Container className="pt-5">
@@ -77,5 +78,5 @@ export function RiggingLogin() {
 				</Form>
 			</Col>
 		</Row>
-	</Container>
+	</Container>;
 }

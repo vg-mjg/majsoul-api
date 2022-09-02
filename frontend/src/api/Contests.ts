@@ -1,4 +1,4 @@
-import { Store, Rest } from "majsoul-api";
+import { Store, Rest } from "backend";
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export function fetchContestSummary(contestId: string): Promise<Store.Contest<string>> {
@@ -17,20 +17,20 @@ export function fetchContestGachaCard(contestId: string, gachaId: string): Promi
 }
 
 export function fetchContests(): Promise<Store.Contest<string>[]> {
-	return fetch(buildApiUrl(`contests`).toString())
-		.then(response => response.json())
+	return fetch(buildApiUrl("contests").toString())
+		.then(response => response.json());
 }
 
 export function createContest(token: string): Promise<Pick<Store.Contest<string>, "_id">> {
 	return fetch(
-		buildApiUrl(`contests`).toString(),
+		buildApiUrl("contests").toString(),
 		{
 			method: "PUT",
 			headers: {
 				...authHeader(token)
 			},
 		}
-	).then(response => response.json())
+	).then(response => response.json());
 }
 
 export function patchContest(token: string, id: string, contest: Partial<Rest.Contest<string>>): Promise<Omit<Rest.Contest, "teams" | "session">> {
@@ -47,7 +47,7 @@ export function patchContest(token: string, id: string, contest: Partial<Rest.Co
 				...contest,
 			})
 		})
-		.then(response => response.json())
+		.then(response => response.json());
 }
 
 export function fetchPhases(id: string): Promise<Rest.Phase[]> {
@@ -57,7 +57,7 @@ export function fetchPhases(id: string): Promise<Rest.Phase[]> {
 		{
 			method: "GET",
 		})
-		.then(response => response.json())
+		.then(response => response.json());
 }
 
 export function fetchPhase(id: string, phaseIndex: number): Promise<Rest.Phase> {
@@ -67,7 +67,7 @@ export function fetchPhase(id: string, phaseIndex: number): Promise<Rest.Phase> 
 		{
 			method: "GET",
 		})
-		.then(response => response.json())
+		.then(response => response.json());
 }
 
 export function fetchActivePhase(id: string): Promise<Rest.Phase> {
@@ -77,7 +77,7 @@ export function fetchActivePhase(id: string): Promise<Rest.Phase> {
 		{
 			method: "GET",
 		})
-		.then(response => response.json())
+		.then(response => response.json());
 }
 
 interface AllPlayersStatsRequest {

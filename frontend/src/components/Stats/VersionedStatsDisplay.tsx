@@ -1,9 +1,9 @@
 import * as React from "react";
-import { Rest } from "majsoul-api";
-import { StatsVersion } from "majsoul-api/dist/rest/types/stats/StatsVersion";
+import { Rest } from "backend";
+import { KhanStats } from "backend/dist/rest/types/stats/KhanStats";
+import { StatsVersion } from "backend/dist/rest/types/stats/StatsVersion";
 import { FirstStatsDisplay } from "./FirstStatsDisplay";
 import { BaseStatsDisplay } from "./BaseStatsDisplay";
-import { KhanStats } from "majsoul-api/dist/rest/types/stats/KhanStats";
 
 
 export function VersionedStatsDisplay(props: { stats: Rest.Stats; }) {
@@ -16,7 +16,7 @@ export function VersionedStatsDisplay(props: { stats: Rest.Stats; }) {
 			return <BaseStatsDisplay stats={props.stats.stats} />;
 		case StatsVersion.First:
 		case StatsVersion.Khan:
-			return <FirstStatsDisplay stats={props.stats.stats as KhanStats['stats']} />;
+			return <FirstStatsDisplay stats={props.stats.stats as KhanStats["stats"]} />;
 	}
 
 	return null;

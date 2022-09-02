@@ -66,7 +66,7 @@ export function setDayjsLocale(locale?: "ja" | "en") {
 			nextDay: withLocale(calendarLocale, i18n.t("time.general.nextDay")),
 			lastWeek: withLocale(calendarLocale, i18n.t("time.general.lastWeek")),
 			nextWeek: withLocale(calendarLocale, i18n.t("time.general.nextWeek")),
-			sameElse: 'L'
+			sameElse: "L"
 		}
 	});
 }

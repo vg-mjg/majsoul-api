@@ -1,15 +1,15 @@
 import * as React from "react";
 import { IState } from "../State";
 import { useSelector, useDispatch } from "react-redux";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import { ContestType, TourneyContestScoringType } from "majsoul-api/dist/store/types/types";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import { ContestType, TourneyContestScoringType } from "majsoul/dist/store/types/types";
 import Form from "react-bootstrap/Form";
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import { TextField } from "./utils/TextField";
-import { GameResult } from "majsoul-api/dist/rest";
+import { GameResult } from "majsoul/dist/rest";
 import { createGame, fetchGame, deleteGame, fetchPendingGames } from "src/api/Games";
 import { patchContest } from "src/api/Contests";
 import { dispatchContestPatchedAction } from "src/actions/contests/ContestPatchedAction";
@@ -21,38 +21,38 @@ const CustomGameAdder: React.FC<{
 	contestId,
 	onGameCreated,
 }) => {
-		const dispatch = useDispatch();
-		const token = useSelector((state: IState) => state.user?.token);
-		const [majsoulId, setMajsoulId] = useState("");
-		return <Row className="no-gutters">
-			<Col>
-				<TextField
-					id="customGameIdEditor"
-					fallbackValue=""
-					placeholder="Custom Game Id"
-					onCommit={(value) => {
-						setMajsoulId(value);
-						return value;
-					}} />
-			</Col>
-			<Col className="text-right">
-				<Button
-					variant="secondary"
-					disabled={(majsoulId?.length ?? 0) <= 0}
-					onClick={(event: any) => {
-						createGame(token, {
-							contestId,
-							majsoulId,
-						}).then(_id => onGameCreated({
-							majsoulId,
-							contestId,
-							_id,
-						}));
-					}}
-				>Add</Button>
-			</Col>
-		</Row>
-	}
+	const dispatch = useDispatch();
+	const token = useSelector((state: IState) => state.user?.token);
+	const [majsoulId, setMajsoulId] = useState("");
+	return <Row className="no-gutters">
+		<Col>
+			<TextField
+				id="customGameIdEditor"
+				fallbackValue=""
+				placeholder="Custom Game Id"
+				onCommit={(value) => {
+					setMajsoulId(value);
+					return value;
+				}} />
+		</Col>
+		<Col className="text-right">
+			<Button
+				variant="secondary"
+				disabled={(majsoulId?.length ?? 0) <= 0}
+				onClick={(event: any) => {
+					createGame(token, {
+						contestId,
+						majsoulId,
+					}).then(_id => onGameCreated({
+						majsoulId,
+						contestId,
+						_id,
+					}));
+				}}
+			>Add</Button>
+		</Col>
+	</Row>;
+};
 
 const PendingGameDisplay: React.FC<{
 	game: GameResult<string>;
@@ -61,73 +61,73 @@ const PendingGameDisplay: React.FC<{
 	game,
 	onGameDeleted,
 }) => {
-		const dispatch = useDispatch();
-		const [notFoundOnMajsoulUpdated, setNotFoundOnMajsoulUpdated] = useState<boolean>(undefined);
-		const token = useSelector((state: IState) => state.user?.token);
+	const dispatch = useDispatch();
+	const [notFoundOnMajsoulUpdated, setNotFoundOnMajsoulUpdated] = useState<boolean>(undefined);
+	const token = useSelector((state: IState) => state.user?.token);
 
-		const notFoundOnMajsoul = game.notFoundOnMajsoul ?? notFoundOnMajsoulUpdated;
+	const notFoundOnMajsoul = game.notFoundOnMajsoul ?? notFoundOnMajsoulUpdated;
 
-		React.useEffect(() => {
-			if (game.notFoundOnMajsoul != null) {
-				return;
-			}
-			setTimeout(() => fetchGame(game._id).then(game => setNotFoundOnMajsoulUpdated(game.notFoundOnMajsoul)), 5000);
-		}, [game.notFoundOnMajsoul]);
+	React.useEffect(() => {
+		if (game.notFoundOnMajsoul != null) {
+			return;
+		}
+		setTimeout(() => fetchGame(game._id).then(game => setNotFoundOnMajsoulUpdated(game.notFoundOnMajsoul)), 5000);
+	}, [game.notFoundOnMajsoul]);
 
-		return <Row className="no-gutters">
-			<Col>
-				{game.majsoulId}
-			</Col>
-			<Col>
-				{(notFoundOnMajsoul) === true ? "Not Found" : (notFoundOnMajsoul) === false ? "Found" : "Pending"}
-			</Col>
-			<Col className="text-right">
-				<Button
-					variant="secondary"
-					disabled={notFoundOnMajsoul !== true}
-					onClick={(event: any) => {
-						deleteGame(token, game._id).then(() => onGameDeleted(game._id));
-					}}
-				>Delete</Button>
-			</Col>
-		</Row>
-	}
+	return <Row className="no-gutters">
+		<Col>
+			{game.majsoulId}
+		</Col>
+		<Col>
+			{(notFoundOnMajsoul) === true ? "Not Found" : (notFoundOnMajsoul) === false ? "Found" : "Pending"}
+		</Col>
+		<Col className="text-right">
+			<Button
+				variant="secondary"
+				disabled={notFoundOnMajsoul !== true}
+				onClick={(event: any) => {
+					deleteGame(token, game._id).then(() => onGameDeleted(game._id));
+				}}
+			>Delete</Button>
+		</Col>
+	</Row>;
+};
 
 const ContestCustomGames: React.FC<{
 	contestId: string;
 }> = ({
 	contestId,
 }) => {
-		const dispatch = useDispatch();
-		const [pendingGames, setPendingGames] = useState<GameResult<string>[]>([]);
-		const onGameDeleted = React.useCallback((gameId: string) => {
-			if (!pendingGames.find(game => game._id === gameId)) {
-				return;
-			}
-			setPendingGames(pendingGames.filter(game => game._id !== gameId));
-		}, [pendingGames]);
+	const dispatch = useDispatch();
+	const [pendingGames, setPendingGames] = useState<GameResult<string>[]>([]);
+	const onGameDeleted = React.useCallback((gameId: string) => {
+		if (!pendingGames.find(game => game._id === gameId)) {
+			return;
+		}
+		setPendingGames(pendingGames.filter(game => game._id !== gameId));
+	}, [pendingGames]);
 
-		const onGameCreated = React.useCallback((game: GameResult<string>) => {
-			setPendingGames(pendingGames.concat(game));
-		}, [pendingGames]);
+	const onGameCreated = React.useCallback((game: GameResult<string>) => {
+		setPendingGames(pendingGames.concat(game));
+	}, [pendingGames]);
 
-		React.useEffect(() => {
-			fetchPendingGames(contestId).then(games => setPendingGames(games));
-		}, [contestId])
-		return <>
-			<Row className="no-gutters">
-				<Col>
-					<h4>Custom Games</h4>
-				</Col>
-			</Row>
-			{pendingGames.map(game => <PendingGameDisplay
-				key={game._id}
-				game={game}
-				onGameDeleted={onGameDeleted}
-			/>)}
-			<CustomGameAdder contestId={contestId} onGameCreated={onGameCreated} />
-		</>
-	}
+	React.useEffect(() => {
+		fetchPendingGames(contestId).then(games => setPendingGames(games));
+	}, [contestId]);
+	return <>
+		<Row className="no-gutters">
+			<Col>
+				<h4>Custom Games</h4>
+			</Col>
+		</Row>
+		{pendingGames.map(game => <PendingGameDisplay
+			key={game._id}
+			game={game}
+			onGameDeleted={onGameDeleted}
+		/>)}
+		<CustomGameAdder contestId={contestId} onGameCreated={onGameCreated} />
+	</>;
+};
 
 const contestTypeValues =
 	Object.keys(ContestType)
@@ -221,7 +221,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						return {
 							isValid: value >= 0,
 							value: newValue,
-						}
+						};
 					}}
 					onCommit={(value: string, isValid: boolean) => {
 						if (value == null) {
@@ -375,7 +375,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						return {
 							isValid: value >= 0,
 							value: newValue,
-						}
+						};
 					}}
 					onCommit={(value: string, isValid: boolean) => {
 						if (value == null) {
@@ -406,7 +406,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					inline
 					label="Track"
 					type="checkbox"
-					id={`track-contest`}
+					id={"track-contest"}
 					checked={track ?? contest.track ?? false}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) => setTrack(event.target.checked)}
 				/>
@@ -416,7 +416,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 					inline
 					label="Fetch Players"
 					type="checkbox"
-					id={`fetch-contest-players`}
+					id={"fetch-contest-players"}
 					checked={adminPlayerFetchRequested ?? contest.adminPlayerFetchRequested ?? false}
 					onChange={(event: React.ChangeEvent<HTMLInputElement>) => setAdminPlayerFetchRequested(event.target.checked)}
 				/>

@@ -1,33 +1,15 @@
 import * as React from "react";
 import { IState } from "../../State";
-import { useSelector, shallowEqual, useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import { RiggingLogin } from "./RiggingLogin";
 import Nav from "react-bootstrap/Nav";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { LinkContainer } from 'react-router-bootstrap';
-import { Route, Switch, useRouteMatch } from "react-router-dom";
-import { Session } from "../Session";
-import { dispatchLoggedOutAction } from "src/actions/rigging/LoggedOutAction";
-
-function RiggingSessions(props: {}): JSX.Element {
-	return null;
-	const sessions = useSelector((state: IState) => [], shallowEqual);
-
-	if (!sessions) {
-		return null;
-	}
-
-	return <Container>
-		{sessions.map(session => <Row key={session._id} className="mt-2">
-			<Session session={session} />
-		</Row>)}
-	</Container>
-}
+import { LinkContainer } from "react-router-bootstrap";
+import { dispatchLoggedOutAction } from "../../actions/rigging/LoggedOutAction";
 
 export function Rigging(): JSX.Element {
-	const routeMatch = useRouteMatch();
 	const dispatch = useDispatch();
 	const token = useSelector((state: IState) => state.user?.token);
 
@@ -38,7 +20,7 @@ export function Rigging(): JSX.Element {
 					<RiggingLogin />
 				</Col>
 			</Row>
-		</Container>
+		</Container>;
 	}
 
 	return <Container>
@@ -59,12 +41,5 @@ export function Rigging(): JSX.Element {
 				</Nav.Item>
 			</Nav>
 		</Row>
-		<Row>
-			<Switch>
-				<Route path={`${routeMatch.url}/sessions`}>
-					<RiggingSessions />
-				</Route>
-			</Switch>
-		</Row>
-	</Container>
+	</Container>;
 }

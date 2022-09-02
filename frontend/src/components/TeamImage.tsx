@@ -1,11 +1,11 @@
 import * as React from "react";
-import { Store } from "majsoul-api";
+import { Store } from "backend";
 import defaultImage from "../../assets/shamiko.jpg";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
 
-const styles = css`
+const styles = stylesheet`
 	.container {
 		display: flex;
 		position: relative;

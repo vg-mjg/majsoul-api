@@ -1,10 +1,10 @@
-import { css } from 'astroturf'
-import * as React from 'react'
-import Container from 'react-bootstrap/Container'
-import { BsChevronCompactUp, BsChevronCompactDown } from 'react-icons/bs'
+import { stylesheet } from "astroturf";
+import * as React from "react";
+import Container from "react-bootstrap/Container";
+import { BsChevronCompactUp, BsChevronCompactDown } from "react-icons/bs";
 
-const styles = css`
-	@import 'src/bootstrap-vars.sass';
+const styles = stylesheet`
+	@import '../../bootstrap-vars.sass';
 
 	.arrow {
 		cursor: pointer;
@@ -14,7 +14,7 @@ const styles = css`
 			}
 		}
 	}
-`
+`;
 
 export const ArrowToggle: React.FC<{
 	pointUp?: boolean
@@ -24,5 +24,5 @@ export const ArrowToggle: React.FC<{
 			? <BsChevronCompactUp color="white" size="30px" />
 			: <BsChevronCompactDown color="white" size="30px" />
 		}
-	</Container>
-}
+	</Container>;
+};

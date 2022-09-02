@@ -1,4 +1,4 @@
-import { Store } from "majsoul-api";
+import { Store } from "backend";
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export async function createTeam(token: string, contestId: string): Promise<Store.ContestTeam> {
