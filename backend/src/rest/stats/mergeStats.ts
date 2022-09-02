@@ -1,8 +1,10 @@
-import { StatsVersion } from "../types/stats/StatsVersion.js";
-import { Stats } from "../types/stats/index.js";
+import { StatsVersion } from "../types/enums/StatsVersion.js";
 import { BaseStats } from "../types/stats/BaseStats.js";
-import { createStats, FirstStats } from "../types/stats/FirstStats.js";
-import { createKhanStats, KhanStats } from "../types/stats/KhanStats.js";
+import { FirstStats } from "../types/stats/FirstStats.js";
+import { KhanStats } from "../types/stats/KhanStats.js";
+import { Stats } from "../types/stats/Stats.js";
+import { createFirstStats } from "../types/stats/utils/createFirstStats.js";
+import { createKhanStats } from "../types/stats/utils/createKhanStats.js";
 
 export function mergeStats(stats: Stats[], version: StatsVersion): Stats {
 	switch (version) {
@@ -16,7 +18,7 @@ export function mergeStats(stats: Stats[], version: StatsVersion): Stats {
 	} case StatsVersion.First: {
 		return {
 			version: StatsVersion.First,
-			stats: mergeAllStats(stats as FirstStats[], createStats)
+			stats: mergeAllStats(stats as FirstStats[], createFirstStats)
 		};
 	} case StatsVersion.Khan: {
 		return {

@@ -1,23 +1,31 @@
-import { Spreadsheet } from "./google.js";
-import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from "mongodb";
-import { MajsoulAdminApi, Passport, MajsoulApi } from "majsoul";
 import { Credentials } from "google-auth-library";
-import { getSecrets } from "./secrets.js";
-import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, distinctUntilChanged, filter, map, mergeAll, pairwise, share, shareReplay, takeUntil, zipWith, withLatestFrom, combineLatestWith, scan, switchAll } from "rxjs/operators";
-import { Store } from "./index.js";
 import { google } from "googleapis";
-import { ContestTracker } from "./ContestTracker.js";
-import { parseGameRecordResponse } from "./connector/parseGameRecordResponse.js";
+import { MajsoulAdminApi, MajsoulApi,Passport } from "majsoul";
+import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from "mongodb";
 import fetch, { HeadersInit } from "node-fetch";
-import * as UserAgent from "user-agents";
-import { GachaPull, GameResult, TourneyContestScoringType } from "./store/index.js";
+import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
+import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll,takeUntil, withLatestFrom, zipWith } from "rxjs/operators";
 import seedrandom from "seedrandom";
+import * as UserAgent from "user-agents";
+
+import { parseGameRecordResponse } from "./connector/parseGameRecordResponse.js";
+import { ContestTracker } from "./ContestTracker.js";
+import { Spreadsheet } from "./google.js";
+import { getSecrets } from "./secrets.js";
+import { Store } from "./store/Store.js";
+import { Config } from "./store/types/Config.js";
+import { Contest } from "./store/types/contest/Contest.js";
+import { Cookie } from "./store/types/Cookie.js";
+import { TourneyContestScoringType } from "./store/types/enums/TourneyContestScoringType.js";
+import { GachaGroup } from "./store/types/gacha/GachaGroup.js";
+import { GachaPull } from "./store/types/gacha/GachaPull.js";
+import { GameResult } from "./store/types/game/GameResult.js";
+import { Player } from "./store/types/Player.js";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
-export const nameofContest = nameofFactory<Store.Contest<ObjectId>>();
+export const nameofContest = nameofFactory<Contest<ObjectId>>();
 
-async function getOrGenerateUserAgent(mongoStore: Store.Store): Promise<string> {
+async function getOrGenerateUserAgent(mongoStore: Store): Promise<string> {
 	const [config] = await mongoStore.configCollection.find().toArray();
 	if (!config.userAgent) {
 		config.userAgent = new UserAgent({
@@ -43,11 +51,11 @@ async function getPassport(
 		userId: string;
 		accessToken: string;
 		userAgent: string;
-		existingCookies: Store.Cookie[];
+		existingCookies: Cookie[];
 	}
 ): Promise<{
 	passport: Passport,
-	loginCookies: Store.Cookie[]
+	loginCookies: Cookie[]
 }> {
 	const sharedSpoofHeaders = {
 		"User-Agent": userAgent
@@ -161,7 +169,7 @@ async function getPassport(
 async function main() {
 	const secrets = getSecrets();
 
-	const mongoStore = new Store.Store();
+	const mongoStore = new Store();
 	try {
 		await mongoStore.init(secrets.mongo?.username ?? "root", secrets.mongo?.password ?? "example");
 	} catch (error) {
@@ -280,7 +288,7 @@ async function main() {
 			filter(change => change.operationType === "update"
 				&& change.updateDescription.updatedFields.googleRefreshToken !== undefined
 			),
-			map((updateEvent: ChangeStreamUpdateDocument<Store.Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
+			map((updateEvent: ChangeStreamUpdateDocument<Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
 		),
 		defer(
 			() => from(
@@ -308,7 +316,7 @@ async function main() {
 			filter(change => change.operationType === "insert"
 				&& change.fullDocument.majsoulFriendlyId != null
 			),
-			map((insertEvent: ChangeStreamInsertDocument<Store.Player<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<Player<ObjectId>>) => insertEvent.fullDocument)
 		),
 		defer(() => from(
 			mongoStore.playersCollection.find({
@@ -367,7 +375,7 @@ async function main() {
 				&& change.fullDocument.contestMajsoulId == null
 				&& change.fullDocument.majsoulId != null
 			),
-			map((insertEvent: ChangeStreamInsertDocument<Store.GameResult<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<GameResult<ObjectId>>) => insertEvent.fullDocument)
 		),
 		defer(() => from(
 			mongoStore.gamesCollection.find({
@@ -607,7 +615,7 @@ async function main() {
 async function recordGame(
 	contestId: ObjectId,
 	gameId: string,
-	mongoStore: Store.Store,
+	mongoStore: Store,
 	api: MajsoulApi
 ): Promise<void> {
 	const isRecorded = await mongoStore.isGameRecorded(gameId);
@@ -635,11 +643,11 @@ async function recordGame(
 	mongoStore.recordGame(contestId, gameResult);
 }
 
-function createContestIds$(mongoStore: Store.Store): Observable<ObjectId> {
+function createContestIds$(mongoStore: Store): Observable<ObjectId> {
 	return merge(
 		mongoStore.ContestChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "insert"),
-			map((changeEvent: ChangeStreamInsertDocument<Store.Contest<ObjectId>>) => changeEvent.documentKey._id)
+			map((changeEvent: ChangeStreamInsertDocument<Contest<ObjectId>>) => changeEvent.documentKey._id)
 		),
 		defer(() => from(mongoStore.contestCollection.find().toArray()))
 			.pipe(
@@ -651,7 +659,7 @@ function createContestIds$(mongoStore: Store.Store): Observable<ObjectId> {
 
 main().catch(e => console.log(e));
 
-function * rollGachaForScore(rand: seedrandom.PRNG, contest: Store.Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number){
+function * rollGachaForScore(rand: seedrandom.PRNG, contest: Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number){
 	while (uma >= 1000) {
 		const roll = rand();
 		yield contest.gacha.groups.filter(group => group.onePer * roll < 1).map(group => (
@@ -692,10 +700,10 @@ function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 }
 
 async function validatePossibleRolls(
-	mongoStore: Store.Store,
-	game: Store.GameResult<ObjectId>,
-	contest: Store.Contest<ObjectId>,
-	possibleRollsPerPlayer: { group: Store.GachaGroup<ObjectId>; pull: Store.GachaPull<ObjectId>; }[][][],
+	mongoStore: Store,
+	game: GameResult<ObjectId>,
+	contest: Contest<ObjectId>,
+	possibleRollsPerPlayer: { group: GachaGroup<ObjectId>; pull: GachaPull<ObjectId>; }[][][],
 	rand: seedrandom.PRNG,
 ): Promise<any> {
 	const uniqueGroups = new Set(possibleRollsPerPlayer.flat().flat().filter(roll => roll.group.unique).map(roll => roll.group._id));

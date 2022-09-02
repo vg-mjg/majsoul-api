@@ -1,12 +1,16 @@
-import { ObjectId } from "mongodb";
-import { Store } from "../../index.js";
-import { StatsVersion } from "../types/stats/StatsVersion.js";
-import { Stats } from "../types/stats/index.js";
-import { BaseStats } from "../types/stats/BaseStats.js";
-import { AgariCategories, createStats, FirstStats } from "../types/stats/FirstStats.js";
 import { Han } from "majsoul";
-import { DrawStatus, HandStatus } from "../../store/index.js";
+import { ObjectId } from "mongodb";
+
+import { DrawStatus } from "../../store/types/enums/DrawStatus.js";
+import { HandStatus } from "../../store/types/enums/HandStatus.js";
+import { GameResult as StoreGameResult } from "../../store/types/game/GameResult.js";
+import { StatsVersion } from "../types/enums/StatsVersion.js";
+import { BaseStats } from "../types/stats/BaseStats.js";
+import { AgariCategories } from "../types/stats/first/AgariCategories.js";
+import { FirstStats } from "../types/stats/FirstStats.js";
 import { KhanStats } from "../types/stats/KhanStats.js";
+import { Stats } from "../types/stats/Stats.js";
+import { createFirstStats } from "../types/stats/utils/createFirstStats.js";
 
 interface PlayerData {
 	playerId: ObjectId;
@@ -20,7 +24,7 @@ export interface GamePlayerIds {
 }
 
 export function collectStats(
-	game: Store.GameResult<ObjectId>,
+	game: StoreGameResult<ObjectId>,
 	version: StatsVersion,
 	players?: Record<string, ObjectId | boolean>): (Stats & GamePlayerIds)[] {
 	const baseStatsData = generateBaseStatsData(game);
@@ -53,7 +57,7 @@ export function collectStats(
 	});
 }
 
-function selectPlayers(game: Store.GameResult<ObjectId>, players?: Record<string, boolean | ObjectId>): PlayerData[] {
+function selectPlayers(game: StoreGameResult<ObjectId>, players?: Record<string, boolean | ObjectId>): PlayerData[] {
 	return game.players
 		.map((player, seat) => ({
 			playerId: player._id,
@@ -67,7 +71,7 @@ interface BaseStatsSharedData {
 	standings: number[];
 }
 
-function generateBaseStatsData(game: Store.GameResult<ObjectId>): BaseStatsSharedData {
+function generateBaseStatsData(game: StoreGameResult<ObjectId>): BaseStatsSharedData {
 	return {
 		standings: game.finalScore
 			.map((score, seat) => ({ ...score, seat }))
@@ -76,7 +80,7 @@ function generateBaseStatsData(game: Store.GameResult<ObjectId>): BaseStatsShare
 	};
 }
 
-function collectBaseStats(game: Store.GameResult<ObjectId>, player: PlayerData, data: BaseStatsSharedData): BaseStats["stats"] {
+function collectBaseStats(game: StoreGameResult<ObjectId>, player: PlayerData, data: BaseStatsSharedData): BaseStats["stats"] {
 	return {
 		gamesPlayed: 1,
 		totalHands: game.rounds?.length ?? 0,
@@ -93,7 +97,7 @@ function selectCategory<T>(handStatus: HandStatus, agariStats: AgariCategories<T
 }
 
 function collectFirstStats(
-	game: Store.GameResult<ObjectId>,
+	game: StoreGameResult<ObjectId>,
 	player: PlayerData,
 	baseStats: BaseStats["stats"],
 ): FirstStats["stats"] {
@@ -185,13 +189,13 @@ function collectFirstStats(
 			}
 
 			return total;
-		}, createStats()),
+		}, createFirstStats()),
 		...baseStats,
 	};
 }
 
 function collectKhanStats(
-	game: Store.GameResult<ObjectId>,
+	game: StoreGameResult<ObjectId>,
 	player: PlayerData,
 	firstStats: FirstStats["stats"],
 ): KhanStats["stats"] {

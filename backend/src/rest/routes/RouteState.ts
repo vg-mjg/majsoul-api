@@ -1,24 +1,49 @@
-import * as store from "../../store/index.js";
-import { GameResult, Session, LeaguePhase, PlayerTourneyStandingInformation, TourneyPhase, PlayerRankingType, PlayerScoreTypeRanking, PlayerTeamRanking, SharedGroupRankingData, TourneyContestScoringDetailsWithId, PlayerInformation, EliminationLevel, EliminationMatchDetails } from "../types/types.js";
-import { ObjectId, Filter, Condition, FindOptions } from "mongodb";
-import { concat, defer, from, Observable, of, lastValueFrom } from "rxjs";
-import { map, mergeWith, mergeAll, mergeScan, pairwise, toArray } from "rxjs/operators";
-import { Rest, Store } from "../../index.js";
-import { buildContestPhases, GachaGroup, GachaPull, TourneyContestScoringType, TourneyScoringInfoPart, TourneyScoringTypeDetails } from "../../store/index.js";
-import { ContestOption } from "../ContestOption.js";
-import { PlayerContestTypeResults } from "../PlayerContestTypeResults.js";
-import { bilateralSort } from "../utils/bilateralSort.js";
 import { OAuth2Client } from "google-auth-library";
 import { MajsoulApi } from "majsoul";
+import { Condition, Filter, FindOptions,ObjectId } from "mongodb";
+import { concat, defer, from, lastValueFrom,Observable, of } from "rxjs";
+import { map, mergeAll, mergeScan, mergeWith, pairwise, toArray } from "rxjs/operators";
+
+import { buildContestPhases } from "../../store/buildContestPhases.js";
+import { Store } from "../../store/Store.js";
+import { Contest as StoreContest } from "../../store/types/contest/Contest.js";
+import { ContestPhase } from "../../store/types/contest/ContestPhase.js";
+import { PhaseInfo } from "../../store/types/contest/PhaseInfo.js";
+import { Session as StoreSession } from "../../store/types/contest/Session.js";
+import { TourneyScoringInfoPart } from "../../store/types/contest/TourneyScoringInfoPart.js";
+import { TourneyScoringTypeDetails } from "../../store/types/contest/TourneyScoringTypeDetails.js";
+import { TourneyContestPhaseSubtype } from "../../store/types/enums/TourneyContestPhaseSubtype.js";
+import { TourneyContestScoringType } from "../../store/types/enums/TourneyContestScoringType.js";
+import { GachaGroup } from "../../store/types/gacha/GachaGroup.js";
+import { GachaPull } from "../../store/types/gacha/GachaPull.js";
+import { GameResult as StoreGameResult } from "../../store/types/game/GameResult.js";
+import { Player } from "../../store/types/Player.js";
+import { ContestOption } from "../ContestOption.js";
+import { PlayerContestTypeResults } from "../PlayerContestTypeResults.js";
+import { LeaguePhase } from "../types/contest/LeaguePhase.js";
+import { PhaseMetadata } from "../types/contest/PhaseMetadata.js";
+import { Session } from "../types/contest/Session.js";
+import { TourneyPhase } from "../types/contest/TourneyPhase.js";
+import { EliminationLevel } from "../types/EliminationLevel.js";
+import { EliminationMatchDetails } from "../types/EliminationMatchDetails.js";
+import { PlayerRankingType } from "../types/enums/PlayerRankingType.js";
+import { GameResult } from "../types/GameResult.js";
+import { PlayerInformation } from "../types/PlayerInformation.js";
+import { PlayerScoreTypeRanking } from "../types/standings/PlayerScoreTypeRanking.js";
+import { PlayerTeamRanking } from "../types/standings/PlayerTeamRanking.js";
+import { PlayerTourneyStandingInformation } from "../types/standings/PlayerTourneyStandingInformation.js";
+import { SharedGroupRankingData } from "../types/standings/SharedGroupRankingData.js";
+import { TourneyContestScoringDetailsWithId } from "../types/standings/TourneyContestScoringDetailsWithId.js";
+import { bilateralSort } from "../utils/bilateralSort.js";
 
 export class RouteState {
 	constructor(
-		public mongoStore: store.Store,
+		public mongoStore: Store,
 		public oauth2Client: OAuth2Client,
 		public privateKey: Buffer,
 	) {}
 
-	public findContest(contestId: string, options?: FindOptions): Promise<store.Contest<ObjectId>> {
+	public findContest(contestId: string, options?: FindOptions): Promise<StoreContest<ObjectId>> {
 		return this.mongoStore.contestCollection.findOne(
 			{
 				$or: [
@@ -39,7 +64,7 @@ export class RouteState {
 		return this.findContest(contestId, { projection: { _id: true } }).then(contest => contest?._id);
 	}
 
-	public async getSessionSummary(contest: store.Contest, startSession: store.Session, endSession?: store.Session): Promise<Record<string, number>> {
+	public async getSessionSummary(contest: StoreContest, startSession: StoreSession, endSession?: StoreSession): Promise<Record<string, number>> {
 		const timeWindow: Condition<number> = {
 			$gte: startSession.scheduledTime
 		};
@@ -66,7 +91,7 @@ export class RouteState {
 		}, contest.teams.reduce((total, next) => (total[next._id.toHexString()] = 0, total), {}));
 	}
 
-	public getSessions(contest: store.Contest<ObjectId>): Observable<Session> {
+	public getSessions(contest: StoreContest<ObjectId>): Observable<Session> {
 		return concat(
 			defer(() => from(
 				this.mongoStore.sessionsCollection.find(
@@ -76,7 +101,7 @@ export class RouteState {
 			)).pipe(
 				mergeAll(),
 			),
-			of<store.Session<ObjectId>>(null)
+			of<StoreSession<ObjectId>>(null)
 		).pipe(
 			pairwise(),
 			map(([session, nextSession]) =>
@@ -91,7 +116,7 @@ export class RouteState {
 		);
 	}
 
-	public async getPhases(contestId: string): Promise<Store.PhaseInfo<ObjectId>> {
+	public async getPhases(contestId: string): Promise<PhaseInfo<ObjectId>> {
 		const contest = await this.findContest(contestId, {
 			projection: {
 				_id: true,
@@ -114,7 +139,7 @@ export class RouteState {
 		return buildContestPhases(contest);
 	}
 
-	public createRestPhases(phaseInfo: Store.PhaseInfo<ObjectId>): Rest.PhaseMetadata[] {
+	public createRestPhases(phaseInfo: PhaseInfo<ObjectId>): PhaseMetadata[] {
 		return phaseInfo?.phases?.map((phase) => ({
 			name: phase.name,
 			startTime: phase.startTime,
@@ -122,7 +147,7 @@ export class RouteState {
 		})) ?? [];
 	}
 
-	public async getLeaguePhaseData(phaseInfo: Store.PhaseInfo<ObjectId>): Promise<LeaguePhase<ObjectId>[]> {
+	public async getLeaguePhaseData(phaseInfo: PhaseInfo<ObjectId>): Promise<LeaguePhase<ObjectId>[]> {
 		const {
 			contest,
 			transitions
@@ -279,7 +304,7 @@ export class RouteState {
 		return `${type.type}`;
 	}
 
-	public async namePlayers(players: store.Player<ObjectId>[], contestId: ObjectId, contest?: store.Contest): Promise<Rest.PlayerInformation[]> {
+	public async namePlayers(players: Player<ObjectId>[], contestId: ObjectId, contest?: StoreContest): Promise<PlayerInformation[]> {
 		if (!contest) {
 			contest = (await this.mongoStore.contestCollection.find(
 				{
@@ -302,7 +327,7 @@ export class RouteState {
 		})) ?? [];
 	}
 
-	public getTourneyPhaseData(phaseInfo: Store.PhaseInfo<ObjectId>): Promise<TourneyPhase<ObjectId>[]> {
+	public getTourneyPhaseData(phaseInfo: PhaseInfo<ObjectId>): Promise<TourneyPhase<ObjectId>[]> {
 		const {
 			contest,
 			phases: storePhases
@@ -323,10 +348,10 @@ export class RouteState {
 	}
 
 	public async getTourneyPhaseStandings(
-		contest: Store.Contest<ObjectId>,
+		contest: StoreContest<ObjectId>,
 		phase: TourneyPhase<ObjectId>,
 		nextPhase: TourneyPhase<ObjectId>,
-		storePhase: Store.ContestPhase<ObjectId>,
+		storePhase: ContestPhase<ObjectId>,
 	): Promise<{
 		standings: PlayerTourneyStandingInformation[];
 		scoringTypes: (TourneyScoringInfoPart & {id:string})[];
@@ -445,7 +470,7 @@ export class RouteState {
 			resultsByType
 		);
 
-		if (phase.subtype === store.TourneyContestPhaseSubtype.TeamQualifier && contest.teams) {
+		if (phase.subtype === TourneyContestPhaseSubtype.TeamQualifier && contest.teams) {
 			const freeAgents = players.filter(player => !contest.teams.find(team => team.players?.find(teamPlayer => player._id === teamPlayer._id.toHexString())))
 				.map(player => playerResults[player._id]);
 
@@ -720,7 +745,7 @@ export class RouteState {
 			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	public async getGachaResults(games: GameResult[], maxGames: number, contest: store.Contest): Promise<Record<string, PlayerContestTypeResults>> {
+	public async getGachaResults(games: GameResult[], maxGames: number, contest: StoreContest): Promise<Record<string, PlayerContestTypeResults>> {
 		const results = this.getCumulativeResults(games, maxGames);
 		const rolls = await this.mongoStore.gachaCollection.find({
 			gameId: { $in: games.map(game => game._id) },
@@ -782,7 +807,7 @@ export class RouteState {
 		return results;
 	}
 
-	public async getEliminationLevels(contest: store.Contest<ObjectId>, phase: Store.ContestPhase<ObjectId>, games: GameResult[]): Promise<EliminationLevel[]> {
+	public async getEliminationLevels(contest: StoreContest<ObjectId>, phase: ContestPhase<ObjectId>, games: GameResult[]): Promise<EliminationLevel[]> {
 		const eliminationLevels: EliminationLevel[] = [];
 		const targetPlayers = phase.eliminationBracketTargetPlayers ?? 32;
 
@@ -906,7 +931,7 @@ export class RouteState {
 		return results;
 	}
 
-	public async adjustGames(games: store.GameResult<ObjectId>[], options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
+	public async adjustGames(games: StoreGameResult<ObjectId>[], options?: ContestOption): Promise<StoreGameResult<ObjectId>[]> {
 		const corrections = await this.mongoStore.gameCorrectionsCollection.find({
 			gameId: {
 				$in: games.map(game => game._id)
@@ -916,7 +941,7 @@ export class RouteState {
 		if (corrections.length) {
 			const gameMap = games.reduce(
 				(total, next) => (total[next._id.toHexString()] = next, total),
-				{} as Record<string, store.GameResult<ObjectId>>
+				{} as Record<string, StoreGameResult<ObjectId>>
 			);
 
 			for (const correction of corrections) {
@@ -969,7 +994,7 @@ export class RouteState {
 		return games;
 	}
 
-	public async getGames(query: Filter<store.GameResult<ObjectId>>, options?: ContestOption): Promise<store.GameResult<ObjectId>[]> {
+	public async getGames(query: Filter<StoreGameResult<ObjectId>>, options?: ContestOption): Promise<StoreGameResult<ObjectId>[]> {
 		const games = await this.mongoStore.gamesCollection.find(query).toArray();
 		return await this.adjustGames(games, {
 			contestId: Array.isArray(query.contestId) ? null : query.contestId as ObjectId,

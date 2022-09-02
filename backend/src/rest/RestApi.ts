@@ -1,15 +1,16 @@
-import express from "express";
 import cors from "cors";
-import * as store from "../store/index.js";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
-import { google } from "googleapis";
-import { getSecrets } from "../secrets.js";
-import { contestRoute } from "./routes/contest/ContestRoute.js";
-import { RouteState } from "./routes/RouteState.js";
-import { registerAdminMethods, registerPublicMethods } from "./routes/Route.js";
+import express from "express";
 import { expressjwt } from "express-jwt";
+import fs from "fs";
+import { google } from "googleapis";
+import path from "path";
+
+import { getSecrets } from "../secrets.js";
+import { Store } from "../store/Store.js";
+import { contestRoute } from "./routes/contest/ContestRoute.js";
+import { registerAdminMethods, registerPublicMethods } from "./routes/Route.js";
+import { RouteState } from "./routes/RouteState.js";
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {
@@ -27,7 +28,7 @@ export class RestApi {
 		return process.env.NODE_ENV === "production" ? "/run/secrets/" : path.dirname(process.argv[1]);
 	}
 
-	constructor(private readonly mongoStore: store.Store) {}
+	constructor(private readonly mongoStore: Store) {}
 
 	public async init(root: { username: string, password: string }) {
 		const app = express();

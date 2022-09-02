@@ -1,19 +1,40 @@
-import * as store from "../../../store/index.js";
-import { GameResult, Session, ContestPlayer, Phase, YakumanInformation, PlayerInformation } from "../../types/types.js";
-import { ObjectId, Filter, Condition } from "mongodb";
 import * as crypto from "crypto";
-import * as jwt from "jsonwebtoken";
 import { body, matchedData, oneOf, param, query, validationResult } from "express-validator";
-import {  Rest, Store } from "../../../index.js";
-import { latestStatsVersion, StatsVersion } from "../../types/stats/StatsVersion.js";
-import { Stats } from "../../types/stats/index.js";
+import * as jwt from "jsonwebtoken";
+import { Condition, Filter, ObjectId } from "mongodb";
+
+import { isAgariYakuman } from "../../../store/isAgariYakuman.js";
+import { Config } from "../../../store/types/Config.js";
+import { Contest as StoreContest } from "../../../store/types/contest/Contest.js";
+import { ContestPhaseTransition } from "../../../store/types/contest/ContestPhaseTransition.js";
+import { ContestTeam } from "../../../store/types/contest/ContestTeam.js";
+import { EliminationBracketSettings } from "../../../store/types/contest/EliminationBracketSettings.js";
+import { Session as StoreSession } from "../../../store/types/contest/Session.js";
+import { TourneyScoringInfoPart } from "../../../store/types/contest/TourneyScoringInfoPart.js";
+import { ContestType } from "../../../store/types/enums/ContestType.js";
+import { TourneyContestPhaseSubtype } from "../../../store/types/enums/TourneyContestPhaseSubtype.js";
+import { TourneyContestScoringType } from "../../../store/types/enums/TourneyContestScoringType.js";
+import { GachaCard } from "../../../store/types/gacha/GachaCard.js";
+import { GachaGroup } from "../../../store/types/gacha/GachaGroup.js";
+import { GameCorrection } from "../../../store/types/game/GameCorrection.js";
+import { GameResult as StoreGameResult } from "../../../store/types/game/GameResult.js";
+import { AgariInfo } from "../../../store/types/game/round/AgariInfo.js";
+import { Player } from "../../../store/types/Player.js";
 import { collectStats } from "../../stats/collectStats.js";
 import { mergeStats } from "../../stats/mergeStats.js";
+import { minimumVersion } from "../../stats/minimumVersion.js";
+import { Contest } from "../../types/contest/Contest.js";
+import { Phase } from "../../types/contest/Phase.js";
+import { Session } from "../../types/contest/Session.js";
+import { ContestPlayer } from "../../types/ContestPlayer.js";
+import { latestStatsVersion, StatsVersion } from "../../types/enums/StatsVersion.js";
+import { GameResult } from "../../types/GameResult.js";
+import { PlayerInformation } from "../../types/PlayerInformation.js";
+import { Stats } from "../../types/stats/Stats.js";
+import { YakumanInformation } from "../../types/YakumanInformation.js";
+import { escapeRegexp } from "../../utils/escapeRegexp.js";
 import { logError } from "../../utils/logError.js";
 import { withData } from "../../utils/withData.js";
-import { minimumVersion } from "../../stats/minimumVersion.js";
-import { escapeRegexp } from "../../utils/escapeRegexp.js";
-import { AgariInfo,  ContestPhaseTransition, ContestType, GameCorrection, isAgariYakuman } from "../../../store/index.js";
 import { Route } from "../Route.js";
 import { RouteState } from "../RouteState.js";
 
@@ -266,21 +287,21 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 };
 
 const nameofFactory = <T>() => (name: keyof T) => name;
-const nameofContest = nameofFactory<store.Contest<ObjectId>>();
-const nameofEliminationBracketSettings = nameofFactory<store.EliminationBracketSettings>();
-const nameofNicknameOverrides = nameofFactory<store.Contest["nicknameOverrides"][0]>();
-const nameofPlayer = nameofFactory<store.Player<ObjectId>>();
-const nameofConfig = nameofFactory<store.Config<ObjectId>>();
-const nameofTransition = nameofFactory<store.ContestPhaseTransition<ObjectId>>();
-const nameofTeam = nameofFactory<store.ContestTeam<ObjectId>>();
-const nameofSession = nameofFactory<store.Session<ObjectId>>();
-const nameofGameResult = nameofFactory<store.GameResult<ObjectId>>();
-const nameofGameCorrection = nameofFactory<store.GameCorrection<ObjectId>>();
-const nameofTourneyScoringType = nameofFactory<store.TourneyScoringInfoPart>();
-const nameofTourneyScoringTypeDetails = nameofFactory<store.TourneyScoringInfoPart["typeDetails"]>();
-const nameofGacha = nameofFactory<store.Contest<ObjectId>["gacha"]>();
-const nameofGachaGroup = nameofFactory<store.GachaGroup<ObjectId>>();
-const nameofGachaCard = nameofFactory<store.GachaCard<ObjectId>>();
+const nameofContest = nameofFactory<StoreContest<ObjectId>>();
+const nameofEliminationBracketSettings = nameofFactory<EliminationBracketSettings>();
+const nameofNicknameOverrides = nameofFactory<StoreContest["nicknameOverrides"][0]>();
+const nameofPlayer = nameofFactory<Player<ObjectId>>();
+const nameofConfig = nameofFactory<Config<ObjectId>>();
+const nameofTransition = nameofFactory<ContestPhaseTransition<ObjectId>>();
+const nameofTeam = nameofFactory<ContestTeam<ObjectId>>();
+const nameofSession = nameofFactory<StoreSession<ObjectId>>();
+const nameofGameResult = nameofFactory<StoreGameResult<ObjectId>>();
+const nameofGameCorrection = nameofFactory<GameCorrection<ObjectId>>();
+const nameofTourneyScoringType = nameofFactory<TourneyScoringInfoPart>();
+const nameofTourneyScoringTypeDetails = nameofFactory<TourneyScoringInfoPart["typeDetails"]>();
+const nameofGacha = nameofFactory<StoreContest<ObjectId>["gacha"]>();
+const nameofGachaGroup = nameofFactory<GachaGroup<ObjectId>>();
+const nameofGachaCard = nameofFactory<GachaCard<ObjectId>>();
 
 const seededPlayerNames: Record<string, string[]> = {
 	"236728": [
@@ -293,10 +314,10 @@ const seededPlayerNames: Record<string, string[]> = {
 
 export const contestRoute: Route<RouteState> = {
 	publicMethods: [
-		(app, state) => app.get<any, store.Contest<ObjectId>[]>("/contests", (req, res) => {
+		(app, state) => app.get<any, StoreContest<ObjectId>[]>("/contests", (req, res) => {
 			state.mongoStore.contestCollection
 				.find()
-				.project<store.Contest<ObjectId>>({
+				.project<StoreContest<ObjectId>>({
 					majsoulFriendlyId: true,
 					name: true,
 					displayName: true,
@@ -306,13 +327,13 @@ export const contestRoute: Route<RouteState> = {
 				.catch(error => res.status(500).send(error));
 		}),
 
-		(app, state) => app.get<any, store.Contest<ObjectId>>("/contests/featured", logError(async (req, res) => {
+		(app, state) => app.get<any, StoreContest<ObjectId>>("/contests/featured", logError(async (req, res) => {
 			const [config] = await state.mongoStore.configCollection.find()
 				.project({
 					googleRefreshToken: false
 				}).limit(1)
 				.toArray();
-			const query: Filter<store.Contest<ObjectId>> = {};
+			const query: Filter<StoreContest<ObjectId>> = {};
 			if (config.featuredContest != null) {
 				query._id = config.featuredContest;
 			}
@@ -321,7 +342,7 @@ export const contestRoute: Route<RouteState> = {
 				.find(query)
 				.sort({ _id: -1 })
 				.limit(1)
-				.project<store.Contest<ObjectId>>({
+				.project<StoreContest<ObjectId>>({
 					_id: true
 				})
 				.toArray()
@@ -331,7 +352,7 @@ export const contestRoute: Route<RouteState> = {
 
 		(app, state) => app.get("/contests/:id",
 			param("id").isMongoId(),
-			withData<{ id: string; }, any, Rest.Contest<ObjectId>>(async (data, req, res) => {
+			withData<{ id: string; }, any, Contest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id);
 				if (contest === null) {
 					res.status(404).send();
@@ -339,7 +360,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 				const phaseMetadata = await state.getPhases(data.id);
 
-				const restContest: Rest.Contest = {
+				const restContest: Contest = {
 					...contest,
 					phases: state.createRestPhases(phaseMetadata),
 					teams: undefined
@@ -374,7 +395,7 @@ export const contestRoute: Route<RouteState> = {
 			param("id").isMongoId(),
 			query("large").isBoolean().optional({ nullable: false }),
 			query("teams").optional({ nullable: false }),
-			withData<{ id: string; large: "true" | "false"; teams: string; }, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			withData<{ id: string; large: "true" | "false"; teams: string; }, any, StoreContest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						["teams._id"]: true,
@@ -399,7 +420,7 @@ export const contestRoute: Route<RouteState> = {
 		(app, state) => app.get("/contests/:id/gacha/:gachaId",
 			param("id").isMongoId(),
 			param("gachaId").isMongoId(),
-			withData<{ id: string; gachaId: string; teams: string; }, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			withData<{ id: string; gachaId: string; teams: string; }, any, StoreContest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
@@ -423,9 +444,9 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get<any, store.GameResult<ObjectId>>("/games/:id",
+		(app, state) => app.get<any, StoreGameResult<ObjectId>>("/games/:id",
 			param("id").isMongoId(),
-			withData<{ id: string }, any, store.GameResult<ObjectId>>(async (data, req, res) => {
+			withData<{ id: string }, any, StoreGameResult<ObjectId>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
 				const games = await state.getGames({
 					_id: gameId
@@ -441,7 +462,7 @@ export const contestRoute: Route<RouteState> = {
 
 		(app, state) => app.get("/contests/:id/pendingGames",
 			param("id").isMongoId(),
-			withData<{ id: string }, any, store.GameResult<ObjectId>[]>(async (data, req, res) => {
+			withData<{ id: string }, any, StoreGameResult<ObjectId>[]>(async (data, req, res) => {
 				const games = await state.getGames({
 					contestId: new ObjectId(data.id),
 					notFoundOnMajsoul: { $ne: false },
@@ -558,7 +579,7 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.get<any, store.Config<ObjectId>>("/config", (req, res) => {
+		(app, state) => app.get<any, Config<ObjectId>>("/config", (req, res) => {
 			state.mongoStore.configCollection.find()
 				.project({
 					googleRefreshToken: false
@@ -577,7 +598,7 @@ export const contestRoute: Route<RouteState> = {
 		}),
 
 		(app, state) => app.get<any, GameResult<ObjectId>[]>("/games", async (req, res) => {
-			const filter: Filter<store.GameResult<ObjectId>> = {
+			const filter: Filter<StoreGameResult<ObjectId>> = {
 				$and: [{
 					$or: [
 						{
@@ -594,7 +615,7 @@ export const contestRoute: Route<RouteState> = {
 			};
 
 			const contestIds = (req.query.contests as string)?.split(" ");
-			let contestsFilter = null as Store.Contest<ObjectId>[];
+			let contestsFilter = null as StoreContest<ObjectId>[];
 			if (contestIds) {
 				contestsFilter = await state.mongoStore.contestCollection.find(
 					{
@@ -622,8 +643,8 @@ export const contestRoute: Route<RouteState> = {
 
 			const sessionIds = (req.query?.sessions as string)?.split(" ");
 			const sessionMap: {
-				startSession: store.Session,
-				endSession: store.Session
+				startSession: StoreSession,
+				endSession: StoreSession
 			}[] = [];
 			if (sessionIds) {
 				const sessions = await state.mongoStore.sessionsCollection.find({
@@ -866,7 +887,7 @@ export const contestRoute: Route<RouteState> = {
 
 			const playerIds = team?.players?.map(player => player._id) ?? [];
 
-			const gameQuery: Filter<store.GameResult<ObjectId>> = {
+			const gameQuery: Filter<StoreGameResult<ObjectId>> = {
 				contestId: contest._id,
 				hidden: { $ne: true },
 				$or: [
@@ -994,7 +1015,7 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 
-				const query: Filter<Store.GameResult<ObjectId>> = {
+				const query: Filter<StoreGameResult<ObjectId>> = {
 					contestId: contest._id,
 					hidden: { $ne: true }
 				};
@@ -1074,7 +1095,7 @@ export const contestRoute: Route<RouteState> = {
 			withData<{
 				name?: string;
 				limit?: string;
-			}, any, store.Player<ObjectId>[]>(async (data, req, res) => {
+			}, any, Player<ObjectId>[]>(async (data, req, res) => {
 				const regex = new RegExp(`^${escapeRegexp(data.name)}.*$`);
 				const cursor = state.mongoStore.playersCollection.find(
 					{
@@ -1109,7 +1130,7 @@ export const contestRoute: Route<RouteState> = {
 	],
 
 	adminMethods: [
-		(app, state) => app.put<any, store.Contest<string>>("/contests", (req, res) => {
+		(app, state) => app.put<any, StoreContest<string>>("/contests", (req, res) => {
 			state.mongoStore.contestCollection.insertOne({}).then(result => res.send({ _id: result.insertedId.toHexString() }));
 		}),
 
@@ -1142,13 +1163,13 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch<any, {id: string}, store.Contest<ObjectId>>("/contests/:id",
+		(app, state) => app.patch<any, {id: string}, StoreContest<ObjectId>>("/contests/:id",
 			param("id").isMongoId(),
 			body(nameofContest("majsoulFriendlyId")).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
 			body(nameofContest("spreadsheetId")).isString().bail().optional({ nullable: true }),
 
-			body(nameofContest("type")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.ContestType)).optional(),
-			body(nameofContest("subtype")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestPhaseSubtype)).optional(),
+			body(nameofContest("type")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(ContestType)).optional(),
+			body(nameofContest("subtype")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(TourneyContestPhaseSubtype)).optional(),
 			body(nameofContest("anthem")).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
 			body(nameofContest("tagline")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
 			body(nameofContest("taglineAlternate")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
@@ -1188,7 +1209,7 @@ export const contestRoute: Route<RouteState> = {
 					$set?: {},
 					$unset?: {},
 				} = {};
-				const data: Partial<store.Contest<string>> = matchedData(req, { includeOptionals: false });
+				const data: Partial<StoreContest<string>> = matchedData(req, { includeOptionals: false });
 
 				if (data.majsoulFriendlyId != null) {
 					try {
@@ -1237,21 +1258,21 @@ export const contestRoute: Route<RouteState> = {
 										const cardDto = {
 											_id: card._id == null ? new ObjectId() : ObjectId.createFromHexString(card._id),
 											icon: card.icon,
-										} as store.GachaCard<ObjectId>;
+										} as GachaCard<ObjectId>;
 
 										if (card.image != null) {
 											cardDto.image = card.image;
 										}
 										return cardDto;
 									}),
-								} as store.GachaGroup<ObjectId>;
+								} as GachaGroup<ObjectId>;
 
 								if (group.unique != null) {
 									groupDto.unique = group.unique;
 								}
 								return groupDto;
 							})
-						} as store.Contest<ObjectId>["gacha"];
+						} as StoreContest<ObjectId>["gacha"];
 						continue;
 					}
 
@@ -1297,7 +1318,7 @@ export const contestRoute: Route<RouteState> = {
 						res.status(400).json({ errors: errors.array() } as any);
 						return;
 					}
-					const data: Partial<store.GameResult<string>> = matchedData(req, { includeOptionals: true });
+					const data: Partial<StoreGameResult<string>> = matchedData(req, { includeOptionals: true });
 					const contestId = new ObjectId(data.contestId);
 					const existingContest = await state.mongoStore.contestCollection.find({ _id: contestId }).toArray();
 					if (existingContest.length <= 0) {
@@ -1406,7 +1427,7 @@ export const contestRoute: Route<RouteState> = {
 						res.status(400).json({ errors: errors.array() } as any);
 						return;
 					}
-					const data: Partial<store.GameResult<string>> = matchedData(req, { includeOptionals: true });
+					const data: Partial<StoreGameResult<string>> = matchedData(req, { includeOptionals: true });
 					const contestId = new ObjectId(data.contestId);
 					const existingContest = await state.mongoStore.contestCollection.find({ _id: contestId }).toArray();
 					if (existingContest.length <= 0) {
@@ -1511,7 +1532,7 @@ export const contestRoute: Route<RouteState> = {
 						res.status(400).json({ errors: errors.array() } as any);
 						return;
 					}
-					const data: Partial<store.GameCorrection<string>> = matchedData(req, { includeOptionals: true });
+					const data: Partial<GameCorrection<string>> = matchedData(req, { includeOptionals: true });
 					const gameId = new ObjectId(data.gameId);
 					const game = await state.mongoStore.gamesCollection.find({ _id: gameId }).toArray();
 					if (game.length <= 0) {
@@ -1543,7 +1564,7 @@ export const contestRoute: Route<RouteState> = {
 				id: string,
 				groupId: string,
 				icon: string
-			}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			}, any, StoreContest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
@@ -1590,7 +1611,7 @@ export const contestRoute: Route<RouteState> = {
 				id: string,
 				groupId: string,
 				onePer: number,
-			}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			}, any, StoreContest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
@@ -1637,7 +1658,7 @@ export const contestRoute: Route<RouteState> = {
 				gachaId: string,
 				icon?: string,
 				image?: string,
-			}, any, store.Contest<ObjectId>>(async (data, req, res) => {
+			}, any, StoreContest<ObjectId>>(async (data, req, res) => {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
@@ -1765,7 +1786,7 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 
-				const data: Partial<store.Contest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+				const data: Partial<StoreContest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
 				const contestId = ObjectId.createFromHexString(data.id);
 
 				await state.mongoStore.configCollection.findOneAndUpdate(
@@ -1799,7 +1820,7 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 
-				const data: Partial<store.Contest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+				const data: Partial<StoreContest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
 				const contestId = ObjectId.createFromHexString(data.id);
 
 				const games = await state.mongoStore.gamesCollection.find(
@@ -1815,9 +1836,9 @@ export const contestRoute: Route<RouteState> = {
 			})
 		),
 
-		(app, state) => app.patch<any, store.Config<ObjectId>>("/config",
+		(app, state) => app.patch<any, Config<ObjectId>>("/config",
 			body(nameofConfig("featuredContest")).isMongoId().optional({ nullable: true }),
-			withData<Partial<store.Config<string>>, any, store.Config<ObjectId>>(async (data, req, res) => {
+			withData<Partial<Config<string>>, any, Config<ObjectId>>(async (data, req, res) => {
 				if (data.featuredContest != null) {
 					const existingContest = await state.mongoStore.contestCollection.findOne({ _id: new ObjectId(data.featuredContest) });
 					if (existingContest == null) {
@@ -1878,7 +1899,7 @@ export const contestRoute: Route<RouteState> = {
 
 		(app, state) => app.put("/sessions",
 			body(nameofSession("contestId")).isMongoId(),
-			withData<Partial<store.Session<string | ObjectId>>, any, Partial<store.Session<ObjectId>>>(async (data, req, res) => {
+			withData<Partial<StoreSession<string | ObjectId>>, any, Partial<StoreSession<ObjectId>>>(async (data, req, res) => {
 				const contestId = await state.contestExists(data.contestId as string);
 				if (!contestId) {
 					res.status(400).send(`contest #${data.contestId} not found` as any);
@@ -1915,7 +1936,7 @@ export const contestRoute: Route<RouteState> = {
 			body(`${nameofSession("plannedMatches")}.*.teams.*._id`).isMongoId(),
 			withData<{
 				id: string;
-			} & Partial<store.Session<string | ObjectId>>, any, store.Session<ObjectId>>(async (data, req, res) => {
+			} & Partial<StoreSession<string | ObjectId>>, any, StoreSession<ObjectId>>(async (data, req, res) => {
 				if (data.plannedMatches && data.plannedMatches.length > 0) {
 					const teamIds = data.plannedMatches.map(match => match.teams.map(team => team._id as string)).flat();
 					const uniqueTeams = new Set(teamIds.map(id => id));
@@ -1993,7 +2014,7 @@ export const contestRoute: Route<RouteState> = {
 
 		(app, state) => app.delete("/sessions/:id",
 			param("id").isMongoId(),
-			withData<{ id: string }, any, store.Session<ObjectId>>(async (data, req, res) => {
+			withData<{ id: string }, any, StoreSession<ObjectId>>(async (data, req, res) => {
 				const result = await state.mongoStore.sessionsCollection.deleteOne(
 					{
 						_id: new ObjectId(data.id)
@@ -2022,9 +2043,9 @@ export const contestRoute: Route<RouteState> = {
 				{
 					id: string;
 					teamId: string;
-				} & Partial<store.ContestTeam<string>>,
+				} & Partial<ContestTeam<string>>,
 				any,
-				store.ContestTeam<ObjectId>
+				ContestTeam<ObjectId>
 			>(async (data, req, res) => {
 				const update: {
 					$set?: {},
@@ -2103,7 +2124,7 @@ export const contestRoute: Route<RouteState> = {
 					id: string;
 				},
 				any,
-				store.ContestTeam<ObjectId>
+				ContestTeam<ObjectId>
 			>(async (data, req, res) => {
 				const contestId = await state.contestExists(data.id);
 				if (!contestId) {
@@ -2140,7 +2161,7 @@ export const contestRoute: Route<RouteState> = {
 					teamId: string;
 				},
 				any,
-				store.ContestTeam<ObjectId>
+				ContestTeam<ObjectId>
 			>(async (data, req, res) => {
 				const [contest] = await state.mongoStore.contestCollection.find(
 					{
@@ -2184,11 +2205,11 @@ export const contestRoute: Route<RouteState> = {
 			...eliminationBracketSettingsFilter(),
 			...scoringTypeFilter(nameofTransition("scoringTypes")),
 			withData<
-				Partial<store.ContestPhaseTransition> & {
+				Partial<ContestPhaseTransition> & {
 					id: string,
 				},
 				any,
-				Pick<store.ContestPhaseTransition<ObjectId>, "_id">
+				Pick<ContestPhaseTransition<ObjectId>, "_id">
 			>(async (data, req, res) => {
 				const contest = await state.findContest(data.id);
 				if (!contest) {
@@ -2276,7 +2297,7 @@ export const contestRoute: Route<RouteState> = {
 		(app, state) => app.patch("/players/:id",
 			param("id").isMongoId(),
 			body(nameofPlayer("displayName")).isString().optional({nullable: true}),
-			withData<Partial<store.Player<string | ObjectId> & {id: string}>, any, Store.Player<ObjectId>>(async (data, req, res) => {
+			withData<Partial<Player<string | ObjectId> & {id: string}>, any, Player<ObjectId>>(async (data, req, res) => {
 				const player = await state.mongoStore.playersCollection.findOneAndUpdate(
 					{
 						_id: ObjectId.createFromHexString(data.id as string)
@@ -2307,7 +2328,7 @@ export const contestRoute: Route<RouteState> = {
 
 		(app, state) => app.put("/players/",
 			body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
-			withData<Partial<store.Player<string | ObjectId>>, any, Store.Player<ObjectId>>(async (data, req, res) => {
+			withData<Partial<Player<string | ObjectId>>, any, Player<ObjectId>>(async (data, req, res) => {
 				const result = await state.mongoStore.playersCollection.insertOne({
 					majsoulFriendlyId: data.majsoulFriendlyId
 				});
@@ -2362,17 +2383,17 @@ export const contestRoute: Route<RouteState> = {
 function scoringTypeFilter(propName: string) {
 	return [
 		oneOf([
-			body(propName).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)).optional(),
+			body(propName).not().isString().bail().isNumeric().isWhitelisted(Object.keys(TourneyContestScoringType)).optional(),
 			body(propName).not().isString().bail().isArray({ min: 1 }).optional(),
 		]),
-		body(`${propName}.*.${nameofTourneyScoringType("type")}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+		body(`${propName}.*.${nameofTourneyScoringType("type")}`).not().isString().bail().isNumeric().isWhitelisted(Object.keys(TourneyContestScoringType)),
 		body(`${propName}.*.${nameofTourneyScoringType("typeDetails")}.${nameofTourneyScoringTypeDetails("findWorst")}`).not().isString().bail().isBoolean().optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType("typeDetails")}.${nameofTourneyScoringTypeDetails("gamesToCount")}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType("places")}`).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType("reverse")}`).not().isString().bail().isBoolean().optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType("suborder")}`).not().isString().bail().isArray().optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType("suborder")}.*.${nameofTourneyScoringType("type")}`)
-			.not().isString().bail().isNumeric().isWhitelisted(Object.keys(store.TourneyContestScoringType)),
+			.not().isString().bail().isNumeric().isWhitelisted(Object.keys(TourneyContestScoringType)),
 		body(`${propName}.*.${nameofTourneyScoringType("suborder")}.*.${nameofTourneyScoringType("places")}`)
 			.not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 		body(`${propName}.*.${nameofTourneyScoringType("suborder")}.*.${nameofTourneyScoringType("reverse")}`)

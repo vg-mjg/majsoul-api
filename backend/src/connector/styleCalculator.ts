@@ -1,4 +1,4 @@
-import { GameResult } from "../store/index.js";
+import { GameResult } from "../store/types/game/GameResult.js";
 
 export enum StyleMoveType {
 	Unknown,

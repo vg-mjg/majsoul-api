@@ -1,5 +1,6 @@
 import * as express from "express";
 import { matchedData, validationResult } from "express-validator";
+
 import { logError } from "./logError.js";
 
 export function withData<DataType, RequestType, ResponseType>(

@@ -1,8 +1,15 @@
-import { DrawStatus, GameResult } from "../store/index.js";
-import { AgariInfo,  HandStatus, latestGameResultVersion, PlayerStats, RoundInfo, RoundResult } from "../store/types/types.js";
-import syanten from "syanten";
 import { GameRecord, Han } from "majsoul";
 import { lq } from "majsoul";
+import syanten from "syanten";
+
+import { DrawStatus } from "../store/types/enums/DrawStatus.js";
+import { latestGameResultVersion } from "../store/types/enums/GameResultVersion.js";
+import { HandStatus } from "../store/types/enums/HandStatus.js";
+import { GameResult } from "../store/types/game/GameResult.js";
+import { AgariInfo } from "../store/types/game/round/AgariInfo.js";
+import { PlayerStats } from "../store/types/game/round/PlayerStats.js";
+import { RoundInfo } from "../store/types/game/round/RoundInfo.js";
+import { RoundResult } from "../store/types/game/round/RoundResult.js";
 
 // function handValue(hule: any, dealer_seat: number, honba: number, np: number): number {
 // 	//won't work with pao

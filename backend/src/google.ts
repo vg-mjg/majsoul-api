@@ -1,9 +1,15 @@
-import { google, sheets_v4 } from "googleapis";
-import { ObjectId } from "mongodb";
 import { OAuth2Client } from "google-auth-library";
-import { Observable, Subject } from "rxjs";
-import { AgariInfo, ContestTeam, DrawStatus, GameResult, Player, RoundInfo, Wind } from "./store/index.js";
+import { google, sheets_v4 } from "googleapis";
 import { Han } from "majsoul";
+import { ObjectId } from "mongodb";
+import { Observable, Subject } from "rxjs";
+
+import { DrawStatus,Wind } from "./store/enums.js";
+import { ContestTeam } from "./store/types/contest/ContestTeam.js";
+import { GameResult } from "./store/types/game/GameResult.js";
+import { AgariInfo } from "./store/types/game/round/AgariInfo.js";
+import { RoundInfo } from "./store/types/game/round/RoundInfo.js";
+import { Player } from "./store/types/Player.js";
 
 interface IHandDescription {
 	round: RoundInfo;

@@ -1,17 +1,22 @@
-import { ChangeStreamInsertDocument, ObjectId, ChangeStreamUpdateDocument } from "mongodb";
-import * as store from "./store/index.js";
-import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, share, switchAll, takeUntil, mergeMap, throttleTime } from "rxjs/operators";
-import { nameofContest } from "./connector.js";
 import { MajsoulApi } from "majsoul";
+import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from "mongodb";
+import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
+import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, mergeMap, share, switchAll, takeUntil, throttleTime } from "rxjs/operators";
+
+import { nameofContest } from "./connector.js";
+import { buildContestPhases } from "./store/buildContestPhases.js";
+import { Store } from "./store/Store.js";
+import { Contest } from "./store/types/contest/Contest.js";
+import { ContestTeam } from "./store/types/contest/ContestTeam.js";
+import { GameResult } from "./store/types/game/GameResult.js";
 
 export class ContestTracker {
 	private contestDeleted$: Observable<any>;
-	private contestUpdates$: Observable<ChangeStreamUpdateDocument<store.Contest<ObjectId>>>;
-	private gamesCreated$: Observable<ChangeStreamInsertDocument<store.GameResult<ObjectId>>>;
+	private contestUpdates$: Observable<ChangeStreamUpdateDocument<Contest<ObjectId>>>;
+	private gamesCreated$: Observable<ChangeStreamInsertDocument<GameResult<ObjectId>>>;
 	constructor(
 		public readonly id: ObjectId,
-		private readonly mongoStore: store.Store,
+		private readonly mongoStore: Store,
 		private readonly api: MajsoulApi
 	) { }
 
@@ -27,22 +32,22 @@ export class ContestTracker {
 		).pipe(first(), share());
 	}
 
-	private get ContestUpdates$(): Observable<ChangeStreamUpdateDocument<store.Contest<ObjectId>>> {
+	private get ContestUpdates$(): Observable<ChangeStreamUpdateDocument<Contest<ObjectId>>> {
 		return this.contestUpdates$ ??= this.mongoStore.ContestChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "update"
 				&& changeEvent.documentKey._id.equals(this.id)
 			),
 			share()
-		) as Observable<ChangeStreamUpdateDocument<store.Contest<ObjectId>>>;
+		) as Observable<ChangeStreamUpdateDocument<Contest<ObjectId>>>;
 	}
 
-	private get GamesCreated$(): Observable<ChangeStreamInsertDocument<store.GameResult<ObjectId>>> {
+	private get GamesCreated$(): Observable<ChangeStreamInsertDocument<GameResult<ObjectId>>> {
 		return this.gamesCreated$ ??= this.mongoStore.GameChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "insert"
 				&& changeEvent.fullDocument.contestId.equals(this.id)
 			),
 			share()
-		) as Observable<ChangeStreamInsertDocument<store.GameResult<ObjectId>>>;
+		) as Observable<ChangeStreamInsertDocument<GameResult<ObjectId>>>;
 	}
 
 	public get NotFoundOnMajsoul$(): Observable<boolean> {
@@ -177,7 +182,7 @@ export class ContestTracker {
 				.pipe(map(contest => contest.teams)),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("teams")) >= 0),
-				mapTo(null as store.ContestTeam<ObjectId>[])
+				mapTo(null as ContestTeam<ObjectId>[])
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.teams !== undefined),
@@ -227,7 +232,7 @@ export class ContestTracker {
 			),
 		).pipe(
 			mergeMap(() => defer(() => from(this.mongoStore.contestCollection.findOne({ _id: this.id }, { projection })))),
-			map(store.buildContestPhases),
+			map(buildContestPhases),
 			filter(phases => !!phases),
 			takeUntil(this.ContestDeleted$)
 		);

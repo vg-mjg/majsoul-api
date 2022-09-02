@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
-import { Store } from "../index.js";
 
+import { Contest } from "../store/types/contest/Contest.js";
 
 export interface ContestOption {
 	contestId?: ObjectId;
-	contest?: Store.Contest<ObjectId>;
+	contest?: Contest<ObjectId>;
 }
