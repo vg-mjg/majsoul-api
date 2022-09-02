@@ -1,9 +1,9 @@
-import { WebSocket } from "ws";
-import { Subject, Observable } from "rxjs";
-import { Codec } from "./Codec.js";
-import { MessageType } from "./types/MessageType.js";
 import url from "url";
+import { Observable, Subject } from "rxjs";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { WebSocket } from "ws";
+import { Codec } from "./Codec.js";
+import { MessageType } from "./types/enums/MessageType.js";
 
 export class Connection {
 	private readonly messagesSubject = new Subject<any>();

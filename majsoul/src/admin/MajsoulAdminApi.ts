@@ -1,12 +1,12 @@
-import { Root } from "protobufjs";
+import * as proto from "./types/proto.json";
 import fetch from "node-fetch";
 import { Codec } from "../Codec.js";
 import { Connection } from "../Connection.js";
+import type { lq } from "./types/proto.js";
+import { Passport } from "../types/Passport.js";
+import { Root } from "protobufjs";
 import { RpcImplementation } from "../RpcImplementation.js";
 import { RpcService } from "../Service.js";
-import * as proto from "./types/proto.json";
-import type { lq } from "./types/proto.js";
-import { Passport } from "../types/types.js";
 
 export class MajsoulAdminApi {
 	private static async getRes<T>(path: string): Promise<T> {

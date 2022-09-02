@@ -1,7 +1,7 @@
-import { Root, Method, RPCImplCallback, Type } from "protobufjs";
+import { Method, RPCImplCallback, Root, Type } from "protobufjs";
 import { Subscription } from "rxjs";
 import { Codec } from "./Codec.js";
-import { MessageType } from "./types/MessageType.js";
+import { MessageType } from "./types/enums/MessageType.js";
 import { Connection } from "./Connection.js";
 import { RpcService } from "./Service.js";
 

@@ -1,4 +1,4 @@
-import { Root, rpc, RPCImpl, Service } from "protobufjs";
+import { RPCImpl, Root, Service, rpc } from "protobufjs";
 
 export class RpcService {
 	private readonly service: Service;

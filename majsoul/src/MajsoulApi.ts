@@ -1,16 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
 import { Root } from "protobufjs";
-import { from, interval, merge, Observable, of, using } from "rxjs";
+import { Observable, from, interval, merge, of, using } from "rxjs";
 import { catchError, filter, map, mergeAll, timeout } from "rxjs/operators";
-import { Contest, Passport, Player } from "./types/types.js";
+import { Player } from "./types/Player.js";
+import { Contest } from "./types/Contest.js";
+import { Passport } from "./types/Passport.js";
 import { Codec } from "./Codec.js";
-import { MessageType } from "./types/MessageType.js";
+import { MessageType } from "./types/enums/MessageType.js";
 import { Connection } from "./Connection.js";
 import { RpcImplementation } from "./RpcImplementation.js";
 import { RpcService } from "./Service.js";
-import { ApiResources } from "./ApiResources.js";
-import { GameRecord } from "./types/GameRecordResponse.js";
-import { PlayerZone } from "./types/PlayerZone.js";
+import { ApiResources } from "./types/ApiResources.js";
+import { GameRecord } from "./types/GameRecord.js";
+import { PlayerZone } from "./types/enums/PlayerZone.js";
 import fetch from "node-fetch";
 import type { lq } from "./types/liqi.js";
 
