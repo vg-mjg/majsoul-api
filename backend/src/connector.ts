@@ -522,7 +522,7 @@ async function main() {
 		);
 
 		tracker.PhaseInfo$.pipe(
-			filter(({contest}) => (console.log(contest), contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0)),
+			filter(({contest}) => (contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0)),
 			combineLatestWith(
 				merge (
 					from([null as never]),
