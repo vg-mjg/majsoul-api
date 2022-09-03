@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import { useHistory, useLocation } from "react-router";
 
 import { IState } from "../State";
-import { ContestContext } from "./Contest/ContestProvider";
+import { ContestContext } from "./contest/ContestProvider";
 import { IndividualPlayerStandings, IndividualPlayerStandingsProps } from "./IndividualPlayerStandings";
 import { TabNavigator } from "./TabNavigator";
 import { Teams } from "./Teams";

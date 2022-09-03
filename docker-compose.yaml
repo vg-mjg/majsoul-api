@@ -4,6 +4,7 @@ services:
   nginx:
     build:
       context: .
+      target: frontend
     networks:
       - ingress_link
       - default
@@ -11,7 +12,8 @@ services:
 
   riichi-connector:
     build:
-      context: ./api
+      context: .
+      target: backend
     image: majsoul-api
     depends_on:
       - "mongo"
@@ -19,11 +21,12 @@ services:
       - majsoul.json
     env_file:
       - ./majsoul.env
-    entrypoint: ["node", "--insecure-http-parser", "/dist/connector.js"]
+    entrypoint: ["node", "dist/connector.js"]
 
   riichi-rest:
     build:
-      context: ./api
+      context: .
+      target: backend
     image: majsoul-api
     depends_on:
       - "mongo"

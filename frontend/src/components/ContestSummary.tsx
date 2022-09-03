@@ -19,7 +19,7 @@ import { fetchGames } from "../api/Games";
 import { fetchContestPlayers } from "../api/Players";
 import { IState } from "../State";
 import { BracketPlayerStandings } from "./BracketPlayerStandings";
-import { ContestContext } from "./Contest/ContestProvider";
+import { ContestContext } from "./contest/ContestProvider";
 import { ContestHeader } from "./ContestHeader";
 import { ContestMetadataEditor } from "./ContestMetadataEditor";
 import { GameResultSummary } from "./GameResultSummary";

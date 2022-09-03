@@ -3,7 +3,7 @@ import * as React from "react";
 import Container from "react-bootstrap/Container";
 
 import { fetchStats, StatsRequest } from "../../api/Contests";
-import { ContestContext } from "../Contest/ContestProvider";
+import { ContestContext } from "../contest/ContestProvider";
 import { LoadingSpinner } from "../utils/LoadingSpinner";
 import { VersionedStatsDisplay } from "./VersionedStatsDisplay";
 

@@ -20,7 +20,7 @@ export class MajsoulAdminApi {
 	private readonly codec: Codec;
 
 	constructor() {
-		console.log(proto);
+		console.log("proto", proto);
 		this.protobufRoot = Root.fromJSON(proto as any);
 		this.codec = new Codec(this.protobufRoot);
 		this.connection = new Connection("wss://mjusgs.mahjongsoul.com:9443/");

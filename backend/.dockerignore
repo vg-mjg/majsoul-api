@@ -1,8 +1,0 @@
-**/node_modules/
-**/dist/
-**/secrets.json
-**/token.json
-**/env.js
-**/*.test.ts
-**/mongo-creds
-.git/

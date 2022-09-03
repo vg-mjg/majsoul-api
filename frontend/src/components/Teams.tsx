@@ -19,7 +19,7 @@ import { StatsRequest } from "../api/Contests";
 import { fetchContestPlayers, fetchPlayers } from "../api/Players";
 import { createTeam, deleteTeam, patchTeam } from "../api/Teams";
 import { IState } from "../State";
-import { ContestContext } from "./Contest/ContestProvider";
+import { ContestContext } from "./contest/ContestProvider";
 import { Stats } from "./Stats/Stats";
 import globalStyles from "./styles.sass";
 import { TeamImage } from "./TeamImage";

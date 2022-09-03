@@ -12,10 +12,12 @@
 		"proto:fetch": "curl https://mahjongsoul.game.yo-star.com/v0.10.63.w/res/proto/liqi.json > src/types/liqi.json",
 		"proto:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/types/liqi.json | pbts --no-comments -o src/types/liqi.d.ts -",
 		"proto:admin:generate": "pbjs -t static --no-create --no-encode --no-decode --no-verify --no-delimited --no-beautify --no-convert --no-service src/admin/types/proto.json | pbts --no-comments -o src/admin/types/proto.d.ts -",
+		"proto:copy": "copyfiles -E -V -u 1 src/admin/types/proto.d.ts src/types/liqi.d.ts dist/",
 		"cert:create": "openssl req -x509 -newkey rsa:4096 -keyout dist/riichi.key.pem -out dist/riichi.crt.pem -sha256 -days 365 -nodes"
 	},
 	"dependencies": {
 		"@types/ws": "^8.5.3",
+		"copyfiles": "^2.4.1",
 		"http-proxy-agent": "^5.0.0",
 		"node-fetch": "3.2.8",
 		"protobufjs-cli": "^1.0.1",

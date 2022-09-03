@@ -15,7 +15,7 @@ import { useSelector } from "react-redux";
 
 import { fetchContestPlayerGames } from "../api/Games";
 import { IState } from "../State";
-import { ContestContext } from "./Contest/ContestProvider";
+import { ContestContext } from "./contest/ContestProvider";
 import { getSeatCharacter } from "./GameResultSummary";
 import { PaipuLink } from "./PaipuLink";
 import { Stats } from "./Stats/Stats";
