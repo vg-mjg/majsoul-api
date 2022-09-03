@@ -18,7 +18,7 @@ import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import clsx from "clsx";
 import { TextField } from "./utils/TextField";
 import { patchSession } from "../api/Sessions";
-import * as dayjs from "dayjs";
+import dayjs from "dayjs";
 import { stylesheet } from "astroturf";
 import { useTranslation } from "react-i18next";
 

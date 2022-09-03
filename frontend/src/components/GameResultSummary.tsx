@@ -4,18 +4,44 @@ import { Rest } from "backend";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import * as styles from "./styles.sass";
+import styles from "./styles.sass";
 import { useDispatch, useSelector } from "react-redux";
 import { levelToString, pickColorGradient } from "./utils";
 import { TeamImage } from "./TeamImage";
 import dayjs = require("dayjs");
 import { useTranslation } from "react-i18next";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
 import { updateGame } from "../api/Games";
 import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
 import { TourneyContestPhaseSubtype } from "backend/dist/store/enums";
 import { PaipuLink } from "./PaipuLink";
+
+const localStyles = stylesheet`
+	.seat-0 {
+		color: white;
+		background-color: #A51563;
+	}
+
+	.seat-1 {
+		color: white;
+		background-color: #CC7C19;
+	}
+
+	.seat-2 {
+		color: white;
+		background-color: #175A82;
+	}
+
+	.seat-3 {
+		color: white;
+		background-color: #527D00;
+	}
+
+	.hidden {
+		opacity: 0.5;
+	}
+`
 
 function GameSeat(props: {
 	seat: number,
@@ -44,7 +70,7 @@ function GameSeat(props: {
 		<Row className={"no-gutters"} style={{ lineHeight: "40px", textAlign: "center" }}>
 			<Col
 				md="auto"
-				className={`${(styles as any)[`seat-${props.seat}`]} rounded-left border-right border-2`}
+				className={`${localStyles[`seat-${props.seat}`]} rounded-left border-right border-2`}
 				style={{ minWidth: "40px", boxSizing: "content-box" }}
 			>
 				{getSeatCharacter(props.seat)}
@@ -98,13 +124,6 @@ export function getSeatCharacter(seat: number): string {
 	}
 	return null;
 }
-
-
-const localStyles = css`
-	.hidden {
-		opacity: 0.5;
-	}
-`;
 
 //todo: use wind enum from types package
 export function GameResultSummary(props: {

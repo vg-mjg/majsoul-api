@@ -5,7 +5,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { stylesheet } from "astroturf";
 import clsx from "clsx";
-import * as globalStyles from "../styles.sass";
+import globalStyles from "../styles.sass";
 import { useTranslation } from "react-i18next";
 import type { Rest } from "backend";
 
@@ -97,7 +97,7 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 		);
 
 	return <Row className="no-gutters py-3">
-		<Col className={styles.statsContainer}>
+		<Col>
 			<div className="pr-2">
 				<Pie
 					data={{

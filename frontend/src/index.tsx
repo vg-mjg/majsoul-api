@@ -10,7 +10,7 @@ import { RiggingTokenAcquired } from "./actions/rigging/RiggingTokenAcquired";
 import { ContestSummary } from "./components/ContestSummary";
 import { ContestList } from "./components/ContestList";
 import Container from "react-bootstrap/Container";
-import * as styles from "./components/styles.sass";
+import styles from "./components/styles.sass";
 import "./bootstrap.sass";
 import type { Rest } from "backend";
 import { persistStore, persistReducer } from "redux-persist";

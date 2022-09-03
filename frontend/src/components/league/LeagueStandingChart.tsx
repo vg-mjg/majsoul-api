@@ -4,7 +4,7 @@ import { defaults, ChartData } from "chart.js";
 import { Store, Rest } from "backend";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import * as dayjs from "dayjs";
+import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 
 defaults.color = "white";

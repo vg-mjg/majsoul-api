@@ -1,8 +1,8 @@
-import * as React from "react";
+import React from "react";
 import YouTube from "react-youtube";
 
 export function SongPlayer(props: { videoId: string; play?: boolean; }): JSX.Element {
-	const [player, setPlayer] = React.useState<YT.Player>(null);
+	const [player, setPlayer] = React.useState<any>(null);
 	React.useEffect(() => {
 		if (player == null || !props.play) {
 			return;

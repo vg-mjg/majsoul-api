@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as dayjs from "dayjs";
+import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { i18n } from "../init/i18n";
 

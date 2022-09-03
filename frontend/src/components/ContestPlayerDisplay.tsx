@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Accordion from "react-bootstrap/Accordion";
 import { TeamIcon } from "./TeamIcon";
 import { getSeatCharacter } from "./GameResultSummary";
-import * as dayjs from "dayjs";
+import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { PaipuLink } from "./PaipuLink";
 import { IState } from "../State";

@@ -21,7 +21,7 @@ import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
 import { StatsRequest } from "../api/Contests";
-import * as globalStyles from "./styles.sass";
+import globalStyles from "./styles.sass";
 import { Stats } from "./Stats/Stats";
 import { ContestContext } from "./Contest/ContestProvider";
 import { TourneyContestPhaseSubtype } from "backend/dist/store/enums.js";

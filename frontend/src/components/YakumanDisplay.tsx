@@ -5,12 +5,12 @@ import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import { Han } from "majsoul/dist/enums";
 import { fetchYakuman } from "../api/Games";
-import * as dayjs from "dayjs";
+import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import type { Rest } from "backend";
 import { stylesheet } from "astroturf";
 import clsx from "clsx";
-import * as globalStyles from "./styles.sass";
+import globalStyles from "./styles.sass";
 import { PaipuLink } from "./PaipuLink";
 
 function getYakumanName(han: Han[]): string[] {

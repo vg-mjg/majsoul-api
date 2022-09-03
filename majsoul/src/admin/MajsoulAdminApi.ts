@@ -1,4 +1,4 @@
-import * as proto from "./types/proto.json";
+import * as proto from "./types/proto.json" assert { type: "json" };
 import fetch from "node-fetch";
 import { Codec } from "../Codec.js";
 import { Connection } from "../Connection.js";

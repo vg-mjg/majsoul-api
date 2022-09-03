@@ -6,6 +6,9 @@
 		"resolveJsonModule": true,
 		"module": "commonjs",
 		"target": "es6",
+		"esModuleInterop": true,
+		"importHelpers": true,
+		"allowSyntheticDefaultImports": true,
 		"jsx": "react",
 		"lib": [
 			"dom",
