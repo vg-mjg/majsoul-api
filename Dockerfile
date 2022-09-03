@@ -18,10 +18,10 @@ RUN yarn run proto:admin:generate
 RUN yarn run proto:fetch
 RUN yarn run proto:generate
 RUN yarn run proto:copy
-RUN yarn run tsc
+RUN yarn run tsc --build --verbose
 
 WORKDIR /build/backend
-RUN yarn run tsc
+RUN yarn run tsc --build --verbose
 
 FROM build AS backend
 FROM build
