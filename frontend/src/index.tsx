@@ -1,39 +1,39 @@
-import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { createStore, compose } from "redux";
-import { Provider, useDispatch, useSelector } from "react-redux";
-import { BrowserRouter, Route, Switch, useParams, Link, useLocation, Redirect } from "react-router-dom";
-import { IState, Contest } from "./State";
-import { ContestPlayersRetrievedAction } from "./actions/players/ContestPlayersRetrievedAction";
-import { GamesRetrievedAction } from "./actions/games/GamesRetrievedAction";
-import { RiggingTokenAcquired } from "./actions/rigging/RiggingTokenAcquired";
-import { ContestSummary } from "./components/ContestSummary";
-import { ContestList } from "./components/ContestList";
-import Container from "react-bootstrap/Container";
-import styles from "./components/styles.sass";
 import "./bootstrap.sass";
-import type { Rest } from "backend";
-import { persistStore, persistReducer } from "redux-persist";
-import storage from "redux-persist/lib/storage";
-import { PersistGate } from "redux-persist/integration/react";
-import * as _ from "lodash";
-
-import YouTube from "react-youtube";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import { toRecord } from "./components/utils";
-import { ActionType, MajsoulAction } from "./actions";
-import { RiggingLogin } from "./components/rigging/RiggingLogin";
-import { fetchContestSummary } from "./api/Contests";
-import { ContestSessions } from "./components/ContestSessions";
-import { writeGoogleAuthCode } from "./api/Rigging";
-
-import "./init/dayjs";
 import "./init/i18n";
-import { useTranslation } from "react-i18next";
+import "./init/dayjs";
+
+import type { Rest } from "backend";
 import clsx from "clsx";
+import * as _ from "lodash";
+import * as React from "react";
+import Col from "react-bootstrap/Col";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import * as ReactDOM from "react-dom";
+import { useTranslation } from "react-i18next";
+import { Provider, useDispatch, useSelector } from "react-redux";
+import { BrowserRouter, Link, Redirect,Route, Switch, useLocation, useParams } from "react-router-dom";
+import YouTube from "react-youtube";
+import { compose,createStore } from "redux";
+import { persistReducer,persistStore } from "redux-persist";
+import { PersistGate } from "redux-persist/integration/react";
+import storage from "redux-persist/lib/storage";
+
+import { ActionType, MajsoulAction } from "./actions";
+import { GamesRetrievedAction } from "./actions/games/GamesRetrievedAction";
+import { ContestPlayersRetrievedAction } from "./actions/players/ContestPlayersRetrievedAction";
+import { RiggingTokenAcquired } from "./actions/rigging/RiggingTokenAcquired";
+import { fetchContestSummary } from "./api/Contests";
+import { writeGoogleAuthCode } from "./api/Rigging";
+import { ContestList } from "./components/ContestList";
+import { ContestSessions } from "./components/ContestSessions";
+import { ContestSummary } from "./components/ContestSummary";
+import { RiggingLogin } from "./components/rigging/RiggingLogin";
+import styles from "./components/styles.sass";
+import { toRecord } from "./components/utils";
 import { setDayjsLocale } from "./init/dayjs";
 import { saveLocale } from "./init/i18n";
+import { Contest,IState } from "./State";
 
 function updatedContestRecord(state: IState, contestId: string, contest: Partial<Contest>): {
 	contestsById: Record<string, Contest>,

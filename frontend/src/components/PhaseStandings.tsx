@@ -1,22 +1,23 @@
-import * as React from "react";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Spinner from "react-bootstrap/Spinner";
-import { IndividualPlayerStandings, IndividualPlayerStandingsProps } from "./IndividualPlayerStandings";
-import { ContestContext } from "./Contest/ContestProvider";
-import Accordion from "react-bootstrap/Accordion";
-import { ArrowToggle } from "./utils/ArrowToggle";
-import { TabNavigator } from "./TabNavigator";
-import { useHistory, useLocation } from "react-router";
-import clsx from "clsx";
-import { useTranslation } from "react-i18next";
-import { useSelector } from "react-redux";
-import { IState } from "../State";
-import { Teams } from "./Teams";
 import type { Rest } from "backend";
 import { PlayerRankingType } from "backend/dist/rest/enums.js";
 import { TourneyContestPhaseSubtype, TourneyContestScoringType } from "backend/dist/store/enums.js";
+import clsx from "clsx";
+import * as React from "react";
+import Accordion from "react-bootstrap/Accordion";
+import Col from "react-bootstrap/Col";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import Spinner from "react-bootstrap/Spinner";
+import { useTranslation } from "react-i18next";
+import { useSelector } from "react-redux";
+import { useHistory, useLocation } from "react-router";
+
+import { IState } from "../State";
+import { ContestContext } from "./Contest/ContestProvider";
+import { IndividualPlayerStandings, IndividualPlayerStandingsProps } from "./IndividualPlayerStandings";
+import { TabNavigator } from "./TabNavigator";
+import { Teams } from "./Teams";
+import { ArrowToggle } from "./utils/ArrowToggle";
 
 interface TypeGroup {
 	type: Rest.TourneyContestScoringDetailsWithId;
@@ -73,7 +74,7 @@ const StandingsSection: React.FC<{
 }>= ({standings, scoreTypes, scoreTypeId}) => {
 	return <>
 		{standings
-			.map((data, index) => <Row key={data.player._id} className={"mt-3 no-gutters"} style={{ maxWidth: 640, margin: "auto" }}>
+			.map((data) => <Row key={data.player._id} className={"mt-3 no-gutters"} style={{ maxWidth: 640, margin: "auto" }}>
 				<IndividualPlayerStandings {...data} scoreTypeId={scoreTypeId} scoreTypes={scoreTypes} />
 			</Row>
 			)}

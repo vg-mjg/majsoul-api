@@ -1,7 +1,8 @@
 import * as React from "react";
-import { IState } from "../State";
+import Badge from "react-bootstrap/Badge";
 import { useSelector } from "react-redux";
-import Badge from 'react-bootstrap/Badge';
+
+import { IState } from "../State";
 
 const sakiTeamInfo: Record<string, Record<string, {color:string, name:string, blackFont?: boolean}>> = {
 	"236728": {
@@ -69,7 +70,7 @@ const sakiTeamInfo: Record<string, Record<string, {color:string, name:string, bl
 			name: "敦賀"
 		}
 	}
-}
+};
 
 export function TeamIcon(props: {
 	team: string;

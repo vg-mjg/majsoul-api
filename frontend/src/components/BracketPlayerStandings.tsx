@@ -1,6 +1,7 @@
 import * as React from "react";
-import Container from 'react-bootstrap/Container';
+import Container from "react-bootstrap/Container";
 import { useHistory, useLocation } from "react-router-dom";
+
 import { PlayerStandings } from "./PlayerStandings";
 import { TabNavigator } from "./TabNavigator";
 
@@ -17,7 +18,7 @@ export const brackets: Record<string, Array<string>> = {
 		"Miyamori",
 		"Himematsu",
 	]
-}
+};
 
 export function BracketPlayerStandings(props: { contestId: string; }): JSX.Element {
 	const history = useHistory();

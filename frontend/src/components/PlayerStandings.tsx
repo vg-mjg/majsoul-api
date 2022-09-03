@@ -1,13 +1,14 @@
+import { Rest } from "backend";
 import * as React from "react";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import Spinner from "react-bootstrap/Spinner";
-import { Rest } from "backend";
-import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
 import { useSelector } from "react-redux";
-import { IState } from "../State";
+
 import { fetchContestPlayers } from "../api/Players";
+import { IState } from "../State";
+import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
 
 function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: string}): number {
 	if (params.player.team.seeded && params.team != null) {

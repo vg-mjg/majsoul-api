@@ -1,4 +1,5 @@
 import type { Rest, Store } from "backend";
+
 import { buildApiUrl } from "./utils";
 
 interface FetchContestPlayerParams {

@@ -1,17 +1,18 @@
+import { stylesheet } from "astroturf";
+import type { Rest } from "backend";
+import clsx from "clsx";
+import dayjs from "dayjs";
+import { Han } from "majsoul/dist/enums";
 import * as React from "react";
+import Accordion from "react-bootstrap/Accordion";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Accordion from "react-bootstrap/Accordion";
-import { Han } from "majsoul/dist/enums";
-import { fetchYakuman } from "../api/Games";
-import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import type { Rest } from "backend";
-import { stylesheet } from "astroturf";
-import clsx from "clsx";
-import globalStyles from "./styles.sass";
+
+import { fetchYakuman } from "../api/Games";
 import { PaipuLink } from "./PaipuLink";
+import globalStyles from "./styles.sass";
 
 function getYakumanName(han: Han[]): string[] {
 	const names = han.map(h => {

@@ -1,6 +1,7 @@
-import * as React from "react";
 import dayjs from "dayjs";
+import * as React from "react";
 import { useTranslation } from "react-i18next";
+
 import { i18n } from "../init/i18n";
 
 const calendarSetting: Record<string, object> = {
@@ -50,7 +51,7 @@ export function CountdownTimer(props: {
 	targetTime: number,
 	prefix?: string,
 }): JSX.Element {
-	const [timeNow, setTimeNow] = React.useState(Date.now());
+	const [_, setTimeNow] = React.useState(Date.now());
 	const targetTime = React.useMemo(() => dayjs(props.targetTime), [props.targetTime]);
 
 	const { i18n } = useTranslation();

@@ -1,18 +1,19 @@
+import type { Rest } from "backend";
+import dayjs from "dayjs";
 import * as React from "react";
+import Accordion from "react-bootstrap/Accordion";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import type { Rest } from "backend";
-import { useDispatch, useSelector } from "react-redux";
-import Accordion from "react-bootstrap/Accordion";
-import { TeamIcon } from "./TeamIcon";
-import { getSeatCharacter } from "./GameResultSummary";
-import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { PaipuLink } from "./PaipuLink";
-import { IState } from "../State";
-import { fetchContestPlayerGames } from "../api/Games";
+import { useDispatch, useSelector } from "react-redux";
+
 import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
+import { fetchContestPlayerGames } from "../api/Games";
+import { IState } from "../State";
+import { getSeatCharacter } from "./GameResultSummary";
+import { PaipuLink } from "./PaipuLink";
+import { TeamIcon } from "./TeamIcon";
 
 export function ContestPlayerDisplay(props: {
 	contestId: string;
@@ -20,7 +21,6 @@ export function ContestPlayerDisplay(props: {
 	team: string;
 	ignoredGames?: number;
 }): JSX.Element {
-	const { t } = useTranslation();
 	const games = useSelector((state: IState) => {
 		if (state.games == null) {
 			return [];

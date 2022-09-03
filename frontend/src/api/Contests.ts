@@ -1,4 +1,5 @@
-import { Store, Rest } from "backend";
+import { Rest,Store } from "backend";
+
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export function fetchContestSummary(contestId: string): Promise<Store.Contest<string>> {

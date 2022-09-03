@@ -1,4 +1,5 @@
 import type { Store } from "backend";
+
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export async function fetchConfig(): Promise<Store.Config> {

@@ -1,30 +1,31 @@
+import { stylesheet } from "astroturf";
+import type { Rest,Store } from "backend";
+import { TourneyContestPhaseSubtype } from "backend/dist/store/enums.js";
+import clsx from "clsx";
 import * as React from "react";
-import { IState, Contest } from "../State";
-import type { Store, Rest } from "backend";
-import { useSelector, useDispatch } from "react-redux";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
+import Accordion from "react-bootstrap/Accordion";
+import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
-import Accordion from "react-bootstrap/Accordion";
-import { SongPlayer } from "./utils/SongPlayer";
-import { TextField } from "./utils/TextField";
-import { createTeam, deleteTeam, patchTeam } from "../api/Teams";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import { BsChevronCompactDown, BsChevronCompactUp, BsX } from "react-icons/bs";
+import { useDispatch,useSelector } from "react-redux";
+
+import { dispatchTeamCreatedAction } from "../actions/teams/TeamCreatedAction";
 import { dispatchTeamDeletedAction } from "../actions/teams/TeamDeletedAction";
 import { dispatchTeamPatchedAction } from "../actions/teams/TeamPatchedAction";
-import { dispatchTeamCreatedAction } from "../actions/teams/TeamCreatedAction";
-import { fetchContestPlayers, fetchPlayers } from "../api/Players";
-import { stylesheet } from "astroturf";
-import clsx from "clsx";
-import { BsChevronCompactDown, BsChevronCompactUp, BsX } from "react-icons/bs";
-import { LoadingSpinner } from "./utils/LoadingSpinner";
-import { TeamImage } from "./TeamImage";
-import Badge from "react-bootstrap/Badge";
 import { StatsRequest } from "../api/Contests";
-import globalStyles from "./styles.sass";
-import { Stats } from "./Stats/Stats";
+import { fetchContestPlayers, fetchPlayers } from "../api/Players";
+import { createTeam, deleteTeam, patchTeam } from "../api/Teams";
+import { IState } from "../State";
 import { ContestContext } from "./Contest/ContestProvider";
-import { TourneyContestPhaseSubtype } from "backend/dist/store/enums.js";
+import { Stats } from "./Stats/Stats";
+import globalStyles from "./styles.sass";
+import { TeamImage } from "./TeamImage";
+import { LoadingSpinner } from "./utils/LoadingSpinner";
+import { SongPlayer } from "./utils/SongPlayer";
+import { TextField } from "./utils/TextField";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -337,7 +338,7 @@ function Team(props: {
 										&& (anthem === props.team.anthem || anthem === undefined)
 										&& (editedPlayers == null)
 									}
-									onClick={(event: any) => {
+									onClick={() => {
 										patchTeam(
 											token,
 											contestId,

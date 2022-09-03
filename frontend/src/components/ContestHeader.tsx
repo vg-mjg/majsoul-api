@@ -1,13 +1,14 @@
-import * as React from "react";
-import { Contest } from "../State";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import { SongPlayer } from "./utils/SongPlayer";
-import nantoka_nare from "../../assets/nantoka_nare.mp3";
-import { contestName } from "./utils";
-import clsx from "clsx";
 import { stylesheet } from "astroturf";
+import clsx from "clsx";
+import * as React from "react";
+import Col from "react-bootstrap/Col";
+import Row from "react-bootstrap/Row";
+
+import nantoka_nare from "../../assets/nantoka_nare.mp3";
 import { hashCode } from "../api/utils";
+import { Contest } from "../State";
+import { contestName } from "./utils";
+import { SongPlayer } from "./utils/SongPlayer";
 
 const classes = stylesheet`
 	.tagline {

@@ -6,7 +6,7 @@ export interface GetRiggingTokenOptions {
 }
 
 export async function getRiggingToken(params: GetRiggingTokenOptions): Promise<string> {
-	const url = buildApiUrl(`rigging/token`);
+	const url = buildApiUrl("rigging/token");
 	const response = await fetch(
 		url.toString(),
 		{
@@ -15,12 +15,12 @@ export async function getRiggingToken(params: GetRiggingTokenOptions): Promise<s
 				"Password": params.password
 			}
 		}
-	)
+	);
 	return (response.status !== 200) ? null : await response.text();
 }
 
 export async function fetchGoogleAuthUrl(token: string, state?: string): Promise<{ authUrl: string }> {
-	const url = buildApiUrl(`rigging/google`);
+	const url = buildApiUrl("rigging/google");
 
 	const queryParameters: Record<string, string> = {};
 	if (state != null) {
@@ -42,7 +42,7 @@ export async function fetchGoogleAuthUrl(token: string, state?: string): Promise
 }
 
 export async function writeGoogleAuthCode(token: string, code: string): Promise<void> {
-	const url = buildApiUrl(`rigging/google`);
+	const url = buildApiUrl("rigging/google");
 
 	fetch(
 		url.toString(),

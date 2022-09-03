@@ -1,5 +1,6 @@
-import { Action, Dispatch } from "redux";
 import { Store } from "backend";
+import { Action, Dispatch } from "redux";
+
 import { ActionType } from "../ActionType";
 
 export interface ContestsIndexRetrievedAction extends Action<ActionType.ContestsIndexRetrieved> {

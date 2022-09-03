@@ -1,20 +1,21 @@
-import * as React from "react";
-import { findPlayerInformation, IState } from "../State";
 import { Rest } from "backend";
+import * as React from "react";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import styles from "./styles.sass";
 import { useDispatch, useSelector } from "react-redux";
-import { levelToString, pickColorGradient } from "./utils";
+
+import { findPlayerInformation, IState } from "../State";
+import styles from "./styles.sass";
 import { TeamImage } from "./TeamImage";
+import { levelToString, pickColorGradient } from "./utils";
 import dayjs = require("dayjs");
-import { useTranslation } from "react-i18next";
 import { stylesheet } from "astroturf";
-import clsx from "clsx";
-import { updateGame } from "../api/Games";
-import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
 import { TourneyContestPhaseSubtype } from "backend/dist/store/enums";
+import clsx from "clsx";
+
+import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
+import { updateGame } from "../api/Games";
 import { PaipuLink } from "./PaipuLink";
 
 const localStyles = stylesheet`
@@ -41,7 +42,7 @@ const localStyles = stylesheet`
 	.hidden {
 		opacity: 0.5;
 	}
-`
+`;
 
 function GameSeat(props: {
 	seat: number,
@@ -132,7 +133,6 @@ export function GameResultSummary(props: {
 	const token = useSelector((state: IState) => state.user?.token);
 	const dispatch = useDispatch();
 	const endTime = React.useMemo(() => dayjs(props.game?.end_time).calendar(), [props.game?.end_time]);
-	const { t } = useTranslation();
 	const cellStyle = "mb-1 pl-0 pr-1";
 	const rowStyle = "pl-1 no-gutters";
 

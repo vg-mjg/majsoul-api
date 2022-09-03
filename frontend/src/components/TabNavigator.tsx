@@ -1,5 +1,5 @@
 import * as React from "react";
-import Nav from 'react-bootstrap/Nav';
+import Nav from "react-bootstrap/Nav";
 
 export const TabNavigator: React.FC<{
 	tabs: {
@@ -30,4 +30,4 @@ export const TabNavigator: React.FC<{
 		</Nav.Item>)
 		}
 	</Nav >;
-}
+};

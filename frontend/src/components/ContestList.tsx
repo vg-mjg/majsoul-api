@@ -1,20 +1,21 @@
 import * as React from "react";
-import { IState } from "../State";
-import { useSelector, useDispatch } from "react-redux";
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import { Link } from "react-router-dom";
+import { useCallback } from "react";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
-import { useCallback } from "react";
-import { contestName } from "./utils";
+import Container from "react-bootstrap/Container";
 import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import { useTranslation } from "react-i18next";
+import { useDispatch,useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+
+import { dispatchContestCreatedAction } from "../actions/contests/ContestCreatedAction";
+import { dispatchContestsIndexRetrievedAction } from "../actions/contests/ContestsIndexRetrievedAction";
 import { fetchConfig, updateConfig } from "../api/Config";
 import { createContest, fetchContests } from "../api/Contests";
-import { dispatchContestsIndexRetrievedAction } from "../actions/contests/ContestsIndexRetrievedAction";
-import { dispatchContestCreatedAction } from "../actions/contests/ContestCreatedAction";
 import { fetchGoogleAuthUrl } from "../api/Rigging";
-import { useTranslation } from "react-i18next";
+import { IState } from "../State";
+import { contestName } from "./utils";
 
 export function ContestList(): JSX.Element {
 	const dispatch = useDispatch();
@@ -22,7 +23,7 @@ export function ContestList(): JSX.Element {
 	const [featuredContest, setFeaturedContest] = React.useState<string>(undefined);
 	const addContestFunc = useCallback(() =>
 		createContest(token).then(contest => dispatchContestCreatedAction(dispatch, contest))
-		, [dispatch, token]);
+	, [dispatch, token]);
 
 	const redirectForAuth = useCallback(
 		() => fetchGoogleAuthUrl(token).then(response => {
@@ -47,8 +48,8 @@ export function ContestList(): JSX.Element {
 		setFeaturedContest(event.target.value);
 		updateConfig(token, {
 			featuredContest: event.target.value === "" ? null : event.target.value
-		})
-	}, [dispatch, token, setFeaturedContest])
+		});
+	}, [dispatch, token, setFeaturedContest]);
 	return <Container>
 		{contests.map(contest => <Row className="bg-dark rounded text-white pt-2 pb-1 my-2" key={contest._id}>
 			<Link to={`/contests/${contest._id}`}>

@@ -1,9 +1,10 @@
-import * as React from "react";
+import { stylesheet } from "astroturf";
 import { Store } from "backend";
+import clsx from "clsx";
+import * as React from "react";
+
 import defaultImage from "../../assets/shamiko.jpg";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
-import { stylesheet } from "astroturf";
-import clsx from "clsx";
 
 const styles = stylesheet`
 	.container {

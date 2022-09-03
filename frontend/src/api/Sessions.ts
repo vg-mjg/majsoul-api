@@ -1,4 +1,5 @@
 import { Rest, Store } from "backend";
+
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export async function createSession(token: string, contestId: string): Promise<Store.Session> {

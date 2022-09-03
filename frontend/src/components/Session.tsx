@@ -1,26 +1,27 @@
-import * as React from "react";
-import { findPlayerInformation, IState } from "../State";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import { CountdownTimer } from "./CountdownTimer";
-import { Match } from "./Match";
-import { useSelector, useDispatch } from "react-redux";
-import { GameResultSummary } from "./GameResultSummary";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import type { Rest } from "backend";
-import { fetchGames } from "../api/Games";
-import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
-import Accordion from "react-bootstrap/Accordion";
-import { LoadingSpinner } from "./utils/LoadingSpinner";
-import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
-import clsx from "clsx";
-import { TextField } from "./utils/TextField";
-import { patchSession } from "../api/Sessions";
-import dayjs from "dayjs";
 import { stylesheet } from "astroturf";
+import type { Rest } from "backend";
+import clsx from "clsx";
+import dayjs from "dayjs";
+import * as React from "react";
+import Accordion from "react-bootstrap/Accordion";
+import Button from "react-bootstrap/Button";
+import Col from "react-bootstrap/Col";
+import Container from "react-bootstrap/Container";
+import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
 import { useTranslation } from "react-i18next";
+import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
+import { useDispatch,useSelector } from "react-redux";
+
+import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
+import { fetchGames } from "../api/Games";
+import { patchSession } from "../api/Sessions";
+import { findPlayerInformation, IState } from "../State";
+import { CountdownTimer } from "./CountdownTimer";
+import { GameResultSummary } from "./GameResultSummary";
+import { Match } from "./Match";
+import { LoadingSpinner } from "./utils/LoadingSpinner";
+import { TextField } from "./utils/TextField";
 
 enum GamesFetchStatus {
 	None,
@@ -193,7 +194,7 @@ export function Session(props: {
 								setUtcMoment(event.target.value);
 								setTimeIsValid(!dayjs(event.target.value).isValid());
 							}}
-							onFocus={(event: any) => setEditTime(true)}
+							onFocus={() => setEditTime(true)}
 							onBlur={(event: any) => {
 								if (timeIsInvalid) {
 									setUtcMoment(null);

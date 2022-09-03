@@ -1,13 +1,14 @@
+import { stylesheet } from "astroturf";
+import type { Rest } from "backend";
+import clsx from "clsx";
 import * as React from "react";
-import { Pie } from "../utils/Chart";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import { stylesheet } from "astroturf";
-import clsx from "clsx";
-import globalStyles from "../styles.sass";
 import { useTranslation } from "react-i18next";
-import type { Rest } from "backend";
+
+import globalStyles from "../styles.sass";
+import { Pie } from "../utils/Chart";
 
 const styles = stylesheet`
 	.chartContainer {

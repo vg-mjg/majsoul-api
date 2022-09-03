@@ -1,12 +1,13 @@
-import * as React from "react";
-import { IState } from "../State";
+import { stylesheet } from "astroturf";
 import { Store } from "backend";
+import clsx from "clsx";
+import * as React from "react";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import { useSelector } from "react-redux";
-import { stylesheet } from "astroturf";
-import clsx from "clsx";
+
+import { IState } from "../State";
 import { TeamImage } from "./TeamImage";
 
 

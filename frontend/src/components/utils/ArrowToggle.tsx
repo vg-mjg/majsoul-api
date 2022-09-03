@@ -1,7 +1,7 @@
 import { stylesheet } from "astroturf";
 import * as React from "react";
 import Container from "react-bootstrap/Container";
-import { BsChevronCompactUp, BsChevronCompactDown } from "react-icons/bs";
+import { BsChevronCompactDown,BsChevronCompactUp } from "react-icons/bs";
 
 const styles = stylesheet`
 	@import '../../bootstrap-vars.sass';

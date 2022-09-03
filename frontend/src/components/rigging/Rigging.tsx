@@ -1,13 +1,14 @@
 import * as React from "react";
-import { IState } from "../../State";
-import { useSelector, useDispatch } from "react-redux";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
-import { RiggingLogin } from "./RiggingLogin";
 import Nav from "react-bootstrap/Nav";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+import { useDispatch,useSelector } from "react-redux";
 import { LinkContainer } from "react-router-bootstrap";
+
 import { dispatchLoggedOutAction } from "../../actions/rigging/LoggedOutAction";
+import { IState } from "../../State";
+import { RiggingLogin } from "./RiggingLogin";
 
 export function Rigging(): JSX.Element {
 	const dispatch = useDispatch();

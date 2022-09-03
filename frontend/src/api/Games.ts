@@ -1,4 +1,5 @@
 import { Rest } from "backend";
+
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
 export async function createGame(token: string, game: Partial<Rest.GameResult<string>>): Promise<string> {

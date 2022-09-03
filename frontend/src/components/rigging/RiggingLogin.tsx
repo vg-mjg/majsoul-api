@@ -1,14 +1,15 @@
+import * as backend from "backend";
 import * as React from "react";
-import { useDispatch } from "react-redux";
-import Form from "react-bootstrap/Form";
-import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
-import { useHistory } from "react-router-dom";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
+import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
+import { useDispatch } from "react-redux";
+import { useHistory } from "react-router-dom";
+
 import { dispatchRiggingTokenAcquired } from "../../actions/rigging/RiggingTokenAcquired";
 import { getRiggingToken } from "../../api/Rigging";
-import * as backend from "backend";
 
 export function RiggingLogin() {
 	const [username, setUsername] = React.useState<string>("");

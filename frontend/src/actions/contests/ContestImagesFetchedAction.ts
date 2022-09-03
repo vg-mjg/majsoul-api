@@ -1,5 +1,6 @@
 import type { Store } from "backend";
 import { Action, Dispatch } from "redux";
+
 import { ActionType } from "../ActionType";
 
 export interface ContestImagesFetchedAction extends Action<ActionType.ContestImagesFetched> {

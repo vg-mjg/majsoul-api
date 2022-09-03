@@ -1,7 +1,7 @@
-import * as React from 'react';
-import { Chart, ChartType, ChartData, ChartOptions, Plugin, registerables, InteractionItem } from 'chart.js';
-import { cloneDeep, assign, find } from 'lodash';
-import { forwardRef } from 'react';
+import { Chart, ChartData, ChartOptions, ChartType, InteractionItem,Plugin, registerables } from "chart.js";
+import { assign, find } from "lodash";
+import * as React from "react";
+import { forwardRef } from "react";
 
 Chart.register(...registerables);
 
@@ -30,7 +30,7 @@ export interface ChartProps extends React.CanvasHTMLAttributes<HTMLCanvasElement
 	) => void;
 }
 
-export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((props, ref) => {
+export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>(function ChartComponent(props, ref) {
 	const {
 		id,
 		className,
@@ -51,7 +51,7 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 	const canvas = React.useRef<HTMLCanvasElement>(null);
 
 	const computedData = React.useMemo<ChartData>(() => {
-		if (typeof data === 'function') {
+		if (typeof data === "function") {
 			return canvas.current ? data(canvas.current) : {} as ChartData;
 		} else {
 			return { ...data };
@@ -88,7 +88,7 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 			getDatasetAtEvent(
 				chart.getElementsAtEventForMode(
 					event.nativeEvent,
-					'dataset',
+					"dataset",
 					{ intersect: true },
 					false
 				),
@@ -99,7 +99,7 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 			getElementAtEvent(
 				chart.getElementsAtEventForMode(
 					event.nativeEvent,
-					'nearest',
+					"nearest",
 					{ intersect: false },
 					false
 				)[0],
@@ -108,7 +108,7 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 
 		getElementsAtEvent &&
 			getElementsAtEvent(
-				chart.getElementsAtEventForMode(event.nativeEvent, 'index', { intersect: true }, false),
+				chart.getElementsAtEventForMode(event.nativeEvent, "index", { intersect: true }, false),
 				event
 			);
 	};
@@ -206,74 +206,74 @@ export const ChartComponent = React.forwardRef<Chart | undefined, ChartProps>((p
 
 export type DefinedChartProps = Omit<ChartProps, "type">;
 
-export const Line = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Line = forwardRef<Chart | undefined, DefinedChartProps>(function Line(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='line'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const Bar = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Bar = forwardRef<Chart | undefined, DefinedChartProps>(function Bar(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='bar'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const Radar = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Radar = forwardRef<Chart | undefined, DefinedChartProps>(function Radar(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='radar'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const Doughnut = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Doughnut = forwardRef<Chart | undefined, DefinedChartProps>(function Doughnut(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='doughnut'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const PolarArea = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const PolarArea = forwardRef<Chart | undefined, DefinedChartProps>(function PolarArea(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='polarArea'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const Bubble = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Bubble = forwardRef<Chart | undefined, DefinedChartProps>(function Bubble(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='bubble'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const Pie = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Pie = forwardRef<Chart | undefined, DefinedChartProps>(function Pie(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='pie'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});
 
-export const Scatter = forwardRef<Chart | undefined, DefinedChartProps>((props, ref) => (
-	<ChartComponent
+export const Scatter = forwardRef<Chart | undefined, DefinedChartProps>(function Scatter(props, ref) {
+	return <ChartComponent
 		{...props}
 		type='scatter'
 		ref={ref}
 		options={props.options || {}}
-	/>
-));
+	/>;
+});

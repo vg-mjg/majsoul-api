@@ -1,8 +1,9 @@
-import * as React from "react";
 import type { Rest } from "backend";
 import { StatsVersion } from "backend/dist/rest/enums";
-import { FirstStatsDisplay } from "./FirstStatsDisplay";
+import * as React from "react";
+
 import { BaseStatsDisplay } from "./BaseStatsDisplay";
+import { FirstStatsDisplay } from "./FirstStatsDisplay";
 
 
 export function VersionedStatsDisplay(props: { stats: Rest.Stats; }) {

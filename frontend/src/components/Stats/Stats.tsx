@@ -1,10 +1,11 @@
-import * as React from "react";
 import type { Rest } from "backend";
+import * as React from "react";
+import Container from "react-bootstrap/Container";
+
 import { fetchStats, StatsRequest } from "../../api/Contests";
 import { ContestContext } from "../Contest/ContestProvider";
 import { LoadingSpinner } from "../utils/LoadingSpinner";
 import { VersionedStatsDisplay } from "./VersionedStatsDisplay";
-import Container from "react-bootstrap/Container";
 
 export const Stats: React.FC<{
 	request: StatsRequest;

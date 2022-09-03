@@ -1,18 +1,19 @@
-import * as React from "react";
-import { IState } from "../State";
-import { useSelector, useDispatch } from "react-redux";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+import type { Rest } from "backend";
 import { ContestType, TourneyContestScoringType } from "backend/dist/store/enums.js";
-import Form from "react-bootstrap/Form";
+import * as React from "react";
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
-import { TextField } from "./utils/TextField";
-import type { Rest } from "backend";
-import { createGame, fetchGame, deleteGame, fetchPendingGames } from "../api/Games";
-import { patchContest } from "../api/Contests";
+import Col from "react-bootstrap/Col";
+import Container from "react-bootstrap/Container";
+import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import { useDispatch,useSelector } from "react-redux";
+
 import { dispatchContestPatchedAction } from "../actions/contests/ContestPatchedAction";
+import { patchContest } from "../api/Contests";
+import { createGame, deleteGame, fetchGame, fetchPendingGames } from "../api/Games";
+import { IState } from "../State";
+import { TextField } from "./utils/TextField";
 
 const CustomGameAdder: React.FC<{
 	contestId: string;
@@ -21,7 +22,6 @@ const CustomGameAdder: React.FC<{
 	contestId,
 	onGameCreated,
 }) => {
-	const dispatch = useDispatch();
 	const token = useSelector((state: IState) => state.user?.token);
 	const [majsoulId, setMajsoulId] = useState("");
 	return <Row className="no-gutters">
@@ -39,7 +39,7 @@ const CustomGameAdder: React.FC<{
 			<Button
 				variant="secondary"
 				disabled={(majsoulId?.length ?? 0) <= 0}
-				onClick={(event: any) => {
+				onClick={() => {
 					createGame(token, {
 						contestId,
 						majsoulId,
@@ -61,7 +61,6 @@ const PendingGameDisplay: React.FC<{
 	game,
 	onGameDeleted,
 }) => {
-	const dispatch = useDispatch();
 	const [notFoundOnMajsoulUpdated, setNotFoundOnMajsoulUpdated] = useState<boolean>(undefined);
 	const token = useSelector((state: IState) => state.user?.token);
 
@@ -85,7 +84,7 @@ const PendingGameDisplay: React.FC<{
 			<Button
 				variant="secondary"
 				disabled={notFoundOnMajsoul !== true}
-				onClick={(event: any) => {
+				onClick={() => {
 					deleteGame(token, game._id).then(() => onGameDeleted(game._id));
 				}}
 			>Delete</Button>
@@ -98,7 +97,6 @@ const ContestCustomGames: React.FC<{
 }> = ({
 	contestId,
 }) => {
-	const dispatch = useDispatch();
 	const [pendingGames, setPendingGames] = useState<Rest.GameResult<string>[]>([]);
 	const onGameDeleted = React.useCallback((gameId: string) => {
 		if (!pendingGames.find(game => game._id === gameId)) {
@@ -438,7 +436,7 @@ export function ContestMetadataEditor(props: { contestId: string; }): JSX.Elemen
 						&& (contest.track === track || track === undefined)
 						&& (contest.adminPlayerFetchRequested === adminPlayerFetchRequested || adminPlayerFetchRequested === undefined)
 					}
-					onClick={(event: any) => {
+					onClick={() => {
 						patchContest(token, contest._id, {
 							majsoulFriendlyId,
 							initialPhaseName,

@@ -1,26 +1,25 @@
+import { stylesheet } from "astroturf";
+import type { Rest, Store } from "backend";
+import { TourneyContestScoringType } from "backend/dist/store/enums.js";
+import clsx from "clsx";
+import dayjs from "dayjs";
+import { PlayerZone } from "majsoul/dist/enums.js";
 import * as React from "react";
+import { useContext } from "react";
+import Accordion from "react-bootstrap/Accordion";
+import Badge from "react-bootstrap/Badge";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import type { Rest, Store } from "backend";
-import Accordion from "react-bootstrap/Accordion";
-import { getSeatCharacter } from "./GameResultSummary";
-import { fetchContestPlayerGames } from "../api/Games";
-import dayjs from "dayjs";
-import { useTranslation } from "react-i18next";
-import clsx from "clsx";
-import Badge from "react-bootstrap/Badge";
-import { PlayerZone } from "majsoul/dist/enums.js";
-import { Stats } from "./Stats/Stats";
-import { useContext } from "react";
-import { ContestContext } from "./Contest/ContestProvider";
-import globalStyles from "./styles.sass";
 import { useSelector } from "react-redux";
-import { IState } from "../State";
-import { TourneyContestScoringType } from "backend/dist/store/enums.js";
 
+import { fetchContestPlayerGames } from "../api/Games";
+import { IState } from "../State";
+import { ContestContext } from "./Contest/ContestProvider";
+import { getSeatCharacter } from "./GameResultSummary";
 import { PaipuLink } from "./PaipuLink";
-import { stylesheet } from "astroturf";
+import { Stats } from "./Stats/Stats";
+import globalStyles from "./styles.sass";
 
 export interface IndividualPlayerStandingsProps extends Rest.PlayerTourneyStandingInformation {
 	scoreRanking?: Rest.PlayerScoreTypeRanking["details"];
@@ -168,8 +167,6 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
 	scoreTypeId: string;
 }): JSX.Element {
-	const { t } = useTranslation();
-
 	const { contestId } = useContext(ContestContext);
 
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);

@@ -1,11 +1,12 @@
+import { Rest,Store } from "backend";
+import { ChartData,defaults } from "chart.js";
+import dayjs from "dayjs";
 import * as React from "react";
-import { Line } from "../utils/Chart";
-import { defaults, ChartData } from "chart.js";
-import { Store, Rest } from "backend";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
+
+import { Line } from "../utils/Chart";
 
 defaults.color = "white";
 defaults.borderColor = "#666666";
