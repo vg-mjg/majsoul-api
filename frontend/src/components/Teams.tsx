@@ -1,6 +1,6 @@
 import * as React from "react";
 import { IState, Contest } from "../State";
-import { Store, Rest } from "majsoul-api";
+import type { Store, Rest } from "backend";
 import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -9,22 +9,22 @@ import Col from "react-bootstrap/Col";
 import Accordion from "react-bootstrap/Accordion";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
-import { createTeam, deleteTeam, patchTeam } from "src/api/Teams";
-import { dispatchTeamDeletedAction } from "src/actions/teams/TeamDeletedAction";
-import { dispatchTeamPatchedAction } from "src/actions/teams/TeamPatchedAction";
-import { dispatchTeamCreatedAction } from "src/actions/teams/TeamCreatedAction";
-import { fetchContestPlayers, fetchPlayers } from "src/api/Players";
-import { css } from "astroturf";
+import { createTeam, deleteTeam, patchTeam } from "../api/Teams";
+import { dispatchTeamDeletedAction } from "../actions/teams/TeamDeletedAction";
+import { dispatchTeamPatchedAction } from "../actions/teams/TeamPatchedAction";
+import { dispatchTeamCreatedAction } from "../actions/teams/TeamCreatedAction";
+import { fetchContestPlayers, fetchPlayers } from "../api/Players";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
 import { BsChevronCompactDown, BsChevronCompactUp, BsX } from "react-icons/bs";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { TeamImage } from "./TeamImage";
 import Badge from "react-bootstrap/Badge";
-import { StatsRequest } from "src/api/Contests";
+import { StatsRequest } from "../api/Contests";
 import * as globalStyles from "./styles.sass";
 import { Stats } from "./Stats/Stats";
 import { ContestContext } from "./Contest/ContestProvider";
-import { TourneyContestPhaseSubtype } from "majsoul/dist/store/types";
+import { TourneyContestPhaseSubtype } from "backend/dist/store/enums.js";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -52,7 +52,7 @@ export function jpNumeral(value: number): string {
 
 const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
-const styles = css`
+const styles = stylesheet`
 	.teamImage {
 		height: 64px;
 		width: 64px;

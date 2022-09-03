@@ -2,27 +2,27 @@ import * as React from "react";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import type { Rest } from "backend";
+import type { Rest, Store } from "backend";
 import Accordion from "react-bootstrap/Accordion";
 import { getSeatCharacter } from "./GameResultSummary";
 import { fetchContestPlayerGames } from "../api/Games";
 import * as dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
-import { GachaData, PlayerTourneyStandingInformation, TourneyContestScoringDetailsWithId } from "backend/dist/rest";
 import clsx from "clsx";
 import Badge from "react-bootstrap/Badge";
-import { PlayerZone } from "majsoul/dist/types/PlayerZone";
+import { PlayerZone } from "majsoul/dist/enums.js";
 import { Stats } from "./Stats/Stats";
 import { useContext } from "react";
 import { ContestContext } from "./Contest/ContestProvider";
 import * as globalStyles from "./styles.sass";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
-import { ContestTeam, GachaCard, TourneyContestScoringType } from "backend/dist/store/types/types";
+import { TourneyContestScoringType } from "backend/dist/store/enums.js";
+
 import { PaipuLink } from "./PaipuLink";
 import { stylesheet } from "astroturf";
 
-export interface IndividualPlayerStandingsProps extends PlayerTourneyStandingInformation {
+export interface IndividualPlayerStandingsProps extends Rest.PlayerTourneyStandingInformation {
 	scoreRanking?: Rest.PlayerScoreTypeRanking["details"];
 }
 
@@ -68,7 +68,7 @@ const Zone: React.FC<{
 
 
 export function TeamIcon(props: {
-	team: ContestTeam
+	team: Store.ContestTeam
 }): JSX.Element {
 	return <h4 className="pr-2 text-dark">
 		<Badge style={{
@@ -141,14 +141,14 @@ const GachaGroup: React.FC<{group: Rest.GachaData}> = ({group}) => {
 	</div>;
 };
 
-const GachaImage: React.FC<{gachaData: GachaData[]}> = ({gachaData}) => {
+const GachaImage: React.FC<{gachaData: Rest.GachaData[]}> = ({gachaData}) => {
 	const { contestId } = useContext(ContestContext);
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
 	const cardMap = contest.gacha.groups.reduce(
 		(total, next) => (
 			next.cards.reduce((total, next) => (total[next._id] = next, total), total), total
 		),
-		{} as Record<string, GachaCard>
+		{} as Record<string, Store.GachaCard>
 	);
 
 	const card = gachaData.map(data => data.cards).flat().find(card => cardMap[card].image);
@@ -165,7 +165,7 @@ const GachaImage: React.FC<{gachaData: GachaData[]}> = ({gachaData}) => {
 };
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
-	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
 	scoreTypeId: string;
 }): JSX.Element {
 	const { t } = useTranslation();

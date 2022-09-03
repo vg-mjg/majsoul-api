@@ -1,6 +1,5 @@
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import clsx from "clsx";
-import { Rest } from "backend";
 import * as React from "react";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
@@ -9,20 +8,20 @@ import Row from "react-bootstrap/Row";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useHistory, useLocation } from "react-router-dom";
-import { dispatchContestImagesFetchedAction } from "src/actions/contests/ContestImagesFetchedAction";
-import { dispatchContestSummaryRetrievedAction } from "src/actions/contests/ContestSummaryRetrievedAction";
-import { dispatchContestPlayersRetrieved } from "src/actions/players/ContestPlayersRetrievedAction";
-import { dispatchContestSessionsRetrievedAction } from "src/actions/sessions/ContestSessionsRetrievedAction";
-import { fetchContestImages, fetchContestSummary } from "src/api/Contests";
-import { fetchContestPlayers } from "src/api/Players";
-import { fetchContestSessions } from "src/api/Sessions";
+import { dispatchContestImagesFetchedAction } from "../actions/contests/ContestImagesFetchedAction";
+import { dispatchContestSummaryRetrievedAction } from "../actions/contests/ContestSummaryRetrievedAction";
+import { dispatchContestPlayersRetrieved } from "../actions/players/ContestPlayersRetrievedAction";
+import { dispatchContestSessionsRetrievedAction } from "../actions/sessions/ContestSessionsRetrievedAction";
+import { fetchContestImages, fetchContestSummary } from "../api/Contests";
+import { fetchContestPlayers } from "../api/Players";
+import { fetchContestSessions } from "../api/Sessions";
 import { IState } from "../State";
 import { ContestHeader } from "./ContestHeader";
 import { Session } from "./Session";
 import { contestName } from "./utils";
 
-const styles = css`
-	@import 'src/bootstrap-vars.sass';
+const styles = stylesheet`
+	@import '../bootstrap-vars.sass';
 
 	.pagination {
 		display: flex;

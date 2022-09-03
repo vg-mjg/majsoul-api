@@ -1,4 +1,4 @@
-import { Rest, Store } from "backend";
+import type { Rest, Store } from "backend";
 
 export interface Contest extends Omit<Store.Contest<string>, "teams"> {
 	teams?: Record<string, Store.ContestTeam>;

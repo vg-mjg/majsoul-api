@@ -9,18 +9,17 @@ import { useSelector, useDispatch } from "react-redux";
 import { GameResultSummary } from "./GameResultSummary";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import { Rest } from "backend";
-import { fetchGames } from "src/api/Games";
-import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
+import type { Rest } from "backend";
+import { fetchGames } from "../api/Games";
+import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
 import Accordion from "react-bootstrap/Accordion";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import clsx from "clsx";
 import { TextField } from "./utils/TextField";
-import { patchSession } from "src/api/Sessions";
-import { dispatchSessionPatchedAction } from "src/actions/sessions/ContestSessionsPatched";
+import { patchSession } from "../api/Sessions";
 import * as dayjs from "dayjs";
-import { css } from "astroturf";
+import { stylesheet } from "astroturf";
 import { useTranslation } from "react-i18next";
 
 enum GamesFetchStatus {
@@ -35,8 +34,8 @@ enum SessionState {
 	Future,
 }
 
-const styles = css`
-	@import 'src/bootstrap-vars.sass';
+const styles = stylesheet`
+	@import '../bootstrap-vars.sass';
 
 	.previousSession {
 		background-color: $dark;

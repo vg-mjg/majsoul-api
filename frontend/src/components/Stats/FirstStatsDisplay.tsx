@@ -7,9 +7,7 @@ import { stylesheet } from "astroturf";
 import clsx from "clsx";
 import * as globalStyles from "../styles.sass";
 import { useTranslation } from "react-i18next";
-
-import { KhanStats } from "backend/dist/rest/types/stats/KhanStats";
-import { AgariCategories } from "backend/dist/rest/types/stats/FirstStats";
+import type { Rest } from "backend";
 
 const styles = stylesheet`
 	.chartContainer {
@@ -132,7 +130,7 @@ function FirstStatsPage(props: StatsPageProps): JSX.Element {
 	</Row>;
 }
 
-function getAgariCategories<T>(agariCategories: AgariCategories<T>): T[] {
+function getAgariCategories<T>(agariCategories: Rest.AgariCategories<T>): T[] {
 	return [agariCategories.dama, agariCategories.open, agariCategories.riichi];
 }
 
@@ -161,7 +159,7 @@ function SwapPageButton(props: {
 export const FirstStatsDisplay = React.memo(function FirstStatsDisplay({
 	stats,
 }: {
-	stats: KhanStats["stats"];
+	stats: Rest.KhanStats["stats"];
 }): JSX.Element {
 	const [selectedPageType, setSelectedPageType] = React.useState(StatsPageType.Overall);
 

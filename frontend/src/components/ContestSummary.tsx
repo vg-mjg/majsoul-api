@@ -30,7 +30,7 @@ import { PhaseStandings } from "./PhaseStandings";
 import { ContestContext } from "./Contest/ContestProvider";
 import clsx from "clsx";
 import { stylesheet } from "astroturf";
-import { ContestType } from "backend/dist/store/types/types";
+import { ContestType } from "backend/dist/store/enums.js";
 
 export function ContestSummary(props: {
 	contestId: string;

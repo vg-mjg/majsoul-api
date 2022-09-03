@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Rest } from "backend";
+import type { Rest } from "backend";
 import { fetchStats, StatsRequest } from "../../api/Contests";
 import { ContestContext } from "../Contest/ContestProvider";
 import { LoadingSpinner } from "../utils/LoadingSpinner";

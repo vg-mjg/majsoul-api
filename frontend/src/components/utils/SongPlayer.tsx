@@ -15,7 +15,6 @@ export function SongPlayer(props: { videoId: string; play?: boolean; }): JSX.Ele
 			videoId={props.videoId}
 			onReady={(event) => setPlayer(event.target)}
 			onStateChange={(event) => event.data === 0 && event.target.playVideo()}
-		>
-		</YouTube>
+		/>
 	</div>;
 }

@@ -6,8 +6,8 @@ import Spinner from "react-bootstrap/Spinner";
 import { Rest } from "backend";
 import { ContestPlayerDisplay } from "./ContestPlayerDisplay";
 import { useSelector } from "react-redux";
-import { IState } from "src/State";
-import { fetchContestPlayers } from "src/api/Players";
+import { IState } from "../State";
+import { fetchContestPlayers } from "../api/Players";
 
 function contestPlayerTeamSort(params: {player: Rest.ContestPlayer<any>, team: string}): number {
 	if (params.player.team.seeded && params.team != null) {

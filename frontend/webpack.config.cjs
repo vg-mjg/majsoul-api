@@ -40,10 +40,12 @@ module.exports = env => {
 					exclude: path.join(__dirname, "src/bootstrap.sass"),
 					use: [
 						"style-loader",
-						"@teamsupercell/typings-for-css-modules-loader",
+						// "@teamsupercell/typings-for-css-modules-loader",
 						{
 							loader: "css-loader",
-							options: { modules: true }
+							options: {
+								esModule: false,
+							}
 						},
 						"sass-loader"
 					],

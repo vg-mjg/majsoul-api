@@ -1619,13 +1619,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/youtube@npm:^0.0.47":
-  version: 0.0.47
-  resolution: "@types/youtube@npm:0.0.47"
-  checksum: 837d84ae727a045743ff0e1740bebd05f6f968ae2c1575108b037bdba43ee93e39848560b45bddeffd98f463e18e6ade71c208e4c5514ca29a85a5c5ebc0cc54
-  languageName: node
-  linkType: hard
-
 "@typescript-eslint/eslint-plugin@npm:^5.36.1":
   version: 5.36.1
   resolution: "@typescript-eslint/eslint-plugin@npm:5.36.1"
@@ -4254,7 +4247,6 @@ __metadata:
     "@types/react-router-dom": ^5.3.3
     "@types/redux": ^3.6.0
     "@types/redux-persist": ^4.3.1
-    "@types/youtube": ^0.0.47
     astroturf: ^1.0.1
     autoprefixer: ^10.4.8
     backend: "workspace:*"

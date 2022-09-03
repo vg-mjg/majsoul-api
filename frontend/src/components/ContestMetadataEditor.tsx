@@ -4,19 +4,19 @@ import { useSelector, useDispatch } from "react-redux";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { ContestType, TourneyContestScoringType } from "majsoul/dist/store/types/types";
+import { ContestType, TourneyContestScoringType } from "backend/dist/store/enums.js";
 import Form from "react-bootstrap/Form";
 import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import { TextField } from "./utils/TextField";
-import { GameResult } from "majsoul/dist/rest";
-import { createGame, fetchGame, deleteGame, fetchPendingGames } from "src/api/Games";
-import { patchContest } from "src/api/Contests";
-import { dispatchContestPatchedAction } from "src/actions/contests/ContestPatchedAction";
+import type { Rest } from "backend";
+import { createGame, fetchGame, deleteGame, fetchPendingGames } from "../api/Games";
+import { patchContest } from "../api/Contests";
+import { dispatchContestPatchedAction } from "../actions/contests/ContestPatchedAction";
 
 const CustomGameAdder: React.FC<{
 	contestId: string;
-	onGameCreated: (game: GameResult<string>) => void;
+	onGameCreated: (game: Rest.GameResult<string>) => void;
 }> = ({
 	contestId,
 	onGameCreated,
@@ -55,7 +55,7 @@ const CustomGameAdder: React.FC<{
 };
 
 const PendingGameDisplay: React.FC<{
-	game: GameResult<string>;
+	game: Rest.GameResult<string>;
 	onGameDeleted: (id: string) => void;
 }> = ({
 	game,
@@ -99,7 +99,7 @@ const ContestCustomGames: React.FC<{
 	contestId,
 }) => {
 	const dispatch = useDispatch();
-	const [pendingGames, setPendingGames] = useState<GameResult<string>[]>([]);
+	const [pendingGames, setPendingGames] = useState<Rest.GameResult<string>[]>([]);
 	const onGameDeleted = React.useCallback((gameId: string) => {
 		if (!pendingGames.find(game => game._id === gameId)) {
 			return;
@@ -107,7 +107,7 @@ const ContestCustomGames: React.FC<{
 		setPendingGames(pendingGames.filter(game => game._id !== gameId));
 	}, [pendingGames]);
 
-	const onGameCreated = React.useCallback((game: GameResult<string>) => {
+	const onGameCreated = React.useCallback((game: Rest.GameResult<string>) => {
 		setPendingGames(pendingGames.concat(game));
 	}, [pendingGames]);
 

@@ -1,8 +1,4 @@
-interface Match<Id = any> {
-	teams: {
-		_id: Id;
-	}[];
-}
+import { Match } from "./Match.js";
 
 export interface Session<Id = any> {
 	name?: string;

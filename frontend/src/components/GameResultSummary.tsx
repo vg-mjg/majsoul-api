@@ -12,9 +12,9 @@ import dayjs = require("dayjs");
 import { useTranslation } from "react-i18next";
 import { css } from "astroturf";
 import clsx from "clsx";
-import { updateGame } from "src/api/Games";
-import { dispatchGamesRetrievedAction } from "src/actions/games/GamesRetrievedAction";
-import { TourneyContestPhaseSubtype } from "majsoul/dist/store/types";
+import { updateGame } from "../api/Games";
+import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
+import { TourneyContestPhaseSubtype } from "backend/dist/store/enums";
 import { PaipuLink } from "./PaipuLink";
 
 function GameSeat(props: {

@@ -14,17 +14,18 @@ import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { IState } from "../State";
 import { Teams } from "./Teams";
-import { TourneyContestScoringDetailsWithId, PlayerTourneyStandingInformation, PlayerRankingType, TourneyPhase } from "backend/dist/rest";
-import { TourneyContestPhaseSubtype, TourneyContestScoringType } from "backend/dist/store";
+import type { Rest } from "backend";
+import { PlayerRankingType } from "backend/dist/rest/enums.js";
+import { TourneyContestPhaseSubtype, TourneyContestScoringType } from "backend/dist/store/enums.js";
 
 interface TypeGroup {
-	type: TourneyContestScoringDetailsWithId;
+	type: Rest.TourneyContestScoringDetailsWithId;
 	standings: IndividualPlayerStandingsProps[];
 }
 
 function groupByType(
 	standings: IndividualPlayerStandingsProps[],
-	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>,
+	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>,
 ): TypeGroup[] {
 	const groups: TypeGroup[] = [];
 
@@ -43,10 +44,10 @@ function groupByType(
 }
 
 const GroupedStandingsSection: React.FC<{
-	previousItem?: PlayerTourneyStandingInformation;
+	previousItem?: Rest.PlayerTourneyStandingInformation;
 	standings: IndividualPlayerStandingsProps[];
 	scoreTypeId: string;
-	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
 }>= ({previousItem, standings, scoreTypeId, scoreTypes}) => {
 	const { t } = useTranslation();
 
@@ -68,7 +69,7 @@ const GroupedStandingsSection: React.FC<{
 const StandingsSection: React.FC<{
 	standings: IndividualPlayerStandingsProps[];
 	scoreTypeId: string;
-	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
 }>= ({standings, scoreTypes, scoreTypeId}) => {
 	return <>
 		{standings
@@ -80,8 +81,8 @@ const StandingsSection: React.FC<{
 };
 
 const ScoreRankingDisplay: React.FC<{
-	standings: PlayerTourneyStandingInformation[];
-	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	standings: Rest.PlayerTourneyStandingInformation[];
+	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
 	team?: string;
 }> = (props) => {
 	const [showMore, setShowMore] = React.useState(false);
@@ -176,8 +177,8 @@ const ScoreRankingDisplay: React.FC<{
 };
 
 const TeamRankingDisplay: React.FC<{
-	phase: TourneyPhase;
-	scoreTypes: Record<string, TourneyContestScoringDetailsWithId>;
+	phase: Rest.TourneyPhase;
+	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
 }> = (props) => {
 	const { contestId } = React.useContext(ContestContext);
 
@@ -253,7 +254,7 @@ const TeamRankingDisplay: React.FC<{
 	</>;
 };
 
-export const PhaseStandings: React.FC<{phase: TourneyPhase, isLoading: boolean}>= ({phase, isLoading}) => {
+export const PhaseStandings: React.FC<{phase: Rest.TourneyPhase, isLoading: boolean}>= ({phase, isLoading}) => {
 	if (!phase || isLoading) {
 		return <Container className="rounded-bottom bg-dark text-light text-center px-3 py-4">
 			<Row>
@@ -268,7 +269,7 @@ export const PhaseStandings: React.FC<{phase: TourneyPhase, isLoading: boolean}>
 
 	const scoreTypes = phase.scoringTypes?.reduce(
 		(total, next) => (total[next.id] = next, total),
-		{} as Record<string, TourneyContestScoringDetailsWithId>
+		{} as Record<string, Rest.TourneyContestScoringDetailsWithId>
 	) ?? {};
 
 	if (phase.subtype === TourneyContestPhaseSubtype.TeamQualifier) {
@@ -278,7 +279,7 @@ export const PhaseStandings: React.FC<{phase: TourneyPhase, isLoading: boolean}>
 	return <ScoreRankingDisplay standings={phase.standings} scoreTypes={scoreTypes} />;
 };
 
-function getScoreTitleKey(scoreType: TourneyContestScoringDetailsWithId): string {
+function getScoreTitleKey(scoreType: Rest.TourneyContestScoringDetailsWithId): string {
 	const typeKey = `tourney.scoreType.${TourneyContestScoringType[scoreType.type].toLowerCase()}`;
 	if (scoreType.type === TourneyContestScoringType.Consecutive) {
 		return `${typeKey}.${scoreType.typeDetails?.findWorst ? "worst" : "best"}`;

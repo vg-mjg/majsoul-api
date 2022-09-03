@@ -9,11 +9,11 @@ import Col from "react-bootstrap/Col";
 import { useCallback } from "react";
 import { contestName } from "./utils";
 import Form from "react-bootstrap/Form";
-import { fetchConfig, updateConfig } from "src/api/Config";
-import { createContest, fetchContests } from "src/api/Contests";
-import { dispatchContestsIndexRetrievedAction } from "src/actions/contests/ContestsIndexRetrievedAction";
-import { dispatchContestCreatedAction } from "src/actions/contests/ContestCreatedAction";
-import { fetchGoogleAuthUrl } from "src/api/Rigging";
+import { fetchConfig, updateConfig } from "../api/Config";
+import { createContest, fetchContests } from "../api/Contests";
+import { dispatchContestsIndexRetrievedAction } from "../actions/contests/ContestsIndexRetrievedAction";
+import { dispatchContestCreatedAction } from "../actions/contests/ContestCreatedAction";
+import { fetchGoogleAuthUrl } from "../api/Rigging";
 import { useTranslation } from "react-i18next";
 
 export function ContestList(): JSX.Element {
