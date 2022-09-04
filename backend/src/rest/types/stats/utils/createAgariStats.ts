@@ -1,5 +1,5 @@
-import { AgariCategories } from "../first/AgariCategories.js";
-import { AgariStats } from "../first/AgariStats.js";
+import { AgariCategories } from "../first/AgariCategories";
+import { AgariStats } from "../first/AgariStats";
 
 export function createAgariStats(): AgariCategories<AgariStats> {
 	return {

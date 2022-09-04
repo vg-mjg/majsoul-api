@@ -1,4 +1,4 @@
-import { Match } from "./Match.js";
+import { Match } from "./Match";
 
 export interface Session<Id = any> {
 	name?: string;

@@ -1,7 +1,7 @@
-import { PlayerInformation } from "../PlayerInformation.js";
-import { PlayerScoreTypeRanking } from "./PlayerScoreTypeRanking.js";
-import { PlayerTeamRanking } from "./PlayerTeamRanking.js";
-import { SharedGroupRankingData } from "./SharedGroupRankingData.js";
+import { PlayerInformation } from "../PlayerInformation";
+import { PlayerScoreTypeRanking } from "./PlayerScoreTypeRanking";
+import { PlayerTeamRanking } from "./PlayerTeamRanking";
+import { SharedGroupRankingData } from "./SharedGroupRankingData";
 
 
 export type PlayerTourneyStandingInformation = SharedGroupRankingData & {

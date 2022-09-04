@@ -1,4 +1,4 @@
-import { TourneyScoringTypeDetails } from "./TourneyScoringTypeDetails.js";
+import { TourneyScoringTypeDetails } from "./TourneyScoringTypeDetails";
 
 export type TourneyScoringInfoPart = TourneyScoringTypeDetails & {
 	places?: number;

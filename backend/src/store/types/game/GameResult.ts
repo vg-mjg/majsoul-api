@@ -1,7 +1,7 @@
-import { GameResultVersion } from "../enums/GameResultVersion.js";
-import { Player } from "../Player.js";
-import { FinalScore } from "./FinalScore.js";
-import { RoundResult } from "./round/RoundResult.js";
+import { GameResultVersion } from "../enums/GameResultVersion";
+import { Player } from "../Player";
+import { FinalScore } from "./FinalScore";
+import { RoundResult } from "./round/RoundResult";
 
 export interface GameResult<Id = any> {
 	config?: {

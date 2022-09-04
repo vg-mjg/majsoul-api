@@ -8,19 +8,19 @@ import { catchError, combineLatestWith, distinctUntilChanged, filter, map, merge
 import seedrandom from "seedrandom";
 import * as UserAgent from "user-agents";
 
-import { parseGameRecordResponse } from "./connector/parseGameRecordResponse.js";
-import { ContestTracker } from "./ContestTracker.js";
-import { Spreadsheet } from "./google.js";
-import { getSecrets } from "./secrets.js";
-import { Store } from "./store/Store.js";
-import { Config } from "./store/types/Config.js";
-import { Contest } from "./store/types/contest/Contest.js";
-import { Cookie } from "./store/types/Cookie.js";
-import { TourneyContestScoringType } from "./store/types/enums/TourneyContestScoringType.js";
-import { GachaGroup } from "./store/types/gacha/GachaGroup.js";
-import { GachaPull } from "./store/types/gacha/GachaPull.js";
-import { GameResult } from "./store/types/game/GameResult.js";
-import { Player } from "./store/types/Player.js";
+import { parseGameRecordResponse } from "./connector/parseGameRecordResponse";
+import { ContestTracker } from "./ContestTracker";
+import { Spreadsheet } from "./google";
+import { getSecrets } from "./secrets";
+import { Store } from "./store/Store";
+import { Config } from "./store/types/Config";
+import { Contest } from "./store/types/contest/Contest";
+import { Cookie } from "./store/types/Cookie";
+import { TourneyContestScoringType } from "./store/types/enums/TourneyContestScoringType";
+import { GachaGroup } from "./store/types/gacha/GachaGroup";
+import { GachaPull } from "./store/types/gacha/GachaPull";
+import { GameResult } from "./store/types/game/GameResult";
+import { Player } from "./store/types/Player";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<Contest<ObjectId>>();

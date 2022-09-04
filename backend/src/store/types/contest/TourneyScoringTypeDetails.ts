@@ -1,5 +1,5 @@
-import { TourneyContestScoringType } from "../enums/TourneyContestScoringType.js";
-import { ConsecutiveScoringDetails } from "./ConsecutiveScoringDetails.js";
+import { TourneyContestScoringType } from "../enums/TourneyContestScoringType";
+import { ConsecutiveScoringDetails } from "./ConsecutiveScoringDetails";
 
 export interface TourneyScoringTypeDetails {
 	type: TourneyContestScoringType;

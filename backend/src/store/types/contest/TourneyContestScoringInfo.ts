@@ -1,4 +1,4 @@
-import { TourneyContestScoringType } from "../enums/TourneyContestScoringType.js";
-import { TourneyScoringInfoPart } from "./TourneyScoringInfoPart.js";
+import { TourneyContestScoringType } from "../enums/TourneyContestScoringType";
+import { TourneyScoringInfoPart } from "./TourneyScoringInfoPart";
 
 export type TourneyContestScoringInfo = TourneyContestScoringType | TourneyScoringInfoPart[];

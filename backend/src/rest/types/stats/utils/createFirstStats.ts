@@ -1,5 +1,5 @@
-import { FirstStats } from "../FirstStats.js";
-import { createAgariStats } from "./createAgariStats.js";
+import { FirstStats } from "../FirstStats";
+import { createAgariStats } from "./createAgariStats";
 
 export function createFirstStats(): FirstStats["stats"] {
 	return {

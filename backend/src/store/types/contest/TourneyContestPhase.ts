@@ -1,7 +1,7 @@
-import { ContestType } from "../enums/ContestType.js";
-import { TourneyContestPhaseSubtype } from "../enums/TourneyContestPhaseSubtype.js";
-import { PhaseTransitionShared } from "./PhaseTransitionShared.js";
-import { TourneyContestScoringInfo } from "./TourneyContestScoringInfo.js";
+import { ContestType } from "../enums/ContestType";
+import { TourneyContestPhaseSubtype } from "../enums/TourneyContestPhaseSubtype";
+import { PhaseTransitionShared } from "./PhaseTransitionShared";
+import { TourneyContestScoringInfo } from "./TourneyContestScoringInfo";
 
 export interface TourneyContestPhase extends PhaseTransitionShared {
 	type?: ContestType.Tourney;

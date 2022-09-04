@@ -1,4 +1,4 @@
-import type { lq } from "./liqi.js";
+import type { lq } from "./liqi";
 
 export type GameStepRecord = lq.RecordNewRound
 	| lq.RecordDiscardTile

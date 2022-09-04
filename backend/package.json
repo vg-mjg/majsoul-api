@@ -1,7 +1,6 @@
 {
 	"packageManager": "yarn@3.2.3",
 	"name": "backend",
-	"type": "module",
 	"main": "dist/index.js",
 	"version": "1.0.0",
 	"files": [
@@ -28,7 +27,7 @@
 		"jsonwebtoken": "^8.5.1",
 		"majsoul": "^1.0.0",
 		"mongodb": "^4.9.1",
-		"node-fetch": "3.2.8",
+		"node-fetch": "^2.6.7",
 		"protobufjs": "^7.1.0",
 		"rxjs": "^7.5.6",
 		"seedrandom": "^3.0.5",

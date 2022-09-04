@@ -1,6 +1,6 @@
-import { PlayerRankingType } from "../enums/PlayerRankingType.js";
-import { PlayerScoreTypeRanking } from "./PlayerScoreTypeRanking.js";
-import { SharedGroupRankingData } from "./SharedGroupRankingData.js";
+import { PlayerRankingType } from "../enums/PlayerRankingType";
+import { PlayerScoreTypeRanking } from "./PlayerScoreTypeRanking";
+import { SharedGroupRankingData } from "./SharedGroupRankingData";
 
 export interface PlayerTeamRanking {
 	type: PlayerRankingType.Team;

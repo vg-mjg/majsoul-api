@@ -3,16 +3,14 @@
 	"compilerOptions": {
 		"allowSyntheticDefaultImports": true,
 		"target": "ES2022",
-		"module": "NodeNext",
+		"module": "CommonJS",
 		"noImplicitAny": false,
 		"removeComments": true,
 		"declaration": true,
-		"preserveConstEnums": true,
 		"sourceMap": true,
 		"rootDir": "./src",
 		"outDir": "./dist",
 		"lib": ["ES2022"],
-		"resolveJsonModule": true,
-		"types": ["jest"]
+		"resolveJsonModule": true
 	}
 }

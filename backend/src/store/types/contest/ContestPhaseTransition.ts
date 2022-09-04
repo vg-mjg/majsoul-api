@@ -1,5 +1,5 @@
-import { PhaseTransitionShared } from "./PhaseTransitionShared.js";
-import { TourneyContestScoringInfo } from "./TourneyContestScoringInfo.js";
+import { PhaseTransitionShared } from "./PhaseTransitionShared";
+import { TourneyContestScoringInfo } from "./TourneyContestScoringInfo";
 
 export interface ContestPhaseTransition<Id = string> extends PhaseTransitionShared {
 	name?: string;

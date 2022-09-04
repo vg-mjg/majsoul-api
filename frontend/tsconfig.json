@@ -4,9 +4,8 @@
 		"sourceMap": true,
 		"noImplicitAny": false,
 		"resolveJsonModule": true,
-		"module": "commonjs",
-		"target": "es6",
-		"esModuleInterop": true,
+		"module": "CommonJS",
+		"target": "ES6",
 		"importHelpers": true,
 		"allowSyntheticDefaultImports": true,
 		"jsx": "react",
@@ -16,5 +15,6 @@
 			"es2019.array"
 		],
 		"rootDir": "./",
-	}
+	},
+	"include": ["src/", "assets/i18n"]
 }

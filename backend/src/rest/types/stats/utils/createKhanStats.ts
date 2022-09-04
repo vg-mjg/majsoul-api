@@ -1,5 +1,5 @@
-import { KhanStats } from "../KhanStats.js";
-import { createFirstStats } from "./createFirstStats.js";
+import { KhanStats } from "../KhanStats";
+import { createFirstStats } from "./createFirstStats";
 
 export function createKhanStats(): KhanStats["stats"] {
 	const stats = createFirstStats() as KhanStats["stats"];

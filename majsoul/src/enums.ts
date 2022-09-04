@@ -1,4 +1,4 @@
-export { AILevel } from "./types/enums/AILevel.js";
-export { Han } from "./types/enums/Han.js";
-export { MessageType } from "./types/enums/MessageType.js";
-export { PlayerZone } from "./types/enums/PlayerZone.js";
+export { AILevel } from "./types/enums/AILevel";
+export { Han } from "./types/enums/Han";
+export { MessageType } from "./types/enums/MessageType";
+export { PlayerZone } from "./types/enums/PlayerZone";

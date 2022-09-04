@@ -1,6 +1,6 @@
-import { KanStatics } from "../../../store/types/game/round/KanStatics.js";
-import { StatsVersion } from "../enums/StatsVersion.js";
-import { FirstStats } from "./FirstStats.js";
+import { KanStatics } from "../../../store/types/game/round/KanStatics";
+import { StatsVersion } from "../enums/StatsVersion";
+import { FirstStats } from "./FirstStats";
 
 export interface KhanStats {
 	version: StatsVersion.Khan;

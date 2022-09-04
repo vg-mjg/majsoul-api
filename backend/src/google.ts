@@ -4,12 +4,12 @@ import { Han } from "majsoul";
 import { ObjectId } from "mongodb";
 import { Observable, Subject } from "rxjs";
 
-import { DrawStatus,Wind } from "./store/enums.js";
-import { ContestTeam } from "./store/types/contest/ContestTeam.js";
-import { GameResult } from "./store/types/game/GameResult.js";
-import { AgariInfo } from "./store/types/game/round/AgariInfo.js";
-import { RoundInfo } from "./store/types/game/round/RoundInfo.js";
-import { Player } from "./store/types/Player.js";
+import { DrawStatus,Wind } from "./store/enums";
+import { ContestTeam } from "./store/types/contest/ContestTeam";
+import { GameResult } from "./store/types/game/GameResult";
+import { AgariInfo } from "./store/types/game/round/AgariInfo";
+import { RoundInfo } from "./store/types/game/round/RoundInfo";
+import { Player } from "./store/types/Player";
 
 interface IHandDescription {
 	round: RoundInfo;

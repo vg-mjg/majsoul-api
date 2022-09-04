@@ -1,4 +1,4 @@
-import { GachaData } from "./types/GachaData.js";
+import { GachaData } from "./types/GachaData";
 
 export interface PlayerContestTypeResults {
 	playerId: string;

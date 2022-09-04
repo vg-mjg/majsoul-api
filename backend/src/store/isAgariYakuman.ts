@@ -1,8 +1,8 @@
 import { Han } from "majsoul";
 
-import { GameResult } from "./types/game/GameResult.js";
-import { AgariInfo } from "./types/game/round/AgariInfo.js";
-import { RoundInfo } from "./types/game/round/RoundInfo.js";
+import { GameResult } from "./types/game/GameResult";
+import { AgariInfo } from "./types/game/round/AgariInfo";
+import { RoundInfo } from "./types/game/round/RoundInfo";
 
 export function isAgariYakuman(
 	{ config }: GameResult,

@@ -1,5 +1,5 @@
-import { GameResult as StoreGameResult } from "../../store/types/game/GameResult.js";
-import { PlayerInformation } from "./PlayerInformation.js";
+import { GameResult as StoreGameResult } from "../../store/types/game/GameResult";
+import { PlayerInformation } from "./PlayerInformation";
 
 export interface EliminationMatchDetails {
 	players: PlayerInformation[];

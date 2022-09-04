@@ -1,4 +1,4 @@
-import { GachaCard } from "./GachaCard.js";
+import { GachaCard } from "./GachaCard";
 
 export interface GachaGroup<Id = any> {
 	_id: Id;

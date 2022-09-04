@@ -1,4 +1,4 @@
-import { Cookie } from "./Cookie.js";
+import { Cookie } from "./Cookie";
 
 export interface Config<Id = any> {
 	_id?: Id;

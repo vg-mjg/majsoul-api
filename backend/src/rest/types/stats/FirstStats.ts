@@ -1,11 +1,11 @@
-import { StatsVersion } from "../enums/StatsVersion.js";
-import { AgariCategories } from "./first/AgariCategories.js";
-import { AgariStats } from "./first/AgariStats.js";
-import { CallStats } from "./first/CallStats.js";
-import { DealerStats } from "./first/DealerStats.js";
-import { DrawStats } from "./first/DrawStats.js";
-import { RiichiStats } from "./first/RiichiStats.js";
-import { SelfAgariStats } from "./first/SelfAgariStats.js";
+import { StatsVersion } from "../enums/StatsVersion";
+import { AgariCategories } from "./first/AgariCategories";
+import { AgariStats } from "./first/AgariStats";
+import { CallStats } from "./first/CallStats";
+import { DealerStats } from "./first/DealerStats";
+import { DrawStats } from "./first/DrawStats";
+import { RiichiStats } from "./first/RiichiStats";
+import { SelfAgariStats } from "./first/SelfAgariStats";
 
 export interface FirstStats {
 	version: StatsVersion.First;

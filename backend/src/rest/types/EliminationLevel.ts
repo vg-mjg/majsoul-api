@@ -1,4 +1,4 @@
-import { EliminationMatchDetails } from "./EliminationMatchDetails.js";
+import { EliminationMatchDetails } from "./EliminationMatchDetails";
 
 export interface EliminationLevel {
 	levelNumber: number;

@@ -1,5 +1,5 @@
 import { Method, Root, Type } from "protobufjs";
-import { MessageType } from "./types/enums/MessageType.js";
+import { MessageType } from "./types/enums/MessageType";
 
 export class Codec {
 	public static decodePaipuId(paipu: string): string {

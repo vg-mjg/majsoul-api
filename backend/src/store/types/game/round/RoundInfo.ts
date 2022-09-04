@@ -1,4 +1,4 @@
-import { Wind } from "../../enums/Wind.js";
+import { Wind } from "../../enums/Wind";
 
 export interface RoundInfo {
 	round: Wind;

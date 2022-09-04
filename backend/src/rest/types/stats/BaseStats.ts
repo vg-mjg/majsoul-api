@@ -1,4 +1,4 @@
-import { StatsVersion } from "../enums/StatsVersion.js";
+import { StatsVersion } from "../enums/StatsVersion";
 
 export interface BaseStats {
 	version: StatsVersion.None;

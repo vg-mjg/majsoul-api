@@ -1,5 +1,5 @@
-import { PhaseMetadata } from "./PhaseMetadata.js";
-import { Session } from "./Session.js";
+import { PhaseMetadata } from "./PhaseMetadata";
+import { Session } from "./Session";
 
 export interface LeaguePhase<Id = string> extends PhaseMetadata<Id> {
 	sessions?: Session<Id>[];

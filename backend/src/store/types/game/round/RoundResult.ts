@@ -1,8 +1,8 @@
-import { DrawRecord } from "./DrawRecord.js";
-import { PlayerStats } from "./PlayerStats.js";
-import { RonRecord } from "./RonRecord.js";
-import { RoundInfo } from "./RoundInfo.js";
-import { TsumoRecord } from "./TsumoRecord.js";
+import { DrawRecord } from "./DrawRecord";
+import { PlayerStats } from "./PlayerStats";
+import { RonRecord } from "./RonRecord";
+import { RoundInfo } from "./RoundInfo";
+import { TsumoRecord } from "./TsumoRecord";
 
 export interface RoundResult {
 	round: RoundInfo;

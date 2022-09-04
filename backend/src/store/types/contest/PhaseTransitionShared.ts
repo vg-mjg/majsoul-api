@@ -1,4 +1,4 @@
-import { EliminationBracketSettings } from "./EliminationBracketSettings.js";
+import { EliminationBracketSettings } from "./EliminationBracketSettings";
 
 export interface PhaseTransitionShared {
 	eliminationBracketSettings?: Record<number, EliminationBracketSettings>;

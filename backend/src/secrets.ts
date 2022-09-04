@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 
 export interface ISecrets {
 	majsoul: {
@@ -23,7 +22,6 @@ export interface ISecrets {
 }
 
 export function getSecretsFilePath(): string {
-	const __filename = fileURLToPath(import.meta.url);
 	return process.env.NODE_ENV === "production"
 		? "/run/secrets/majsoul.json"
 		: path.join(path.dirname(__filename), "secrets.json");

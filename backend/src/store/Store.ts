@@ -1,15 +1,15 @@
 import { ChangeStream, ChangeStreamDocument, Collection, MongoClient, ObjectId } from "mongodb";
 import { Observable, Subject } from "rxjs";
 
-import { Config } from "./types/Config.js";
-import { Contest } from "./types/contest/Contest.js";
-import { Session } from "./types/contest/Session.js";
-import { latestGameResultVersion } from "./types/enums/GameResultVersion.js";
-import { GachaPull } from "./types/gacha/GachaPull.js";
-import { GameCorrection } from "./types/game/GameCorrection.js";
-import { GameResult } from "./types/game/GameResult.js";
-import { Player } from "./types/Player.js";
-import { User } from "./types/User.js";
+import { Config } from "./types/Config";
+import { Contest } from "./types/contest/Contest";
+import { Session } from "./types/contest/Session";
+import { latestGameResultVersion } from "./types/enums/GameResultVersion";
+import { GachaPull } from "./types/gacha/GachaPull";
+import { GameCorrection } from "./types/game/GameCorrection";
+import { GameResult } from "./types/game/GameResult";
+import { Player } from "./types/Player";
+import { User } from "./types/User";
 
 interface Migration {
 	perform(store: Store): Promise<void>;

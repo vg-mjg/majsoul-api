@@ -1,9 +1,9 @@
 import { Method, RPCImplCallback, Root, Type } from "protobufjs";
 import { Subscription } from "rxjs";
-import { Codec } from "./Codec.js";
-import { MessageType } from "./types/enums/MessageType.js";
-import { Connection } from "./Connection.js";
-import { RpcService } from "./Service.js";
+import { Codec } from "./Codec";
+import { MessageType } from "./types/enums/MessageType";
+import { Connection } from "./Connection";
+import { RpcService } from "./Service";
 
 export class RpcImplementation {
 	private readonly transactionMap: {

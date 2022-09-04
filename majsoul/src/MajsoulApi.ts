@@ -2,19 +2,19 @@ import { v4 as uuidv4 } from "uuid";
 import { Root } from "protobufjs";
 import { Observable, from, interval, merge, of, using } from "rxjs";
 import { catchError, filter, map, mergeAll, timeout } from "rxjs/operators";
-import { Player } from "./types/Player.js";
-import { Contest } from "./types/Contest.js";
-import { Passport } from "./types/Passport.js";
-import { Codec } from "./Codec.js";
-import { MessageType } from "./types/enums/MessageType.js";
-import { Connection } from "./Connection.js";
-import { RpcImplementation } from "./RpcImplementation.js";
-import { RpcService } from "./Service.js";
-import { ApiResources } from "./types/ApiResources.js";
-import { GameRecord } from "./types/GameRecord.js";
-import { PlayerZone } from "./types/enums/PlayerZone.js";
+import { Player } from "./types/Player";
+import { Contest } from "./types/Contest";
+import { Passport } from "./types/Passport";
+import { Codec } from "./Codec";
+import { MessageType } from "./types/enums/MessageType";
+import { Connection } from "./Connection";
+import { RpcImplementation } from "./RpcImplementation";
+import { RpcService } from "./Service";
+import { ApiResources } from "./types/ApiResources";
+import { GameRecord } from "./types/GameRecord";
+import { PlayerZone } from "./types/enums/PlayerZone";
 import fetch from "node-fetch";
-import type { lq } from "./types/liqi.js";
+import type { lq } from "./types/liqi";
 
 export class MajsoulApi {
 	private static async getRes<T>(path: string): Promise<T> {

@@ -1,4 +1,4 @@
-import { KanStatics } from "./KanStatics.js";
+import { KanStatics } from "./KanStatics";
 
 export interface CallStats {
 	total: number; //chinponyas

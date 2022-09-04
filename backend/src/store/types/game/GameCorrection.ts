@@ -1,4 +1,4 @@
-import { FinalScore } from "./FinalScore.js";
+import { FinalScore } from "./FinalScore";
 
 export interface GameCorrection<Id = any> {
 	_id?: Id;

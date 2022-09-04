@@ -1,6 +1,6 @@
 import { AILevel } from "majsoul/dist/enums";
 
-import { Contest } from "../../State.js";
+import { Contest } from "../../State";
 
 export function levelToString(aiLevel: AILevel): string {
 	switch (aiLevel) {

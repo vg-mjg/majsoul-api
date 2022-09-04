@@ -1,16 +1,16 @@
 import { Han } from "majsoul";
 import { ObjectId } from "mongodb";
 
-import { DrawStatus } from "../../store/types/enums/DrawStatus.js";
-import { HandStatus } from "../../store/types/enums/HandStatus.js";
-import { GameResult as StoreGameResult } from "../../store/types/game/GameResult.js";
-import { StatsVersion } from "../types/enums/StatsVersion.js";
-import { BaseStats } from "../types/stats/BaseStats.js";
-import { AgariCategories } from "../types/stats/first/AgariCategories.js";
-import { FirstStats } from "../types/stats/FirstStats.js";
-import { KhanStats } from "../types/stats/KhanStats.js";
-import { Stats } from "../types/stats/Stats.js";
-import { createFirstStats } from "../types/stats/utils/createFirstStats.js";
+import { DrawStatus } from "../../store/types/enums/DrawStatus";
+import { HandStatus } from "../../store/types/enums/HandStatus";
+import { GameResult as StoreGameResult } from "../../store/types/game/GameResult";
+import { StatsVersion } from "../types/enums/StatsVersion";
+import { BaseStats } from "../types/stats/BaseStats";
+import { AgariCategories } from "../types/stats/first/AgariCategories";
+import { FirstStats } from "../types/stats/FirstStats";
+import { KhanStats } from "../types/stats/KhanStats";
+import { Stats } from "../types/stats/Stats";
+import { createFirstStats } from "../types/stats/utils/createFirstStats";
 
 interface PlayerData {
 	playerId: ObjectId;

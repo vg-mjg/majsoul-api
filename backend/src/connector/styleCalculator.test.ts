@@ -1,4 +1,4 @@
-import { calculateStyle } from "./styleCalculator.js";
+import { calculateStyle } from "./styleCalculator";
 
 test("Dummy unit test", () => {
 	const actual = calculateStyle({} as any);

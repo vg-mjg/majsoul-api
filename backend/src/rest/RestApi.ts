@@ -6,11 +6,11 @@ import fs from "fs";
 import { OAuth2Client } from "google-auth-library";
 import path from "path";
 
-import { getSecrets } from "../secrets.js";
-import { Store } from "../store/Store.js";
-import { contestRoute } from "./routes/contest/ContestRoute.js";
-import { registerAdminMethods, registerPublicMethods } from "./routes/Route.js";
-import { RouteState } from "./routes/RouteState.js";
+import { getSecrets } from "../secrets";
+import { Store } from "../store/Store";
+import { contestRoute } from "./routes/contest/ContestRoute";
+import { registerAdminMethods, registerPublicMethods } from "./routes/Route";
+import { RouteState } from "./routes/RouteState";
 
 export class RestApi {
 	private static getKey(keyName: string): Promise<Buffer> {

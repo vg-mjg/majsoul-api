@@ -1,5 +1,5 @@
-import { ContestType } from "../enums/ContestType.js";
-import { ContestTeam } from "./ContestTeam.js";
+import { ContestType } from "../enums/ContestType";
+import { ContestTeam } from "./ContestTeam";
 
 export interface LeagueContestPhase<Id = any> {
 	type?: ContestType.League;

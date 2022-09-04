@@ -1,4 +1,4 @@
-import { Player } from "../Player.js";
+import { Player } from "../Player";
 
 export interface ContestTeam<Id = any> {
 	_id: Id;

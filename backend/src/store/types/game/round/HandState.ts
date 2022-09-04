@@ -1,4 +1,4 @@
-import { HandStatus } from "../../enums/HandStatus.js";
+import { HandStatus } from "../../enums/HandStatus";
 
 export interface OpenHandState {
 	status: HandStatus.Open;

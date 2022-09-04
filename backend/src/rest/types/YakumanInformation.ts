@@ -1,6 +1,6 @@
 import type { Han } from "majsoul";
 
-import { PlayerInformation } from "./PlayerInformation.js";
+import { PlayerInformation } from "./PlayerInformation";
 
 export interface YakumanInformation {
 	han: Han[];

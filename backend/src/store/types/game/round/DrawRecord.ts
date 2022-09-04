@@ -1,4 +1,4 @@
-import { DrawStatus } from "../../enums/DrawStatus.js";
+import { DrawStatus } from "../../enums/DrawStatus";
 
 export interface DrawRecord {
 	playerDrawStatus: DrawStatus[];

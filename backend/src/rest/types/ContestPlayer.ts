@@ -1,4 +1,4 @@
-import { Player } from "../../store/types/Player.js";
+import { Player } from "../../store/types/Player";
 
 export interface ContestPlayer<Id = any> extends Player<Id> {
 	tourneyScore: number;

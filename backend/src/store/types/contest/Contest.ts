@@ -1,8 +1,8 @@
 import { Contest as MajsoulContest } from "majsoul";
 
-import { GachaGroup } from "../gacha/GachaGroup.js";
-import { ContestPhase } from "./ContestPhase.js";
-import { ContestPhaseTransition } from "./ContestPhaseTransition.js";
+import { GachaGroup } from "../gacha/GachaGroup";
+import { ContestPhase } from "./ContestPhase";
+import { ContestPhaseTransition } from "./ContestPhaseTransition";
 
 export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Omit<Omit<ContestPhase<Id>, "name">, "startTime">, "index"> {
 	_id?: Id;

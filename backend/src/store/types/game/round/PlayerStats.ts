@@ -1,5 +1,5 @@
-import { CallStats } from "./CallStats.js";
-import { HandState } from "./HandState.js";
+import { CallStats } from "./CallStats";
+import { HandState } from "./HandState";
 
 export interface PlayerStats {
 	haipaiShanten: number;

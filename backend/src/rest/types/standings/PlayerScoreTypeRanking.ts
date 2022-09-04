@@ -1,5 +1,5 @@
-import { PlayerRankingType } from "../enums/PlayerRankingType.js";
-import { GachaData } from "../GachaData.js";
+import { PlayerRankingType } from "../enums/PlayerRankingType";
+import { GachaData } from "../GachaData";
 
 export interface PlayerScoreTypeRanking {
 	type: PlayerRankingType.Score;

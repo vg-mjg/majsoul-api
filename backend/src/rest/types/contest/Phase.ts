@@ -1,4 +1,4 @@
-import { LeaguePhase } from "./LeaguePhase.js";
-import { TourneyPhase } from "./TourneyPhase.js";
+import { LeaguePhase } from "./LeaguePhase";
+import { TourneyPhase } from "./TourneyPhase";
 
 export type Phase<Id = string> = LeaguePhase<Id> | TourneyPhase<Id>;

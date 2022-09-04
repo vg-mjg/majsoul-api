@@ -3,12 +3,12 @@ import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from 
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
 import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, mergeMap, share, switchAll, takeUntil, throttleTime } from "rxjs/operators";
 
-import { nameofContest } from "./connector.js";
-import { buildContestPhases } from "./store/buildContestPhases.js";
-import { Store } from "./store/Store.js";
-import { Contest } from "./store/types/contest/Contest.js";
-import { ContestTeam } from "./store/types/contest/ContestTeam.js";
-import { GameResult } from "./store/types/game/GameResult.js";
+import { nameofContest } from "./connector";
+import { buildContestPhases } from "./store/buildContestPhases";
+import { Store } from "./store/Store";
+import { Contest } from "./store/types/contest/Contest";
+import { ContestTeam } from "./store/types/contest/ContestTeam";
+import { GameResult } from "./store/types/game/GameResult";
 
 export class ContestTracker {
 	private contestDeleted$: Observable<any>;
