@@ -11,7 +11,7 @@ COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 RUN yarn --immutable
 
-COPY majsoul/ /build/
+COPY majsoul /build/majsoul
 WORKDIR /build/majsoul
 RUN yarn run proto:admin:generate
 RUN yarn run proto:fetch
@@ -19,14 +19,14 @@ RUN yarn run proto:generate
 RUN yarn run proto:copy
 RUN yarn run tsc --build --verbose
 
-COPY backend/ /build/
+COPY backend /build/backend
 WORKDIR /build/backend
 RUN yarn run tsc --build --verbose
 
 FROM build AS backend
 FROM backend AS frontend-build
 
-COPY frontend/ /build/
+COPY frontend /build/frontend
 WORKDIR /build/frontend
 RUN yarn run webpack --mode=production
 
