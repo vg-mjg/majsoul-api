@@ -34,7 +34,7 @@ services:
       - majsoul.json
       - riichi.key.pem
       - riichi.crt.pem
-    entrypoint: ["node", "/dist/rest-api.js"]
+    entrypoint: ["node", "dist/rest-api.js"]
 
   mongo:
     restart: always
