@@ -23,6 +23,7 @@ COPY backend /build/backend
 WORKDIR /build/backend
 RUN yarn run tsc --build --verbose
 
+ENV NODE_ENV=production
 FROM build AS backend
 FROM backend AS frontend-build
 
