@@ -2,7 +2,7 @@ import { stylesheet } from "astroturf";
 import type { Rest, Store } from "backend";
 import { TourneyContestScoringType } from "backend/dist/store/enums.js";
 import clsx from "clsx";
-import dayjs from "dayjs";
+import * as dayjs from "dayjs";
 import { PlayerZone } from "majsoul/dist/enums.js";
 import * as React from "react";
 import { useContext } from "react";

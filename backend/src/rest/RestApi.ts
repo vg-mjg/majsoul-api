@@ -1,10 +1,10 @@
-import cors from "cors";
-import crypto from "crypto";
-import express from "express";
+import * as cors from "cors";
+import * as crypto from "crypto";
+import * as express from "express";
 import { expressjwt } from "express-jwt";
-import fs from "fs";
+import * as fs from "fs";
 import { OAuth2Client } from "google-auth-library";
-import path from "path";
+import * as path from "path";
 
 import { getSecrets } from "../secrets";
 import { Store } from "../store/Store";

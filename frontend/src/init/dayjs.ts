@@ -18,16 +18,16 @@ import "dayjs/locale/zh";
 import "dayjs/locale/es";
 import "dayjs/locale/nl";
 
-import dayjs from "dayjs";
-import advancedFormat from "dayjs/plugin/advancedFormat";
-import calendar from "dayjs/plugin/calendar";
-import duration from "dayjs/plugin/duration";
-import localeData from "dayjs/plugin/localeData";
-import localizedFormat from "dayjs/plugin/localizedFormat";
-import relativeTime from "dayjs/plugin/relativeTime";
-import timezone from "dayjs/plugin/timezone";
-import updateLocale from "dayjs/plugin/updateLocale";
-import utc from "dayjs/plugin/utc";
+import * as dayjs from "dayjs";
+import * as advancedFormat from "dayjs/plugin/advancedFormat";
+import * as calendar from "dayjs/plugin/calendar";
+import * as duration from "dayjs/plugin/duration";
+import * as localeData from "dayjs/plugin/localeData";
+import * as localizedFormat from "dayjs/plugin/localizedFormat";
+import * as relativeTime from "dayjs/plugin/relativeTime";
+import * as timezone from "dayjs/plugin/timezone";
+import * as updateLocale from "dayjs/plugin/updateLocale";
+import * as utc from "dayjs/plugin/utc";
 
 import { withLocale } from "../api/utils";
 import { i18n } from "./i18n";

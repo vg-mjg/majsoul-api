@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import * as dayjs from "dayjs";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 

@@ -1,7 +1,7 @@
 import { stylesheet } from "astroturf";
 import type { Rest } from "backend";
 import clsx from "clsx";
-import dayjs from "dayjs";
+import * as dayjs from "dayjs";
 import { Han } from "majsoul/dist/enums";
 import * as React from "react";
 import Accordion from "react-bootstrap/Accordion";
