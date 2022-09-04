@@ -24,11 +24,10 @@ WORKDIR /build/backend
 RUN yarn run tsc --build --verbose
 
 FROM build AS backend
-FROM build
 
 WORKDIR /build/frontend
 RUN yarn run webpack --mode=production
 
 FROM nginx AS frontend
-COPY --from=build /build/frontend/dist /dist
+COPY --from=backend /build/frontend/dist /dist
 COPY ./nginx.conf /etc/nginx/nginx.conf
