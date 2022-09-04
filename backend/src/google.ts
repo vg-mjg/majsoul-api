@@ -1,5 +1,5 @@
+import { sheets, sheets_v4 } from "@googleapis/sheets";
 import { OAuth2Client } from "google-auth-library";
-import { google, sheets_v4 } from "googleapis";
 import { Han } from "majsoul";
 import { ObjectId } from "mongodb";
 import { Observable, Subject } from "rxjs";
@@ -84,7 +84,7 @@ export class Spreadsheet {
 		public readonly spreadsheetId: string,
 		oAuth2Client: OAuth2Client,
 	) {
-		this.sheets = google.sheets({version: "v4", auth: oAuth2Client});
+		this.sheets = sheets({version: "v4", auth: oAuth2Client});
 		this.buffer.Chunks$.subscribe((chunk) => {
 			this.uploadTask = this.uploadTask
 				.then(async () => {

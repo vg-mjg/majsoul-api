@@ -472,6 +472,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@googleapis/sheets@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@googleapis/sheets@npm:3.0.2"
+  dependencies:
+    googleapis-common: ^5.0.1
+  checksum: d8ce61fd9aba18b7465788cd48ea6fa55d4076527c33591d8371f76a752589aa270bf6ca487f0ecab105127a2f6bd6febd7c3b7575902c7518722cc8d5816f61
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.10.4":
   version: 0.10.4
   resolution: "@humanwhocodes/config-array@npm:0.10.4"
@@ -1949,6 +1958,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"abort-controller@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "abort-controller@npm:3.0.0"
+  dependencies:
+    event-target-shim: ^5.0.0
+  checksum: 170bdba9b47b7e65906a28c8ce4f38a7a369d78e2271706f020849c1bfe0ee2067d4261df8bbb66eb84f79208fd5b710df759d64191db58cfba7ce8ef9c54b75
+  languageName: node
+  linkType: hard
+
 "accepts@npm:~1.3.4, accepts@npm:~1.3.5, accepts@npm:~1.3.8":
   version: 1.3.8
   resolution: "accepts@npm:1.3.8"
@@ -2362,6 +2380,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "backend@workspace:backend"
   dependencies:
+    "@googleapis/sheets": ^3.0.2
     "@types/cors": ^2.8.6
     "@types/express": ^4.17.6
     "@types/express-jwt": ^6.0.4
@@ -2373,7 +2392,6 @@ __metadata:
     express: ^4.18.1
     express-jwt: ^7.7.5
     express-validator: ^6.14.2
-    googleapis: ^107.0.0
     jest: ^29.0.1
     jsonwebtoken: ^8.5.1
     majsoul: ^1.0.0
@@ -3143,6 +3161,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"d3@npm:^3.5.6":
+  version: 3.5.17
+  resolution: "d3@npm:3.5.17"
+  checksum: 79b59275c36fa35a0af55f326bb56d65e14d71d44e96cbd05af767000af63c3ab8b3f479e2c25281afff7ba3f5858e272ded081e5d33807b005f217c4bfbd82d
+  languageName: node
+  linkType: hard
+
 "data-uri-to-buffer@npm:^4.0.0":
   version: 4.0.0
   resolution: "data-uri-to-buffer@npm:4.0.0"
@@ -3886,6 +3911,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"event-target-shim@npm:^5.0.0":
+  version: 5.0.1
+  resolution: "event-target-shim@npm:5.0.1"
+  checksum: 1ffe3bb22a6d51bdeb6bf6f7cf97d2ff4a74b017ad12284cc9e6a279e727dc30a5de6bb613e5596ff4dc3e517841339ad09a7eec44266eccb1aa201a30448166
+  languageName: node
+  linkType: hard
+
 "eventemitter3@npm:^4.0.0":
   version: 4.0.7
   resolution: "eventemitter3@npm:4.0.7"
@@ -4303,6 +4335,7 @@ __metadata:
     webpack: ^5.74.0
     webpack-cli: ^4.10.0
     webpack-dev-server: ^4.10.1
+    webpack-visualizer-plugin2: ^1.0.0
   languageName: unknown
   linkType: soft
 
@@ -4397,25 +4430,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gaxios@npm:^5.0.0, gaxios@npm:^5.0.1":
-  version: 5.0.1
-  resolution: "gaxios@npm:5.0.1"
+"gaxios@npm:^4.0.0":
+  version: 4.3.3
+  resolution: "gaxios@npm:4.3.3"
   dependencies:
+    abort-controller: ^3.0.0
     extend: ^3.0.2
     https-proxy-agent: ^5.0.0
     is-stream: ^2.0.0
     node-fetch: ^2.6.7
-  checksum: 65464122a5be72084d07947536d18a0dcebd115b28cbcd19da8a98763a67c8c8fde995bf2f358251397c939df9d2ff84f54628a94f634a98a16c7b7553cdb4a5
+  checksum: 0b72a00875404e2c3d7aca9f32535e931d7b0ebb850dc92fafc1685b99a109b04205c63e4637a2d0d9a261ac50adf83f7d33435f73e256dcca32564ef9358fee
   languageName: node
   linkType: hard
 
-"gcp-metadata@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "gcp-metadata@npm:5.0.0"
+"gcp-metadata@npm:^4.2.0":
+  version: 4.3.1
+  resolution: "gcp-metadata@npm:4.3.1"
   dependencies:
-    gaxios: ^5.0.0
+    gaxios: ^4.0.0
     json-bigint: ^1.0.0
-  checksum: b75635e564a39ef0a6ebbff0daa97cea37382c3d6f0d7a6a0406e03a275de804a74e3f3d410d5313a6c9dd3496023e96bc81474917fa8369974398eb069d9645
+  checksum: b0b1b85ea2efee1d640a1d4ead0937fdcceffd43ab4cacfdd66fd086fcfe5c3d09ad850ee14f43f2dc73244b2617b166adfa09a2a85e0652a8c56bed194f01fe
   languageName: node
   linkType: hard
 
@@ -4550,55 +4584,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^8.0.2":
-  version: 8.4.0
-  resolution: "google-auth-library@npm:8.4.0"
+"google-auth-library@npm:^7.14.0":
+  version: 7.14.1
+  resolution: "google-auth-library@npm:7.14.1"
   dependencies:
     arrify: ^2.0.0
     base64-js: ^1.3.0
     ecdsa-sig-formatter: ^1.0.11
     fast-text-encoding: ^1.0.0
-    gaxios: ^5.0.0
-    gcp-metadata: ^5.0.0
-    gtoken: ^6.1.0
+    gaxios: ^4.0.0
+    gcp-metadata: ^4.2.0
+    gtoken: ^5.0.4
     jws: ^4.0.0
     lru-cache: ^6.0.0
-  checksum: 4f3f52399c851dff3be797f888e675dbb6099613fcd934aece0d1527b9e9a77e5aadc9be12d137981d2d820a59050b0baf29ea126d2722e20a3e1adf425c93e6
+  checksum: 78376eb2d424151dea7e3e162e20e06c11f0133451dd5ee3ea759dcb514d946acf2e0238ff08f002bdb3bf9d43c619793939feff9bc1d92025206ee836a641cf
   languageName: node
   linkType: hard
 
-"google-p12-pem@npm:^4.0.0":
-  version: 4.0.1
-  resolution: "google-p12-pem@npm:4.0.1"
+"google-p12-pem@npm:^3.1.3":
+  version: 3.1.4
+  resolution: "google-p12-pem@npm:3.1.4"
   dependencies:
     node-forge: ^1.3.1
   bin:
     gp12-pem: build/src/bin/gp12-pem.js
-  checksum: 59a5026331ea67455672e83770da29f09d979f02e06cb2227ea5916f8cca437887c2d3869f2602a686dc84437886ae9d2ac010780803cbe8e5f161c2d02d8efd
+  checksum: 72ce13b9536c69f21584cb7477ed4c34674325639a5dac42e8d774b78d367cb196ae7d37a52bba868235205760df353ac678a5e1756a4f4ded82e16d29d6cbb1
   languageName: node
   linkType: hard
 
-"googleapis-common@npm:^6.0.0":
-  version: 6.0.1
-  resolution: "googleapis-common@npm:6.0.1"
+"googleapis-common@npm:^5.0.1":
+  version: 5.1.0
+  resolution: "googleapis-common@npm:5.1.0"
   dependencies:
     extend: ^3.0.2
-    gaxios: ^5.0.1
-    google-auth-library: ^8.0.2
+    gaxios: ^4.0.0
+    google-auth-library: ^7.14.0
     qs: ^6.7.0
     url-template: ^2.0.8
     uuid: ^8.0.0
-  checksum: 46bfdd4673006075e3349500e312f2267f1d2830434d76b7b20d8de3ebfb9c5a3f525cc88b6e89f5d8f5f8f3ff9fcee90e4667dac45306cddb05d0f70b97b999
-  languageName: node
-  linkType: hard
-
-"googleapis@npm:^107.0.0":
-  version: 107.0.0
-  resolution: "googleapis@npm:107.0.0"
-  dependencies:
-    google-auth-library: ^8.0.2
-    googleapis-common: ^6.0.0
-  checksum: 6cf90ad0039d61d65aacdfca9eb98af55ae380ec1b4cea43b58b49d765b924e8b5307e4c4e3b0f0128f53cab813fbdeaaf36522b60bb0a114c218c62a95f8f97
+  checksum: 025daa078583f7bf6e92cf5d6e6ea804dce6ded84b1ead210803596b0b6d1fe9693069083302603173dc0c1f5e1125a501f2553952df60c001113a78ee055009
   languageName: node
   linkType: hard
 
@@ -4616,14 +4640,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gtoken@npm:^6.1.0":
-  version: 6.1.1
-  resolution: "gtoken@npm:6.1.1"
+"gtoken@npm:^5.0.4":
+  version: 5.3.2
+  resolution: "gtoken@npm:5.3.2"
   dependencies:
-    gaxios: ^5.0.1
-    google-p12-pem: ^4.0.0
+    gaxios: ^4.0.0
+    google-p12-pem: ^3.1.3
     jws: ^4.0.0
-  checksum: f063ed3f418f5a9c33fbe599b09f56a55b18f6c8d2913f11cc2fc5025d53b96fd6ab1b4deb2c7631167d6b89d0939e4ea77f94767fcf338862ffda8911250980
+  checksum: 1fd640e98afcb3d5c77026fd4ff0671dce724acad11169e5b63701a853e1f5a03f4c76fe6eb95500db80f8444753ce212701d396186ef006088d08be4174f2d7
   languageName: node
   linkType: hard
 
@@ -6562,7 +6586,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimist@npm:^1.2.0":
+"minimist@npm:^1.2.0, minimist@npm:^1.2.6":
   version: 1.2.6
   resolution: "minimist@npm:1.2.6"
   checksum: d15428cd1e11eb14e1233bcfb88ae07ed7a147de251441d61158619dfb32c4d7e9061d09cab4825fdee18ecd6fce323228c8c47b5ba7cd20af378ca4048fb3fb
@@ -6636,6 +6660,17 @@ __metadata:
     minipass: ^3.0.0
     yallist: ^4.0.0
   checksum: f1fdeac0b07cf8f30fcf12f4b586795b97be856edea22b5e9072707be51fc95d41487faec3f265b42973a304fe3a64acd91a44a3826a963e37b37bafde0212c3
+  languageName: node
+  linkType: hard
+
+"mkdirp@npm:^0.5.1":
+  version: 0.5.6
+  resolution: "mkdirp@npm:0.5.6"
+  dependencies:
+    minimist: ^1.2.6
+  bin:
+    mkdirp: bin/cmd.js
+  checksum: 0c91b721bb12c3f9af4b77ebf73604baf350e64d80df91754dc509491ae93bf238581e59c7188360cec7cb62fc4100959245a42cfe01834efedc5e9d068376c2
   languageName: node
   linkType: hard
 
@@ -7594,6 +7629,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-dom@npm:^17.0.1":
+  version: 17.0.2
+  resolution: "react-dom@npm:17.0.2"
+  dependencies:
+    loose-envify: ^1.1.0
+    object-assign: ^4.1.1
+    scheduler: ^0.20.2
+  peerDependencies:
+    react: 17.0.2
+  checksum: 1c1eaa3bca7c7228d24b70932e3d7c99e70d1d04e13bb0843bbf321582bc25d7961d6b8a6978a58a598af2af496d1cedcfb1bf65f6b0960a0a8161cb8dab743c
+  languageName: node
+  linkType: hard
+
 "react-dom@npm:^18.2.0":
   version: 18.2.0
   resolution: "react-dom@npm:18.2.0"
@@ -7779,6 +7827,16 @@ __metadata:
   peerDependencies:
     react: ">=0.14.1"
   checksum: 059e092639ede69824e068d346fa54a9018f0ee66730eca848d25f053d19117b704dd04af4d345a138d6af76e8bdc69d6459d3eed4492fbb2a55aa11548cf3ac
+  languageName: node
+  linkType: hard
+
+"react@npm:^17.0.1":
+  version: 17.0.2
+  resolution: "react@npm:17.0.2"
+  dependencies:
+    loose-envify: ^1.1.0
+    object-assign: ^4.1.1
+  checksum: b254cc17ce3011788330f7bbf383ab653c6848902d7936a87b09d835d091e3f295f7e9dd1597c6daac5dc80f90e778c8230218ba8ad599f74adcc11e33b9d61b
   languageName: node
   linkType: hard
 
@@ -8186,6 +8244,16 @@ __metadata:
   bin:
     sass: sass.js
   checksum: 72893b2dc6284a6194fc560a578da57ab0082130ee558a96bcb9893cc7b517b836dac6e17b3a52b040975e70b4cdefb1268907df955a706b5bf70e3860afcfba
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.20.2":
+  version: 0.20.2
+  resolution: "scheduler@npm:0.20.2"
+  dependencies:
+    loose-envify: ^1.1.0
+    object-assign: ^4.1.1
+  checksum: c4b35cf967c8f0d3e65753252d0f260271f81a81e427241295c5a7b783abf4ea9e905f22f815ab66676f5313be0a25f47be582254db8f9241b259213e999b8fc
   languageName: node
   linkType: hard
 
@@ -9502,6 +9570,19 @@ __metadata:
   dependencies:
     debug: ^3.0.0
   checksum: a1c19478a23eaebf4ee1ce7fa0a7a33204624a3676dc12f92f02197fa7ff3ef0007883b2fcc22b0ae2f106d3a4abc42fb9f8da103e9bec3ad82012b745bcf593
+  languageName: node
+  linkType: hard
+
+"webpack-visualizer-plugin2@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "webpack-visualizer-plugin2@npm:1.0.0"
+  dependencies:
+    d3: ^3.5.6
+    mkdirp: ^0.5.1
+    prop-types: ^15.7.2
+    react: ^17.0.1
+    react-dom: ^17.0.1
+  checksum: 6f2a0cf8e16c85ca2f8e42b54779bf5f86a3c517cdf130d4c3a3ba6da9c74b25a4b892c79d8e571f5c6d0c1cdfae3d21896c2084384b8b85e5a2faf47505ac85
   languageName: node
   linkType: hard
 

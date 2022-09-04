@@ -3,7 +3,7 @@ import crypto from "crypto";
 import express from "express";
 import { expressjwt } from "express-jwt";
 import fs from "fs";
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 import path from "path";
 
 import { getSecrets } from "../secrets.js";
@@ -36,7 +36,7 @@ export class RestApi {
 		app.use(express.json({ limit: "1MB" }));
 
 		const secrets = getSecrets();
-		const oauth2Client = new google.auth.OAuth2(
+		const oauth2Client = new OAuth2Client(
 			secrets.google.clientId,
 			secrets.google.clientSecret,
 			`${process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.NODE_ENV === "production" ? "riichi.moe" : "localhost:8080"}/rigging/google`

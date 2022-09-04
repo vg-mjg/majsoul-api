@@ -63,7 +63,6 @@ secrets:
   riichi.crt.pem:
     file: ./riichi.crt.pem
 
-
 volumes:
   mongo-db-data:
 

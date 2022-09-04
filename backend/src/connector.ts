@@ -1,5 +1,5 @@
-import { Credentials } from "google-auth-library";
-import { google } from "googleapis";
+
+import { Credentials, OAuth2Client } from "google-auth-library";
 import { MajsoulAdminApi, MajsoulApi,Passport } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from "mongodb";
 import fetch, { HeadersInit } from "node-fetch";
@@ -257,7 +257,7 @@ async function main() {
 	// 	// console.log(util.inspect(parseGameRecordResponse(game), false, null));
 	// });
 
-	const googleAuth = new google.auth.OAuth2(
+	const googleAuth = new OAuth2Client(
 		secrets.google.clientId,
 		secrets.google.clientSecret,
 	);

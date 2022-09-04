@@ -1,4 +1,6 @@
 var HtmlWebpackPlugin = require("html-webpack-plugin");
+var Visualizer = require("webpack-visualizer-plugin2");
+
 const path = require("path");
 
 module.exports = env => {
@@ -94,7 +96,8 @@ module.exports = env => {
 				base: "/",
 				title: "",
 				favicon: "./assets/package.png",
-			})
+			}),
+			new Visualizer()
 		]
 	};
 };
