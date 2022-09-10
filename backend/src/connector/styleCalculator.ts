@@ -1,4 +1,5 @@
-import { GameResult } from "../store/types/game/GameResult";
+import { GameMetadata } from "../store/GameMetadata";
+import { UnifiedGameRecord } from "../store/UnifiedGameRecord";
 
 export enum StyleMoveType {
 	Unknown,
@@ -14,6 +15,6 @@ export interface StyleBreakdown {
 	moves: StyleMove[];
 }
 
-export function calculateStyle(test: GameResult): StyleBreakdown[] {
+export function calculateStyle(gameRecord: UnifiedGameRecord, gameMetadata: GameMetadata): StyleBreakdown[] {
 	return [];
 }

@@ -1,5 +1,6 @@
 import  * as fs from "fs";
 import { Codec, MajsoulApi } from "majsoul";
+import { GameStepRecord } from "majsoul/dist/types/GameRecord.js";
 import * as path from "path";
 
 import { getSecrets } from "./secrets.js";
@@ -12,7 +13,7 @@ async function main() {
 	await api.init();
 	await api.logIn({
 		accessToken: secrets.majsoul.passportToken,
-		uid: secrets.majsoul.uid
+		uid: secrets.majsoul.uid,
 	});
 
 	const paipu = Codec.decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split("_")[0];
@@ -22,9 +23,19 @@ async function main() {
 	if (!fs.existsSync(dataPath)){
 		fs.mkdirSync(dataPath, { recursive: true });
 	}
+
+	delete game.data;
+	game.records = game.records.map(record => ({
+		...record,
+		type: record.constructor.name.toString(),
+	} as any as GameStepRecord));
+
 	fs.writeFileSync(
 		path.join(dataPath, `${game.head?.uuid}.json`),
-		JSON.stringify(game, null, "\t")
+		JSON.stringify(game, null, "\t"),
+		{
+			flag: "w",
+		},
 	);
 
 	api.dispose();

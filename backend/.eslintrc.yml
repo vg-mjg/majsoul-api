@@ -33,3 +33,6 @@ rules:
     - error
   simple-import-sort/exports:
     - error
+  comma-dangle:
+    - error
+    - always-multiline

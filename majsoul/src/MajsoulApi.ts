@@ -1,20 +1,21 @@
-import { v4 as uuidv4 } from "uuid";
+import fetch from "node-fetch";
 import { Root } from "protobufjs";
-import { Observable, from, interval, merge, of, using } from "rxjs";
+import { from, interval, merge, Observable, of, using } from "rxjs";
 import { catchError, filter, map, mergeAll, timeout } from "rxjs/operators";
-import { Player } from "./types/Player";
-import { Contest } from "./types/Contest";
-import { Passport } from "./types/Passport";
+import { v4 as uuidv4 } from "uuid";
+
 import { Codec } from "./Codec";
-import { MessageType } from "./types/enums/MessageType";
 import { Connection } from "./Connection";
 import { RpcImplementation } from "./RpcImplementation";
 import { RpcService } from "./Service";
 import { ApiResources } from "./types/ApiResources";
-import { GameRecord } from "./types/GameRecord";
+import { Contest } from "./types/Contest";
+import { MessageType } from "./types/enums/MessageType";
 import { PlayerZone } from "./types/enums/PlayerZone";
-import fetch from "node-fetch";
+import { GameRecord } from "./types/GameRecord";
 import type { lq } from "./types/liqi";
+import { Passport } from "./types/Passport";
+import { Player } from "./types/Player";
 
 export class MajsoulApi {
 	private static async getRes<T>(path: string): Promise<T> {

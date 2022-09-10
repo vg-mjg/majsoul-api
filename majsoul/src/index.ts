@@ -1,9 +1,11 @@
-export { MajsoulApi } from "./MajsoulApi";
 export { MajsoulAdminApi } from "./admin/MajsoulAdminApi";
+export { Codec } from "./Codec";
+export * from "./enums";
+export { MajsoulApi } from "./MajsoulApi";
+export { getPassport } from "./passport";
 export { ApiResources } from "./types/ApiResources";
-export { Player } from "./types/Player";
-export { Passport } from "./types/Passport";
+export { Contest } from "./types/Contest";
 export { GameRecord } from "./types/GameRecord";
 export type { lq } from "./types/liqi";
-export * from "./enums";
-export {Contest} from "./types/Contest";
+export { Passport } from "./types/Passport";
+export { Player } from "./types/Player";

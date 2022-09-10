@@ -31,7 +31,7 @@ function handShanten(hand: string[]): number {
 		[0, 0, 0, 0, 0, 0, 0, 0, 0],
 		[0, 0, 0, 0, 0, 0, 0, 0, 0],
 		[0, 0, 0, 0, 0, 0, 0, 0, 0],
-		[0, 0, 0, 0, 0, 0, 0]
+		[0, 0, 0, 0, 0, 0, 0],
 	];
 
 	for (const t of hand) {
@@ -62,7 +62,7 @@ function getAgariRecord(record: any, hule: lq.IHuleInfo, round: RoundInfo): Agar
 				return Array(f.val).fill(f.id);
 			}
 			return [f.id];
-		}).flat()
+		}).flat(),
 	};
 }
 
@@ -95,7 +95,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 			round = {
 				round: recordNewRound.chang,
 				dealership: recordNewRound.ju,
-				repeat: recordNewRound.ben
+				repeat: recordNewRound.ben,
 			};
 
 			kan_lock = new Set();
@@ -118,8 +118,8 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 						opportunities: 0,
 					},
 					finalHandState: {
-						status: HandStatus.Closed
-					}
+						status: HandStatus.Closed,
+					},
 				};
 			}
 			break;
@@ -132,7 +132,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 				playerStats[recordDiscardTile.seat].finalHandState = {
 					status: HandStatus.Riichi,
 					index: playerStats.filter(player => player.finalHandState.status === HandStatus.Riichi).length,
-					furiten: recordDiscardTile.zhenting[recordDiscardTile.seat]
+					furiten: recordDiscardTile.zhenting[recordDiscardTile.seat],
 				};
 			}
 
@@ -220,7 +220,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 			}
 
 			playerStats[recordChiPengGang.seat].finalHandState = {
-				status: HandStatus.Open
+				status: HandStatus.Open,
 			};
 			break;
 		} case "RecordNoTile": {
@@ -234,9 +234,9 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 							return DrawStatus.Nagashi_Mangan;
 						}
 						return player.tingpai ? DrawStatus.Tenpai : DrawStatus.Noten;
-					})
+					}),
 				},
-				playerStats
+				playerStats,
 			});
 			break;
 		} case "RecordHule": {
@@ -251,7 +251,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 						...agariInfo,
 						dealerValue: hule.point_zimo_qin,
 					},
-					playerStats
+					playerStats,
 				});
 
 				if (agariInfo.han?.find(h => h === Han.After_a_Kan)) {
@@ -271,10 +271,10 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 
 					return {
 						...agariInfo,
-						loser: losingSeat
+						loser: losingSeat,
 					};
 				}),
-				playerStats
+				playerStats,
 			});
 
 			if (chankan) {
@@ -294,7 +294,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 		version: latestGameResultVersion,
 		config: {
 			aiLevel: game.head.config.mode.detail_rule.ai_level,
-			riichiStickValue: game.head.config.mode.detail_rule.liqibang_value
+			riichiStickValue: game.head.config.mode.detail_rule.liqibang_value,
 		},
 		contestMajsoulId: game.head.config ? game.head.config.meta ? game.head.config.meta.contest_uid : null : null,
 		majsoulId: game.head.uuid,
