@@ -1,8 +1,7 @@
 
 import { Credentials, OAuth2Client } from "google-auth-library";
-import { MajsoulAdminApi, MajsoulApi,Passport } from "majsoul";
+import { getPassport, MajsoulAdminApi, MajsoulApi, Passport } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from "mongodb";
-import fetch, { HeadersInit } from "node-fetch";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
 import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll,takeUntil, withLatestFrom, zipWith } from "rxjs/operators";
 import seedrandom from "seedrandom";
@@ -15,7 +14,6 @@ import { getSecrets } from "./secrets";
 import { Store } from "./store/Store";
 import { Config } from "./store/types/Config";
 import { Contest } from "./store/types/contest/Contest";
-import { Cookie } from "./store/types/Cookie";
 import { TourneyContestScoringType } from "./store/types/enums/TourneyContestScoringType";
 import { GachaGroup } from "./store/types/gacha/GachaGroup";
 import { GachaPull } from "./store/types/gacha/GachaPull";
@@ -44,126 +42,6 @@ async function getOrGenerateUserAgent(mongoStore: Store): Promise<string> {
 		);
 	}
 	return config.userAgent;
-}
-
-async function getPassport(
-	{userId, accessToken, userAgent, existingCookies }: {
-		userId: string;
-		accessToken: string;
-		userAgent: string;
-		existingCookies: Cookie[];
-	}
-): Promise<{
-	passport: Passport,
-	loginCookies: Cookie[]
-}> {
-	const sharedSpoofHeaders = {
-		"User-Agent": userAgent
-	};
-
-	console.log(sharedSpoofHeaders);
-
-	const cookie = (existingCookies)
-		.map(cookie => `${cookie.key}=${cookie.value}`).join(";");
-
-	console.log(cookie, cookie.length);
-
-	const optionsHeaders: HeadersInit = {
-		...sharedSpoofHeaders,
-	};
-
-	if (cookie.length) {
-		(optionsHeaders as any).cookie = cookie;
-	}
-
-	const loginCookies = [...existingCookies];
-
-	try {
-		const headers = (await fetch("https://passport.mahjongsoul.com/user/login", {
-			method: "OPTIONS",
-			headers: optionsHeaders,
-		})).headers.raw();
-		console.log(headers);
-
-
-		const cookieTime = Date.now();
-
-		const newCookies = headers["set-cookie"]
-			?.map(cookie => {
-				const parts = cookie.split(";").map(part => part.trim().split(/=(.*)/s));
-				const [key, value] = parts[0];
-
-				const maxAgePart = parts.find(([key]) => key.startsWith("Max-Age"));
-
-				if (maxAgePart) {
-					const maxAge = parseInt(maxAgePart[1]);
-					if (!isNaN(maxAge)) {
-						return {
-							key,
-							value,
-							expires: cookieTime + maxAge * 1000
-						};
-					}
-				}
-
-				const expires = parts.find(([key]) => key.startsWith("expires"));
-				if (!expires) {
-					return {
-						key,
-						value,
-						expires: cookieTime + 24 * 60 * 60 * 1000
-					};
-				}
-
-				return {
-					key,
-					value,
-					expires: Date.parse(expires[1])
-				};
-			}) ?? [];
-
-		console.log(newCookies);
-
-		loginCookies.push(...newCookies);
-	} catch (e) {
-		console.log(e);
-		return {
-			passport: null,
-			loginCookies
-		};
-	}
-
-	const joinedCookies = loginCookies
-		.map(cookie => `${cookie.key}=${cookie.value}`).join(";");
-
-	console.log(joinedCookies);
-
-	try {
-		const passport = await (await fetch("https://passport.mahjongsoul.com/user/login", {
-			method: "POST",
-			headers: {
-				...sharedSpoofHeaders,
-				"Accept": "application/json",
-				"Content-Type": "application/json",
-				cookies: joinedCookies
-			},
-			body: JSON.stringify({
-				"uid": userId,
-				"token": accessToken,
-				"deviceId": `web|${userId}`
-			})
-		})).json() as Passport;
-
-		return {
-			passport,
-			loginCookies,
-		};
-	} catch {
-		return {
-			loginCookies,
-			passport: null,
-		};
-	}
 }
 
 async function main() {
@@ -657,8 +535,6 @@ function createContestIds$(mongoStore: Store): Observable<ObjectId> {
 	);
 }
 
-main().catch(e => console.log(e));
-
 function * rollGachaForScore(rand: seedrandom.PRNG, contest: Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number){
 	while (uma >= 1000) {
 		const roll = rand();
@@ -767,3 +643,5 @@ async function validatePossibleRolls(
 	console.log("write pulls", pulls[0]?.gameId);
 	await mongoStore.gachaCollection.insertMany(pulls);
 }
+
+main().catch(e => console.log(e));

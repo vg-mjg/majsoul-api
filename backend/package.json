@@ -10,6 +10,8 @@
 		"dev": "tsc --watch",
 		"connect": "node -r source-map-support/register ./dist/connector.js",
 		"rest": "node -r source-map-support/register ./dist/rest-api.js",
+		"cli": "node -r source-map-support/register ./dist/cli.js",
+		"sss": "node -r source-map-support/register ./dist/sss.js",
 		"cert:create": "openssl req -x509 -newkey rsa:4096 -keyout dist/riichi.key.pem -out dist/riichi.crt.pem -sha256 -days 365 -nodes"
 	},
 	"dependencies": {
