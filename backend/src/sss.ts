@@ -1,7 +1,9 @@
 import  * as fs from "fs";
 import { GameRecord } from "majsoul";
 import * as path from "path";
+import * as util from "util";
 
+import { breakdownStyle } from "./connector/styleCalculator";
 import { buildGameMetadata } from "./store/GameMetadata";
 import { unifyMajsoulGameRecord } from "./store/UnifiedGameRecord";
 
@@ -19,7 +21,7 @@ async function main() {
 
 		for (const record of data.records) {
 			record.constructor = function() {};
-			Object.defineProperty(record.constructor, "name", {value: (record as any).type, writable: false});
+			Object.defineProperty(record.constructor, "name", {value: (record as any)._type, writable: false});
 		}
 
 		const unifiedGame = unifyMajsoulGameRecord(data);
@@ -27,6 +29,9 @@ async function main() {
 
 		const gameMetadata = buildGameMetadata(unifiedGame);
 		// console.log(gameMetadata);
+
+		const styleBreakdown = breakdownStyle(unifiedGame, gameMetadata);
+		console.log(util.inspect(styleBreakdown, false, null, true));
 
 	}
 }

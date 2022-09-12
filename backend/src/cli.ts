@@ -27,7 +27,7 @@ async function main() {
 	delete game.data;
 	game.records = game.records.map(record => ({
 		...record,
-		type: record.constructor.name.toString(),
+		_type: record.constructor.name.toString(),
 	} as any as GameStepRecord));
 
 	fs.writeFileSync(
