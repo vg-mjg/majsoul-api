@@ -1836,6 +1836,31 @@ export const contestRoute: Route<RouteState> = {
 			}),
 		),
 
+		(app, state) => app.delete<any, void>("/contests/:id/sss",
+			param("id").isMongoId(),
+			logError(async (req, res) => {
+				const errors = validationResult(req);
+				if (!errors.isEmpty()) {
+					res.status(400).json({ errors: errors.array() } as any);
+					return;
+				}
+
+				const data: Partial<StoreContest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+				const contestId = ObjectId.createFromHexString(data.id);
+
+				const games = await state.mongoStore.gamesCollection.find(
+					{ contestId },
+					{ projection: {_id: true} },
+				).toArray();
+
+				const result = await state.mongoStore.smokingSexyStyleCollection.deleteMany(
+					{ gameId: {$in: games.map(game => game._id)} },
+				);
+
+				res.send();
+			}),
+		),
+
 		(app, state) => app.patch<any, Config<ObjectId>>("/config",
 			body(nameofConfig("featuredContest")).isMongoId().optional({ nullable: true }),
 			withData<Partial<Config<string>>, any, Config<ObjectId>>(async (data, req, res) => {

@@ -8,9 +8,11 @@ import seedrandom from "seedrandom";
 import * as UserAgent from "user-agents";
 
 import { parseGameRecordResponse } from "./connector/parseGameRecordResponse";
+import { breakdownStyle } from "./connector/styleCalculator";
 import { ContestTracker } from "./ContestTracker";
 import { Spreadsheet } from "./google";
 import { getSecrets } from "./secrets";
+import { buildGameMetadata } from "./store/GameMetadata";
 import { Store } from "./store/Store";
 import { Config } from "./store/types/Config";
 import { Contest } from "./store/types/contest/Contest";
@@ -19,6 +21,8 @@ import { GachaGroup } from "./store/types/gacha/GachaGroup";
 import { GachaPull } from "./store/types/gacha/GachaPull";
 import { GameResult } from "./store/types/game/GameResult";
 import { Player } from "./store/types/Player";
+import { SmokinSexyStyle } from "./store/types/SmokinSexyStyle";
+import { unifyMajsoulGameRecord } from "./store/UnifiedGameRecord";
 
 const nameofFactory = <T>() => (name: keyof T) => name;
 export const nameofContest = nameofFactory<Contest<ObjectId>>();
@@ -400,6 +404,49 @@ async function main() {
 		);
 
 		tracker.PhaseInfo$.pipe(
+			combineLatestWith(
+				merge (
+					from([null as never]),
+					tracker.SmokinSexyStyleDeleted$,
+				),
+			),
+			map(([{phases, contest}]) => {
+				phases.sort((a, b) => b.startTime - a.startTime);
+				return tracker.RecordedGames$.pipe(
+					map(game => {
+						const phaseIndex = phases.findIndex(phase => phase.startTime > game.start_time);
+						const phase = phases[(phaseIndex < 1 ? phases.length - 1 : phaseIndex - 1)];
+						return {
+							game,
+							phase,
+						};
+					}),
+					filter(({phase}) => (phase.tourneyType === TourneyContestScoringType.SmokingSexyStyle)),
+					map((data) =>
+						defer(() => from(mongoStore.smokingSexyStyleCollection.find({gameId: data.game._id}).toArray()).pipe(
+							zipWith(from([data])),
+						)),
+					),
+					mergeAll(),
+					filter(([styles]) => styles.length <= 0),
+					map(([_, data]) => data),
+					withLatestFrom(from([contest])),
+				);
+			}),
+			switchAll(),
+		).pipe(
+			scan((total, [{game}]) => total.then(async () => {
+				try {
+					console.log(`building styles for game id ${game.majsoulId}`);
+					const styles = await buildStylesForGame(api, game);
+					await mongoStore.smokingSexyStyleCollection.insertOne(styles);
+				} catch (e) {
+					console.log(e);
+				}
+			}), Promise.resolve()),
+		).subscribe(() => {});
+
+		tracker.PhaseInfo$.pipe(
 			filter(({contest}) => (contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0)),
 			combineLatestWith(
 				merge (
@@ -573,6 +620,25 @@ function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 	total[groupId].players[playerId] ??= [];
 	total[groupId].players[playerId].push(next);
 	return total;
+}
+
+async function buildStylesForGame(
+	api: MajsoulApi,
+	gameResult: GameResult,
+): Promise<SmokinSexyStyle> {
+	try {
+		const game = await api.getGame(gameResult.majsoulId);
+		const gameRecord = unifyMajsoulGameRecord(game);
+		const gameMetadata = buildGameMetadata(gameRecord);
+		const styleBreakdown = breakdownStyle(gameRecord, gameMetadata);
+		return {
+			gameId: gameResult._id,
+			styles: Object.keys(styleBreakdown).sort().reduce((total, next) => (total[next] = styleBreakdown[next], total), []),
+		};
+	} catch (e) {
+		console.log("error fetching game for styles ", e);
+		return null;
+	}
 }
 
 async function validatePossibleRolls(

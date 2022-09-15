@@ -9,6 +9,7 @@ import { GachaPull } from "./types/gacha/GachaPull";
 import { GameCorrection } from "./types/game/GameCorrection";
 import { GameResult } from "./types/game/GameResult";
 import { Player } from "./types/Player";
+import { SmokinSexyStyle } from "./types/SmokinSexyStyle";
 import { User } from "./types/User";
 
 interface Migration {
@@ -25,17 +26,20 @@ export class Store {
 	public configCollection: Collection<Config<ObjectId>>;
 	public userCollection: Collection<User<ObjectId>>;
 	public gachaCollection: Collection<GachaPull<ObjectId>>;
+	public smokingSexyStyleCollection: Collection<SmokinSexyStyle<ObjectId>>;
 
 	private readonly contestChangesSubject = new Subject<ChangeStreamDocument<Contest<ObjectId>>>();
 	private readonly configChangesSubject = new Subject<ChangeStreamDocument<Config<ObjectId>>>();
 	private readonly gameChangesSubject = new Subject<ChangeStreamDocument<GameResult<ObjectId>>>();
 	private readonly gachaChangesSubject = new Subject<ChangeStreamDocument<GachaPull<ObjectId>>>();
 	private readonly playerChangesSubject = new Subject<ChangeStreamDocument<Player<ObjectId>>>();
+	private readonly smokingSexyStyleChangesSubject = new Subject<ChangeStreamDocument<SmokinSexyStyle<ObjectId>>>();
 	private contestStream: ChangeStream<Contest<ObjectId>>;
 	private configStream: ChangeStream<Config<ObjectId>>;
 	private gameStream: ChangeStream<GameResult<ObjectId>>;
 	private gachaStream: ChangeStream<GachaPull<ObjectId>>;
 	private playerStream: ChangeStream<Player<ObjectId>>;
+	private smokingSexyStyleStream: ChangeStream<SmokinSexyStyle<ObjectId>>;
 
 	public get ContestChanges(): Observable<ChangeStreamDocument<Contest<ObjectId>>> {
 		return this.contestChangesSubject;
@@ -57,6 +61,10 @@ export class Store {
 		return this.playerChangesSubject;
 	}
 
+	public get SmokinSexyStyleChanges(): Observable<ChangeStreamDocument<SmokinSexyStyle<ObjectId>>> {
+		return this.smokingSexyStyleChangesSubject;
+	}
+
 	public async init(username: string, password: string): Promise<void> {
 		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? "majsoul_mongo" : "localhost"}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin&directConnection=true`;
 		const client = new MongoClient(url);
@@ -75,12 +83,14 @@ export class Store {
 		this.playersCollection = await majsoulDb.collection("players");
 		this.configCollection = await majsoulDb.collection("config");
 		this.gachaCollection = await majsoulDb.collection("gacha");
+		this.smokingSexyStyleCollection = await majsoulDb.collection("smokingSexyStyle");
 
 		this.contestStream = this.contestCollection.watch().on("change", change => this.contestChangesSubject.next(change));
 		this.configStream = this.configCollection.watch().on("change", change => this.configChangesSubject.next(change));
 		this.gameStream = this.gamesCollection.watch().on("change", change => this.gameChangesSubject.next(change));
 		this.gachaStream = this.gachaCollection.watch().on("change", change => this.gachaChangesSubject.next(change));
 		this.playerStream = this.playersCollection.watch().on("change", change => this.playerChangesSubject.next(change));
+		this.smokingSexyStyleStream = this.smokingSexyStyleCollection.watch().on("change", change => this.smokingSexyStyleChangesSubject.next(change));
 
 		if ((await this.configCollection.countDocuments()) < 1) {
 			this.configCollection.insertOne({});

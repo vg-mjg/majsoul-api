@@ -186,7 +186,7 @@ export function unifyMajsoulGameRecord(majsoulGame: GameRecord): UnifiedGameReco
 				})),
 			} as UnifiedGameLogEventWinDeclared;
 		} default: {
-			console.log(record.constructor.name);
+			console.log(`"${record.constructor.name}" unnacounted for`);
 			return {
 				type: UnifiedGameLogEventType.Unknown,
 				origin: BackendType.Majsoul,

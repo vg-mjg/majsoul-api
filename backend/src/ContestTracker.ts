@@ -245,4 +245,12 @@ export class ContestTracker {
 			map(() => undefined as never),
 		);
 	}
+
+	public get SmokinSexyStyleDeleted$(): Observable<never> {
+		return this.mongoStore.SmokinSexyStyleChanges.pipe(
+			filter(changeEvent => changeEvent.operationType === "delete"),
+			throttleTime(5000),
+			map(() => undefined as never),
+		);
+	}
 }
