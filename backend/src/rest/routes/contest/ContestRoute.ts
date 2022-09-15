@@ -210,7 +210,7 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 			"UncleMoton",
 			"FurudoErika",
 			"(((caillou)))",
-		]
+		],
 	},
 	"635236": {
 		"Ryuumonbuchi": [
@@ -282,8 +282,8 @@ const sakiTeams: Record<string, Record<string, string[]>> = {
 			"地獄の砂",
 			"Meduchi",
 			"Gorona",
-		]
-	}
+		],
+	},
 };
 
 const nameofFactory = <T>() => (name: keyof T) => name;
@@ -309,7 +309,7 @@ const seededPlayerNames: Record<string, string[]> = {
 		"snacks",
 		"Meido",
 		"amegumo",
-	]
+	],
 };
 
 export const contestRoute: Route<RouteState> = {
@@ -330,7 +330,7 @@ export const contestRoute: Route<RouteState> = {
 		(app, state) => app.get<any, StoreContest<ObjectId>>("/contests/featured", logError(async (req, res) => {
 			const [config] = await state.mongoStore.configCollection.find()
 				.project({
-					googleRefreshToken: false
+					googleRefreshToken: false,
 				}).limit(1)
 				.toArray();
 			const query: Filter<StoreContest<ObjectId>> = {};
@@ -343,7 +343,7 @@ export const contestRoute: Route<RouteState> = {
 				.sort({ _id: -1 })
 				.limit(1)
 				.project<StoreContest<ObjectId>>({
-					_id: true
+					_id: true,
 				})
 				.toArray()
 				.then(contests => res.send(contests[0]))
@@ -363,32 +363,32 @@ export const contestRoute: Route<RouteState> = {
 				const restContest: Contest = {
 					...contest,
 					phases: state.createRestPhases(phaseMetadata),
-					teams: undefined
+					teams: undefined,
 				};
 
 
 				if (contest.teams) {
 					const players = await state.mongoStore.playersCollection.find({
 						_id: {
-							$in: contest.teams.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[])
-						}
+							$in: contest.teams.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[]),
+						},
 					}).toArray();
 
 					const namedPlayers = await state.namePlayers(players, contest._id, contest);
 
 					const playerMap = namedPlayers.reduce(
 						(total, next) => (total[next._id] = next, total),
-						{} as Record<string, PlayerInformation>
+						{} as Record<string, PlayerInformation>,
 					);
 
 					restContest.teams = contest.teams.map(team => ({
 						...team,
-						players: team.players.map(player => playerMap[player._id.toHexString()])
+						players: team.players.map(player => playerMap[player._id.toHexString()]),
 					}));
 				}
 
 				res.send(restContest);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/images",
@@ -400,7 +400,7 @@ export const contestRoute: Route<RouteState> = {
 					projection: {
 						["teams._id"]: true,
 						[`teams.image${data.large === "true" ? "Large" : ""}`]: true,
-					}
+					},
 				});
 
 				if (contest === null) {
@@ -414,7 +414,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				res.send(contest);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/gacha/:gachaId",
@@ -424,7 +424,7 @@ export const contestRoute: Route<RouteState> = {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
-					}
+					},
 				});
 
 				if (contest === null) {
@@ -441,7 +441,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				res.send(card);
-			})
+			}),
 		),
 
 		(app, state) => app.get<any, StoreGameResult<ObjectId>>("/games/:id",
@@ -449,7 +449,7 @@ export const contestRoute: Route<RouteState> = {
 			withData<{ id: string }, any, StoreGameResult<ObjectId>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
 				const games = await state.getGames({
-					_id: gameId
+					_id: gameId,
 				});
 
 				if (games.length < 1) {
@@ -457,7 +457,7 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 				res.send(games[0]);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/pendingGames",
@@ -466,10 +466,10 @@ export const contestRoute: Route<RouteState> = {
 				const games = await state.getGames({
 					contestId: new ObjectId(data.id),
 					notFoundOnMajsoul: { $ne: false },
-					contestMajsoulId: { $exists: false }
+					contestMajsoulId: { $exists: false },
 				});
 				res.send(games);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/phases",
@@ -490,7 +490,7 @@ export const contestRoute: Route<RouteState> = {
 
 				const phases = await state.getTourneyPhaseData(phaseInfo);
 				res.send(phases);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/phases/active",
@@ -513,7 +513,7 @@ export const contestRoute: Route<RouteState> = {
 
 				const phases = await state.getTourneyPhaseData(phaseInfo);
 				res.send(phases.reverse().find(phase => phase.startTime < now) ?? phases[0]);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/phases/:phaseIndex",
@@ -537,7 +537,7 @@ export const contestRoute: Route<RouteState> = {
 					? await state.getLeaguePhaseData(phaseInfo)
 					: await state.getTourneyPhaseData(phaseInfo)) as Phase[];
 				res.send(phases.find(phase => phase.index === index));
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/sessions",
@@ -552,9 +552,9 @@ export const contestRoute: Route<RouteState> = {
 
 				const phases = await state.getLeaguePhaseData(phaseInfo);
 				res.send(phases.reduce((total, next) =>
-					total.concat(next.sessions), [])
+					total.concat(next.sessions), []),
 				);
-			})
+			}),
 		),
 
 		(app, state) => app.get("/contests/:id/sessions/active",
@@ -574,15 +574,15 @@ export const contestRoute: Route<RouteState> = {
 					phases
 						.reduce((total, next) => total.concat(next.sessions), [] as Session<ObjectId>[])
 						.filter(session => session.scheduledTime < now)
-						.reverse()[0]
+						.reverse()[0],
 				);
-			})
+			}),
 		),
 
 		(app, state) => app.get<any, Config<ObjectId>>("/config", (req, res) => {
 			state.mongoStore.configCollection.find()
 				.project({
-					googleRefreshToken: false
+					googleRefreshToken: false,
 				}).toArray()
 				.then((config) => {
 					if (config[0] == null) {
@@ -610,8 +610,8 @@ export const contestRoute: Route<RouteState> = {
 						{
 							majsoulId: { $exists: false },
 						},
-					]
-				}]
+					],
+				}],
 			};
 
 			const contestIds = (req.query.contests as string)?.split(" ");
@@ -622,22 +622,22 @@ export const contestRoute: Route<RouteState> = {
 						$or: [
 							{ majsoulFriendlyId: { $in: contestIds.map(id => parseInt(id)) } },
 							{ _id: { $in: contestIds.map(id => ObjectId.isValid(id) ? ObjectId.createFromHexString(id) : null) } },
-						]
+						],
 					},
 					{
 						projection: {
 							_id: true,
 							normaliseScores: true,
-						}
-					}
+						},
+					},
 				).toArray();
 
 				filter.$and.push(
 					{
 						$or: contestIds.map(string => ({
-							contestId: { $in: contestsFilter.map(p => p._id) }
-						}))
-					}
+							contestId: { $in: contestsFilter.map(p => p._id) },
+						})),
+					},
 				);
 			}
 
@@ -648,7 +648,7 @@ export const contestRoute: Route<RouteState> = {
 			}[] = [];
 			if (sessionIds) {
 				const sessions = await state.mongoStore.sessionsCollection.find({
-					_id: { $in: sessionIds.map(id => new ObjectId(id)) }
+					_id: { $in: sessionIds.map(id => new ObjectId(id)) },
 				}).toArray();
 
 				const sessionOr = [];
@@ -656,17 +656,17 @@ export const contestRoute: Route<RouteState> = {
 					const [startSession, endSession] = await state.mongoStore.sessionsCollection.find(
 						{
 							contestId: session.contestId,
-							scheduledTime: { $gte: session.scheduledTime }
-						}
+							scheduledTime: { $gte: session.scheduledTime },
+						},
 					).sort({ scheduledTime: 1 }).limit(2).toArray();
 
 					sessionMap.push({
 						startSession,
-						endSession
+						endSession,
 					});
 
 					const end_time: Condition<number> = {
-						$gte: startSession.scheduledTime
+						$gte: startSession.scheduledTime,
 					};
 
 					if (endSession != null) {
@@ -701,12 +701,12 @@ export const contestRoute: Route<RouteState> = {
 				const games = await state.adjustGames(await cursor.toArray(), { contest: contestsFilter?.length === 1 ? contestsFilter[0] : null});
 				const playersMap = (await state.namePlayers(
 					await state.mongoStore.playersCollection.find({
-						_id: {$in: games.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[])}
+						_id: {$in: games.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[])},
 					}).toArray(),
-					contestIds?.length ? ObjectId.createFromHexString(contestIds[0]) : null
+					contestIds?.length ? ObjectId.createFromHexString(contestIds[0]) : null,
 				)).reduce((total, next) => (total[next._id] = next, total), {} as Record<string, PlayerInformation>);
 				const contests = await state.mongoStore.contestCollection.find(
-					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } }
+					{ majsoulId: { $in: [...new Set(games.map(g => g.contestMajsoulId))] } },
 				).toArray();
 
 				res.send(
@@ -714,21 +714,21 @@ export const contestRoute: Route<RouteState> = {
 						...game,
 						sessionId: sessionMap.find((session) =>
 							game.end_time >= session.startSession.scheduledTime
-							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime)
+							&& (session.endSession == null || game.end_time < session.endSession.scheduledTime),
 						)?.startSession?._id,
 						players: game.players.map(player => player._id
 							? playersMap[player._id.toHexString()] as any
 							: {
 								nickname: null,
-							}
-						)
+							},
+						),
 					})).map(game => {
 						if (req.query?.stats) {
 							(game as any).stats = collectStats(game, minimumVersion(game), game.players.reduce((total, next) => (total[next._id.toHexString()] = true, total), {})).map(stats => stats?.stats);
 							delete game.rounds;
 						}
 						return game;
-					})
+					}),
 				);
 			} catch (error) {
 				console.log(error);
@@ -757,12 +757,12 @@ export const contestRoute: Route<RouteState> = {
 						{ contestMajsoulId: { $exists: true } },
 						{ majsoulId: { $exists: false } },
 					],
-					"players._id": ObjectId.createFromHexString(req.params.playerId)
+					"players._id": ObjectId.createFromHexString(req.params.playerId),
 				});
 
 				res.send(games.map(game => ({
 					...game,
-					contestId: contestId
+					contestId: contestId,
 				})));
 			} catch (error) {
 				console.log(error);
@@ -782,9 +782,9 @@ export const contestRoute: Route<RouteState> = {
 					contestId: contestId,
 					$or: [
 						{ notFoundOnMajsoul: false },
-						{ contestMajsoulId: { $exists: true } }
+						{ contestMajsoulId: { $exists: true } },
 					],
-					hidden: { $ne: true }
+					hidden: { $ne: true },
 				});
 
 				const yakumanGames = games
@@ -795,7 +795,7 @@ export const contestRoute: Route<RouteState> = {
 								if (isAgariYakuman(
 									game,
 									round,
-									tsumo
+									tsumo,
 								)) {
 									return [tsumo] as AgariInfo[];
 								}
@@ -803,9 +803,9 @@ export const contestRoute: Route<RouteState> = {
 								return rons?.filter(ron => isAgariYakuman(
 									game,
 									round,
-									ron
+									ron,
 								)) || [] as AgariInfo[];
-							}).flat()
+							}).flat(),
 						};
 					});
 
@@ -814,7 +814,7 @@ export const contestRoute: Route<RouteState> = {
 						await state.mongoStore.playersCollection.find(
 							{
 								_id: {
-									$in: yakumanGames.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => game.players[agari.winner]._id)).flat()
+									$in: yakumanGames.map(({ game, yakumanAgari }) => yakumanAgari.map(agari => game.players[agari.winner]._id)).flat(),
 								},
 							},
 							{
@@ -823,8 +823,8 @@ export const contestRoute: Route<RouteState> = {
 									nickname: true,
 									displayName: true,
 									majsoulId: true,
-								}
-							}
+								},
+							},
 						).toArray(),
 						contestId,
 					)
@@ -840,9 +840,9 @@ export const contestRoute: Route<RouteState> = {
 								game: {
 									endTime: game.end_time,
 									majsoulId: game.majsoulId,
-								}
+								},
 							};
-						})).flat()
+						})).flat(),
 				);
 			} catch (error) {
 				console.log(error);
@@ -869,7 +869,7 @@ export const contestRoute: Route<RouteState> = {
 					majsoulFriendlyId: true,
 					bonusPerGame: true,
 					normaliseScores: true,
-				}
+				},
 			});
 
 			if (contest == null) {
@@ -893,13 +893,13 @@ export const contestRoute: Route<RouteState> = {
 				$or: [
 					{ notFoundOnMajsoul: false },
 					{ contestMajsoulId: { $exists: true } },
-					{ majsoulId: { $exists: false } }
+					{ majsoulId: { $exists: false } },
 				],
 			};
 
 			if (data.teamId) {
 				gameQuery["players._id"] = {
-					$in: playerIds
+					$in: playerIds,
 				};
 			}
 
@@ -932,7 +932,7 @@ export const contestRoute: Route<RouteState> = {
 							tourneyScore: 0,
 							tourneyRank: undefined,
 							gamesPlayed: 0,
-							team: undefined
+							team: undefined,
 						};
 					}
 
@@ -948,7 +948,7 @@ export const contestRoute: Route<RouteState> = {
 			const seededPlayersForContest = seededPlayerNames[contestMajsoulFriendlyId] ?? [];
 
 			const seededPlayers = await state.mongoStore.playersCollection.find(
-				{ nickname: { $in: seededPlayersForContest } }
+				{ nickname: { $in: seededPlayersForContest } },
 			).toArray();
 
 			for (const seededPlayer of seededPlayers) {
@@ -961,17 +961,17 @@ export const contestRoute: Route<RouteState> = {
 					tourneyScore: 0,
 					tourneyRank: undefined,
 					gamesPlayed: 0,
-					team: undefined
+					team: undefined,
 				};
 			}
 
 			const players = await state.namePlayers(
 				await state.mongoStore.playersCollection.find(
 					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id).concat(playerIds) } },
-					{ projection: { majsoulId: 0 } }
+					{ projection: { majsoulId: 0 } },
 				).toArray(),
 				null,
-				contest
+				contest,
 			);
 
 			res.send(
@@ -983,11 +983,11 @@ export const contestRoute: Route<RouteState> = {
 							.filter(([_, players]) => players.indexOf(player.nickname) >= 0)
 							.map(([team, _]) => team),
 						seeded: seededPlayersForContest.indexOf(player.nickname) >= 0,
-					}
+					},
 				}))
 					.filter(player => ignoredGames == 0 || player.gamesPlayed > ignoredGames || player.team.seeded)
 					.sort((a, b) => b.tourneyScore - a.tourneyScore)
-					.map((p, i) => ({ ...p, tourneyRank: i }))
+					.map((p, i) => ({ ...p, tourneyRank: i })),
 			);
 		})),
 
@@ -1017,7 +1017,7 @@ export const contestRoute: Route<RouteState> = {
 
 				const query: Filter<StoreGameResult<ObjectId>> = {
 					contestId: contest._id,
-					hidden: { $ne: true }
+					hidden: { $ne: true },
 				};
 
 				let playerMap: Record<string, ObjectId | boolean> = null;
@@ -1034,7 +1034,7 @@ export const contestRoute: Route<RouteState> = {
 				} else if (data.player != null) {
 					const playerId = new ObjectId(data.player);
 					const [player] = await state.mongoStore.playersCollection.find({
-						_id: playerId
+						_id: playerId,
 					}).toArray();
 
 					if (player === null) {
@@ -1043,7 +1043,7 @@ export const contestRoute: Route<RouteState> = {
 					}
 
 					playerMap = {
-						[data.player]: true
+						[data.player]: true,
 					};
 				}
 
@@ -1051,9 +1051,9 @@ export const contestRoute: Route<RouteState> = {
 					query.players = {
 						$elemMatch: {
 							_id: {
-								$in: Object.keys(playerMap).map(ObjectId.createFromHexString)
-							}
-						}
+								$in: Object.keys(playerMap).map(ObjectId.createFromHexString),
+							},
+						},
 					};
 				}
 
@@ -1065,13 +1065,13 @@ export const contestRoute: Route<RouteState> = {
 							Math.max(latest, minimumVersion(next)) as StatsVersion,
 						]
 					),
-					[latestStatsVersion, StatsVersion.Undefined]
+					[latestStatsVersion, StatsVersion.Undefined],
 				);
 				const gameStats = games.map(game => collectStats(game, minimumVersion(game), playerMap));
 
 				if (data.team != null) {
 					res.send({
-						[data.team]: mergeStats(gameStats.flat(), latestVersion)
+						[data.team]: mergeStats(gameStats.flat(), latestVersion),
 					});
 					return;
 				}
@@ -1086,7 +1086,7 @@ export const contestRoute: Route<RouteState> = {
 				}, {} as Record<string, Stats[]>);
 
 				res.send(Object.entries(gamesByPlayer).reduce((total, [key, value]) => (total[key] = mergeStats(value, latestVersion), total), {}));
-			})
+			}),
 		),
 
 		(app, state) => app.get("/players",
@@ -1101,11 +1101,11 @@ export const contestRoute: Route<RouteState> = {
 					{
 						$or: [
 							{
-								displayName: { $regex: regex, $options: "i" }
+								displayName: { $regex: regex, $options: "i" },
 							},
 							{
-								nickname: { $regex: regex, $options: "i" }
-							}
+								nickname: { $regex: regex, $options: "i" },
+							},
 						],
 					},
 					{
@@ -1116,8 +1116,8 @@ export const contestRoute: Route<RouteState> = {
 						},
 						sort: {
 							nickname: 1,
-						}
-					}
+						},
+					},
 				);
 
 				if (data.limit) {
@@ -1125,7 +1125,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				res.send(await cursor.toArray());
-			})
+			}),
 		),
 	],
 
@@ -1140,14 +1140,14 @@ export const contestRoute: Route<RouteState> = {
 				const authUrl = state.oauth2Client.generateAuthUrl({
 					access_type: "offline",
 					scope: [
-						"https://www.googleapis.com/auth/spreadsheets"
+						"https://www.googleapis.com/auth/spreadsheets",
 					],
-					state: data.state
+					state: data.state,
 				});
 				res.send({
-					authUrl
+					authUrl,
 				});
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/rigging/google",
@@ -1156,11 +1156,11 @@ export const contestRoute: Route<RouteState> = {
 				const { tokens } = await state.oauth2Client.getToken(data.code);
 				state.mongoStore.configCollection.updateMany({}, {
 					$set: {
-						googleRefreshToken: tokens.refresh_token
-					}
+						googleRefreshToken: tokens.refresh_token,
+					},
 				});
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch<any, {id: string}, StoreContest<ObjectId>>("/contests/:id",
@@ -1271,7 +1271,7 @@ export const contestRoute: Route<RouteState> = {
 									groupDto.unique = group.unique;
 								}
 								return groupDto;
-							})
+							}),
 						} as StoreContest<ObjectId>["gacha"];
 						continue;
 					}
@@ -1293,8 +1293,8 @@ export const contestRoute: Route<RouteState> = {
 						projection: {
 							teams: false,
 							sessions: false,
-						}
-					}
+						},
+					},
 				).then((contest) => {
 					if (contest.value === null) {
 						res.status(404).send();
@@ -1305,7 +1305,7 @@ export const contestRoute: Route<RouteState> = {
 					console.log(err);
 					res.status(500).send(err);
 				});
-			}
+			},
 		),
 
 		(app, state) => app.put<any, string>("/games",
@@ -1335,12 +1335,12 @@ export const contestRoute: Route<RouteState> = {
 
 					const gameResult = await state.mongoStore.gamesCollection.insertOne({
 						contestId,
-						majsoulId: data.majsoulId
+						majsoulId: data.majsoulId,
 					});
 
 					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
-				}
-			)
+				},
+			),
 		),
 
 		(app, state) => app.patch("/games/:id",
@@ -1349,7 +1349,7 @@ export const contestRoute: Route<RouteState> = {
 			withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
 				const [game] = await state.mongoStore.gamesCollection.find({
-					_id: gameId
+					_id: gameId,
 				}).toArray();
 
 				if (!game) {
@@ -1384,19 +1384,19 @@ export const contestRoute: Route<RouteState> = {
 
 				const result = await state.mongoStore.gamesCollection.findOneAndUpdate(
 					{
-						_id: gameId
+						_id: gameId,
 					},
 					update,
 					{
 						returnDocument: "after",
 						projection: {
-							rounds: false
-						}
-					}
+							rounds: false,
+						},
+					},
 				);
 
 				res.send(result.value);
-			})
+			}),
 		),
 
 		(app, state) => app.delete<any, void>("/games/:id",
@@ -1411,11 +1411,11 @@ export const contestRoute: Route<RouteState> = {
 				const gameId = new ObjectId(data.id);
 
 				const result = await state.mongoStore.gamesCollection.deleteOne({
-					_id: gameId
+					_id: gameId,
 				});
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.put<any, string>("/games/custom",
@@ -1445,8 +1445,8 @@ export const contestRoute: Route<RouteState> = {
 					});
 
 					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
-				}
-			)
+				},
+			),
 		),
 
 		(app, state) => app.patch("/games/custom/:id",
@@ -1464,7 +1464,7 @@ export const contestRoute: Route<RouteState> = {
 					_id: gameId,
 					majsoulId: {
 						$exists: false,
-					}
+					},
 				}).toArray();
 
 				if (!game) {
@@ -1496,7 +1496,7 @@ export const contestRoute: Route<RouteState> = {
 
 					if (key === "players") {
 						update.$set[key] = data[key].map(({_id}) => ({
-							_id: ObjectId.createFromHexString(_id)
+							_id: ObjectId.createFromHexString(_id),
 						}));
 						continue;
 					}
@@ -1511,16 +1511,16 @@ export const contestRoute: Route<RouteState> = {
 
 				const result = await state.mongoStore.gamesCollection.findOneAndUpdate(
 					{
-						_id: gameId
+						_id: gameId,
 					},
 					update,
 					{
 						returnDocument: "after",
-					}
+					},
 				);
 
 				res.send(result.value);
-			})
+			}),
 		),
 
 		(app, state) => app.put<any, string>("/corrections",
@@ -1552,8 +1552,8 @@ export const contestRoute: Route<RouteState> = {
 					});
 
 					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
-				}
-			)
+				},
+			),
 		),
 
 		(app, state) => app.put("/contests/:id/gacha/:groupId",
@@ -1568,7 +1568,7 @@ export const contestRoute: Route<RouteState> = {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
-					}
+					},
 				});
 
 				if (contest === null) {
@@ -1589,18 +1589,18 @@ export const contestRoute: Route<RouteState> = {
 
 				group.cards.push({
 					_id: new ObjectId(),
-					icon: data.icon
+					icon: data.icon,
 				});
 
 				const result = await state.mongoStore.contestCollection.updateOne(
 					{
 						_id: contest._id,
 					},
-					{ $set: { gacha: contest.gacha } }
+					{ $set: { gacha: contest.gacha } },
 				);
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/contests/:id/gachaGroup/:groupId",
@@ -1615,7 +1615,7 @@ export const contestRoute: Route<RouteState> = {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
-					}
+					},
 				});
 
 				if (contest === null) {
@@ -1641,11 +1641,11 @@ export const contestRoute: Route<RouteState> = {
 					{
 						_id: contest._id,
 					},
-					{ $set: { gacha: contest.gacha } }
+					{ $set: { gacha: contest.gacha } },
 				);
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/contests/:id/gacha/:gachaId",
@@ -1662,7 +1662,7 @@ export const contestRoute: Route<RouteState> = {
 				const contest = await state.findContest(data.id, {
 					projection: {
 						gacha: true,
-					}
+					},
 				});
 
 				if (contest === null) {
@@ -1693,11 +1693,11 @@ export const contestRoute: Route<RouteState> = {
 					{
 						_id: contest._id,
 					},
-					{ $set: { gacha: contest.gacha } }
+					{ $set: { gacha: contest.gacha } },
 				);
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/corrections/:id",
@@ -1708,7 +1708,7 @@ export const contestRoute: Route<RouteState> = {
 			withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
 				const correctionId = new ObjectId(data.id);
 				const [game] = await state.mongoStore.gameCorrectionsCollection.find({
-					_id: correctionId
+					_id: correctionId,
 				}).toArray();
 
 				if (!game) {
@@ -1743,19 +1743,19 @@ export const contestRoute: Route<RouteState> = {
 
 				const result = await state.mongoStore.gameCorrectionsCollection.findOneAndUpdate(
 					{
-						_id: correctionId
+						_id: correctionId,
 					},
 					update,
 					{
 						returnDocument: "after",
 						projection: {
-							rounds: false
-						}
-					}
+							rounds: false,
+						},
+					},
 				);
 
 				res.send(result.value);
-			})
+			}),
 		),
 
 		(app, state) => app.delete<any, void>("/corrections/:id",
@@ -1770,11 +1770,11 @@ export const contestRoute: Route<RouteState> = {
 				const correctionId = new ObjectId(data.id);
 
 				const result = await state.mongoStore.gameCorrectionsCollection.deleteOne({
-					_id: correctionId
+					_id: correctionId,
 				});
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.delete<any, void>("/contests/:id",
@@ -1792,23 +1792,23 @@ export const contestRoute: Route<RouteState> = {
 				await state.mongoStore.configCollection.findOneAndUpdate(
 					{ featuredContest: contestId },
 					{
-						$unset: { featuredContest: true }
+						$unset: { featuredContest: true },
 					});
 
 				const result = await state.mongoStore.contestCollection.deleteOne({
-					_id: contestId
+					_id: contestId,
 				});
 
 				await state.mongoStore.configCollection.findOneAndUpdate({
-					trackedContest: contestId
+					trackedContest: contestId,
 				}, {
 					$unset: {
-						trackedContest: true
-					}
+						trackedContest: true,
+					},
 				});
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.delete<any, void>("/contests/:id/gacha",
@@ -1825,7 +1825,7 @@ export const contestRoute: Route<RouteState> = {
 
 				const games = await state.mongoStore.gamesCollection.find(
 					{ contestId },
-					{ projection: {_id: true} }
+					{ projection: {_id: true} },
 				).toArray();
 
 				const result = await state.mongoStore.gachaCollection.deleteMany(
@@ -1833,7 +1833,7 @@ export const contestRoute: Route<RouteState> = {
 				);
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch<any, Config<ObjectId>>("/config",
@@ -1884,9 +1884,9 @@ export const contestRoute: Route<RouteState> = {
 					{
 						returnDocument: "after",
 						projection: {
-							googleRefreshToken: false
-						}
-					}
+							googleRefreshToken: false,
+						},
+					},
 				);
 
 				if (updatedConfig.value === null) {
@@ -1894,7 +1894,7 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 				res.send(updatedConfig.value);
-			})
+			}),
 		),
 
 		(app, state) => app.put("/sessions",
@@ -1921,9 +1921,9 @@ export const contestRoute: Route<RouteState> = {
 				);
 
 				res.send({
-					_id: session.insertedId
+					_id: session.insertedId,
 				});
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/sessions/:id",
@@ -1944,7 +1944,7 @@ export const contestRoute: Route<RouteState> = {
 					const sessionId = new ObjectId(data.id);
 
 					const [session] = await state.mongoStore.sessionsCollection.find({
-						_id: sessionId
+						_id: sessionId,
 					}).toArray();
 
 					if (!session) {
@@ -1955,8 +1955,8 @@ export const contestRoute: Route<RouteState> = {
 					const [contest] = await state.mongoStore.contestCollection.find({
 						_id: session.contestId,
 						"teams._id": {
-							$all: Array.from(uniqueTeams).map(id => new ObjectId(id))
-						}
+							$all: Array.from(uniqueTeams).map(id => new ObjectId(id)),
+						},
 					}).toArray();
 
 					if (!contest) {
@@ -2000,7 +2000,7 @@ export const contestRoute: Route<RouteState> = {
 					{
 						returnDocument: "after",
 
-					}
+					},
 				);
 
 				if (!session.value) {
@@ -2009,7 +2009,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				res.send(session.value);
-			})
+			}),
 		),
 
 		(app, state) => app.delete("/sessions/:id",
@@ -2017,15 +2017,15 @@ export const contestRoute: Route<RouteState> = {
 			withData<{ id: string }, any, StoreSession<ObjectId>>(async (data, req, res) => {
 				const result = await state.mongoStore.sessionsCollection.deleteOne(
 					{
-						_id: new ObjectId(data.id)
-					}
+						_id: new ObjectId(data.id),
+					},
 				);
 
 				if (result.deletedCount <= 0) {
 					res.sendStatus(404);
 				}
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/contests/:id/teams/:teamId",
@@ -2057,11 +2057,11 @@ export const contestRoute: Route<RouteState> = {
 
 				if (data.players) {
 					data.players = data.players.map(player => ({
-						_id: ObjectId.createFromHexString(player._id)
+						_id: ObjectId.createFromHexString(player._id),
 					})) as any;
 
 					const players = await state.mongoStore.playersCollection.find({
-						_id: { $in: data.players.map(player => player._id as any as ObjectId) }
+						_id: { $in: data.players.map(player => player._id as any as ObjectId) },
 					}).toArray();
 					if (players.length !== data.players.length) {
 						res.status(400).send(
@@ -2069,7 +2069,7 @@ export const contestRoute: Route<RouteState> = {
 								.filter(player => !players.find(p => p._id.equals(player._id)))
 								.map(player => `#${player._id}`)
 								.join(", ")
-							} not found.` as any
+							} not found.` as any,
 						);
 						return;
 					}
@@ -2104,17 +2104,17 @@ export const contestRoute: Route<RouteState> = {
 				state.mongoStore.contestCollection.findOneAndUpdate(
 					{
 						_id: id,
-						teams: { $elemMatch: { _id: teamId } }
+						teams: { $elemMatch: { _id: teamId } },
 					},
 					update,
-					{ returnDocument: "after", projection: { teams: true } }
+					{ returnDocument: "after", projection: { teams: true } },
 				).then((contest) => {
 					res.send(contest.value.teams.find(team => team._id.equals(teamId)));
 				}).catch((err) => {
 					console.log(err);
 					res.status(500).send(err);
 				});
-			}
+			},
 			)),
 
 		(app, state) => app.put("/contests/:id/teams/",
@@ -2133,7 +2133,7 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				const team = {
-					_id: new ObjectId()
+					_id: new ObjectId(),
 				};
 
 				await state.mongoStore.contestCollection.findOneAndUpdate(
@@ -2142,14 +2142,14 @@ export const contestRoute: Route<RouteState> = {
 					},
 					{
 						$push: {
-							teams: team
-						}
+							teams: team,
+						},
 					},
-					{ returnDocument: "after", projection: { teams: true } }
+					{ returnDocument: "after", projection: { teams: true } },
 				);
 
 				res.send(team);
-			}
+			},
 			)),
 
 		(app, state) => app.delete("/contests/:id/teams/:teamId",
@@ -2166,7 +2166,7 @@ export const contestRoute: Route<RouteState> = {
 				const [contest] = await state.mongoStore.contestCollection.find(
 					{
 						_id: new ObjectId(data.id),
-						teams: { $elemMatch: { _id: new ObjectId(data.teamId) } }
+						teams: { $elemMatch: { _id: new ObjectId(data.teamId) } },
 					},
 				).toArray();
 
@@ -2184,15 +2184,15 @@ export const contestRoute: Route<RouteState> = {
 					{
 						$pull: {
 							teams: {
-								_id: teamId
-							}
-						}
+								_id: teamId,
+							},
+						},
 					},
-					{ returnDocument: "after", projection: { teams: true } }
+					{ returnDocument: "after", projection: { teams: true } },
 				);
 
 				res.send();
-			}
+			},
 			)),
 
 		(app, state) => app.put("/contests/:id/transitions",
@@ -2253,8 +2253,8 @@ export const contestRoute: Route<RouteState> = {
 						{
 							$push: {
 								transitions: transition,
-							}
-						}
+							},
+						},
 					);
 				} else {
 					state.mongoStore.contestCollection.findOneAndUpdate(
@@ -2262,12 +2262,12 @@ export const contestRoute: Route<RouteState> = {
 						{
 							$set: {
 								transitions: [transition],
-							}
-						}
+							},
+						},
 					);
 				}
 				res.send({ _id: transition._id });
-			})
+			}),
 		),
 
 		(app, state) => app.delete("/contests/:contestId/transitions/:id",
@@ -2284,14 +2284,14 @@ export const contestRoute: Route<RouteState> = {
 					{
 						$pull: {
 							transitions: {
-								_id: ObjectId.createFromHexString(data.id)
-							}
-						}
-					}
+								_id: ObjectId.createFromHexString(data.id),
+							},
+						},
+					},
 				);
 
 				res.send();
-			})
+			}),
 		),
 
 		(app, state) => app.patch("/players/:id",
@@ -2300,22 +2300,22 @@ export const contestRoute: Route<RouteState> = {
 			withData<Partial<Player<string | ObjectId> & {id: string}>, any, Player<ObjectId>>(async (data, req, res) => {
 				const player = await state.mongoStore.playersCollection.findOneAndUpdate(
 					{
-						_id: ObjectId.createFromHexString(data.id as string)
+						_id: ObjectId.createFromHexString(data.id as string),
 					},
 					data.displayName == null
 						? {
 							$unset: {
-								displayName: true
-							}
+								displayName: true,
+							},
 						}
 						: {
 							$set: {
-								displayName: data.displayName
-							}
+								displayName: data.displayName,
+							},
 						},
 					{
-						returnDocument: "after"
-					}
+						returnDocument: "after",
+					},
 				);
 
 				if (!player.ok) {
@@ -2323,19 +2323,19 @@ export const contestRoute: Route<RouteState> = {
 				}
 
 				res.send(player.value);
-			})
+			}),
 		),
 
 		(app, state) => app.put("/players/",
 			body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
 			withData<Partial<Player<string | ObjectId>>, any, Player<ObjectId>>(async (data, req, res) => {
 				const result = await state.mongoStore.playersCollection.insertOne({
-					majsoulFriendlyId: data.majsoulFriendlyId
+					majsoulFriendlyId: data.majsoulFriendlyId,
 				});
 				res.send({
-					_id: result.insertedId
+					_id: result.insertedId,
 				});
-			})
+			}),
 		),
 
 		(app, state) => app.get("/rigging/token", async (req, res) => {
@@ -2357,7 +2357,7 @@ export const contestRoute: Route<RouteState> = {
 			jwt.sign(
 				{
 					name: user.nickname,
-					roles: user.scopes
+					roles: user.scopes,
 				},
 				state.privateKey,
 				{
@@ -2375,7 +2375,7 @@ export const contestRoute: Route<RouteState> = {
 					}
 					res.send(token);
 				});
-		}
+		},
 		),
 	],
 };

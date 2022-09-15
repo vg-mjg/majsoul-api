@@ -18,12 +18,12 @@ async function main() {
 
 	const paipu = Codec.decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split("_")[0];
 
-	const game = await api.getGame(paipu);
 	const dataPath = path.join(process.cwd(), "data");
 	if (!fs.existsSync(dataPath)){
 		fs.mkdirSync(dataPath, { recursive: true });
 	}
 
+	const game = await api.getGame(paipu);
 	delete game.data;
 	game.records = game.records.map(record => ({
 		...record,

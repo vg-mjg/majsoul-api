@@ -52,7 +52,7 @@ export enum StyleMoveType {
 	LittleThreeDragons,
 	AllTerminalsAndHonors,
 	ManganAtDraw,
-	Red_Five,
+	RedFive,
 }
 
 export enum StyleMeterChangeType {
@@ -61,7 +61,7 @@ export enum StyleMeterChangeType {
 	Penalty
 }
 
-enum StylePenaltyType {
+export enum StylePenaltyType {
 	TripleRon,
 }
 
@@ -115,7 +115,7 @@ function hanToStyleMoveType(han: Han, finalHandState: FinalHandState): StyleMove
 	case Han.Dora:
 		return StyleMoveType.Dora;
 	case Han.Red_Five:
-		return StyleMoveType.Red_Five;
+		return StyleMoveType.RedFive;
 	case Han.Ura_Dora:
 		return StyleMoveType.UraDora;
 	case Han.All_Simples:
@@ -234,7 +234,7 @@ const rawPointsMap = {
 	[StyleMoveType.Win]: StylePointTier.Minimum,
 	[StyleMoveType.Riichi]: StylePointTier.Minimum,
 	[StyleMoveType.Dora]: StylePointTier.Minimum,
-	[StyleMoveType.Red_Five]: StylePointTier.Minimum,
+	[StyleMoveType.RedFive]: StylePointTier.Minimum,
 	[StyleMoveType.UraDora]: StylePointTier.Minimum,
 	[StyleMoveType.AllSimples]: StylePointTier.Minimum,
 	[StyleMoveType.SeatWind]: StylePointTier.Minimum,
@@ -337,7 +337,7 @@ function getStyleTypeFromHandValue(handValue: number, isDealer: boolean): StyleM
 const ignoreMoveTypeTracking = {
 	[StyleMoveType.Dora]: true,
 	[StyleMoveType.UraDora]: true,
-	[StyleMoveType.Red_Five]: true,
+	[StyleMoveType.RedFive]: true,
 
 	[StyleMoveType.Riichi]: true,
 
@@ -361,7 +361,7 @@ function processAgari(roundMetadata: RoundMetadata, agari: AgariDetails, styleDa
 		moveType: style,
 		rawPoints: rawPointsMap[style],
 		repetitionReduction: rawPointsMap[style] / 4 * (styleData[agari.winner].attainedYaku[style] ?? 0),
-		multiplier: styleData[agari.winner].combo,
+		multiplier: styleData[agari.winner].combo + 1,
 	} as StyleMove)).filter(style => !!style.rawPoints);
 
 	for (const styleMove of styleMoves) {
@@ -375,10 +375,6 @@ function processAgari(roundMetadata: RoundMetadata, agari: AgariDetails, styleDa
 		comboType: StyleComboType.ChainWin,
 		change: 1,
 	} as StyleCombo);
-
-	for (const comboMove of comboMoves) {
-		styleData[agari.winner].combo += comboMove.change;
-	}
 
 	return [...styleMoves, ...comboMoves];
 }
@@ -439,8 +435,8 @@ export function breakdownStyle(gameRecord: UnifiedGameRecord, gameMetadata: Game
 	for (const round of gameMetadata.rounds) {
 		const changes = processRound(round, styleData);
 
-		for (const idlePlayer of gameRecord.players.filter(player => !(player.seat in changes))) {
-			if (styleData[idlePlayer.seat].combo === 0) {
+		for (const idlePlayer of gameRecord.players.filter(player => !changes[player.seat])) {
+			if (styleData[idlePlayer.seat].combo <= 0) {
 				continue;
 			}
 
