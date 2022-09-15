@@ -14,6 +14,6 @@ export function createAgariStats(): AgariCategories<AgariStats> {
 		open: {
 			points: 0,
 			total: 0,
-		}
+		},
 	};
 }

@@ -27,7 +27,7 @@ async function getOrGenerateUserAgent(mongoStore: Store): Promise<string> {
 	const [config] = await mongoStore.configCollection.find().toArray();
 	if (!config.userAgent) {
 		config.userAgent = new UserAgent({
-			platform: process.platform === "win32" ? "Win32" : "Linux x86_64"
+			platform: process.platform === "win32" ? "Win32" : "Linux x86_64",
 		}).toString();
 
 		await mongoStore.configCollection.updateOne(
@@ -36,9 +36,9 @@ async function getOrGenerateUserAgent(mongoStore: Store): Promise<string> {
 			},
 			{
 				$set: {
-					userAgent: config.userAgent
-				}
-			}
+					userAgent: config.userAgent,
+				},
+			},
 		);
 	}
 	return config.userAgent;
@@ -66,7 +66,7 @@ async function main() {
 			accessToken: secrets.majsoul.accessToken,
 			userAgent,
 			existingCookies,
-		}
+		},
 	)) ?? {};
 
 	await mongoStore.configCollection.updateOne(
@@ -75,9 +75,9 @@ async function main() {
 		},
 		{
 			$set: {
-				loginCookies
+				loginCookies,
 			},
-		}
+		},
 	);
 
 	if (dynamicPassport) {
@@ -87,9 +87,9 @@ async function main() {
 			},
 			{
 				$set: {
-					passportToken: dynamicPassport.accessToken
+					passportToken: dynamicPassport.accessToken,
 				},
-			}
+			},
 		);
 	}
 
@@ -144,11 +144,11 @@ async function main() {
 		? concat(
 			defer(() => googleAuth.getAccessToken()).pipe(
 				map(response => response.token),
-				catchError(() => of(null))
+				catchError(() => of(null)),
 			),
 			fromEvent<Credentials>(googleAuth, "tokens").pipe(
 				map((tokens) => tokens?.access_token),
-			)
+			),
 		).pipe(
 			distinctUntilChanged(),
 			map(token => token != null),
@@ -164,18 +164,18 @@ async function main() {
 	merge(
 		mongoStore.ConfigChanges.pipe(
 			filter(change => change.operationType === "update"
-				&& change.updateDescription.updatedFields.googleRefreshToken !== undefined
+				&& change.updateDescription.updatedFields.googleRefreshToken !== undefined,
 			),
-			map((updateEvent: ChangeStreamUpdateDocument<Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken)
+			map((updateEvent: ChangeStreamUpdateDocument<Config<ObjectId>>) => updateEvent.updateDescription.updatedFields.googleRefreshToken),
 		),
 		defer(
 			() => from(
-				mongoStore.configCollection.find().toArray()
+				mongoStore.configCollection.find().toArray(),
 			).pipe(
 				mergeAll(),
-				map(config => config.googleRefreshToken)
-			)
-		)
+				map(config => config.googleRefreshToken),
+			),
+		),
 	).subscribe(refresh_token => {
 		if (googleAuth.credentials.refresh_token === refresh_token || refresh_token == null) {
 			console.log("refresh token not valid in database");
@@ -183,7 +183,7 @@ async function main() {
 		}
 
 		googleAuth.setCredentials({
-			refresh_token
+			refresh_token,
 		});
 		googleAuth.getRequestHeaders();
 	});
@@ -192,56 +192,56 @@ async function main() {
 	merge(
 		mongoStore.PlayerChanges.pipe(
 			filter(change => change.operationType === "insert"
-				&& change.fullDocument.majsoulFriendlyId != null
+				&& change.fullDocument.majsoulFriendlyId != null,
 			),
-			map((insertEvent: ChangeStreamInsertDocument<Player<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<Player<ObjectId>>) => insertEvent.fullDocument),
 		),
 		defer(() => from(
 			mongoStore.playersCollection.find({
 				majsoulFriendlyId: {
-					$exists: true
-				}
-			}).toArray()
-		).pipe(mergeAll()))
+					$exists: true,
+				},
+			}).toArray(),
+		).pipe(mergeAll())),
 	).subscribe(player => {
 		api.findPlayerByFriendlyId(player.majsoulFriendlyId).then(async (apiPlayer) => {
 			if (apiPlayer == null) {
 				mongoStore.playersCollection.deleteOne({
-					_id: player._id
+					_id: player._id,
 				});
 				return;
 			}
 
 			const update = await mongoStore.playersCollection.findOneAndUpdate(
 				{
-					majsoulId: apiPlayer.majsoulId
+					majsoulId: apiPlayer.majsoulId,
 				},
 				{
 					$set: {
-						...apiPlayer
+						...apiPlayer,
 					},
-				}
+				},
 			);
 
 			if (update.value) {
 				mongoStore.playersCollection.deleteOne({
-					_id: player._id
+					_id: player._id,
 				});
 				return;
 			}
 
 			mongoStore.playersCollection.findOneAndUpdate(
 				{
-					_id: player._id
+					_id: player._id,
 				},
 				{
 					$set: {
-						...apiPlayer
+						...apiPlayer,
 					},
 					$unset: {
-						majsoulFriendlyId: true
-					}
-				}
+						majsoulFriendlyId: true,
+					},
+				},
 			);
 		});
 	});
@@ -251,27 +251,27 @@ async function main() {
 		mongoStore.GameChanges.pipe(
 			filter(change => change.operationType === "insert"
 				&& change.fullDocument.contestMajsoulId == null
-				&& change.fullDocument.majsoulId != null
+				&& change.fullDocument.majsoulId != null,
 			),
-			map((insertEvent: ChangeStreamInsertDocument<GameResult<ObjectId>>) => insertEvent.fullDocument)
+			map((insertEvent: ChangeStreamInsertDocument<GameResult<ObjectId>>) => insertEvent.fullDocument),
 		),
 		defer(() => from(
 			mongoStore.gamesCollection.find({
 				notFoundOnMajsoul: {
-					$exists: false
+					$exists: false,
 				},
 				contestMajsoulId: {
-					$exists: false
-				}
-			}).toArray()
-		).pipe(mergeAll()))
+					$exists: false,
+				},
+			}).toArray(),
+		).pipe(mergeAll())),
 	).subscribe(game => {
 		console.log(`Custom game id added ${game.majsoulId}`);
 		recordGame(
 			game.contestId,
 			game.majsoulId,
 			mongoStore,
-			api
+			api,
 		);
 	});
 
@@ -280,19 +280,19 @@ async function main() {
 
 		concat(
 			of(null),
-			tracker.MajsoulId$.pipe(distinctUntilChanged())
+			tracker.MajsoulId$.pipe(distinctUntilChanged()),
 		).pipe(pairwise())
 			.subscribe(([previous, next]) => {
 				if (next == null && previous != null) {
 					mongoStore.gamesCollection.updateMany(
 						{
-							contestMajsoulId: previous
+							contestMajsoulId: previous,
 						},
 						{
 							$unset: {
 								contestId: true,
-							}
-						}
+							},
+						},
 					);
 					return;
 				}
@@ -303,13 +303,13 @@ async function main() {
 
 				mongoStore.gamesCollection.updateMany(
 					{
-						contestMajsoulId: next
+						contestMajsoulId: next,
 					},
 					{
 						$set: {
 							contestId: contestId,
-						}
-					}
+						},
+					},
 				);
 			});
 
@@ -321,8 +321,8 @@ async function main() {
 					{ $unset: { adminPlayerFetchRequested: true } },
 					{ projection: {
 						adminPlayerFetchRequested: true,
-						majsoulId: true
-					}}
+						majsoulId: true,
+					}},
 				);
 				console.log(`fetchRequested for contest #${contestId} #${contest.value.majsoulId}` );
 				await adminApi.reconnect();
@@ -337,8 +337,8 @@ async function main() {
 
 					const existingPlayers = await mongoStore.playersCollection.find({
 						majsoulId: {
-							$in: players.map(player => player.account_id)
-						}
+							$in: players.map(player => player.account_id),
+						},
 					}).toArray();
 
 					const newPlayers = players.filter(player => existingPlayers.find(existingPlayer => existingPlayer.majsoulId === player.account_id) == null);
@@ -354,7 +354,7 @@ async function main() {
 						newPlayers.map(player => ({
 							nickname: player.nickname,
 							majsoulId: player.account_id,
-						}))
+						})),
 					);
 
 				} finally {
@@ -404,8 +404,8 @@ async function main() {
 			combineLatestWith(
 				merge (
 					from([null as never]),
-					tracker.GachaDeleted$
-				)
+					tracker.GachaDeleted$,
+				),
 			),
 			map(([{phases, contest}]) => {
 				phases.sort((a, b) => b.startTime - a.startTime);
@@ -421,8 +421,8 @@ async function main() {
 					filter(({phase}) => (phase.tourneyType === TourneyContestScoringType.Gacha)),
 					map((data) =>
 						defer(() => from(mongoStore.gachaCollection.find({gameId: data.game._id}).toArray()).pipe(
-							zipWith(from([data]))
-						))
+							zipWith(from([data])),
+						)),
 					),
 					mergeAll(),
 					filter(([gachas]) => gachas.length <= 0),
@@ -430,7 +430,7 @@ async function main() {
 					withLatestFrom(from([contest])),
 				);
 			}),
-			switchAll()
+			switchAll(),
 		).pipe(
 			map(([{game}, contest]) => {
 				const seed = [game._id.toHexString(), game.end_time, game.finalScore.map(score => score.score).join("")].join(":");
@@ -447,12 +447,12 @@ async function main() {
 				contest.gacha.groups.sort((a, b) => a.priority - b.priority);
 
 				const possibleRollsPerPlayer = game.finalScore.map((score, index) => [
-					...rollGachaForScore(rand, contest, game, index, score.uma)
+					...rollGachaForScore(rand, contest, game, index, score.uma),
 				].filter(roll => roll.length));
 
 				return () => validatePossibleRolls(mongoStore, game, contest, possibleRollsPerPlayer, rand);
 			}),
-			scan((total, next) => total.then(next),  Promise.resolve())
+			scan((total, next) => total.then(next),  Promise.resolve()),
 		).subscribe(() => {});
 
 		spreadsheet$.subscribe(async ([spreadsheetId]) => {
@@ -477,13 +477,13 @@ async function main() {
 			).subscribe(async (teams) => {
 				const players = await mongoStore.playersCollection.find({
 					_id: {
-						$in: teams.map(team => team.players).flat().map(team => team._id)
-					}
+						$in: teams.map(team => team.players).flat().map(team => team._id),
+					},
 				}).toArray();
 
 				spreadsheet.updateTeams(
 					teams,
-					players.reduce((total, next) => (total[next._id.toHexString()] = next, total), {})
+					players.reduce((total, next) => (total[next._id.toHexString()] = next, total), {}),
 				);
 			});
 		});
@@ -494,7 +494,7 @@ async function recordGame(
 	contestId: ObjectId,
 	gameId: string,
 	mongoStore: Store,
-	api: MajsoulApi
+	api: MajsoulApi,
 ): Promise<void> {
 	const isRecorded = await mongoStore.isGameRecorded(gameId);
 	if (isRecorded) {
@@ -508,7 +508,7 @@ async function recordGame(
 
 		mongoStore.gamesCollection.updateOne(
 			{ majsoulId: gameId },
-			{ $set: { notFoundOnMajsoul: true } }
+			{ $set: { notFoundOnMajsoul: true } },
 		);
 		return;
 	}
@@ -525,13 +525,13 @@ function createContestIds$(mongoStore: Store): Observable<ObjectId> {
 	return merge(
 		mongoStore.ContestChanges.pipe(
 			filter(changeEvent => changeEvent.operationType === "insert"),
-			map((changeEvent: ChangeStreamInsertDocument<Contest<ObjectId>>) => changeEvent.documentKey._id)
+			map((changeEvent: ChangeStreamInsertDocument<Contest<ObjectId>>) => changeEvent.documentKey._id),
 		),
 		defer(() => from(mongoStore.contestCollection.find().toArray()))
 			.pipe(
 				mergeAll(),
-				map(contest => contest._id)
-			)
+				map(contest => contest._id),
+			),
 	);
 }
 
@@ -545,8 +545,8 @@ function * rollGachaForScore(rand: seedrandom.PRNG, contest: Contest<ObjectId>, 
 					gameId: game._id,
 					playerId: game.players[index]._id,
 					gachaGroupId: group._id,
-					gachaCardId: group.cards[(rand() * group.cards.length) | 0]._id
-				} as GachaPull<ObjectId>
+					gachaCardId: group.cards[(rand() * group.cards.length) | 0]._id,
+				} as GachaPull<ObjectId>,
 			}));
 		uma -= 1000;
 	}
@@ -567,7 +567,7 @@ function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 
 	total[groupId] ??= {
 		total: 0,
-		players: {}
+		players: {},
 	};
 	total[groupId].total++;
 	total[groupId].players[playerId] ??= [];
@@ -598,8 +598,8 @@ async function validatePossibleRolls(
 				projection: {
 					_id: true,
 					contestId: true,
-				}
-			}
+				},
+			},
 		).toArray()
 		: [];
 
@@ -609,8 +609,8 @@ async function validatePossibleRolls(
 
 	const pulls = [
 		{
-			gameId: game._id
-		}
+			gameId: game._id,
+		},
 	] as GachaPull[];
 
 	for (const player of possibleRollsPerPlayer) {
@@ -620,7 +620,7 @@ async function validatePossibleRolls(
 					|| (
 						(gachaGroupMap[roll.group._id.toHexString()]?.total ?? 0) < roll.group.cards.length
 							&& (gachaGroupMap[roll.group._id.toHexString()]?.players[roll.pull.playerId.toHexString()]?.length ?? 0) === 0
-					)
+					),
 
 			);
 

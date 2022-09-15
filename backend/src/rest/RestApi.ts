@@ -39,7 +39,7 @@ export class RestApi {
 		const oauth2Client = new OAuth2Client(
 			secrets.google.clientId,
 			secrets.google.clientSecret,
-			`${process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.NODE_ENV === "production" ? "riichi.moe" : "localhost:8080"}/rigging/google`
+			`${process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.NODE_ENV === "production" ? "riichi.moe" : "localhost:8080"}/rigging/google`,
 		);
 
 		if (root?.username != null && root?.password != null) {
@@ -53,12 +53,12 @@ export class RestApi {
 					$setOnInsert: {
 						password: {
 							salt,
-							hash: sha.update(`${root.password}:${salt}`).digest("hex")
+							hash: sha.update(`${root.password}:${salt}`).digest("hex"),
 						},
-						scopes: ["root"]
-					}
+						scopes: ["root"],
+					},
 				},
-				{ upsert: true }
+				{ upsert: true },
 			);
 		}
 
@@ -93,15 +93,15 @@ export class RestApi {
 					algorithms: ["RS256"],
 					credentialsRequired: true,
 				}).unless({
-					method: "GET"
-				})
+					method: "GET",
+				}),
 			).use(function (err, req, res, next) {
 				if (err.name === "UnauthorizedError") {
 					res.status(401).send("token invalid");
 					return;
 				}
 				next();
-			})
+			}),
 		);
 	}
 }

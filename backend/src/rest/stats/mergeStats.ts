@@ -13,17 +13,17 @@ export function mergeStats(stats: Stats[], version: StatsVersion): Stats {
 	} case StatsVersion.None: {
 		return {
 			version: StatsVersion.None,
-			stats: mergeBaseStats(stats as BaseStats[])
+			stats: mergeBaseStats(stats as BaseStats[]),
 		};
 	} case StatsVersion.First: {
 		return {
 			version: StatsVersion.First,
-			stats: mergeAllStats(stats as FirstStats[], createFirstStats)
+			stats: mergeAllStats(stats as FirstStats[], createFirstStats),
 		};
 	} case StatsVersion.Khan: {
 		return {
 			version: StatsVersion.Khan,
-			stats: mergeAllStats(stats as KhanStats[], createKhanStats)
+			stats: mergeAllStats(stats as KhanStats[], createKhanStats),
 		};
 	}
 	}
@@ -39,7 +39,7 @@ function mergeBaseStats(stats: BaseStats[]): BaseStats["stats"] {
 	}, {
 		gamesPlayed: 0,
 		totalHands: 0,
-		totalRank: 0
+		totalRank: 0,
 	});
 }
 

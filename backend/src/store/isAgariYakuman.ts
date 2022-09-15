@@ -7,7 +7,7 @@ import { RoundInfo } from "./types/game/round/RoundInfo";
 export function isAgariYakuman(
 	{ config }: GameResult,
 	{ dealership }: RoundInfo,
-	agari: AgariInfo
+	agari: AgariInfo,
 ): boolean {
 	if (!agari) {
 		return false;

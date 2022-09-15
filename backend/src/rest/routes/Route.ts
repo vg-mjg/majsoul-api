@@ -12,7 +12,7 @@ function registerMethods<State>(
 	route: Route<State>,
 	state: State,
 	app: express.Express,
-	methodAccessCallback: (route: Route<State>) => RouteMethodRegister<State>[]
+	methodAccessCallback: (route: Route<State>) => RouteMethodRegister<State>[],
 ): express.Express {
 	if (!route) {
 		return app;

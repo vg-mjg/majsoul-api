@@ -21,9 +21,9 @@ export function buildContestPhases(contest: Contest<ObjectId>): PhaseInfo<Object
 			{
 				name: phases[0].name,
 				startTime: 0,
-				scoringTypes: phases[0].tourneyType
+				scoringTypes: phases[0].tourneyType,
 			} as ContestPhaseTransition<ObjectId>,
-			...(contest.transitions ?? [])
+			...(contest.transitions ?? []),
 	].sort((a, b) => a.startTime - b.startTime);
 
 	for(const transition of transitions.slice(1)) {
@@ -55,6 +55,6 @@ export function buildContestPhases(contest: Contest<ObjectId>): PhaseInfo<Object
 	return {
 		contest,
 		transitions,
-		phases
+		phases,
 	};
 }

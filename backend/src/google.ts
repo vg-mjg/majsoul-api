@@ -25,7 +25,7 @@ class DelayedChunkBuffer<T> {
 
 	constructor(
 		private readonly capacity: number,
-		private readonly delay: number
+		private readonly delay: number,
 	) {}
 
 	public get Chunks$(): Observable<T[]> {
@@ -62,7 +62,7 @@ export class Spreadsheet {
 			green: 0,
 			blue: 0,
 			alpha: 1,
-		}
+		},
 	};
 
 	private static readonly gameResultsSheetName = "Riichi Robots Games";
@@ -91,8 +91,8 @@ export class Spreadsheet {
 					await this.sheets.spreadsheets.batchUpdate({
 						spreadsheetId: this.spreadsheetId,
 						requestBody: {
-							requests: chunk
-						}
+							requests: chunk,
+						},
 					});
 				})
 				.catch();
@@ -113,12 +113,12 @@ export class Spreadsheet {
 					{
 						addSheet: {
 							properties: {
-								title: title
-							}
-						}
-					}
-				]
-			}
+								title: title,
+							},
+						},
+					},
+				],
+			},
 		});
 		return result.data.replies[0]?.addSheet?.properties?.sheetId;
 	}
@@ -136,7 +136,7 @@ export class Spreadsheet {
 				spreadsheetId: this.spreadsheetId,
 				range: `${Spreadsheet.gameResultsSheetName}!A:A`,
 				valueRenderOption: "UNFORMATTED_VALUE",
-			}
+			},
 		)).data;
 		this.recordedGameIds = gameResultsIds.values?.slice(1).map(v => v[0]).filter(v => isNaN(v)) ?? [];
 		const gameDetailsIds = (await this.sheets.spreadsheets.values.get(
@@ -144,7 +144,7 @@ export class Spreadsheet {
 				spreadsheetId: this.spreadsheetId,
 				range: `${Spreadsheet.gameDetailsSheetName}!A:A`,
 				valueRenderOption: "UNFORMATTED_VALUE",
-			}
+			},
 		)).data;
 		this.recordedGameDetailIds = gameDetailsIds.values?.slice(1).map(v => v[0]).filter(v => Object.values(Wind).indexOf(v) < 0) ?? [];
 	}
@@ -175,8 +175,8 @@ export class Spreadsheet {
 						startIndex: 1,
 						endIndex: 6,
 					},
-					inheritFromBefore: true
-				}
+					inheritFromBefore: true,
+				},
 			},
 			{
 				mergeCells: {
@@ -186,8 +186,8 @@ export class Spreadsheet {
 						endColumnIndex: 7 + 88,
 						startRowIndex: 1,
 						endRowIndex: 2,
-					}
-				}
+					},
+				},
 			},
 			{
 				updateCells: {
@@ -204,13 +204,13 @@ export class Spreadsheet {
 								userEnteredFormat: {
 									horizontalAlignment: "LEFT",
 									textFormat: {
-										bold: true
-									}
-								}
+										bold: true,
+									},
+								},
 							},
-						]
-					}]
-				}
+						],
+					}],
+				},
 			},
 			{
 				updateCells: {
@@ -225,15 +225,15 @@ export class Spreadsheet {
 							undefined,
 							{ userEnteredValue: {
 								numberValue: game.end_time / (60*60*24*1000) + 25569 },
-							userEnteredFormat: {numberFormat: { type: "DATE_TIME" }}
+							userEnteredFormat: {numberFormat: { type: "DATE_TIME" }},
 							},
 							{ userEnteredValue: { formulaValue: `=VLOOKUP("${game.players[i]._id.toHexString()}"; 'Riichi Robots Teams'!A:C; 3; FALSE)` } },
 							{ userEnteredValue: { numberValue: player.score } },
 							{ userEnteredValue: { numberValue: player.uma / 1000} },
 							{ userEnteredValue: { formulaValue: `=RANK(D${3 + i}; D3:D6)` } },
-						]
-					}))
-				}
+						],
+					})),
+				},
 			},
 			{
 				updateBorders: {
@@ -248,7 +248,7 @@ export class Spreadsheet {
 					right: Spreadsheet.blackBorderStyle,
 					left: Spreadsheet.blackBorderStyle,
 					bottom: Spreadsheet.blackBorderStyle,
-				}
+				},
 			},
 			{
 				updateBorders: {
@@ -260,8 +260,8 @@ export class Spreadsheet {
 						endRowIndex: 2,
 					},
 					bottom: Spreadsheet.blackBorderStyle,
-				}
-			}
+				},
+			},
 		];
 
 		this.buffer.send(requests);
@@ -284,7 +284,7 @@ export class Spreadsheet {
 							round: hand.round,
 							agari: r,
 							loser: r.loser,
-							result: "Ron"
+							result: "Ron",
 						}
 					));
 				}
@@ -296,15 +296,15 @@ export class Spreadsheet {
 							value: hand.round.dealership === winner ? 12000 : 8000,
 							extras: 0,
 							winner,
-							han: [Han.Mangan_at_Draw]
+							han: [Han.Mangan_at_Draw],
 						},
-						result: "Draw"
+						result: "Draw",
 					}];
 				}
 				return [{
 					round: hand.round,
 					agari: hand.tsumo,
-					result: "Tsumo"
+					result: "Tsumo",
 				}];
 			}).flat();
 
@@ -321,8 +321,8 @@ export class Spreadsheet {
 						startIndex: 1,
 						endIndex: 1 + 1 + hands.length,
 					},
-					inheritFromBefore: true
-				}
+					inheritFromBefore: true,
+				},
 			},
 			{
 				mergeCells: {
@@ -332,8 +332,8 @@ export class Spreadsheet {
 						endColumnIndex: 8,
 						startRowIndex: 1,
 						endRowIndex: 2,
-					}
-				}
+					},
+				},
 			},
 			{
 				updateCells: {
@@ -353,13 +353,13 @@ export class Spreadsheet {
 								userEnteredFormat: {
 									horizontalAlignment: "CENTER",
 									textFormat: {
-										bold: true
-									}
-								}
-							}
-						]
-					}]
-				}
+										bold: true,
+									},
+								},
+							},
+						],
+					}],
+				},
 			},
 			{
 				updateCells: {
@@ -376,12 +376,12 @@ export class Spreadsheet {
 							userEnteredFormat: {
 								horizontalAlignment: "LEFT",
 								textFormat: { bold: true },
-								numberFormat: { type: "DATE_TIME" }
-							}
-							}
-						]
-					}]
-				}
+								numberFormat: { type: "DATE_TIME" },
+							},
+							},
+						],
+					}],
+				},
 			},
 			{
 				updateCells: {
@@ -398,14 +398,14 @@ export class Spreadsheet {
 							{ userEnteredValue: { numberValue: hand.round.repeat } },
 							{ userEnteredValue: { stringValue: hand.result } },
 							{ userEnteredValue: {
-								formulaValue: `=VLOOKUP("${game.players[hand.agari.winner]._id}"; 'Riichi Robots Teams'!A:C; 3; FALSE)`
+								formulaValue: `=VLOOKUP("${game.players[hand.agari.winner]._id}"; 'Riichi Robots Teams'!A:C; 3; FALSE)`,
 							} },
 							{ userEnteredValue: { numberValue: hand.agari.value + hand.agari.extras } },
 							{ userEnteredValue: { numberValue: hand.agari.value + hand.round.repeat * 300 } },
 							{ userEnteredValue: {
 								formulaValue: hand.loser == null
 									? null
-									: `=VLOOKUP("${game.players[hand.loser]._id}"; 'Riichi Robots Teams'!A:C; 3; FALSE)`
+									: `=VLOOKUP("${game.players[hand.loser]._id}"; 'Riichi Robots Teams'!A:C; 3; FALSE)`,
 							} },
 							{ userEnteredValue: {
 								stringValue: Object.entries(hand.agari.han.reduce((map, next) => {
@@ -414,12 +414,12 @@ export class Spreadsheet {
 								}, {}))
 									.map(kvp => `${Han[kvp[0]] || `Unknown(${kvp[0]})`}${kvp[1] > 1 ? ` ${kvp[1]}` : ""}`)
 									.map(h => h.replace(/_/g, " "))
-									.join(", ")
-							}
+									.join(", "),
 							},
-						]
-					})).flat()
-				}
+							},
+						],
+					})).flat(),
+				},
 			},
 			{
 				updateBorders: {
@@ -434,7 +434,7 @@ export class Spreadsheet {
 					right: Spreadsheet.blackBorderStyle,
 					left: Spreadsheet.blackBorderStyle,
 					bottom: Spreadsheet.blackBorderStyle,
-				}
+				},
 			},
 			{
 				updateBorders: {
@@ -446,8 +446,8 @@ export class Spreadsheet {
 						endRowIndex: 2,
 					},
 					bottom: Spreadsheet.blackBorderStyle,
-				}
-			}
+				},
+			},
 		];
 
 		this.buffer.send(requests);
@@ -462,7 +462,7 @@ export class Spreadsheet {
 						dimension: "ROWS",
 						startIndex: 0,
 						endIndex: 1,
-					}
+					},
 				},
 			},
 			{
@@ -471,7 +471,7 @@ export class Spreadsheet {
 						sheetId: this.teamSheetId,
 						dimension: "ROWS",
 						startIndex: 1,
-					}
+					},
 				},
 			},
 			...teams.map<sheets_v4.Schema$Request[]>(team => [
@@ -482,7 +482,7 @@ export class Spreadsheet {
 							dimension: "ROWS",
 							startIndex: 0,
 							endIndex: team.players.length,
-						}
+						},
 					},
 				},
 				{
@@ -501,12 +501,12 @@ export class Spreadsheet {
 									{ userEnteredValue: { stringValue: id } },
 									{ userEnteredValue: { stringValue: team.name } },
 									{ userEnteredValue: { stringValue: playerRecord.displayName ?? playerRecord.nickname } },
-								]
+								],
 							};
-						})
-					}
-				}
-			]).flat()
+						}),
+					},
+				},
+			]).flat(),
 		];
 
 		this.buffer.send(requests);

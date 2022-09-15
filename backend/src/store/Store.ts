@@ -103,10 +103,10 @@ export class Store {
 					},
 					{
 						contestMajsoulId: { $exists: true },
-					}
-				]
+					},
+				],
 			},
-			{ limit: 1 }
+			{ limit: 1 },
 		) === 1;
 	}
 
@@ -124,24 +124,24 @@ export class Store {
 						: this.playersCollection.findOneAndUpdate(
 							{ majsoulId: player.majsoulId },
 							{ $set: { majsoulId: player.majsoulId, nickname: player.nickname } },
-							{ upsert: true, returnDocument: "after", projection: { _id: true } }
-						)
-				)
+							{ upsert: true, returnDocument: "after", projection: { _id: true } },
+						),
+				),
 			)).map(p => p?.value),
 		};
 
 		await this.gamesCollection.findOneAndUpdate(
 			{
-				majsoulId: gameResult.majsoulId
+				majsoulId: gameResult.majsoulId,
 			},
 			{
 				$set: {
 					...gameRecord,
-				}
+				},
 			},
 			{
-				upsert: true
-			}
+				upsert: true,
+			},
 		);
 	}
 

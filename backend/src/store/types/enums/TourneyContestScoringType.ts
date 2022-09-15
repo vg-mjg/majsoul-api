@@ -3,5 +3,5 @@ export enum TourneyContestScoringType {
 	Consecutive,
 	Kans,
 	EliminationBrackets,
-	Gacha
+	Gacha,
 }

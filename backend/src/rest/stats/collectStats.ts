@@ -62,7 +62,7 @@ function selectPlayers(game: StoreGameResult<ObjectId>, players?: Record<string,
 		.map((player, seat) => ({
 			playerId: player._id,
 			teamId: (players == null || players[player._id.toHexString()] === true) ? undefined : players[player._id.toHexString()] as ObjectId,
-			seat
+			seat,
 		}))
 		.filter(player => players == null || !!players[player.playerId.toHexString()]);
 }
@@ -76,7 +76,7 @@ function generateBaseStatsData(game: StoreGameResult<ObjectId>): BaseStatsShared
 		standings: game.finalScore
 			.map((score, seat) => ({ ...score, seat }))
 			.sort((a, b) => b.score - a.score)
-			.reduce((total, next, rank) => (total[next.seat] = rank + 1, total), [] as number[])
+			.reduce((total, next, rank) => (total[next.seat] = rank + 1, total), [] as number[]),
 	};
 }
 
@@ -84,7 +84,7 @@ function collectBaseStats(game: StoreGameResult<ObjectId>, player: PlayerData, d
 	return {
 		gamesPlayed: 1,
 		totalHands: game.rounds?.length ?? 0,
-		totalRank: data.standings[player.seat]
+		totalRank: data.standings[player.seat],
 	};
 }
 
@@ -159,7 +159,7 @@ function collectFirstStats(
 
 				if (round.playerStats.find(otherStats =>
 					otherStats.finalHandState.status === HandStatus.Riichi
-						&& otherStats.finalHandState.index > index
+						&& otherStats.finalHandState.index > index,
 				)) {
 					total.riichi.chased++;
 				}

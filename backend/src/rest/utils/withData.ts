@@ -14,7 +14,7 @@ export function withData<DataType, RequestType, ResponseType>(
 		await callback(
 			matchedData(request, { includeOptionals: false }) as DataType,
 			request,
-			response
+			response,
 		);
 	});
 }
