@@ -18,6 +18,7 @@ import { GachaGroup } from "../../store/types/gacha/GachaGroup";
 import { GachaPull } from "../../store/types/gacha/GachaPull";
 import { GameResult as StoreGameResult } from "../../store/types/game/GameResult";
 import { Player } from "../../store/types/Player";
+import { SmokinSexyStyle } from "../../store/types/SmokinSexyStyle";
 import { ContestOption } from "../ContestOption";
 import { PlayerContestTypeResults } from "../PlayerContestTypeResults";
 import { LeaguePhase } from "../types/contest/LeaguePhase";
@@ -424,6 +425,9 @@ export class RouteState {
 			} case TourneyContestScoringType.Gacha: {
 				resultsByType[type.id] = await this.getGachaResults(games, maxGames, contest);
 				break;
+			}case TourneyContestScoringType.SmokingSexyStyle: {
+				resultsByType[type.id] = await this.getSSSResults(games, maxGames);
+				break;
 			}
 			}
 		}
@@ -561,7 +565,7 @@ export class RouteState {
 
 	public getConsectutiveResults(
 		scoringDetails: TourneyScoringTypeDetails,
-		games: GameResult[],
+		games: StoreGameResult[],
 		maxGames: number,
 	): Record<string, PlayerContestTypeResults> {
 		const gamesToCount = scoringDetails?.typeDetails?.gamesToCount ?? 5;
@@ -635,7 +639,7 @@ export class RouteState {
 			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	public getCumulativeResults(games: GameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
+	public getCumulativeResults(games: StoreGameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
 		const playerResults = games.reduce((total, next) => {
 			for (let seat = 0; seat < next.players.length; seat++) {
 				if (!next.players[seat]) {
@@ -685,7 +689,7 @@ export class RouteState {
 			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	public getKanResults(games: GameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
+	public getKanResults(games: StoreGameResult[], maxGames: number): Record<string, PlayerContestTypeResults> {
 		const playerResults = games.reduce((total, next) => {
 			for (let seat = 0; seat < next.players.length; seat++) {
 				if (!next.players[seat]) {
@@ -745,7 +749,7 @@ export class RouteState {
 			}, {} as Record<string, PlayerContestTypeResults>);
 	}
 
-	public async getGachaResults(games: GameResult[], maxGames: number, contest: StoreContest): Promise<Record<string, PlayerContestTypeResults>> {
+	public async getGachaResults(games: StoreGameResult[], maxGames: number, contest: StoreContest): Promise<Record<string, PlayerContestTypeResults>> {
 		const results = this.getCumulativeResults(games, maxGames);
 		const rolls = await this.mongoStore.gachaCollection.find({
 			gameId: { $in: games.map(game => game._id) },
@@ -807,7 +811,64 @@ export class RouteState {
 		return results;
 	}
 
-	public async getEliminationLevels(contest: StoreContest<ObjectId>, phase: ContestPhase<ObjectId>, games: GameResult[]): Promise<EliminationLevel[]> {
+	public async getSSSResults(games: StoreGameResult[], maxGames: number): Promise<Record<string, PlayerContestTypeResults>> {
+		const styles = await this.mongoStore.smokingSexyStyleCollection.find({
+			gameId: { $in: games.map(game => game._id) },
+		}).toArray();
+
+		const gameStylesMap = styles.reduce((total, next) => (total[next.gameId.toHexString()] = next, total), {} as Record<string, SmokinSexyStyle>);
+
+		const playerResults = games.reduce((total, next) => {
+			for (let seat = 0; seat < next.players.length; seat++) {
+				if (!next.players[seat]) {
+					continue;
+				}
+
+
+				const playerId = next.players[seat]._id.toHexString();
+				const playerData = total[playerId] ??= {
+					score: 0,
+					totalMatches: 0,
+					highlightedGameIds: [],
+				};
+
+				if (playerData.highlightedGameIds.length < maxGames) {
+					playerData.highlightedGameIds.push(next._id.toHexString());
+				}
+
+				playerData.totalMatches++;
+				const score = (gameStylesMap[next._id.toHexString()]?.styles[seat]?.total ?? 0) * 1000;
+				if (playerData.totalMatches <= maxGames) {
+					playerData.score += score;
+				}
+			}
+			return total;
+		}, {} as Record<string, {
+			totalMatches: number;
+			rank?: number;
+			score: number;
+			highlightedGameIds: string[];
+		}>);
+
+		return Object.entries(playerResults)
+			.sort(([, {score: scoreA}], [, {score: scoreB}]) => scoreB - scoreA)
+			.map((result, index) => {
+				result[1].rank = index;
+				return result;
+			})
+			.reduce((total, [id, result]) => {
+				total[id] = {
+					playerId: id,
+					rank: result.rank + 1,
+					score: result.score,
+					totalMatches: result.totalMatches,
+					highlightedGameIds: result.highlightedGameIds,
+				};
+				return total;
+			}, {} as Record<string, PlayerContestTypeResults>);
+	}
+
+	public async getEliminationLevels(contest: StoreContest<ObjectId>, phase: ContestPhase<ObjectId>, games: StoreGameResult[]): Promise<EliminationLevel[]> {
 		const eliminationLevels: EliminationLevel[] = [];
 		const targetPlayers = phase.eliminationBracketTargetPlayers ?? 32;
 

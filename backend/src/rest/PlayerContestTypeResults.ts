@@ -1,3 +1,4 @@
+import { StyleBreakdown } from "../store/types/sss/StyleBreakdown";
 import { GachaData } from "./types/GachaData";
 
 export interface PlayerContestTypeResults {

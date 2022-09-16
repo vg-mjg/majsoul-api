@@ -3,6 +3,7 @@ import { body, matchedData, oneOf, param, query, validationResult } from "expres
 import * as jwt from "jsonwebtoken";
 import { Condition, Filter, ObjectId } from "mongodb";
 
+import { StyleBreakdown } from "../../../store";
 import { isAgariYakuman } from "../../../store/isAgariYakuman";
 import { Config } from "../../../store/types/Config";
 import { Contest as StoreContest } from "../../../store/types/contest/Contest";
@@ -444,9 +445,9 @@ export const contestRoute: Route<RouteState> = {
 			}),
 		),
 
-		(app, state) => app.get<any, StoreGameResult<ObjectId>>("/games/:id",
+		(app, state) => app.get<any, GameResult<ObjectId>>("/games/:id",
 			param("id").isMongoId(),
-			withData<{ id: string }, any, StoreGameResult<ObjectId>>(async (data, req, res) => {
+			withData<{ id: string }, any, GameResult<ObjectId>>(async (data, req, res) => {
 				const gameId = new ObjectId(data.id);
 				const games = await state.getGames({
 					_id: gameId,
@@ -456,7 +457,15 @@ export const contestRoute: Route<RouteState> = {
 					res.status(404).send();
 					return;
 				}
-				res.send(games[0]);
+
+				const styles = await state.mongoStore.smokingSexyStyleCollection.findOne({
+					gameId,
+				});
+
+				res.send({
+					...games[0],
+					styles: styles.styles,
+				});
 			}),
 		),
 
@@ -760,9 +769,16 @@ export const contestRoute: Route<RouteState> = {
 					"players._id": ObjectId.createFromHexString(req.params.playerId),
 				});
 
+				const styles = await state.mongoStore.smokingSexyStyleCollection.find({
+					gameId: { $in: games.map(game => game._id) },
+				}).toArray();
+
+				const styleMap = styles.reduce((total, next) => (total[next.gameId.toHexString()] = next.styles, total), {} as Record<string, StyleBreakdown[]>);
+
 				res.send(games.map(game => ({
 					...game,
 					contestId: contestId,
+					styles: styleMap[game._id.toHexString()],
 				})));
 			} catch (error) {
 				console.log(error);

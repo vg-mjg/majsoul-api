@@ -1,4 +1,4 @@
-import type { Rest } from "backend";
+import type { Rest, Store } from "backend";
 import { ContestType, TourneyContestScoringType } from "backend/dist/store/enums.js";
 import * as React from "react";
 import { useState } from "react";
@@ -17,7 +17,7 @@ import { TextField } from "./utils/TextField";
 
 const CustomGameAdder: React.FC<{
 	contestId: string;
-	onGameCreated: (game: Rest.GameResult<string>) => void;
+	onGameCreated: (game: Store.GameResult<string>) => void;
 }> = ({
 	contestId,
 	onGameCreated,

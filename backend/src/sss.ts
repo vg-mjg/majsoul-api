@@ -5,10 +5,14 @@ import { GameStepRecord } from "majsoul/dist/types/GameRecord";
 import * as path from "path";
 import * as util from "util";
 
-import { breakdownStyle, StyleComboType, StyleMeterChangeType, StyleMoveType, StylePenaltyType } from "./connector/styleCalculator";
+import { breakdownStyle } from "./connector/styleCalculator";
 import { getSecrets } from "./secrets";
 import { Wind } from "./store/enums";
 import { buildGameMetadata } from "./store/GameMetadata";
+import { StyleComboType } from "./store/types/enums/StyleComboType";
+import { StyleMeterChangeType } from "./store/types/enums/StyleMeterChangeType";
+import { StyleMoveType } from "./store/types/enums/StyleMoveType";
+import { StylePenaltyType } from "./store/types/enums/StylePenaltyType";
 import { unifyMajsoulGameRecord } from "./store/UnifiedGameRecord";
 
 async function main() {

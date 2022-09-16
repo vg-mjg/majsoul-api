@@ -1,103 +1,17 @@
 import { Han } from "majsoul";
 
-import { Wind } from "../store/enums";
 import { AgariDetails, FinalHandState, FinalHandStateType, GameMetadata, RoundConclusionType, RoundMetadata } from "../store/GameMetadata";
+import { StyleComboType } from "../store/types/enums/StyleComboType";
+import { StyleMeterChangeType } from "../store/types/enums/StyleMeterChangeType";
+import { StyleMoveType } from "../store/types/enums/StyleMoveType";
+import { StylePenaltyType } from "../store/types/enums/StylePenaltyType";
+import { Wind } from "../store/types/enums/Wind";
+import { StyleBreakdown } from "../store/types/sss/StyleBreakdown";
+import { StyleCombo } from "../store/types/sss/StyleCombo";
+import { StyleMeterChange } from "../store/types/sss/StyleMeterChange";
+import { StyleMove } from "../store/types/sss/StyleMove";
 import { UnifiedGameRecord } from "../store/UnifiedGameRecord";
 
-
-export enum StyleMoveType {
-	Unknown,
-
-	Win,
-	Mangan,
-	Haneman,
-	Baiman,
-	Sanbaiman,
-	Yakuman,
-
-	Riichi,
-	Dora,
-	UraDora,
-	AllSimples,
-	SeatWind,
-	PrevalentWind,
-	RedDragon,
-	WhiteDragon,
-	GreenDragon,
-
-	OpenPureStraight,
-	ClosedPureStraight,
-	OpenMixedTripleSequence,
-	ClosedMixedTripleSequence,
-
-	AllTriplets,
-	PureDoubleSequence,
-	HalfOutsideHand,
-	OpenHalfFlush,
-	ClosedHalfFlush,
-	SevenPairs,
-	FullyOutsideHand,
-	Ippatsu,
-	RobbingAKan,
-	UnderTheSea,
-	UnderTheRiver,
-	DoubleRiichi,
-	AfterAKan,
-	ThreeConcealedTriplets,
-	TwicePureDoubleSequence,
-	TripleTriplets,
-	OpenFullFlush,
-	ClosedFullFlush,
-	ThreeQuads,
-	LittleThreeDragons,
-	AllTerminalsAndHonors,
-	ManganAtDraw,
-	RedFive,
-}
-
-export enum StyleMeterChangeType {
-	Combo,
-	Move,
-	Penalty
-}
-
-export enum StylePenaltyType {
-	TripleRon,
-}
-
-export interface StylePenalty {
-	type: StyleMeterChangeType.Penalty;
-	penaltyType: StylePenaltyType;
-	points: number;
-}
-
-export interface StyleMove {
-	type: StyleMeterChangeType.Move;
-	moveType: StyleMoveType;
-	rawPoints: number;
-	repetitionReduction: number;
-	multiplier: number;
-	actualPoints: number;
-}
-
-export enum StyleComboType {
-	ChainWin,
-	Idle,
-	DamageTaken,
-}
-
-export interface StyleCombo {
-	type: StyleMeterChangeType.Combo;
-	comboType: StyleComboType;
-	change: number;
-}
-
-export type StyleMeterChange = StyleMove | StyleCombo | StylePenalty;
-
-export interface StyleBreakdown {
-	total: number;
-	moves: StyleMeterChange[];
-}
 
 interface StyleData {
 	combo: number;

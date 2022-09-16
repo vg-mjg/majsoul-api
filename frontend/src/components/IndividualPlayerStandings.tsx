@@ -1,6 +1,6 @@
 import { stylesheet } from "astroturf";
 import type { Rest, Store } from "backend";
-import { TourneyContestScoringType } from "backend/dist/store/enums.js";
+import { StyleComboType, StyleMeterChangeType, StyleMoveType, StylePenaltyType, TourneyContestScoringType, Wind } from "backend/dist/store/enums.js";
 import clsx from "clsx";
 import * as dayjs from "dayjs";
 import { PlayerZone } from "majsoul/dist/enums.js";
@@ -11,6 +11,7 @@ import Badge from "react-bootstrap/Badge";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
+import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 
 import { fetchContestPlayerGames } from "../api/Games";
@@ -117,6 +118,30 @@ const styles = stylesheet`
 		height: 512px;
 		margin: 32px;
 	}
+
+	.styledGame {
+		&:hover {
+			text-decoration: underline;
+		}
+
+		cursor: pointer;
+	}
+
+	.moveRow {
+		background-color: #2f343a;
+	}
+
+	.penaltyRow {
+		background-color: #403440;
+	}
+
+	.comboDownRow {
+		background-color: #403a34;
+	}
+
+	.comboUpRow {
+		background-color: #344034;
+	}
 `;
 
 const GachaIcon: React.FC<{cardId: string}> = ({cardId}) => {
@@ -161,6 +186,78 @@ const GachaImage: React.FC<{gachaData: Rest.GachaData[]}> = ({gachaData}) => {
 			<img src={cardMap[card].image} className={styles.gachaImage} />
 		</div>
 	</Row>;
+};
+
+const GameDetails: React.FC<{
+	playerSeat: Wind;
+	position: number;
+	score: number;
+	startTime: number;
+	majsoulId: string;
+	styleBreakdown?: Store.StyleBreakdown
+}> = ({
+	playerSeat,
+	position,
+	score,
+	startTime,
+	majsoulId,
+	styleBreakdown,
+}) => {
+	const { t } = useTranslation();
+	const [viewDetails, setViewDetails] = React.useState(false);
+	const onAccordionSelect = React.useCallback((accordionKey: string) => {
+		setViewDetails(accordionKey === "0");
+	}, [setViewDetails]);
+
+	return <Accordion as={Container} activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} className={clsx(styles && styles.styledGame)}>
+		<Accordion.Toggle as={Row} eventKey="0">
+			<Col md="auto">
+				{getSeatCharacter(playerSeat)}
+			</Col>
+
+			<Col md="auto">
+				{position + 1}位
+			</Col>
+
+			<Col md="auto">
+				{styleBreakdown?.total ?? score}
+			</Col>
+
+			<Col>
+				{dayjs(startTime).calendar()}
+			</Col>
+
+			<Col md="auto">
+				<PaipuLink majsoulId={majsoulId} />
+			</Col>
+		</Accordion.Toggle>
+		<Accordion.Collapse as={Row} eventKey="0">
+			<Container>
+				{styleBreakdown.moves.map((style, index) => <Row
+					key={`${index}_${style.type}`}
+					className={clsx(
+						style.type === StyleMeterChangeType.Move && styles.moveRow,
+						style.type === StyleMeterChangeType.Penalty && styles.penaltyRow,
+						style.type === StyleMeterChangeType.Combo && (style.change >= 0 ? styles.comboUpRow : styles.comboDownRow),
+					)}
+				>
+					<Col className="text-left">{t(`sss.moves.${
+						style.type === StyleMeterChangeType.Move
+							? StyleMoveType[style.moveType]
+							: style.type === StyleMeterChangeType.Combo
+								? StyleComboType[style.comboType]
+								: StylePenaltyType[style.penaltyType]
+					}`)}</Col>
+					<Col className="text-right">{style.type === StyleMeterChangeType.Move
+						? style.actualPoints
+						: style.type === StyleMeterChangeType.Combo
+							? style.change
+							: style.points
+					}</Col>
+				</Row>)}
+			</Container>
+		</Accordion.Collapse>
+	</Accordion>;
 };
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
@@ -246,24 +343,15 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 								.sort((a, b) => b.score.uma - a.score.uma)
 								.findIndex(r => r.seat === playerSeat);
 							return <Row key={game._id} className={clsx(props.scoreRanking[selectedScoreType.id].highlightedGameIds?.indexOf(game._id) >= 0 && "font-weight-bold")}>
-								<Col md="auto">
-									{getSeatCharacter(playerSeat)}
-								</Col>
-
-								<Col md="auto">
-									{position + 1}位
-								</Col>
-
-								<Col md="auto">
-									{game.finalScore[playerSeat].uma / 1000}
-								</Col>
-
 								<Col>
-									{dayjs(game.start_time).calendar()}
-								</Col>
-
-								<Col md="auto">
-									<PaipuLink majsoulId={game.majsoulId} />
+									<GameDetails
+										majsoulId={game.majsoulId}
+										playerSeat={playerSeat}
+										score={game.finalScore[playerSeat].uma / 1000}
+										startTime={game.start_time}
+										position={position}
+										styleBreakdown={game.styles[playerSeat]}
+									/>
 								</Col>
 							</Row>;
 						})}

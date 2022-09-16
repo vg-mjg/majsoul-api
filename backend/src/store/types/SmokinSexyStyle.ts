@@ -1,10 +1,7 @@
-import { StyleBreakdown } from "../../connector/styleCalculator";
+import { StyleBreakdown } from "./sss/StyleBreakdown";
 
 export interface SmokinSexyStyle<Id = any> {
 	_id?: Id;
 	gameId: Id;
-	styles: {
-		playerId: Id;
-		styleBreakdown: StyleBreakdown;
-	}[];
+	styles: StyleBreakdown[];
 }

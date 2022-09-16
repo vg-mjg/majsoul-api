@@ -1,0 +1,51 @@
+
+
+export enum StyleMoveType {
+	Unknown,
+
+	Win,
+	Mangan,
+	Haneman,
+	Baiman,
+	Sanbaiman,
+	Yakuman,
+
+	Riichi,
+	Dora,
+	UraDora,
+	AllSimples,
+	SeatWind,
+	PrevalentWind,
+	RedDragon,
+	WhiteDragon,
+	GreenDragon,
+
+	OpenPureStraight,
+	ClosedPureStraight,
+	OpenMixedTripleSequence,
+	ClosedMixedTripleSequence,
+
+	AllTriplets,
+	PureDoubleSequence,
+	HalfOutsideHand,
+	OpenHalfFlush,
+	ClosedHalfFlush,
+	SevenPairs,
+	FullyOutsideHand,
+	Ippatsu,
+	RobbingAKan,
+	UnderTheSea,
+	UnderTheRiver,
+	DoubleRiichi,
+	AfterAKan,
+	ThreeConcealedTriplets,
+	TwicePureDoubleSequence,
+	TripleTriplets,
+	OpenFullFlush,
+	ClosedFullFlush,
+	ThreeQuads,
+	LittleThreeDragons,
+	AllTerminalsAndHonors,
+	ManganAtDraw,
+	RedFive
+}

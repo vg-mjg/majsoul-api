@@ -31,7 +31,8 @@
 			},
 			"kans": "Kans",
 			"gacha": "Gacha",
-			"eliminationbrackets": "Elimination Brackets"
+			"eliminationbrackets": "Elimination Brackets",
+			"smokingsexystyle": "Smoking Sexy Style"
 		}
 	},
 	"stats": {
@@ -146,5 +147,8 @@
 				"before": "[Started] [on] l"
 			}
 		}
+	},
+	"sss": {
+		"moves": {}
 	}
 }
