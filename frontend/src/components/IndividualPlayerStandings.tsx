@@ -1,6 +1,7 @@
 import { stylesheet } from "astroturf";
 import type { Rest, Store } from "backend";
 import { StyleComboType, StyleMeterChangeType, StyleMoveType, StylePenaltyType, TourneyContestScoringType, Wind } from "backend/dist/store/enums.js";
+import { StyleGrade } from "backend/dist/store/enums.js";
 import clsx from "clsx";
 import * as dayjs from "dayjs";
 import { PlayerZone } from "majsoul/dist/enums.js";
@@ -14,6 +15,13 @@ import Row from "react-bootstrap/Row";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 
+import A from "../../assets/sss/A.png";
+import B from "../../assets/sss/B.png";
+import C from "../../assets/sss/C.png";
+import D from "../../assets/sss/D.png";
+import S from "../../assets/sss/S.png";
+import SS from "../../assets/sss/SS.png";
+import SSS from "../../assets/sss/SSS.png";
 import { fetchContestPlayerGames } from "../api/Games";
 import { IState } from "../State";
 import { ContestContext } from "./contest/ContestProvider";
@@ -119,12 +127,30 @@ const styles = stylesheet`
 		margin: 32px;
 	}
 
-	.styledGame {
-		&:hover .gameHeading {
-			text-decoration: underline;
-		}
+	.styleImage {
+		height: 100%;
+		width: 100%;
+	}
 
-		cursor: pointer;
+	.styledGame:hover {
+		.gameHeading {
+			text-decoration: underline;
+			cursor: pointer;
+		}
+	}
+
+	.gameStyleIcon {
+		width: 24px;
+		height: 24px;
+		position: absolute;
+		left: 0px;
+	}
+
+	.playerStyleIcon {
+		width: 32px;
+		height: 32px;
+		position: absolute;
+		left: -32px;
 	}
 
 	.moveRow {
@@ -143,6 +169,8 @@ const styles = stylesheet`
 		background-color: #344034;
 	}
 `;
+
+
 
 const GachaIcon: React.FC<{cardId: string}> = ({cardId}) => {
 	const { contestId } = useContext(ContestContext);
@@ -188,6 +216,20 @@ const GachaImage: React.FC<{gachaData: Rest.GachaData[]}> = ({gachaData}) => {
 	</Row>;
 };
 
+const gradeImageMap = {
+	[StyleGrade.D]: D,
+	[StyleGrade.C]: C,
+	[StyleGrade.B]: B,
+	[StyleGrade.A]: A,
+	[StyleGrade.S]: S,
+	[StyleGrade.SS]: SS,
+	[StyleGrade.SSS]: SSS,
+} as Record<StyleGrade, string>;
+
+const StyleGradeIcon: React.FC<{grade: StyleGrade}> = ({grade}) => {
+	return <img src={gradeImageMap[grade]} className={styles.styleImage} />;
+};
+
 const GameDetails: React.FC<{
 	playerSeat: Wind;
 	position: number;
@@ -211,6 +253,7 @@ const GameDetails: React.FC<{
 
 	return <Accordion as={Container} activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} className={clsx(styles && styles.styledGame)}>
 		<Accordion.Toggle as={Row} eventKey="0" className={styles.gameHeading} >
+			{styleBreakdown && <div className={styles.gameStyleIcon}><StyleGradeIcon grade={styleBreakdown.grade}/></div>}
 			<Col md="auto">
 				{getSeatCharacter(playerSeat)}
 			</Col>
@@ -238,7 +281,7 @@ const GameDetails: React.FC<{
 					className={clsx(
 						style.type === StyleMeterChangeType.Move && styles.moveRow,
 						style.type === StyleMeterChangeType.Penalty && styles.penaltyRow,
-						style.type === StyleMeterChangeType.Combo && (style.change >= 0 ? styles.comboUpRow : styles.comboDownRow),
+						style.type === StyleMeterChangeType.Combo && (style.change > 0 ? styles.comboUpRow : styles.comboDownRow),
 					)}
 				>
 					<Col className="text-left">{t(`sss.${StyleMeterChangeType[style.type]}.${
@@ -252,7 +295,7 @@ const GameDetails: React.FC<{
 						? style.actualPoints
 						: style.type === StyleMeterChangeType.Combo
 							? `x${style.final}`
-							: style.points
+							: `-${style.points}`
 					}</Col>
 				</Row>)}
 			</Container>
@@ -291,14 +334,15 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 	const selectedScoreTypeId = props.scoreTypeId ?? props.qualificationType;
 	const selectedScoreType = props.scoreTypes[selectedScoreTypeId];
 
-	return <Accordion as={Container} className="p-0" activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} >
+	return <Accordion as={Container} className="p-0" activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect}>
 		<Accordion.Toggle
 			as={Row}
 			eventKey="0"
 			className={clsx("no-gutters align-items-center flex-nowrap", globalStyles.linkDark)}
 			onClick={() => setLoadGames(true)}
-			style={{ cursor: "pointer" }}
+			style={{ cursor: "pointer", position: "relative" }}
 		>
+			{props.scoreRanking[selectedScoreType.id].styleGrade && <div className={styles.playerStyleIcon}><StyleGradeIcon grade={props.scoreRanking[selectedScoreType.id].styleGrade}/></div>}
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreTypeId == null ? props.rank : props.scoreRanking[props.scoreTypeId].rank}位</b></h5></Col>
 			{team && <TeamIcon team={team} />}
 			<Zone zone={props.player.zone} />

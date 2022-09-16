@@ -1,3 +1,4 @@
+import { StyleGrade } from "../../../store/enums";
 import { PlayerRankingType } from "../enums/PlayerRankingType";
 import { GachaData } from "../GachaData";
 
@@ -8,5 +9,6 @@ export interface PlayerScoreTypeRanking {
 		score: number;
 		highlightedGameIds?: string[];
 		gachaData?: GachaData[];
+		styleGrade?: StyleGrade;
 	}>;
 }

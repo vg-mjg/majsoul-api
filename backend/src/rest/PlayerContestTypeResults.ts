@@ -1,4 +1,4 @@
-import { StyleBreakdown } from "../store/types/sss/StyleBreakdown";
+import { StyleGrade } from "../store/enums";
 import { GachaData } from "./types/GachaData";
 
 export interface PlayerContestTypeResults {
@@ -8,4 +8,5 @@ export interface PlayerContestTypeResults {
 	totalMatches: number;
 	highlightedGameIds?: string[];
 	gachaPulls?: GachaData[];
+	styleGrade?: StyleGrade;
 }

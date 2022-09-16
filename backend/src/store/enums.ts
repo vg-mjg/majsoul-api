@@ -3,6 +3,7 @@ export { DrawStatus } from "./types/enums/DrawStatus";
 export { GameResultVersion } from "./types/enums/GameResultVersion";
 export { HandStatus } from "./types/enums/HandStatus";
 export { StyleComboType } from "./types/enums/StyleComboType";
+export { StyleGrade } from "./types/enums/StyleGrade";
 export { StyleMeterChangeType } from "./types/enums/StyleMeterChangeType";
 export { StyleMoveType } from "./types/enums/StyleMoveType";
 export { StylePenaltyType } from "./types/enums/StylePenaltyType";

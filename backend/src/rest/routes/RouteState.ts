@@ -4,7 +4,9 @@ import { Condition, Filter, FindOptions,ObjectId } from "mongodb";
 import { concat, defer, from, lastValueFrom,Observable, of } from "rxjs";
 import { map, mergeAll, mergeScan, mergeWith, pairwise, toArray } from "rxjs/operators";
 
+import { getStyleGrade } from "../../connector/getStyleGrade";
 import { buildContestPhases } from "../../store/buildContestPhases";
+import { StyleGrade } from "../../store/enums";
 import { Store } from "../../store/Store";
 import { Contest as StoreContest } from "../../store/types/contest/Contest";
 import { ContestPhase } from "../../store/types/contest/ContestPhase";
@@ -457,6 +459,9 @@ export class RouteState {
 					if (result.gachaPulls) {
 						total[type.id].gachaData = result.gachaPulls;
 					}
+					if (result.styleGrade) {
+						total[type.id].styleGrade = result.styleGrade;
+					}
 					return total;
 				}, {} as PlayerScoreTypeRanking["details"]),
 			},
@@ -863,6 +868,7 @@ export class RouteState {
 					score: result.score,
 					totalMatches: result.totalMatches,
 					highlightedGameIds: result.highlightedGameIds,
+					styleGrade: result.totalMatches < 1 ? StyleGrade.None : getStyleGrade((result.score / result.totalMatches) / 1000 / 85 * 100),
 				};
 				return total;
 			}, {} as Record<string, PlayerContestTypeResults>);

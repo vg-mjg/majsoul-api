@@ -12,6 +12,7 @@ import { StyleCombo } from "../store/types/sss/StyleCombo";
 import { StyleMeterChange } from "../store/types/sss/StyleMeterChange";
 import { StyleMove } from "../store/types/sss/StyleMove";
 import { AbortionType, CallType, UnifiedGameLogEventType, UnifiedGameRecord } from "../store/UnifiedGameRecord";
+import { getStyleGrade } from "./getStyleGrade";
 
 
 interface StyleData {
@@ -557,7 +558,7 @@ export function breakdownStyle(gameRecord: UnifiedGameRecord, gameMetadata: Game
 	}
 
 	return Object.keys(styleData).reduce(
-		(total, next) => (total[next] = { total: styleData[next].total, moves: styleData[next].moves }, total),
+		(total, next) => (total[next] = { total: styleData[next].total, grade: getStyleGrade(styleData[next].total), moves: styleData[next].moves }, total),
 		{} as Record<Wind, StyleBreakdown>,
 	);
 }
