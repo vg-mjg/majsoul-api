@@ -1,5 +1,7 @@
+import syanten from "syanten";
+
 import { Wind } from "./enums";
-import { CallType, HanDetail, UnifiedGameLogEvent, UnifiedGameLogEventType, UnifiedGameRecord } from "./UnifiedGameRecord";
+import { AbortionType, CallType, HanDetail, UnifiedGameLogEvent, UnifiedGameLogEventType, UnifiedGameRecord } from "./UnifiedGameRecord";
 
 export interface GameMetadata {
 	rounds: RoundMetadata[];
@@ -9,6 +11,7 @@ export enum RoundConclusionType {
 	Ron,
 	Tsumo,
 	Ryuukyoku,
+	Abortion,
 }
 
 export interface RoundRonConclusion {
@@ -20,6 +23,8 @@ export interface AgariDetails {
 	winner: Wind;
 	han: HanDetail[];
 	baseHandCombinedValue: number;
+	hand: string[];
+	dora: string[];
 }
 
 export interface RonDetails extends AgariDetails {
@@ -35,7 +40,13 @@ export interface RoundRyuukyokuConclusion {
 	type: RoundConclusionType.Ryuukyoku;
 }
 
-export type RoundConclusion = RoundRonConclusion | RoundTsumoConclusion | RoundRyuukyokuConclusion;
+export interface RoundAbortionConclusion {
+	type: RoundConclusionType.Abortion;
+	player: Wind;
+	abortionType: AbortionType;
+}
+
+export type RoundConclusion = RoundRonConclusion | RoundTsumoConclusion | RoundRyuukyokuConclusion | RoundAbortionConclusion;
 
 export enum FinalHandStateType {
 	Open,
@@ -105,9 +116,19 @@ export function buildGameMetadata(unifiedGameRecord: UnifiedGameRecord): GameMet
 			};
 			break;
 		}
+		case UnifiedGameLogEventType.Abortion: {
+			round.conclusion = {
+				type: RoundConclusionType.Abortion,
+				player: event.player,
+				abortionType: event.abortionType,
+			};
+			break;
+		}
 		case UnifiedGameLogEventType.WinDeclared: {
-			if (event.wins.length === 1 || event.wins[0]?.loser == null) {
+			if (event.wins.length === 1 && event.wins[0]?.loser == null) {
 				round.conclusion = {
+					hand: event.wins[0].hand,
+					dora: event.wins[0].dora,
 					type: RoundConclusionType.Tsumo,
 					han: event.wins[0].han,
 					winner: event.wins[0].winner,
@@ -117,6 +138,8 @@ export function buildGameMetadata(unifiedGameRecord: UnifiedGameRecord): GameMet
 				round.conclusion = {
 					type: RoundConclusionType.Ron,
 					rons: event.wins.map(win => ({
+						hand: event.wins[0].hand,
+						dora: event.wins[0].dora,
 						han: win.han,
 						winner: win.winner,
 						baseHandCombinedValue: win.combinedBaseHandValue,

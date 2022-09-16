@@ -120,7 +120,7 @@ const styles = stylesheet`
 	}
 
 	.styledGame {
-		&:hover {
+		&:hover .gameHeading {
 			text-decoration: underline;
 		}
 
@@ -210,7 +210,7 @@ const GameDetails: React.FC<{
 	}, [setViewDetails]);
 
 	return <Accordion as={Container} activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} className={clsx(styles && styles.styledGame)}>
-		<Accordion.Toggle as={Row} eventKey="0">
+		<Accordion.Toggle as={Row} eventKey="0" className={styles.gameHeading} >
 			<Col md="auto">
 				{getSeatCharacter(playerSeat)}
 			</Col>
@@ -233,7 +233,7 @@ const GameDetails: React.FC<{
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<Container>
-				{styleBreakdown.moves.map((style, index) => <Row
+				{styleBreakdown?.moves?.map((style, index) => <Row
 					key={`${index}_${style.type}`}
 					className={clsx(
 						style.type === StyleMeterChangeType.Move && styles.moveRow,
@@ -241,7 +241,7 @@ const GameDetails: React.FC<{
 						style.type === StyleMeterChangeType.Combo && (style.change >= 0 ? styles.comboUpRow : styles.comboDownRow),
 					)}
 				>
-					<Col className="text-left">{t(`sss.moves.${
+					<Col className="text-left">{t(`sss.${StyleMeterChangeType[style.type]}.${
 						style.type === StyleMeterChangeType.Move
 							? StyleMoveType[style.moveType]
 							: style.type === StyleMeterChangeType.Combo
@@ -251,7 +251,7 @@ const GameDetails: React.FC<{
 					<Col className="text-right">{style.type === StyleMeterChangeType.Move
 						? style.actualPoints
 						: style.type === StyleMeterChangeType.Combo
-							? style.change
+							? `x${style.final}`
 							: style.points
 					}</Col>
 				</Row>)}
@@ -350,7 +350,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 										score={game.finalScore[playerSeat].uma / 1000}
 										startTime={game.start_time}
 										position={position}
-										styleBreakdown={game.styles[playerSeat]}
+										styleBreakdown={game?.styles?.[playerSeat]}
 									/>
 								</Col>
 							</Row>;

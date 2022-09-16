@@ -1,4 +1,8 @@
 
 export enum StylePenaltyType {
-	TripleRon
+	TripleRon,
+	Loss,
+	Dama,
+	PinfuNomi,
+	OpenHand,
 }

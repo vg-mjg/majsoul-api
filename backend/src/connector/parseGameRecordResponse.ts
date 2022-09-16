@@ -2,6 +2,7 @@ import { GameRecord, Han } from "majsoul";
 import { lq } from "majsoul";
 import syanten from "syanten";
 
+import { handToSyantenFormat } from "../store/handToSyantenFormat";
 import { DrawStatus } from "../store/types/enums/DrawStatus";
 import { latestGameResultVersion } from "../store/types/enums/GameResultVersion";
 import { HandStatus } from "../store/types/enums/HandStatus";
@@ -25,26 +26,6 @@ import { RoundResult } from "../store/types/game/round/RoundResult";
 // 	return val;
 // }
 
-const suitKeyMap: Record<string, number> = { m: 0, p: 1, s: 2, z: 3 };
-function handShanten(hand: string[]): number {
-	const hai: syanten.HaiArr = [
-		[0, 0, 0, 0, 0, 0, 0, 0, 0],
-		[0, 0, 0, 0, 0, 0, 0, 0, 0],
-		[0, 0, 0, 0, 0, 0, 0, 0, 0],
-		[0, 0, 0, 0, 0, 0, 0],
-	];
-
-	for (const t of hand) {
-		let num: number = parseInt(t[0]);
-		if (0 === num) {
-			num = 5;
-		}
-
-		hai[suitKeyMap[t[1]]][num - 1]++;
-	}
-
-	return syanten(hai);
-}
 
 function getAgariRecord(record: any, hule: lq.IHuleInfo, round: RoundInfo): AgariInfo {
 	const value = hule.zimo
@@ -104,7 +85,7 @@ export function parseGameRecordResponse(game: GameRecord): GameResult {
 			playerStats = [];
 			for (let p = 0; p < numberOfPlayers; p++) {
 				playerStats[p] = {
-					haipaiShanten: handShanten(recordNewRound["tiles" + p]),
+					haipaiShanten: syanten(handToSyantenFormat(recordNewRound["tiles" + p])),
 					calls: {
 						kans: {
 							ankan: 0,

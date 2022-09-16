@@ -1,6 +1,7 @@
 import { Han } from "majsoul";
 
-import { AgariDetails, FinalHandState, FinalHandStateType, GameMetadata, RoundConclusionType, RoundMetadata } from "../store/GameMetadata";
+import { StylePenalty } from "../store";
+import { AgariDetails, FinalHandState, FinalHandStateType, GameMetadata, RonDetails, RoundConclusionType, RoundMetadata } from "../store/GameMetadata";
 import { StyleComboType } from "../store/types/enums/StyleComboType";
 import { StyleMeterChangeType } from "../store/types/enums/StyleMeterChangeType";
 import { StyleMoveType } from "../store/types/enums/StyleMoveType";
@@ -10,7 +11,7 @@ import { StyleBreakdown } from "../store/types/sss/StyleBreakdown";
 import { StyleCombo } from "../store/types/sss/StyleCombo";
 import { StyleMeterChange } from "../store/types/sss/StyleMeterChange";
 import { StyleMove } from "../store/types/sss/StyleMove";
-import { UnifiedGameRecord } from "../store/UnifiedGameRecord";
+import { AbortionType, CallType, UnifiedGameLogEventType, UnifiedGameRecord } from "../store/UnifiedGameRecord";
 
 
 interface StyleData {
@@ -24,6 +25,12 @@ interface StyleData {
 function hanToStyleMoveType(han: Han, finalHandState: FinalHandState): StyleMoveType {
 	switch (han) {
 
+	case Han.Fully_Concealed_Hand:  {
+		if (finalHandState.state === FinalHandStateType.Open) {
+			return StyleMoveType.Unknown;
+		}
+		return StyleMoveType.FullyConcealedHand;
+	}
 	case Han.Riichi:
 		return StyleMoveType.Riichi;
 	case Han.Dora:
@@ -139,7 +146,7 @@ const enum StylePointTier {
 	TierFive = 60,
 	TierSix = 80,
 	TierSeven = 120,
-	TierEight = 4000,
+	TierEight = 400,
 }
 
 const rawPointsMap = {
@@ -158,14 +165,17 @@ const rawPointsMap = {
 	[StyleMoveType.GreenDragon]: StylePointTier.Minimum,
 	[StyleMoveType.OpenPureStraight]: StylePointTier.Minimum,
 	[StyleMoveType.OpenMixedTripleSequence]: StylePointTier.Minimum,
+	[StyleMoveType.OpenKan]: StylePointTier.Minimum,
 
 	[StyleMoveType.AllTriplets]: StylePointTier.TierTwo,
 	[StyleMoveType.PureDoubleSequence]: StylePointTier.TierTwo,
 	[StyleMoveType.HalfOutsideHand]: StylePointTier.TierTwo,
 	[StyleMoveType.ClosedMixedTripleSequence]: StylePointTier.TierTwo,
 	[StyleMoveType.OpenHalfFlush]: StylePointTier.TierTwo,
+	[StyleMoveType.ClosedKan]: StylePointTier.TierTwo,
 
 	[StyleMoveType.Mangan]: StylePointTier.TierThree,
+	[StyleMoveType.TripleRedFive]: StylePointTier.TierThree,
 	[StyleMoveType.SevenPairs]: StylePointTier.TierThree,
 	[StyleMoveType.FullyOutsideHand]: StylePointTier.TierThree,
 	[StyleMoveType.ClosedPureStraight]: StylePointTier.TierThree,
@@ -195,8 +205,20 @@ const rawPointsMap = {
 
 	[StyleMoveType.Yakuman]: StylePointTier.TierEight,
 
+	[StyleMoveType.ShortcutToMangan]: StylePointTier.TierFour,
+	[StyleMoveType.ShortcutToHaneman]: StylePointTier.TierFive,
+	[StyleMoveType.DoubleRiichiIppatsu]: StylePointTier.TierSix,
+	[StyleMoveType.FullyConcealedHand]: StylePointTier.TierTwo,
+	[StyleMoveType.OpenFuritenTsumo]: StylePointTier.TierTwo,
+	[StyleMoveType.ClosedFuritenTsumo]: StylePointTier.TierThree,
+	[StyleMoveType.Tsubamegaeshi]: StylePointTier.TierTwo,
 
-	[StyleMoveType.GreenDragon]: StylePointTier.Minimum,
+	[StyleMoveType.HadakaTanki]: StylePointTier.TierThree,
+	[StyleMoveType.DoraHadakaTanki]: StylePointTier.TierFour,
+
+	[StyleMoveType.FourKans]: StylePointTier.TierFive,
+	[StyleMoveType.FourRiichi]: StylePointTier.TierSeven,
+
 } as Record<StyleMoveType, StylePointTier>;
 
 function getStyleTypeFromHandValue(handValue: number, isDealer: boolean): StyleMoveType {
@@ -261,26 +283,99 @@ const ignoreMoveTypeTracking = {
 	[StyleMoveType.Baiman]: true,
 	[StyleMoveType.Sanbaiman]: true,
 	[StyleMoveType.Yakuman]: true,
+
+	[StyleMoveType.ClosedKan]: true,
+	[StyleMoveType.OpenKan]: true,
 } as Record<StyleMoveType, boolean>;
 
 function processAgari(roundMetadata: RoundMetadata, agari: AgariDetails, styleData: Record<Wind, StyleData>): StyleMeterChange[] {
+	const handState = roundMetadata.finalHandStates[agari.winner];
+
+	if (handState.state === FinalHandStateType.Closed) {
+		if (!agari.han.filter(({han}) => han !== Han.Pinfu && han !== Han.Dora && han !== Han.Red_Five && han !== Han.Fully_Concealed_Hand).length) {
+			return [{
+				type: StyleMeterChangeType.Penalty,
+				penaltyType: StylePenaltyType.PinfuNomi,
+				points: StylePointTier.TierSeven,
+			}];
+		}
+
+		return [{
+			type: StyleMeterChangeType.Penalty,
+			penaltyType: StylePenaltyType.Dama,
+			points: StylePointTier.TierSix,
+		}];
+	}
+
+	const penalties = [] as StylePenalty[];
+	if (handState.state === FinalHandStateType.Open) {
+		penalties.push({
+			type: StyleMeterChangeType.Penalty,
+			penaltyType: StylePenaltyType.OpenHand,
+			points: StylePointTier.Minimum,
+		});
+	}
+
 	const styles = [] as StyleMoveType[];
 
 	styles.push(getStyleTypeFromHandValue(agari.baseHandCombinedValue, roundMetadata.dealer === agari.winner));
 
-	styles.push(...agari.han.map(han => hanToStyleMoveType(han.han, roundMetadata.finalHandStates[agari.winner])));
+	if (agari.han.filter(han => han.han === Han.Red_Five).length >= 3) {
+		styles.push(StyleMoveType.TripleRedFive);
+	}
+
+	styles.push(...agari.han.map(han => hanToStyleMoveType(han.han, handState)));
+
+	if (roundMetadata.conclusion.type === RoundConclusionType.Tsumo) {
+		if (handState.furiten) {
+			if (handState.state === FinalHandStateType.Open) {
+				styles.push(StyleMoveType.OpenFuritenTsumo);
+			} else {
+				styles.push(StyleMoveType.ClosedFuritenTsumo);
+			}
+		}
+	} else {
+		const ronAgari = agari as RonDetails;
+		if (ronAgari.tsubamegaeshi) {
+			styles.push(StyleMoveType.Tsubamegaeshi);
+		}
+	}
+
+	const chiitoiIndex = styles.indexOf(StyleMoveType.SevenPairs);
+	if (chiitoiIndex >= 0) {
+		const ura = styles.filter(style => style === StyleMoveType.UraDora).length;
+		const dora = styles.filter(style => style === StyleMoveType.Dora).length;
+		if (ura >= 2 && dora >= 2) {
+			styles.splice(chiitoiIndex, 1);
+			styles.push(StyleMoveType.ShortcutToHaneman);
+		} else if (ura >= 2 || dora >= 2) {
+			styles.push(StyleMoveType.ShortcutToMangan);
+		}
+	}
+
+	if (agari.hand.length === 1) {
+		if (agari.dora.indexOf(agari.hand[0]) >= 0) {
+			styles.push(StyleMoveType.DoraHadakaTanki);
+		} else {
+			styles.push(StyleMoveType.HadakaTanki);
+		}
+	}
+
+	const doubleRiichiIndex = styles.indexOf(StyleMoveType.DoubleRiichi);
+	const ippatsuIndex = styles.indexOf(StyleMoveType.Ippatsu);
+	if (doubleRiichiIndex >= 0 && ippatsuIndex >= 0) {
+		styles.splice(doubleRiichiIndex, 1);
+		styles.splice(ippatsuIndex, 1);
+		styles.push(StyleMoveType.DoubleRiichiIppatsu);
+	}
 
 	const styleMoves = styles.filter(style => style !== StyleMoveType.Unknown).map(style => ({
 		type: StyleMeterChangeType.Move,
 		moveType: style,
-		rawPoints: rawPointsMap[style],
-		repetitionReduction: rawPointsMap[style] / 4 * (styleData[agari.winner].attainedYaku[style] ?? 0),
-		multiplier: styleData[agari.winner].combo + 1,
-	} as StyleMove)).filter(style => !!style.rawPoints);
-
-	for (const styleMove of styleMoves) {
-		styleMove.actualPoints = (styleMove.rawPoints - styleMove.repetitionReduction) * styleMove.multiplier;
-	}
+		rawPoints: 0,
+		repetitionReduction: 0,
+		multiplier: 0,
+	} as StyleMove));
 
 	const comboMoves = [] as StyleCombo[];
 
@@ -288,6 +383,7 @@ function processAgari(roundMetadata: RoundMetadata, agari: AgariDetails, styleDa
 		type: StyleMeterChangeType.Combo,
 		comboType: StyleComboType.ChainWin,
 		change: 1,
+		final: 0,
 	} as StyleCombo);
 
 	return [...styleMoves, ...comboMoves];
@@ -296,6 +392,25 @@ function processAgari(roundMetadata: RoundMetadata, agari: AgariDetails, styleDa
 function processRound(round: RoundMetadata, styleData: Record<Wind, StyleData>): Record<Wind, StyleMeterChange[]> {
 	switch (round.conclusion.type) {
 	case RoundConclusionType.Ryuukyoku: {
+		break;
+	} case RoundConclusionType.Abortion: {
+		switch (round.conclusion.abortionType) {
+		case AbortionType.FourKans: {
+			return {
+				[round.conclusion.player]: [{
+					type: StyleMeterChangeType.Move,
+					moveType: StyleMoveType.FourKans,
+				}],
+			} as Record<Wind, StyleMeterChange[]>;
+		} case AbortionType.FourRiichi: {
+			return {
+				[round.conclusion.player]: [{
+					type: StyleMeterChangeType.Move,
+					moveType: StyleMoveType.FourRiichi,
+				}],
+			} as Record<Wind, StyleMeterChange[]>;
+		}
+		}
 		break;
 	} case RoundConclusionType.Ron: {
 		const changes = round.conclusion.rons.reduce(
@@ -312,12 +427,19 @@ function processRound(round: RoundMetadata, styleData: Record<Wind, StyleData>):
 				penaltyType: StylePenaltyType.TripleRon,
 				points: styleData[loser].total,
 			});
+		} else {
+			changes[loser].push({
+				type: StyleMeterChangeType.Penalty,
+				penaltyType: StylePenaltyType.Loss,
+				points: StylePointTier.TierTwo,
+			});
 		}
 
 		changes[loser].push({
 			type: StyleMeterChangeType.Combo,
 			comboType: StyleComboType.DamageTaken,
 			change: -styleData[loser].combo,
+			final: 0,
 		});
 
 
@@ -347,6 +469,36 @@ export function breakdownStyle(gameRecord: UnifiedGameRecord, gameMetadata: Game
 	}
 
 	for (const round of gameMetadata.rounds) {
+		const kanMoves = round.events.reduce(
+			(total, next) => {
+				if (next.type !== UnifiedGameLogEventType.CallMade) {
+					return total;
+				}
+
+				const kanType = next.callType === CallType.Ankan
+					? StyleMoveType.ClosedKan
+					: (next.callType === CallType.Shouminkan || next.callType === CallType.Daiminkan)
+						? StyleMoveType.OpenKan
+						: StyleMoveType.Unknown;
+
+				if (kanType === StyleMoveType.Unknown) {
+					return total;
+				}
+
+				total[next.player] ??= [];
+				total[next.player].push({
+					type: StyleMeterChangeType.Move,
+					moveType: kanType,
+					actualPoints: rawPointsMap[kanType] * (styleData[next.player].combo + 1),
+					multiplier: styleData[next.player].combo,
+					rawPoints: rawPointsMap[kanType],
+					repetitionReduction: 0,
+				});
+				return total;
+			},
+			{} as Record<Wind, StyleMove[]>,
+		);
+
 		const changes = processRound(round, styleData);
 
 		for (const idlePlayer of gameRecord.players.filter(player => !changes[player.seat])) {
@@ -359,7 +511,12 @@ export function breakdownStyle(gameRecord: UnifiedGameRecord, gameMetadata: Game
 				type: StyleMeterChangeType.Combo,
 				comboType: StyleComboType.Idle,
 				change: -1,
+				final: 0,
 			});
+		}
+
+		for (const player of gameRecord.players) {
+			changes[player.seat] = [...kanMoves[player.seat] ?? [], ...(changes[player.seat] ?? [])];
 		}
 
 		for (const key in changes) {
@@ -370,9 +527,15 @@ export function breakdownStyle(gameRecord: UnifiedGameRecord, gameMetadata: Game
 				switch (item.type){
 				case StyleMeterChangeType.Combo: {
 					playerStyleData.combo += item.change;
+					item.final = playerStyleData.combo + 1;
 					break;
 				}
 				case StyleMeterChangeType.Move: {
+					item.rawPoints = rawPointsMap[item.moveType];
+					item.repetitionReduction =  item.rawPoints / 4 * (playerStyleData.attainedYaku[item.moveType] ?? 0);
+					item.multiplier = playerStyleData.combo + 1;
+					item.actualPoints = (item.rawPoints - item.repetitionReduction) * item.multiplier;
+
 					playerStyleData.total += item.actualPoints;
 
 					if (ignoreMoveTypeTracking[item.type]) {
@@ -383,6 +546,8 @@ export function breakdownStyle(gameRecord: UnifiedGameRecord, gameMetadata: Game
 					playerStyleData.attainedYaku[item.type]++;
 					break;
 				} case StyleMeterChangeType.Penalty: {
+					const actualAdjustment = Math.min(playerStyleData.total, item.points);
+					item.points = actualAdjustment;
 					playerStyleData.total -= item.points;
 					break;
 				}

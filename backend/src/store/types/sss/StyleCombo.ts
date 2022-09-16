@@ -5,4 +5,5 @@ export interface StyleCombo {
 	type: StyleMeterChangeType.Combo;
 	comboType: StyleComboType;
 	change: number;
+	final: number;
 }

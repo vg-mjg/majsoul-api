@@ -1,5 +1,3 @@
-
-
 export enum StyleMoveType {
 	Unknown,
 
@@ -47,5 +45,24 @@ export enum StyleMoveType {
 	LittleThreeDragons,
 	AllTerminalsAndHonors,
 	ManganAtDraw,
-	RedFive
+	RedFive,
+
+	ClosedKan,
+	OpenKan,
+
+	TripleRedFive,
+
+	ShortcutToMangan,
+	ShortcutToHaneman,
+
+	DoubleRiichiIppatsu,
+	FullyConcealedHand,
+	OpenFuritenTsumo,
+	Tsubamegaeshi,
+
+	FourKans,
+	FourRiichi,
+	ClosedFuritenTsumo,
+	DoraHadakaTanki,
+	HadakaTanki
 }

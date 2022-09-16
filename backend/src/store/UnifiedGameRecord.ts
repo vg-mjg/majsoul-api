@@ -1,12 +1,15 @@
 import { GameRecord, Han, lq } from "majsoul";
+import syanten from "syanten";
 import * as util from "util";
 
 import { Wind } from "../store/types/enums/Wind";
+import { handToSyantenFormat } from "./handToSyantenFormat";
 
 export enum UnifiedGameLogEventType {
 	Unknown,
 	NewRound,
 	TileDiscard,
+	Abortion,
 	TileDrawn,
 	CallMade,
 	EndOfWall,
@@ -54,6 +57,19 @@ export interface UnifiedGameLogEventCallMade {
 	callType: CallType;
 }
 
+export enum AbortionType {
+	KyuushuuKyuuhai = 1,
+	FourWinds = 2,
+	FourKans = 3,
+	FourRiichi = 4,
+}
+
+export interface UnifiedGameLogEventAbortion {
+	type: UnifiedGameLogEventType.Abortion;
+	abortionType: AbortionType;
+	player: Wind;
+}
+
 export interface UnifiedGameLogEventEndOfWall {
 	type: UnifiedGameLogEventType.EndOfWall;
 }
@@ -68,6 +84,8 @@ export interface UnifiedWinData {
 	loser?: Wind;
 	combinedBaseHandValue: number;
 	han: HanDetail[];
+	hand: string[];
+	dora: string[];
 }
 
 export interface UnifiedGameLogEventWinDeclared {
@@ -82,6 +100,7 @@ export type UnifiedGameLogEvent
 	| UnifiedGameLogEventTileDrawn
 	| UnifiedGameLogEventCallMade
 	| UnifiedGameLogEventEndOfWall
+	| UnifiedGameLogEventAbortion
 	| UnifiedGameLogEventWinDeclared;
 
 export interface UnifiedPlayer {
@@ -125,8 +144,9 @@ function chiPengGangToCallType(type: number): CallType {
 }
 
 export function unifyMajsoulGameRecord(majsoulGame: GameRecord): UnifiedGameRecord {
+	let losingSeat: Wind = null;
+	let activePlayer: Wind = null;
 	const gameLog: UnifiedGameLogEvent[] = majsoulGame.records.map(record => {
-		let losingSeat: Wind = null;
 		switch(record.constructor.name) {
 		case "RecordNewRound": {
 			const recordNewRound = record as lq.RecordNewRound;
@@ -147,6 +167,7 @@ export function unifyMajsoulGameRecord(majsoulGame: GameRecord): UnifiedGameReco
 			};
 		} case "RecordDealTile": {
 			const recordDealTile = record as lq.RecordDealTile;
+			activePlayer = recordDealTile.seat;
 			return {
 				type: UnifiedGameLogEventType.TileDrawn,
 			};
@@ -172,10 +193,11 @@ export function unifyMajsoulGameRecord(majsoulGame: GameRecord): UnifiedGameReco
 			};
 		} case "RecordHule": {
 			const recordHule = record as lq.RecordHule;
-
 			return {
 				type: UnifiedGameLogEventType.WinDeclared,
 				wins: recordHule.hules.map(hule => ({
+					hand: hule.hand,
+					dora: hule.doras,
 					winner: hule.seat as Wind,
 					loser: (hule.zimo ? null : losingSeat) as Wind,
 					han: hule.fans?.map(fan => ({
@@ -185,6 +207,13 @@ export function unifyMajsoulGameRecord(majsoulGame: GameRecord): UnifiedGameReco
 					combinedBaseHandValue: hule.zimo ? hule.point_zimo_qin + hule.point_zimo_xian * 2 : hule.point_rong,
 				})),
 			} as UnifiedGameLogEventWinDeclared;
+		} case "RecordLiuJu": {
+			const recordLiuJu = record as lq.RecordLiuJu;
+			return {
+				type: UnifiedGameLogEventType.Abortion,
+				abortionType: recordLiuJu.type as AbortionType,
+				player: activePlayer,
+			};
 		} default: {
 			console.log(`"${record.constructor.name}" unnacounted for`);
 			return {
