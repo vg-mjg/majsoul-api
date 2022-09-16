@@ -4,19 +4,19 @@ export function getStyleGrade(score: number): StyleGrade {
 	if (score >= 400) {
 		return StyleGrade.SSS;
 	}
-	if (score > 350) {
+	if (score > 360) {
 		return StyleGrade.SS;
 	}
-	if (score > 300) {
+	if (score > 310) {
 		return StyleGrade.S;
 	}
-	if (score > 200) {
+	if (score > 250) {
 		return StyleGrade.A;
 	}
-	if (score >= 120) {
+	if (score >= 180) {
 		return StyleGrade.B;
 	}
-	if (score >= 60) {
+	if (score >= 100) {
 		return StyleGrade.C;
 	}
 	return StyleGrade.D;
