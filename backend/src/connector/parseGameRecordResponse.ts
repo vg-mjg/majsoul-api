@@ -1,6 +1,6 @@
 import { GameRecord, Han } from "majsoul";
 import { lq } from "majsoul";
-import syanten from "syanten";
+import { syanten } from "syanten";
 
 import { handToSyantenFormat } from "../store/handToSyantenFormat";
 import { DrawStatus } from "../store/types/enums/DrawStatus";
