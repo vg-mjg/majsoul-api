@@ -228,10 +228,13 @@ export function unifyMajsoulGameRecord(majsoulGame: GameRecord): UnifiedGameReco
 		}
 	});
 	return {
-		players: majsoulGame.head.accounts.map(account => ({
-			id: account.account_id.toString(),
-			seat: account.seat as Wind,
-		})),
+		players: majsoulGame.head.result.players.map(playerItem => {
+			const account = majsoulGame.head.accounts.find(a => a.seat === playerItem.seat);
+			return {
+				id: account ? account.account_id.toString() : null,
+				seat: playerItem.seat as Wind,
+			};
+		}),
 		gameLog,
 	};
 }
