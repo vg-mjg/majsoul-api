@@ -1195,7 +1195,7 @@ export const contestRoute: Route<RouteState> = {
 
 			body(nameofContest("displayName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
 			body(nameofContest("initialPhaseName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
-			body(nameofContest("maxGames")).not().isString().bail().isInt({ gt: 0, max: 50 }).optional({ nullable: true }),
+			body(nameofContest("maxGames")).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 			body(nameofContest("bonusPerGame")).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 			body(nameofContest("track")).not().isString().bail().isBoolean().optional({ nullable: true }),
 			body(nameofContest("adminPlayerFetchRequested")).not().isString().bail().isBoolean().optional({ nullable: true }),
