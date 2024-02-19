@@ -66,7 +66,7 @@ export class Store {
 	}
 
 	public async init(username: string, password: string): Promise<void> {
-		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? "majsoul_mongo" : "localhost"}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin&directConnection=true`;
+		const url = `mongodb://${username}:${password}@${process.env.NODE_ENV === "production" ? "majsoul_mongo" : "127.0.0.1"}:27017/?authMechanism=SCRAM-SHA-256&authSource=admin&directConnection=true`;
 		const client = new MongoClient(url);
 
 		await client.connect();

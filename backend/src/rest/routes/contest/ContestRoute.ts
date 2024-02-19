@@ -707,10 +707,10 @@ export const contestRoute: Route<RouteState> = {
 			}
 
 			try {
-				const games = await state.adjustGames(await cursor.toArray(), { contest: contestsFilter?.length === 1 ? contestsFilter[0] : null});
+				const games = await state.adjustGames(await cursor.toArray(), { contest: contestsFilter?.length === 1 ? contestsFilter[0] : null });
 				const playersMap = (await state.namePlayers(
 					await state.mongoStore.playersCollection.find({
-						_id: {$in: games.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[])},
+						_id: { $in: games.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[]) },
 					}).toArray(),
 					contestIds?.length ? ObjectId.createFromHexString(contestIds[0]) : null,
 				)).reduce((total, next) => (total[next._id] = next, total), {} as Record<string, PlayerInformation>);
@@ -750,7 +750,7 @@ export const contestRoute: Route<RouteState> = {
 			res.send(corrections);
 		}),
 
-		(app, state) => app.get<any, {contestId: string, playerId: string}, GameResult[]>("/contests/:contestId/players/:playerId/games", async (req, res) => {
+		(app, state) => app.get<any, { contestId: string, playerId: string }, GameResult[]>("/contests/:contestId/players/:playerId/games", async (req, res) => {
 			try {
 				const contestId = await state.contestExists(req.params.contestId);
 				if (!contestId) {
@@ -786,7 +786,7 @@ export const contestRoute: Route<RouteState> = {
 			}
 		}),
 
-		(app, state) => app.get<any, {contestId: string}, YakumanInformation[]>("/contests/:contestId/yakuman", async (req, res) => {
+		(app, state) => app.get<any, { contestId: string }, YakumanInformation[]>("/contests/:contestId/yakuman", async (req, res) => {
 			try {
 				const contestId = await state.contestExists(req.params.contestId);
 				if (!contestId) {
@@ -807,7 +807,7 @@ export const contestRoute: Route<RouteState> = {
 					.map(game => {
 						return {
 							game,
-							yakumanAgari: game.rounds.map(({tsumo, round, rons}) => {
+							yakumanAgari: game.rounds.map(({ tsumo, round, rons }) => {
 								if (isAgariYakuman(
 									game,
 									round,
@@ -871,141 +871,155 @@ export const contestRoute: Route<RouteState> = {
 			query("gameLimit").isInt({ min: 0 }).optional(),
 			query("ignoredGames").isInt({ min: 0 }).optional(),
 			query("teamId").isMongoId().optional(),
+			query("phaseIndex").isInt({ min: 0 }).optional(),
 			withData<{
-			id: string;
-			teamId?: string;
-			gameLimit?: string;
-			ignoredGames?: string;
-		}, any, ContestPlayer[]>(async (data, req, res) => {
-			const contest = await state.findContest(data.id, {
-				projection: {
-					_id: true,
-					"teams._id": true,
-					"teams.players._id": true,
-					majsoulFriendlyId: true,
-					bonusPerGame: true,
-					normaliseScores: true,
-				},
-			});
-
-			if (contest == null) {
-				res.sendStatus(404);
-				return;
-			}
-
-			const contestMajsoulFriendlyId = contest.majsoulFriendlyId?.toString() ?? "";
-
-			const team = data.teamId && contest.teams.find(team => team._id.equals(data.teamId));
-			if (data.teamId && !team) {
-				res.status(400).send(`Team ${data.teamId} doesn't exist` as any);
-				return;
-			}
-
-			const playerIds = team?.players?.map(player => player._id) ?? [];
-
-			const gameQuery: Filter<StoreGameResult<ObjectId>> = {
-				contestId: contest._id,
-				hidden: { $ne: true },
-				$or: [
-					{ notFoundOnMajsoul: false },
-					{ contestMajsoulId: { $exists: true } },
-					{ majsoulId: { $exists: false } },
-				],
-			};
-
-			if (data.teamId) {
-				gameQuery["players._id"] = {
-					$in: playerIds,
-				};
-			}
-
-			const games = await state.getGames(gameQuery, {contest});
-
-			let gameLimit = parseInt(data.gameLimit);
-			if (isNaN(gameLimit)) {
-				gameLimit = Infinity;
-			}
-
-			let ignoredGames = parseInt(data.ignoredGames);
-			if (isNaN(ignoredGames)) {
-				ignoredGames = 0;
-			}
-
-			const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
-				game.players.forEach((player, index) => {
-					if (player == null) {
-						return;
-					}
-
-					if (data.teamId && !playerIds.find(id => id.equals(player._id))) {
-						return;
-					}
-
-					const id = player._id.toHexString();
-					if (!(id in total)) {
-						total[id] = {
-							...player,
-							tourneyScore: 0,
-							tourneyRank: undefined,
-							gamesPlayed: 0,
-							team: undefined,
-						};
-					}
-
-					total[id].gamesPlayed++;
-					if (total[id].gamesPlayed <= ignoredGames || total[id].gamesPlayed > (gameLimit + ignoredGames)) {
-						return;
-					}
-					total[id].tourneyScore += game.finalScore[index].uma + (contest.bonusPerGame ?? 0);
-				});
-				return total;
-			}, {});
-
-			const seededPlayersForContest = seededPlayerNames[contestMajsoulFriendlyId] ?? [];
-
-			const seededPlayers = await state.mongoStore.playersCollection.find(
-				{ nickname: { $in: seededPlayersForContest } },
-			).toArray();
-
-			for (const seededPlayer of seededPlayers) {
-				const id = seededPlayer._id.toHexString();
-				if (id in playerGameInfo) {
-					continue;
-				}
-				playerGameInfo[id] = {
-					...seededPlayer,
-					tourneyScore: 0,
-					tourneyRank: undefined,
-					gamesPlayed: 0,
-					team: undefined,
-				};
-			}
-
-			const players = await state.namePlayers(
-				await state.mongoStore.playersCollection.find(
-					{ _id: { $in: Object.values(playerGameInfo).map(p => p._id).concat(playerIds) } },
-					{ projection: { majsoulId: 0 } },
-				).toArray(),
-				null,
-				contest,
-			);
-
-			res.send(
-				players.map(player => ({
-					...playerGameInfo[player._id],
-					...player,
-					team: {
-						teams: Object.entries(sakiTeams[contestMajsoulFriendlyId] ?? {})
-							.filter(([_, players]) => players.indexOf(player.nickname) >= 0)
-							.map(([team, _]) => team),
-						seeded: seededPlayersForContest.indexOf(player.nickname) >= 0,
+				id: string;
+				teamId?: string;
+				gameLimit?: string;
+				ignoredGames?: string;
+				phaseIndex?: string;
+			}, any, ContestPlayer[]>(async (data, req, res) => {
+				const contest = await state.findContest(data.id, {
+					projection: {
+						_id: true,
+						"teams._id": true,
+						"teams.players._id": true,
+						majsoulFriendlyId: true,
+						bonusPerGame: true,
+						normaliseScores: true,
 					},
-				}))
-					.filter(player => ignoredGames == 0 || player.gamesPlayed > ignoredGames || player.team.seeded)
-					.sort((a, b) => b.tourneyScore - a.tourneyScore)
-					.map((p, i) => ({ ...p, tourneyRank: i })),
-			);
-		})),
+				});
+
+				if (contest == null) {
+					res.sendStatus(404);
+					return;
+				}
+
+				const contestMajsoulFriendlyId = contest.majsoulFriendlyId?.toString() ?? "";
+
+				const team = data.teamId && contest.teams.find(team => team._id.equals(data.teamId));
+				if (data.teamId && !team) {
+					res.status(400).send(`Team ${data.teamId} doesn't exist` as any);
+					return;
+				}
+
+				const playerIds = team?.players?.map(player => player._id) ?? [];
+
+				const gameQuery: Filter<StoreGameResult<ObjectId>> = {
+					contestId: contest._id,
+					hidden: { $ne: true },
+					$or: [
+						{ notFoundOnMajsoul: false },
+						{ contestMajsoulId: { $exists: true } },
+						{ majsoulId: { $exists: false } },
+					],
+				};
+
+				if (data.phaseIndex) {
+					const phases = await state.getPhases(data.id);
+					const phaseIndex = Math.min(parseInt(data.phaseIndex), phases.phases.length - 1);
+					gameQuery.start_time = {
+						$gte: phases.phases[phaseIndex].startTime,
+					};
+
+					if (phaseIndex < phases.phases.length - 1) {
+						gameQuery.start_time.$lt = phases.phases[phaseIndex - 1].startTime;
+					}
+				}
+
+				if (data.teamId) {
+					gameQuery["players._id"] = {
+						$in: playerIds,
+					};
+				}
+
+				const games = await state.getGames(gameQuery, { contest });
+
+				let gameLimit = parseInt(data.gameLimit);
+				if (isNaN(gameLimit)) {
+					gameLimit = Infinity;
+				}
+
+				let ignoredGames = parseInt(data.ignoredGames);
+				if (isNaN(ignoredGames)) {
+					ignoredGames = 0;
+				}
+
+				const playerGameInfo = games.reduce<Record<string, ContestPlayer>>((total, game) => {
+					game.players.forEach((player, index) => {
+						if (player == null) {
+							return;
+						}
+
+						if (data.teamId && !playerIds.find(id => id.equals(player._id))) {
+							return;
+						}
+
+						const id = player._id.toHexString();
+						if (!(id in total)) {
+							total[id] = {
+								...player,
+								tourneyScore: 0,
+								tourneyRank: undefined,
+								gamesPlayed: 0,
+								team: undefined,
+							};
+						}
+
+						total[id].gamesPlayed++;
+						if (total[id].gamesPlayed <= ignoredGames || total[id].gamesPlayed > (gameLimit + ignoredGames)) {
+							return;
+						}
+						total[id].tourneyScore += game.finalScore[index].uma + (contest.bonusPerGame ?? 0);
+					});
+					return total;
+				}, {});
+
+				const seededPlayersForContest = seededPlayerNames[contestMajsoulFriendlyId] ?? [];
+
+				const seededPlayers = await state.mongoStore.playersCollection.find(
+					{ nickname: { $in: seededPlayersForContest } },
+				).toArray();
+
+				for (const seededPlayer of seededPlayers) {
+					const id = seededPlayer._id.toHexString();
+					if (id in playerGameInfo) {
+						continue;
+					}
+					playerGameInfo[id] = {
+						...seededPlayer,
+						tourneyScore: 0,
+						tourneyRank: undefined,
+						gamesPlayed: 0,
+						team: undefined,
+					};
+				}
+
+				const players = await state.namePlayers(
+					await state.mongoStore.playersCollection.find(
+						{ _id: { $in: Object.values(playerGameInfo).map(p => p._id).concat(playerIds) } },
+						{ projection: { majsoulId: 0 } },
+					).toArray(),
+					null,
+					contest,
+				);
+
+				res.send(
+					players.map(player => ({
+						...playerGameInfo[player._id],
+						...player,
+						team: {
+							teams: Object.entries(sakiTeams[contestMajsoulFriendlyId] ?? {})
+								.filter(([_, players]) => players.indexOf(player.nickname) >= 0)
+								.map(([team, _]) => team),
+							seeded: seededPlayersForContest.indexOf(player.nickname) >= 0,
+						},
+					}))
+						.filter(player => ignoredGames == 0 || player.gamesPlayed > ignoredGames || player.team.seeded)
+						.sort((a, b) => b.tourneyScore - a.tourneyScore)
+						.map((p, i) => ({ ...p, tourneyRank: i })),
+				);
+			})),
 
 		(app, state) => app.get("/contests/:id/stats",
 			param("id").isMongoId(),
@@ -1179,7 +1193,7 @@ export const contestRoute: Route<RouteState> = {
 			}),
 		),
 
-		(app, state) => app.patch<any, {id: string}, StoreContest<ObjectId>>("/contests/:id",
+		(app, state) => app.patch<any, { id: string }, StoreContest<ObjectId>>("/contests/:id",
 			param("id").isMongoId(),
 			body(nameofContest("majsoulFriendlyId")).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
 			body(nameofContest("spreadsheetId")).isString().bail().optional({ nullable: true }),
@@ -1205,12 +1219,12 @@ export const contestRoute: Route<RouteState> = {
 
 			body(nameofContest("gacha")).not().isString().bail().isObject().optional({ nullable: true }),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}`).not().isString().bail().isArray().optional(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("onePer")}`).not().isString().bail().isInt({min: 1}),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("onePer")}`).not().isString().bail().isInt({ min: 1 }),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("name")}`).isString(),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("priority")}`).not().isString().bail().isInt(),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("unique")}`).not().isString().bail().isBoolean().optional(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}`).not().isString().bail().isArray({min: 1}),
+			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}`).not().isString().bail().isArray({ min: 1 }),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("_id")}`).isMongoId().optional(),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("icon")}`).isString().bail(),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("image")}`).isString().bail().optional(),
@@ -1511,7 +1525,7 @@ export const contestRoute: Route<RouteState> = {
 					update.$set ??= {};
 
 					if (key === "players") {
-						update.$set[key] = data[key].map(({_id}) => ({
+						update.$set[key] = data[key].map(({ _id }) => ({
 							_id: ObjectId.createFromHexString(_id),
 						}));
 						continue;
@@ -1622,7 +1636,7 @@ export const contestRoute: Route<RouteState> = {
 		(app, state) => app.patch("/contests/:id/gachaGroup/:groupId",
 			param("id").isMongoId(),
 			param("groupId").isMongoId(),
-			body("onePer").not().isString().bail().isInt({min: 1}).optional(),
+			body("onePer").not().isString().bail().isInt({ min: 1 }).optional(),
 			withData<{
 				id: string,
 				groupId: string,
@@ -1802,7 +1816,7 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 
-				const data: Partial<StoreContest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+				const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
 				const contestId = ObjectId.createFromHexString(data.id);
 
 				await state.mongoStore.configCollection.findOneAndUpdate(
@@ -1836,16 +1850,16 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 
-				const data: Partial<StoreContest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+				const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
 				const contestId = ObjectId.createFromHexString(data.id);
 
 				const games = await state.mongoStore.gamesCollection.find(
 					{ contestId },
-					{ projection: {_id: true} },
+					{ projection: { _id: true } },
 				).toArray();
 
 				const result = await state.mongoStore.gachaCollection.deleteMany(
-					{ gameId: {$in: games.map(game => game._id)} },
+					{ gameId: { $in: games.map(game => game._id) } },
 				);
 
 				res.send();
@@ -1861,16 +1875,16 @@ export const contestRoute: Route<RouteState> = {
 					return;
 				}
 
-				const data: Partial<StoreContest<string> & {id: string}> = matchedData(req, { includeOptionals: true });
+				const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
 				const contestId = ObjectId.createFromHexString(data.id);
 
 				const games = await state.mongoStore.gamesCollection.find(
 					{ contestId },
-					{ projection: {_id: true} },
+					{ projection: { _id: true } },
 				).toArray();
 
 				const result = await state.mongoStore.smokingSexyStyleCollection.deleteMany(
-					{ gameId: {$in: games.map(game => game._id)} },
+					{ gameId: { $in: games.map(game => game._id) } },
 				);
 
 				res.send();
@@ -2337,8 +2351,8 @@ export const contestRoute: Route<RouteState> = {
 
 		(app, state) => app.patch("/players/:id",
 			param("id").isMongoId(),
-			body(nameofPlayer("displayName")).isString().optional({nullable: true}),
-			withData<Partial<Player<string | ObjectId> & {id: string}>, any, Player<ObjectId>>(async (data, req, res) => {
+			body(nameofPlayer("displayName")).isString().optional({ nullable: true }),
+			withData<Partial<Player<string | ObjectId> & { id: string }>, any, Player<ObjectId>>(async (data, req, res) => {
 				const player = await state.mongoStore.playersCollection.findOneAndUpdate(
 					{
 						_id: ObjectId.createFromHexString(data.id as string),
