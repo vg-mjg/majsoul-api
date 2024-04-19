@@ -13,7 +13,6 @@ export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Omit<Om
 	notFoundOnMajsoul?: boolean;
 	initialPhaseName?: string;
 	showPlayerCountries?: boolean;
-	showTeamTotals?: boolean;
 	spreadsheetId?: string;
 	transitions?: ContestPhaseTransition<Id>[];
 

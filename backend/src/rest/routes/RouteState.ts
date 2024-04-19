@@ -1,7 +1,7 @@
 import { OAuth2Client } from "google-auth-library";
 import { MajsoulApi } from "majsoul";
-import { Condition, Filter, FindOptions,ObjectId } from "mongodb";
-import { concat, defer, from, lastValueFrom,Observable, of } from "rxjs";
+import { Condition, Filter, FindOptions, ObjectId } from "mongodb";
+import { concat, defer, from, lastValueFrom, Observable, of } from "rxjs";
 import { map, mergeAll, mergeScan, mergeWith, pairwise, toArray } from "rxjs/operators";
 
 import { getStyleGrade } from "../../connector/getStyleGrade";
@@ -30,13 +30,13 @@ import { TourneyPhase } from "../types/contest/TourneyPhase";
 import { EliminationLevel } from "../types/EliminationLevel";
 import { EliminationMatchDetails } from "../types/EliminationMatchDetails";
 import { PlayerRankingType } from "../types/enums/PlayerRankingType";
-import { GameResult } from "../types/GameResult";
 import { PlayerInformation } from "../types/PlayerInformation";
 import { PlayerScoreTypeRanking } from "../types/standings/PlayerScoreTypeRanking";
 import { PlayerTeamRanking } from "../types/standings/PlayerTeamRanking";
 import { PlayerTourneyStandingInformation } from "../types/standings/PlayerTourneyStandingInformation";
 import { SharedGroupRankingData } from "../types/standings/SharedGroupRankingData";
 import { TourneyContestScoringDetailsWithId } from "../types/standings/TourneyContestScoringDetailsWithId";
+import { TourneyPhaseTeamTotalScore } from "../types/standings/TourneyPhaseTeamTotalScore";
 import { bilateralSort } from "../utils/bilateralSort";
 
 export class RouteState {
@@ -44,7 +44,7 @@ export class RouteState {
 		public mongoStore: Store,
 		public oauth2Client: OAuth2Client,
 		public privateKey: Buffer,
-	) {}
+	) { }
 
 	public findContest(contestId: string, options?: FindOptions): Promise<StoreContest<ObjectId>> {
 		return this.mongoStore.contestCollection.findOne(
@@ -80,7 +80,7 @@ export class RouteState {
 			contestId: contest._id,
 			end_time: timeWindow,
 			hidden: { $ne: true },
-		}, {contest});
+		}, { contest });
 
 		return games.reduce<Record<string, number>>((total, game) => {
 			game.finalScore.forEach((score, index) => {
@@ -127,6 +127,8 @@ export class RouteState {
 				tourneyType: true,
 				startTime: true,
 				"teams._id": true,
+				"teams.name": true,
+				"teams.color": true,
 				"teams.players._id": true,
 				transitions: true,
 				initialPhaseName: true,
@@ -135,6 +137,7 @@ export class RouteState {
 				normaliseScores: true,
 				eliminationBracketSettings: true,
 				eliminationBracketTargetPlayers: true,
+				showTeamTotals: true,
 				showPlayerCountries: true,
 				gacha: true,
 			},
@@ -236,7 +239,7 @@ export class RouteState {
 		};
 
 		for (const type in details) {
-			details[type] = {...details[type]};
+			details[type] = { ...details[type] };
 		}
 
 		return {
@@ -250,15 +253,15 @@ export class RouteState {
 			player: SharedGroupRankingData;
 			_id: string;
 		}[],
-		contestTypes: (TourneyScoringInfoPart & {id: string})[],
+		contestTypes: (TourneyScoringInfoPart & { id: string })[],
 		resultsByType: Record<string, Record<string, PlayerContestTypeResults>>,
 		rank = null,
 	) {
 		players = [...players];
 		const types = [...contestTypes];
 		if (rank === null) {
-			const type = {type: contestTypes[0].type};
-			types.push({...type, id: this.generateScoringTypeId(type)});
+			const type = { type: contestTypes[0].type };
+			types.push({ ...type, id: this.generateScoringTypeId(type) });
 			rank = 1;
 		}
 
@@ -282,8 +285,8 @@ export class RouteState {
 					takenPlayers,
 					[
 						...type.suborder,
-						{type: type.type},
-					].map(type => ({...type, id: this.generateScoringTypeId(type)})),
+						{ type: type.type },
+					].map(type => ({ ...type, id: this.generateScoringTypeId(type) })),
 					resultsByType,
 					rank,
 				);
@@ -359,14 +362,15 @@ export class RouteState {
 		storePhase: ContestPhase<ObjectId>,
 	): Promise<{
 		standings: PlayerTourneyStandingInformation[];
-		scoringTypes: (TourneyScoringInfoPart & {id:string})[];
+		scoringTypes: (TourneyScoringInfoPart & { id: string })[];
 		eliminationLevels?: EliminationLevel[];
+		teamTotals?: TourneyPhaseTeamTotalScore[];
 	}> {
-		const contestTypes: (TourneyScoringInfoPart & {id:string})[] = (
+		const contestTypes: (TourneyScoringInfoPart & { id: string })[] = (
 			Array.isArray(storePhase.tourneyType)
 				? storePhase.tourneyType
-				: [ { type: storePhase.tourneyType ?? TourneyContestScoringType.Cumulative } ]
-		).map(type => ({...type, id: this.generateScoringTypeId(type)}));
+				: [{ type: storePhase.tourneyType ?? TourneyContestScoringType.Cumulative }]
+		).map(type => ({ ...type, id: this.generateScoringTypeId(type) }));
 
 		const scoreTypeSet: Record<string, TourneyContestScoringDetailsWithId> = {};
 		const scoreTypeLevels = [...contestTypes];
@@ -383,7 +387,7 @@ export class RouteState {
 
 			if (scoreTypeLevel.suborder) {
 				scoreTypeLevels.push(
-					...scoreTypeLevel.suborder?.map(type => ({...type, id: this.generateScoringTypeId(type)})) ?? [],
+					...scoreTypeLevel.suborder?.map(type => ({ ...type, id: this.generateScoringTypeId(type) })) ?? [],
 				);
 			}
 		}
@@ -405,34 +409,34 @@ export class RouteState {
 					},
 				},
 			).toArray(),
-			{contest},
+			{ contest },
 		);
 
 		const resultsByType = {} as Record<string, Record<string, PlayerContestTypeResults>>;
 		const maxGames = contest.maxGames ?? Infinity;
-		let eliminationLevels : EliminationLevel[];
+		let eliminationLevels: EliminationLevel[];
 		for (const type of scoringTypes) {
 			switch (type.type) {
-			case TourneyContestScoringType.Consecutive: {
-				resultsByType[type.id] = this.getConsectutiveResults(type, games, maxGames);
-				break;
-			} case TourneyContestScoringType.Cumulative: {
-				resultsByType[type.id] = this.getCumulativeResults(games, maxGames);
-				break;
-			} case TourneyContestScoringType.Kans: {
-				resultsByType[type.id] = this.getKanResults(games, maxGames);
-				break;
-			} case TourneyContestScoringType.EliminationBrackets: {
-				eliminationLevels = await this.getEliminationLevels(contest, storePhase, games);
-				resultsByType[type.id] = this.getEliminationBracketResults(eliminationLevels);
-				break;
-			} case TourneyContestScoringType.Gacha: {
-				resultsByType[type.id] = await this.getGachaResults(games, maxGames, contest);
-				break;
-			}case TourneyContestScoringType.SmokingSexyStyle: {
-				resultsByType[type.id] = await this.getSSSResults(games, maxGames);
-				break;
-			}
+				case TourneyContestScoringType.Consecutive: {
+					resultsByType[type.id] = this.getConsectutiveResults(type, games, maxGames);
+					break;
+				} case TourneyContestScoringType.Cumulative: {
+					resultsByType[type.id] = this.getCumulativeResults(games, maxGames);
+					break;
+				} case TourneyContestScoringType.Kans: {
+					resultsByType[type.id] = this.getKanResults(games, maxGames);
+					break;
+				} case TourneyContestScoringType.EliminationBrackets: {
+					eliminationLevels = await this.getEliminationLevels(contest, storePhase, games);
+					resultsByType[type.id] = this.getEliminationBracketResults(eliminationLevels);
+					break;
+				} case TourneyContestScoringType.Gacha: {
+					resultsByType[type.id] = await this.getGachaResults(games, maxGames, contest);
+					break;
+				} case TourneyContestScoringType.SmokingSexyStyle: {
+					resultsByType[type.id] = await this.getSSSResults(games, maxGames);
+					break;
+				}
 			}
 		}
 
@@ -564,9 +568,27 @@ export class RouteState {
 			result.hasMetRequirements = true;
 		}
 
+		let teamTotals: TourneyPhaseTeamTotalScore[];
+		if (storePhase.showTeamTotals && contest.teams) {
+			teamTotals = contest.teams.map((team) => ({
+				_id: team._id.toHexString(),
+				name: team.name,
+				color: team.color,
+				score: team.players.filter(player =>
+					playerResults[player._id.toHexString()]
+					&& playerResults[player._id.toHexString()].rankingDetails.type === PlayerRankingType.Score,
+				).reduce((total, player) =>
+					total + Object.values(
+						playerResults[player._id.toHexString()].rankingDetails.details,
+					)[0].score as number, 0,
+				),
+			})).sort((a, b) => b.score - a.score);
+		}
+
 		return {
 			scoringTypes,
 			standings: Object.values(playerResults).sort((a, b) => a.rank - b.rank),
+			teamTotals,
 		};
 	}
 
@@ -679,7 +701,7 @@ export class RouteState {
 		}>);
 
 		return Object.entries(playerResults)
-			.sort(([, {score: scoreA}], [, {score: scoreB}]) => scoreB - scoreA)
+			.sort(([, { score: scoreA }], [, { score: scoreB }]) => scoreB - scoreA)
 			.map((result, index) => {
 				result[1].rank = index;
 				return result;
@@ -739,7 +761,7 @@ export class RouteState {
 		}>);
 
 		return Object.entries(playerResults)
-			.sort(([, {score: scoreA}], [, {score: scoreB}]) => scoreB - scoreA)
+			.sort(([, { score: scoreA }], [, { score: scoreB }]) => scoreB - scoreA)
 			.map((result, index) => {
 				result[1].rank = index;
 				return result;
@@ -858,7 +880,7 @@ export class RouteState {
 		}>);
 
 		return Object.entries(playerResults)
-			.sort(([, {score: scoreA}], [, {score: scoreB}]) => scoreB - scoreA)
+			.sort(([, { score: scoreA }], [, { score: scoreB }]) => scoreB - scoreA)
 			.map((result, index) => {
 				result[1].rank = index;
 				return result;
@@ -900,7 +922,7 @@ export class RouteState {
 			currentPlayers = level.requiredMatches * 4;
 
 			eliminationLevels.push(level);
-		} while(currentPlayers < targetPlayers);
+		} while (currentPlayers < targetPlayers);
 
 		const eliminationLevelsReversed = [...eliminationLevels];
 		const gamesCopy = [...games];
@@ -955,12 +977,12 @@ export class RouteState {
 	public getEliminationBracketResults(eliminationLevels: EliminationLevel[]): Record<string, PlayerContestTypeResults> {
 		const results = {} as Record<string, PlayerContestTypeResults>;
 		let rank = 0;
-		const losers = [] as {score: number, player: PlayerInformation}[];
+		const losers = [] as { score: number, player: PlayerInformation }[];
 		for (const level of eliminationLevels) {
 			for (const match of level.completedMatches) {
 				const scores = match.players.reduce(
-					(total, next) => (total[next._id] = {score: 0, player: next}, total),
-					{} as Record<string, {score: number, player: PlayerInformation}>,
+					(total, next) => (total[next._id] = { score: 0, player: next }, total),
+					{} as Record<string, { score: number, player: PlayerInformation }>,
 				);
 
 				for (const game of match.games) {
@@ -1015,7 +1037,7 @@ export class RouteState {
 
 			for (const correction of corrections) {
 				const game = gameMap[correction.gameId.toHexString()];
-				for(let i = 0; i < game.finalScore.length; i++) {
+				for (let i = 0; i < game.finalScore.length; i++) {
 					const umaCorrection = correction.finalScore[i].uma;
 					if (!isNaN(umaCorrection)) {
 						game.finalScore[i].uma += umaCorrection;
@@ -1036,7 +1058,7 @@ export class RouteState {
 			}
 
 			const [existingContest] = await this.mongoStore.contestCollection.find(
-				{_id: options.contestId},
+				{ _id: options.contestId },
 				{
 					projection: {
 						normaliseScores: true,

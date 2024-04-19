@@ -18,6 +18,7 @@ import { IndividualPlayerStandings, IndividualPlayerStandingsProps } from "./Ind
 import { TabNavigator } from "./TabNavigator";
 import { Teams } from "./Teams";
 import { ArrowToggle } from "./utils/ArrowToggle";
+import { TourneyPhaseTeamTotalScore } from "backend/dist/rest/types/standings/TourneyPhaseTeamTotalScore";
 
 interface TypeGroup {
 	type: Rest.TourneyContestScoringDetailsWithId;
@@ -30,7 +31,7 @@ function groupByType(
 ): TypeGroup[] {
 	const groups: TypeGroup[] = [];
 
-	for(const standing of standings) {
+	for (const standing of standings) {
 		if (standing.qualificationType !== groups[0]?.type.id) {
 			const qualificationType = scoreTypes[standing.qualificationType];
 			groups.unshift({
@@ -49,15 +50,15 @@ const GroupedStandingsSection: React.FC<{
 	standings: IndividualPlayerStandingsProps[];
 	scoreTypeId: string;
 	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
-}>= ({previousItem, standings, scoreTypeId, scoreTypes}) => {
+}> = ({ previousItem, standings, scoreTypeId, scoreTypes }) => {
 	const { t } = useTranslation();
 
 	const groups = groupByType(standings, scoreTypes);
 	if (scoreTypeId == null) {
 		return <>
 			{groups.map((group, index) => <React.Fragment key={index}>
-				{ (index !== 0 || scoreTypes[previousItem?.qualificationType]?.type !== group.type.type)
-						&& <div className="h4 mt-2 mb-3">{t(getScoreTitleKey(group.type))}</div> }
+				{(index !== 0 || scoreTypes[previousItem?.qualificationType]?.type !== group.type.type)
+					&& <div className="h4 mt-2 mb-3">{t(getScoreTitleKey(group.type))}</div>}
 				<StandingsSection standings={group.standings} scoreTypes={scoreTypes} scoreTypeId={scoreTypeId} />
 			</React.Fragment>
 			)}
@@ -71,7 +72,7 @@ const StandingsSection: React.FC<{
 	standings: IndividualPlayerStandingsProps[];
 	scoreTypeId: string;
 	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
-}>= ({standings, scoreTypes, scoreTypeId}) => {
+}> = ({ standings, scoreTypes, scoreTypeId }) => {
 	return <>
 		{standings
 			.map((data) => <Row key={data.player._id} className={"mt-3 no-gutters"} style={{ maxWidth: 640, margin: "auto" }}>
@@ -151,7 +152,7 @@ const ScoreRankingDisplay: React.FC<{
 									hash: `#${key}`,
 								});
 							}}
-							activeTab={hash.length === 0 ? null :  hash}
+							activeTab={hash.length === 0 ? null : hash}
 							defaultTab={"combined"}
 						/>
 					</Col>
@@ -168,9 +169,9 @@ const ScoreRankingDisplay: React.FC<{
 					/>}
 				</>
 			</Accordion.Collapse>
-			{ otherStandings.length > 0 &&
+			{otherStandings.length > 0 &&
 				<Accordion.Toggle as={Row} eventKey="0" className="pt-1" onClick={() => setShowMore(!showMore)} >
-					<ArrowToggle pointUp={showMore}/>
+					<ArrowToggle pointUp={showMore} />
 				</Accordion.Toggle>
 			}
 		</Accordion>
@@ -227,7 +228,7 @@ const TeamRankingDisplay: React.FC<{
 
 	return <>
 		<Container className="p-0 overflow-hidden rounded-top">
-			{ showTeams
+			{showTeams
 				&& <Row className="no-gutters mb-3">
 					<Teams
 						teamScores={teamScores}
@@ -251,11 +252,35 @@ const TeamRankingDisplay: React.FC<{
 				</Col>
 			</Row>
 		</Container>
-		{ selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam === "allPlayers" ? null : selectedTeam} scoreTypes={props.scoreTypes} />}
+		{selectedTeam && <ScoreRankingDisplay standings={props.phase.standings} team={selectedTeam === "allPlayers" ? null : selectedTeam} scoreTypes={props.scoreTypes} />}
 	</>;
 };
 
-export const PhaseStandings: React.FC<{phase: Rest.TourneyPhase, isLoading: boolean}>= ({phase, isLoading}) => {
+const TeamTotalDisplay: React.FC<{
+	teamTotals: TourneyPhaseTeamTotalScore[]
+}> = ({ teamTotals }) => {
+
+	return <Container className="px-5 py-2">
+		<Row className="h3 bold text-center pt-2"><Col>Team Totals</Col></Row>
+		{
+			teamTotals.map((team) => <Row
+				key={team._id}
+				className="mb-2 pt-2 rounded"
+				style={{
+					backgroundColor: `#${team.color}a0`,
+					border: `solid 2px #${team.color}50`
+				}}
+			>
+				<Col className="h5">
+					{team.name}
+				</Col>
+				<Col className="text-right h5">{team.score / 1000}</Col>
+			</Row>)
+		}
+	</Container >;
+}
+
+export const PhaseStandings: React.FC<{ phase: Rest.TourneyPhase, isLoading: boolean }> = ({ phase, isLoading }) => {
 	if (!phase || isLoading) {
 		return <Container className="rounded-bottom bg-dark text-light text-center px-3 py-4">
 			<Row>
@@ -277,7 +302,10 @@ export const PhaseStandings: React.FC<{phase: Rest.TourneyPhase, isLoading: bool
 		return <TeamRankingDisplay phase={phase} scoreTypes={scoreTypes} />;
 	}
 
-	return <ScoreRankingDisplay standings={phase.standings} scoreTypes={scoreTypes} />;
+	return <Container className={"bg-dark text-light"}>
+		{phase.teamTotals && <TeamTotalDisplay teamTotals={phase.teamTotals} />}
+		<ScoreRankingDisplay standings={phase.standings} scoreTypes={scoreTypes} />
+	</Container>;
 };
 
 function getScoreTitleKey(scoreType: Rest.TourneyContestScoringDetailsWithId): string {

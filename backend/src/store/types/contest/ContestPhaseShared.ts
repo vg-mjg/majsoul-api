@@ -6,4 +6,5 @@ export interface ContestPhaseShared {
 	normaliseScores?: boolean;
 	startTime: number;
 	index: number;
+	showTeamTotals?: boolean;
 }
