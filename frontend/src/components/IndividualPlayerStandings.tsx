@@ -345,7 +345,7 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 			{props.scoreRanking[selectedScoreType.id].styleGrade && <div className={styles.playerStyleIcon}><StyleGradeIcon grade={props.scoreRanking[selectedScoreType.id].styleGrade}/></div>}
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreTypeId == null ? props.rank : props.scoreRanking[props.scoreTypeId].rank}位</b></h5></Col>
 			{team && <TeamIcon team={team} />}
-			<Zone zone={props.player.zone} />
+			{(props.player.zone != null) && <Zone zone={props.player.zone} /> }
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
 					<Row className="no-gutters">

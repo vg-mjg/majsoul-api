@@ -135,6 +135,7 @@ export class RouteState {
 				normaliseScores: true,
 				eliminationBracketSettings: true,
 				eliminationBracketTargetPlayers: true,
+				showPlayerCountries: true,
 				gacha: true,
 			},
 		});
@@ -315,6 +316,7 @@ export class RouteState {
 				},
 				{
 					projection: {
+						showPlayerCountries: true,
 						nicknameOverrides: true,
 					},
 				},
@@ -326,7 +328,7 @@ export class RouteState {
 		return players?.map(player => ({
 			_id: player._id.toHexString(),
 			nickname: overrides?.[player._id.toHexString()] ?? player.displayName ?? player.nickname,
-			zone: MajsoulApi.getPlayerZone(player.majsoulId),
+			zone: contest.showPlayerCountries ? MajsoulApi.getPlayerZone(player.majsoulId) : null,
 		})) ?? [];
 	}
 

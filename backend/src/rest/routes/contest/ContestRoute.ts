@@ -1212,6 +1212,8 @@ export const contestRoute: Route<RouteState> = {
 			body(nameofContest("maxGames")).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
 			body(nameofContest("bonusPerGame")).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
 			body(nameofContest("track")).not().isString().bail().isBoolean().optional({ nullable: true }),
+			body(nameofContest("showTeamTotals")).not().isString().bail().isBoolean().optional({ nullable: true }),
+			body(nameofContest("showPlayerCountries")).not().isString().bail().isBoolean().optional({ nullable: true }),
 			body(nameofContest("adminPlayerFetchRequested")).not().isString().bail().isBoolean().optional({ nullable: true }),
 			body(nameofContest("nicknameOverrides")).not().isString().bail().isArray().optional({ nullable: true }),
 			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("_id")}`).isMongoId(),
