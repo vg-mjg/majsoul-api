@@ -1,9 +1,9 @@
 
 import { Credentials, OAuth2Client } from "google-auth-library";
 import { getPassport, MajsoulAdminApi, MajsoulApi, Passport } from "majsoul";
-import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from "mongodb";
+import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
-import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll,takeUntil, withLatestFrom, zipWith } from "rxjs/operators";
+import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll, takeUntil, withLatestFrom, zipWith } from "rxjs/operators";
 import seedrandom from "seedrandom";
 import * as UserAgent from "user-agents";
 
@@ -64,7 +64,7 @@ async function main() {
 
 	const expireDeadline = Date.now() + 60 * 1000;
 	const existingCookies = (config.loginCookies ?? []).filter(cookie => !cookie.expires || cookie.expires > expireDeadline);
-	const {passport: dynamicPassport, loginCookies} = (await getPassport(
+	const { passport: dynamicPassport, loginCookies } = (await getPassport(
 		{
 			userId: secrets.majsoul.uid,
 			accessToken: secrets.majsoul.accessToken,
@@ -105,7 +105,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	const passport: Passport  = {
+	const passport: Passport = {
 		accessToken: passportToken,
 		uid: secrets.majsoul.uid,
 	};
@@ -323,12 +323,14 @@ async function main() {
 				const contest = await mongoStore.contestCollection.findOneAndUpdate(
 					{ _id: contestId },
 					{ $unset: { adminPlayerFetchRequested: true } },
-					{ projection: {
-						adminPlayerFetchRequested: true,
-						majsoulId: true,
-					}},
+					{
+						projection: {
+							adminPlayerFetchRequested: true,
+							majsoulId: true,
+						},
+					},
 				);
-				console.log(`fetchRequested for contest #${contestId} #${contest.value.majsoulId}` );
+				console.log(`fetchRequested for contest #${contestId} #${contest.value.majsoulId}`);
 				await adminApi.reconnect();
 				try {
 					await adminApi.logIn(passport);
@@ -405,12 +407,12 @@ async function main() {
 
 		tracker.PhaseInfo$.pipe(
 			combineLatestWith(
-				merge (
+				merge(
 					from([null as never]),
 					tracker.SmokinSexyStyleDeleted$,
 				),
 			),
-			map(([{phases, contest}]) => {
+			map(([{ phases, contest }]) => {
 				phases.sort((a, b) => b.startTime - a.startTime);
 				return tracker.RecordedGames$.pipe(
 					map(game => {
@@ -421,9 +423,9 @@ async function main() {
 							phase,
 						};
 					}),
-					filter(({phase}) => (phase.tourneyType === TourneyContestScoringType.SmokingSexyStyle)),
+					filter(({ phase }) => (phase.tourneyType === TourneyContestScoringType.SmokingSexyStyle)),
 					map((data) =>
-						defer(() => from(mongoStore.smokingSexyStyleCollection.find({gameId: data.game._id}).toArray()).pipe(
+						defer(() => from(mongoStore.smokingSexyStyleCollection.find({ gameId: data.game._id }).toArray()).pipe(
 							zipWith(from([data])),
 						)),
 					),
@@ -435,7 +437,7 @@ async function main() {
 			}),
 			switchAll(),
 		).pipe(
-			scan((total, [{game}]) => total.then(async () => {
+			scan((total, [{ game }]) => total.then(async () => {
 				try {
 					console.log(`building styles for game id ${game.majsoulId}`);
 					const styles = await buildStylesForGame(api, game);
@@ -444,17 +446,17 @@ async function main() {
 					console.log(e);
 				}
 			}), Promise.resolve()),
-		).subscribe(() => {});
+		).subscribe(() => { });
 
 		tracker.PhaseInfo$.pipe(
-			filter(({contest}) => (contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0)),
+			filter(({ contest }) => (contest.gacha?.groups?.length > 0 && contest.gacha.groups[0].cards?.length > 0)),
 			combineLatestWith(
-				merge (
+				merge(
 					from([null as never]),
 					tracker.GachaDeleted$,
 				),
 			),
-			map(([{phases, contest}]) => {
+			map(([{ phases, contest }]) => {
 				phases.sort((a, b) => b.startTime - a.startTime);
 				return tracker.RecordedGames$.pipe(
 					map(game => {
@@ -465,9 +467,9 @@ async function main() {
 							phase,
 						};
 					}),
-					filter(({phase}) => (phase.tourneyType === TourneyContestScoringType.Gacha)),
+					filter(({ phase }) => (phase.tourneyType === TourneyContestScoringType.Gacha)),
 					map((data) =>
-						defer(() => from(mongoStore.gachaCollection.find({gameId: data.game._id}).toArray()).pipe(
+						defer(() => from(mongoStore.gachaCollection.find({ gameId: data.game._id }).toArray()).pipe(
 							zipWith(from([data])),
 						)),
 					),
@@ -479,7 +481,7 @@ async function main() {
 			}),
 			switchAll(),
 		).pipe(
-			map(([{game}, contest]) => {
+			map(([{ game }, contest]) => {
 				const seed = [game._id.toHexString(), game.end_time, game.finalScore.map(score => score.score).join("")].join(":");
 				console.log(`Rolling gacha for game id ${game.majsoulId} seed ${seed}`);
 				const rand = seedrandom(seed);
@@ -499,8 +501,8 @@ async function main() {
 
 				return () => validatePossibleRolls(mongoStore, game, contest, possibleRollsPerPlayer, rand);
 			}),
-			scan((total, next) => total.then(next),  Promise.resolve()),
-		).subscribe(() => {});
+			scan((total, next) => total.then(next), Promise.resolve()),
+		).subscribe(() => { });
 
 		spreadsheet$.subscribe(async ([spreadsheetId]) => {
 			const spreadsheet = new Spreadsheet(spreadsheetId, googleAuth);
@@ -582,7 +584,7 @@ function createContestIds$(mongoStore: Store): Observable<ObjectId> {
 	);
 }
 
-function * rollGachaForScore(rand: seedrandom.PRNG, contest: Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number){
+function* rollGachaForScore(rand: seedrandom.PRNG, contest: Contest<ObjectId>, game: GameResult<ObjectId>, index: number, uma: number) {
 	while (uma >= 1000) {
 		const roll = rand();
 		yield contest.gacha.groups.filter(group => group.onePer * roll < 1).map(group => (
@@ -599,7 +601,7 @@ function * rollGachaForScore(rand: seedrandom.PRNG, contest: Contest<ObjectId>, 
 	}
 }
 
-type RollMap = Record<string, {total: number, players: Record<string, GachaPull<ObjectId>[]>}>;
+type RollMap = Record<string, { total: number, players: Record<string, GachaPull<ObjectId>[]> }>;
 
 function addRollToMap(total: RollMap, next: GachaPull<ObjectId>): RollMap {
 	const groupId = next.gachaGroupId?.toHexString();
@@ -651,7 +653,7 @@ async function validatePossibleRolls(
 	const uniqueGroups = new Set(possibleRollsPerPlayer.flat().flat().filter(roll => roll.group.unique).map(roll => roll.group._id));
 
 	const matchingGacha = uniqueGroups.size
-		? await mongoStore.gachaCollection.find({gachaGroupId: {$in: [...uniqueGroups]}}).toArray()
+		? await mongoStore.gachaCollection.find({ gachaGroupId: { $in: [...uniqueGroups] } }).toArray()
 		: [];
 
 	const gamesInContest = matchingGacha.length
@@ -683,10 +685,10 @@ async function validatePossibleRolls(
 		for (const rollOption of player) {
 			const correctRoll = rollOption.find(roll =>
 				!roll.group.unique
-					|| (
-						(gachaGroupMap[roll.group._id.toHexString()]?.total ?? 0) < roll.group.cards.length
-							&& (gachaGroupMap[roll.group._id.toHexString()]?.players[roll.pull.playerId.toHexString()]?.length ?? 0) === 0
-					),
+				|| (
+					(gachaGroupMap[roll.group._id.toHexString()]?.total ?? 0) < roll.group.cards.length
+					&& (gachaGroupMap[roll.group._id.toHexString()]?.players[roll.pull.playerId.toHexString()]?.length ?? 0) === 0
+				),
 
 			);
 

@@ -113,8 +113,8 @@ export class MajsoulApi {
 		// this.lobbyService.rpcCall
 	}
 
-	public async logIn(passport: Passport): Promise<void> {
-		const type = 8;
+	public async logIn(passport: Passport): Promise<lq.IResOauth2Check> {
+		const type = 7;
 
 		const respOauth2Auth = await this.lobbyService.rpcCall<lq.IReqOauth2Auth, lq.IResOauth2Auth>("oauth2Auth", {
 			type,
@@ -134,11 +134,11 @@ export class MajsoulApi {
 			respOauth2Check = await this.lobbyService.rpcCall("oauth2Check", reqOauth2Check);
 		}
 
-		const respOauth2Login = await this.lobbyService.rpcCall< lq.IReqOauth2Login,  lq.IResLogin>(
+		const respOauth2Login = await this.lobbyService.rpcCall<lq.IReqOauth2Login, lq.IResLogin>(
 			"oauth2Login",
 			{
 				type,
-				currency_platforms: [ 2, 9 ],
+				currency_platforms: [2, 9],
 				access_token: respOauth2Auth.access_token,
 				reconnect: false,
 				device: {
@@ -161,6 +161,36 @@ export class MajsoulApi {
 		}
 		console.log(`Logged in as ${respOauth2Login.account.nickname} account id ${respOauth2Login.account_id}`);
 		console.log("Connection ready");
+
+		return respOauth2Login;
+	}
+
+	public async getAccountIdFromFriendId(friendId: string): Promise<number> {
+		const resp = await this.lobbyService.rpcCall<lq.IReqSearchAccountByPattern, lq.IResSearchAccountByPattern>(
+			"searchAccountByPattern",
+			{
+				pattern: friendId
+			}
+		);
+		return resp.decode_id;
+	}
+
+	public fetchAccountStatisticInfo(accountId: number): Promise<lq.IResAccountStatisticInfo> {
+		return this.lobbyService.rpcCall<lq.IReqAccountStatisticInfo, lq.IResAccountStatisticInfo>(
+			"fetchAccountStatisticInfo",
+			{
+				account_id: accountId,
+			}
+		);
+	}
+
+	public fetchAccountInfo(accountId: number): Promise<lq.IResAccountInfo> {
+		return this.lobbyService.rpcCall<lq.IReqAccountInfo, lq.IResAccountInfo>(
+			"fetchAccountInfo",
+			{
+				account_id: accountId,
+			}
+		);
 	}
 
 	public async findContestByContestId(id: number): Promise<Contest> {

@@ -923,7 +923,7 @@ export const contestRoute: Route<RouteState> = {
 					};
 
 					if (phaseIndex < phases.phases.length - 1) {
-						gameQuery.start_time.$lt = phases.phases[phaseIndex - 1].startTime;
+						gameQuery.start_time.$lt = phases.phases[phaseIndex + 1].startTime;
 					}
 				}
 

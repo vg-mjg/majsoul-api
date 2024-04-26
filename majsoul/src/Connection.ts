@@ -65,7 +65,7 @@ export class Connection {
 	}
 
 	public send(type: MessageType, data: Uint8Array): void {
-		if(this.socket.readyState !== WebSocket.OPEN) {
+		if (this.socket.readyState !== WebSocket.OPEN) {
 			throw new Error("Connection is not opened");
 		}
 
