@@ -1,5 +1,6 @@
 import type { Rest } from "backend";
-import dayjs from "dayjs";
+import * as dayjs from "dayjs";
+
 import * as React from "react";
 import Accordion from "react-bootstrap/Accordion";
 import Col from "react-bootstrap/Col";

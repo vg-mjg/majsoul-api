@@ -1,22 +1,21 @@
+import { stylesheet } from "astroturf";
 import { Rest } from "backend";
+import { TourneyContestPhaseSubtype } from "backend/dist/store/enums";
+import clsx from "clsx";
+import * as dayjs from "dayjs";
 import * as React from "react";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import { useDispatch, useSelector } from "react-redux";
 
+import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
+import { updateGame } from "../api/Games";
 import { findPlayerInformation, IState } from "../State";
+import { PaipuLink } from "./PaipuLink";
 import styles from "./styles.sass";
 import { TeamImage } from "./TeamImage";
 import { levelToString, pickColorGradient } from "./utils";
-import dayjs = require("dayjs");
-import { stylesheet } from "astroturf";
-import { TourneyContestPhaseSubtype } from "backend/dist/store/enums";
-import clsx from "clsx";
-
-import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
-import { updateGame } from "../api/Games";
-import { PaipuLink } from "./PaipuLink";
 
 const localStyles = stylesheet`
 	.seat-0 {

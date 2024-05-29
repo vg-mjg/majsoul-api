@@ -2,6 +2,7 @@ import { stylesheet } from "astroturf";
 import type { Rest } from "backend";
 import clsx from "clsx";
 import * as dayjs from "dayjs";
+
 import { Han } from "majsoul/dist/enums";
 import * as React from "react";
 import Accordion from "react-bootstrap/Accordion";
@@ -75,7 +76,7 @@ const styles = stylesheet`
 	}
 `;
 
-function YakumanList(props: {yakumen: Rest.YakumanInformation[]}) {
+function YakumanList(props: { yakumen: Rest.YakumanInformation[] }) {
 	const { t } = useTranslation();
 	return <Container className="p-0">
 		{props.yakumen.length > 0 ?
@@ -147,11 +148,11 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 		</Row>
 		<Row>
 			<Container className="rounded bg-dark text-light pt-2">
-				{ yakumen?.length >= RECENT_LENGTH && <Row className="no-gutters">
+				{yakumen?.length >= RECENT_LENGTH && <Row className="no-gutters">
 					<Col className="h6">
 						<u>{t("yakuman.recent")}</u>
 					</Col>
-				</Row> }
+				</Row>}
 				<Row>
 					<Col>
 						<YakumanList yakumen={yakumen.slice(0, RECENT_LENGTH)} />
@@ -159,7 +160,7 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 				</Row>
 			</Container>
 		</Row>
-		{ yakumen?.length >= RECENT_LENGTH && <Row className="mt-3">
+		{yakumen?.length >= RECENT_LENGTH && <Row className="mt-3">
 			<Container className="rounded bg-dark text-light pt-2">
 				<Row className="no-gutters py-1">
 					<Col className="h6">
@@ -169,7 +170,7 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 				<Row>
 					<Col>
 						<Accordion as={Container} activeKey={activeTab} onSelect={setActiveTab} className="p-0">
-							{ yakumenSorted.map((type, index) => <React.Fragment key={type.yaku}>
+							{yakumenSorted.map((type, index) => <React.Fragment key={type.yaku}>
 								<Accordion.Toggle
 									as={Row}
 									eventKey={type.yaku}
@@ -185,13 +186,13 @@ export function YakumanDisplay(props: { contestId: string; }): JSX.Element {
 									</Col>
 								</Accordion.Toggle>
 								<Accordion.Collapse as={Row} eventKey={type.yaku}>
-									<YakumanList yakumen={type.yakumen}/>
+									<YakumanList yakumen={type.yakumen} />
 								</Accordion.Collapse>
-							</React.Fragment>) }
+							</React.Fragment>)}
 						</Accordion>
 					</Col>
 				</Row>
 			</Container>
-		</Row> }
+		</Row>}
 	</>;
 }

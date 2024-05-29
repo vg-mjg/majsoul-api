@@ -4,6 +4,7 @@ import { StyleComboType, StyleMeterChangeType, StyleMoveType, StylePenaltyType, 
 import { StyleGrade } from "backend/dist/store/enums.js";
 import clsx from "clsx";
 import * as dayjs from "dayjs";
+
 import { PlayerZone } from "majsoul/dist/enums.js";
 import * as React from "react";
 import { useContext } from "react";
@@ -172,7 +173,7 @@ const styles = stylesheet`
 
 
 
-const GachaIcon: React.FC<{cardId: string}> = ({cardId}) => {
+const GachaIcon: React.FC<{ cardId: string }> = ({ cardId }) => {
 	const { contestId } = useContext(ContestContext);
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
 	const card = contest.gacha.groups.map(group => group.cards).flat().find(card => card._id === cardId);
@@ -186,14 +187,14 @@ const GachaIcon: React.FC<{cardId: string}> = ({cardId}) => {
 	</div>;
 };
 
-const GachaGroup: React.FC<{group: Rest.GachaData}> = ({group}) => {
+const GachaGroup: React.FC<{ group: Rest.GachaData }> = ({ group }) => {
 	return <div className={styles.gachaGroup}>
 		{group.cards.slice(0, 10).filter(card => !!card).map((card, index) => <GachaIcon key={`${card}-${index}`} cardId={card} />)}
 		{group.cards.length > 10 && <div className={styles.gachaNumber}>x{group.cards.length}</div>}
 	</div>;
 };
 
-const GachaImage: React.FC<{gachaData: Rest.GachaData[]}> = ({gachaData}) => {
+const GachaImage: React.FC<{ gachaData: Rest.GachaData[] }> = ({ gachaData }) => {
 	const { contestId } = useContext(ContestContext);
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
 	const cardMap = contest.gacha.groups.reduce(
@@ -226,7 +227,7 @@ const gradeImageMap = {
 	[StyleGrade.SSS]: SSS,
 } as Record<StyleGrade, string>;
 
-const StyleGradeIcon: React.FC<{grade: StyleGrade}> = ({grade}) => {
+const StyleGradeIcon: React.FC<{ grade: StyleGrade }> = ({ grade }) => {
 	return <img src={gradeImageMap[grade]} className={styles.styleImage} />;
 };
 
@@ -245,63 +246,62 @@ const GameDetails: React.FC<{
 	majsoulId,
 	styleBreakdown,
 }) => {
-	const { t } = useTranslation();
-	const [viewDetails, setViewDetails] = React.useState(false);
-	const onAccordionSelect = React.useCallback((accordionKey: string) => {
-		setViewDetails(accordionKey === "0");
-	}, [setViewDetails]);
+		const { t } = useTranslation();
+		const [viewDetails, setViewDetails] = React.useState(false);
+		const onAccordionSelect = React.useCallback((accordionKey: string) => {
+			setViewDetails(accordionKey === "0");
+		}, [setViewDetails]);
 
-	return <Accordion as={Container} activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} className={clsx(styles && styles.styledGame)}>
-		<Accordion.Toggle as={Row} eventKey="0" className={styles.gameHeading} >
-			{styleBreakdown && <div className={styles.gameStyleIcon}><StyleGradeIcon grade={styleBreakdown.grade}/></div>}
-			<Col md="auto">
-				{getSeatCharacter(playerSeat)}
-			</Col>
+		return <Accordion as={Container} activeKey={viewDetails ? "0" : null} onSelect={onAccordionSelect} className={clsx(styles && styles.styledGame)}>
+			<Accordion.Toggle as={Row} eventKey="0" className={styles.gameHeading} >
+				{styleBreakdown && <div className={styles.gameStyleIcon}><StyleGradeIcon grade={styleBreakdown.grade} /></div>}
+				<Col md="auto">
+					{getSeatCharacter(playerSeat)}
+				</Col>
 
-			<Col md="auto">
-				{position + 1}位
-			</Col>
+				<Col md="auto">
+					{position + 1}位
+				</Col>
 
-			<Col md="auto">
-				{styleBreakdown?.total ?? score}
-			</Col>
+				<Col md="auto">
+					{styleBreakdown?.total ?? score}
+				</Col>
 
-			<Col>
-				{dayjs(startTime).calendar()}
-			</Col>
+				<Col>
+					{dayjs(startTime).calendar()}
+				</Col>
 
-			<Col md="auto">
-				<PaipuLink majsoulId={majsoulId} />
-			</Col>
-		</Accordion.Toggle>
-		<Accordion.Collapse as={Row} eventKey="0">
-			<Container>
-				{styleBreakdown?.moves?.map((style, index) => <Row
-					key={`${index}_${style.type}`}
-					className={clsx(
-						style.type === StyleMeterChangeType.Move && styles.moveRow,
-						style.type === StyleMeterChangeType.Penalty && styles.penaltyRow,
-						style.type === StyleMeterChangeType.Combo && (style.change > 0 ? styles.comboUpRow : styles.comboDownRow),
-					)}
-				>
-					<Col className="text-left">{t(`sss.${StyleMeterChangeType[style.type]}.${
-						style.type === StyleMeterChangeType.Move
+				<Col md="auto">
+					<PaipuLink majsoulId={majsoulId} />
+				</Col>
+			</Accordion.Toggle>
+			<Accordion.Collapse as={Row} eventKey="0">
+				<Container>
+					{styleBreakdown?.moves?.map((style, index) => <Row
+						key={`${index}_${style.type}`}
+						className={clsx(
+							style.type === StyleMeterChangeType.Move && styles.moveRow,
+							style.type === StyleMeterChangeType.Penalty && styles.penaltyRow,
+							style.type === StyleMeterChangeType.Combo && (style.change > 0 ? styles.comboUpRow : styles.comboDownRow),
+						)}
+					>
+						<Col className="text-left">{t(`sss.${StyleMeterChangeType[style.type]}.${style.type === StyleMeterChangeType.Move
 							? StyleMoveType[style.moveType]
 							: style.type === StyleMeterChangeType.Combo
 								? StyleComboType[style.comboType]
 								: StylePenaltyType[style.penaltyType]
-					}`)}</Col>
-					<Col className="text-right">{style.type === StyleMeterChangeType.Move
-						? style.actualPoints
-						: style.type === StyleMeterChangeType.Combo
-							? `x${style.final}`
-							: `-${style.points}`
-					}</Col>
-				</Row>)}
-			</Container>
-		</Accordion.Collapse>
-	</Accordion>;
-};
+							}`)}</Col>
+						<Col className="text-right">{style.type === StyleMeterChangeType.Move
+							? style.actualPoints
+							: style.type === StyleMeterChangeType.Combo
+								? `x${style.final}`
+								: `-${style.points}`
+						}</Col>
+					</Row>)}
+				</Container>
+			</Accordion.Collapse>
+		</Accordion>;
+	};
 
 export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps & {
 	scoreTypes: Record<string, Rest.TourneyContestScoringDetailsWithId>;
@@ -342,10 +342,10 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 			onClick={() => setLoadGames(true)}
 			style={{ cursor: "pointer", position: "relative" }}
 		>
-			{props.scoreRanking[selectedScoreType.id].styleGrade && <div className={styles.playerStyleIcon}><StyleGradeIcon grade={props.scoreRanking[selectedScoreType.id].styleGrade}/></div>}
+			{props.scoreRanking[selectedScoreType.id].styleGrade && <div className={styles.playerStyleIcon}><StyleGradeIcon grade={props.scoreRanking[selectedScoreType.id].styleGrade} /></div>}
 			<Col md="auto" style={{ minWidth: 50 }} className="mr-3 text-right"> <h5><b>{props.scoreTypeId == null ? props.rank : props.scoreRanking[props.scoreTypeId].rank}位</b></h5></Col>
 			{team && <TeamIcon team={team} />}
-			{(props.player.zone != null) && <Zone zone={props.player.zone} /> }
+			{(props.player.zone != null) && <Zone zone={props.player.zone} />}
 			<Col className="text-nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 				<Container className="p-0">
 					<Row className="no-gutters">
@@ -354,9 +354,9 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 						</Col>
 						{
 							selectedScoreType.type === TourneyContestScoringType.Gacha &&
-								<Col md="auto">
-									<div className={styles.gacha}> {props.scoreRanking[selectedScoreType.id].gachaData.map(group => <GachaGroup key={group.name} group={group}/>)}</div>
-								</Col>
+							<Col md="auto">
+								<div className={styles.gacha}> {props.scoreRanking[selectedScoreType.id].gachaData.map(group => <GachaGroup key={group.name} group={group} />)}</div>
+							</Col>
 						}
 					</Row>
 				</Container>
@@ -369,14 +369,14 @@ export function IndividualPlayerStandings(props: IndividualPlayerStandingsProps 
 		</Accordion.Toggle>
 		<Accordion.Collapse as={Row} eventKey="0">
 			<>
-				{ viewDetails && <Container>
+				{viewDetails && <Container>
 					{
 						selectedScoreType.type === TourneyContestScoringType.Gacha &&
-							<GachaImage gachaData={props.scoreRanking[selectedScoreType.id].gachaData} />
+						<GachaImage gachaData={props.scoreRanking[selectedScoreType.id].gachaData} />
 					}
 					<Row>
 						<Stats
-							request={{player: props.player._id}}
+							request={{ player: props.player._id }}
 						/>
 					</Row>
 					{games.sort((a, b) => b.start_time - a.start_time)

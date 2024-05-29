@@ -2,6 +2,7 @@ import { stylesheet } from "astroturf";
 import type { Rest } from "backend";
 import clsx from "clsx";
 import * as dayjs from "dayjs";
+
 import * as React from "react";
 import Accordion from "react-bootstrap/Accordion";
 import Button from "react-bootstrap/Button";
@@ -11,7 +12,7 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import { useTranslation } from "react-i18next";
 import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
-import { useDispatch,useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { dispatchGamesRetrievedAction } from "../actions/games/GamesRetrievedAction";
 import { fetchGames } from "../api/Games";
@@ -110,7 +111,7 @@ export function Session(props: {
 			total[index] = next;
 			return total;
 		}
-		, new Array<Rest.GameResult<string>>(mostGames * numberOfMatches + (matchMap[-1] ?? 0)).fill(null));
+			, new Array<Rest.GameResult<string>>(mostGames * numberOfMatches + (matchMap[-1] ?? 0)).fill(null));
 	}, [teams, games, token]);
 
 	const dispatch = useDispatch();
