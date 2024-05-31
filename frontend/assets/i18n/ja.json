@@ -110,7 +110,8 @@
 			"next": "次回戦",
 			"recent": "最近の回戦",
 			"more": "他の試合を見る"
-		}
+		},
+		"allTeams": "全組"
 	},
 	"session": {
 		"matches": "参戦チーム",

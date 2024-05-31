@@ -1,5 +1,6 @@
 import { stylesheet } from "astroturf";
-import type { Rest,Store } from "backend";
+import type { Rest, Store } from "backend";
+import { LeagueContestGroup } from "backend/dist/store";
 import { TourneyContestPhaseSubtype } from "backend/dist/store/enums.js";
 import clsx from "clsx";
 import * as React from "react";
@@ -10,7 +11,7 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import { BsChevronCompactDown, BsChevronCompactUp, BsX } from "react-icons/bs";
-import { useDispatch,useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { dispatchTeamCreatedAction } from "../actions/teams/TeamCreatedAction";
 import { dispatchTeamDeletedAction } from "../actions/teams/TeamDeletedAction";
@@ -26,6 +27,8 @@ import { TeamImage } from "./TeamImage";
 import { LoadingSpinner } from "./utils/LoadingSpinner";
 import { SongPlayer } from "./utils/SongPlayer";
 import { TextField } from "./utils/TextField";
+import { useTranslation } from "react-i18next";
+import { useHistory, useLocation } from "react-router-dom";
 
 export function jpNumeral(value: number): string {
 	let rep = "";
@@ -54,6 +57,12 @@ export function jpNumeral(value: number): string {
 const colorRegex = /^([0-9A-Fa-f]{0,6})$/;
 
 const styles = stylesheet`
+	.groupImage {
+		height: 32px;
+		width: 32px;
+		overflow: hidden;
+	}
+
 	.teamImage {
 		height: 64px;
 		width: 64px;
@@ -136,6 +145,7 @@ function Team(props: {
 	score?: number,
 	placing: number,
 	maxPlaceLength: number,
+	groupImage: string,
 }): JSX.Element {
 	const { contestId } = React.useContext(ContestContext);
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
@@ -199,6 +209,14 @@ function Team(props: {
 			eventKey="0"
 			className={clsx("no-gutters align-items-center flex-nowrap", globalStyles.linkDark)}
 		>
+			{props.groupImage
+				&& <Col
+					md="auto"
+					className="mr-3"
+				>
+					<img className={clsx(styles.groupImage, "rounded")} src={props.groupImage} />
+				</Col>
+			}
 			{props.placing != null
 				&& <Col
 					md="auto"
@@ -213,7 +231,7 @@ function Team(props: {
 					</h3>
 				</Col>
 			}
-			{ showTeamLogo &&
+			{showTeamLogo &&
 				<Col md="auto" className="mr-3">
 					<label>
 						<input
@@ -415,6 +433,7 @@ function TeamRow(props: {
 
 function TeamList(props: {
 	teams: TeamData[];
+	groups: LeagueContestGroup[];
 	maxPlaceLength: number;
 }): JSX.Element {
 	return <>
@@ -425,6 +444,7 @@ function TeamList(props: {
 					score={team.total}
 					placing={team.placing + 1}
 					maxPlaceLength={props.maxPlaceLength}
+					groupImage={props.groups?.find(group => !!group.teams.find(t => t.id === team._id))?.image}
 				/>
 			</TeamRow>
 		)}
@@ -435,6 +455,141 @@ interface TeamData extends Store.ContestTeam<string> {
 	placing: number;
 	total: number;
 }
+
+const groupStyles = stylesheet`
+	.group {
+		display: flex;
+		align-items: center;
+		font-weight: bold;
+		font-size: 20px;
+
+		&:not(:first-child) {
+			margin-left: 16px;
+		}
+
+		cursor: pointer;
+
+		&:hover {
+			text-decoration: underline;
+			color: #cdcdcd;
+		}
+
+		&.reverse {
+			flex-direction: row-reverse;
+		}
+
+		> * {
+			margin: 16px;
+		}
+
+		&:not(.selected):hover {
+			.groupImage {
+				height: 40px;
+				width: 40px;
+			}
+		}
+	}
+
+	.selected {
+		flex: 1;
+		.groupImage {
+			height: 48px;
+			width: 48px;
+		}
+	}
+
+	.groupImage {
+		height: 32px;
+		width: 32px;
+		overflow: hidden;
+	}
+
+	.groupContainer {
+		display: flex;
+		justify-content: center;
+		background-color: #24292d;
+		min-height: 80px;
+		margin-left: -16px;
+		margin-right: -16px;
+		margin-top: -22px;
+		margin-bottom: 8px;
+		&.bottom {
+			margin-top: 8px;
+			margin-bottom: -22px;
+		}
+	}
+
+	.groupSelector {
+		flex: 1;
+		max-width: 640px;
+		display: flex;
+	}
+`;
+
+const GroupTab: React.FC<{
+	image: string;
+	name: string;
+	reverse?: boolean;
+	selected?: boolean;
+	onClick: () => void;
+}> = ({ image, name, reverse, selected, onClick }) => {
+	return <div
+		className={clsx(
+			groupStyles.group,
+			reverse && groupStyles.reverse,
+			selected && groupStyles.selected
+		)}
+		onClick={onClick}
+	>
+		<img src={image} className={clsx(groupStyles.groupImage, "rounded")} />
+		<div>{name}</div>
+	</div>;
+};
+
+const GroupSelector: React.FC<{
+	groups: Store.LeagueContestGroup[]
+	selectedGroup: LeagueContestGroup
+	bottom?: boolean
+}> = ({ groups, selectedGroup, bottom }) => {
+	if (!groups) {
+		return null;
+	}
+
+	const history = useHistory();
+	const { t } = useTranslation();
+
+	return <div className={clsx(groupStyles.groupContainer, bottom && groupStyles.bottom)}>
+		<div className={groupStyles.groupSelector}>
+			<GroupTab
+				{...groups[0]}
+				onClick={() => history.push({
+					search: `group=${groups[0].name}`,
+					hash: history.location.hash
+				})}
+				selected={selectedGroup?.name === groups[0].name}
+			/>
+			<div
+				className={clsx(groupStyles.group, !selectedGroup && groupStyles.selected)}
+				style={{ justifyContent: "center" }}
+				onClick={() => history.push({
+					search: "",
+					hash: history.location.hash
+				})}
+			>
+				{t("league.allTeams")}
+			</div>
+			<GroupTab
+				{...groups[1]}
+				reverse
+				onClick={() => history.push({
+					search: `group=${groups[1].name}`,
+					hash: history.location.hash
+				})}
+				selected={selectedGroup?.name === groups[1].name}
+			/>
+		</div>
+	</div>;
+};
 
 export function Teams(props: {
 	isLoading?: boolean;
@@ -448,6 +603,11 @@ export function Teams(props: {
 
 	const { contestId } = React.useContext(ContestContext);
 	const teams = useSelector((state: IState) => state.contestsById[contestId]?.teams ?? {});
+	const groups = useSelector((state: IState) => state.contestsById[contestId]?.groups);
+
+	const { search } = useLocation();
+	const params = React.useMemo(() => new URLSearchParams(search), [search]);
+	const selectedGroup = groups?.find(group => group.name === params.get("group"));
 
 	const addTeamOnClick = React.useCallback(() => {
 		const id = contestId;
@@ -470,7 +630,13 @@ export function Teams(props: {
 
 	const teamsArray: TeamData[] =
 		Object.values(teams)
-			.filter(team => team._id in teamScores)
+			.filter(team =>
+				team._id in teamScores
+				&& (
+					!groups
+					|| !selectedGroup
+					|| selectedGroup.teams.find(t => t.id === team._id)
+				))
 			.map(team => ({ ...team, total: teamScores[team._id] }))
 			.sort((a, b) => b.total - a.total)
 			.map((team, placing) => ({ ...team, placing }));
@@ -488,9 +654,11 @@ export function Teams(props: {
 	}
 
 	return <Container className="rounded bg-dark text-light px-3 py-4">
+		<GroupSelector groups={groups} selectedGroup={selectedGroup} />
 		<TeamList
 			maxPlaceLength={maxPlaceLength}
 			teams={teamsArray.slice(0, teamLimit)}
+			groups={groups}
 		/>
 		{teamsArray.length > teamLimit && <Accordion
 			as={Container}
@@ -502,6 +670,7 @@ export function Teams(props: {
 				<TeamList
 					maxPlaceLength={maxPlaceLength}
 					teams={teamsArray.slice(teamLimit)}
+					groups={groups}
 				/>
 			</Accordion.Collapse>
 			<Accordion.Toggle
@@ -517,6 +686,7 @@ export function Teams(props: {
 				</Col>
 			</Accordion.Toggle>
 		</Accordion>}
+		<GroupSelector groups={groups} bottom selectedGroup={selectedGroup} />
 		{token && <TeamRow>
 			<Button onClick={addTeamOnClick}>Add Team</Button>
 		</TeamRow>}

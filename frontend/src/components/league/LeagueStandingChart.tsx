@@ -1,7 +1,6 @@
 import { Rest, Store } from "backend";
 import { ChartData, defaults } from "chart.js";
 import * as dayjs from "dayjs";
-
 import * as React from "react";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";

@@ -10,6 +10,7 @@ import { Contest as StoreContest } from "../../../store/types/contest/Contest";
 import { ContestPhaseTransition } from "../../../store/types/contest/ContestPhaseTransition";
 import { ContestTeam } from "../../../store/types/contest/ContestTeam";
 import { EliminationBracketSettings } from "../../../store/types/contest/EliminationBracketSettings";
+import { LeagueContestGroup } from "../../../store/types/contest/LeagueContestGroup";
 import { Session as StoreSession } from "../../../store/types/contest/Session";
 import { TourneyScoringInfoPart } from "../../../store/types/contest/TourneyScoringInfoPart";
 import { ContestType } from "../../../store/types/enums/ContestType";
@@ -291,6 +292,7 @@ const nameofFactory = <T>() => (name: keyof T) => name;
 const nameofContest = nameofFactory<StoreContest<ObjectId>>();
 const nameofEliminationBracketSettings = nameofFactory<EliminationBracketSettings>();
 const nameofNicknameOverrides = nameofFactory<StoreContest["nicknameOverrides"][0]>();
+const nameofLeagueContestGroups = nameofFactory<LeagueContestGroup>();
 const nameofPlayer = nameofFactory<Player<ObjectId>>();
 const nameofConfig = nameofFactory<Config<ObjectId>>();
 const nameofTransition = nameofFactory<ContestPhaseTransition<ObjectId>>();
@@ -1218,6 +1220,15 @@ export const contestRoute: Route<RouteState> = {
 			body(nameofContest("nicknameOverrides")).not().isString().bail().isArray().optional({ nullable: true }),
 			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("_id")}`).isMongoId(),
 			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
+
+			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
+			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
+
+			body(nameofContest("groups")).not().isString().bail().isArray().optional({ nullable: true }),
+			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("image")}`).isString().bail().optional(),
+			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("name")}`).isString().bail(),
+			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("teams")}`).not().isString().bail().isArray(),
+			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("teams")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
 
 			body(nameofContest("gacha")).not().isString().bail().isObject().optional({ nullable: true }),
 			body(`${nameofContest("gacha")}.${nameofGacha("groups")}`).not().isString().bail().isArray().optional(),

@@ -103,6 +103,7 @@ export function ContestSessions(props: {
 
 	const setActivePageCallback = React.useCallback((selectedPage: number) => {
 		history.push({
+			search: history.location.search,
 			hash: `#${selectedPage + 1}`,
 		});
 	}, [history]);

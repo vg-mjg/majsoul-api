@@ -7,7 +7,7 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import { useTranslation } from "react-i18next";
-import { useDispatch,useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Link, useHistory, useLocation } from "react-router-dom";
 
 import { dispatchContestImagesFetchedAction } from "../actions/contests/ContestImagesFetchedAction";
@@ -89,7 +89,7 @@ export function ContestSummary(props: {
 		</Container>;
 	}
 
-	return <ContestContext.Provider value={{contestId: props.contestId}}>
+	return <ContestContext.Provider value={{ contestId: props.contestId }}>
 		<Container>
 			<ContestHeader contest={contest} />
 			<ContestMetadataEditor contestId={contest._id} />
@@ -115,7 +115,7 @@ const styles = stylesheet`
 	}
 `;
 
-const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({selectedPhase, hasPhases, phaseRequestState}) => {
+const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({ selectedPhase, hasPhases, phaseRequestState }) => {
 	const token = useSelector((state: IState) => state.user?.token);
 
 	const { contestId } = React.useContext(ContestContext);
@@ -149,7 +149,7 @@ const TourneyContestSummary: React.FC<PhaseSelectorChildProps> = ({selectedPhase
 		{token && contest.gacha && <div className={styles.gachaPreview}>
 			{contest.gacha.groups.map(group => group.cards).flat()
 				.filter(card => card.image)
-				.map((card, index) => <img key={card._id} title={`${index}: ${card._id}`} src={card.image}/>)}
+				.map((card, index) => <img key={card._id} title={`${index}: ${card._id}`} src={card.image} />)}
 		</div>}
 		<Row className={clsx(hasPhases || "mt-3")}>
 			{contest.majsoulFriendlyId === 236728
@@ -193,7 +193,7 @@ function SessionSection(props: {
 	</>;
 }
 
-const PhaseSelector: React.FC<React.PropsWithChildren> = ({children}) =>  {
+const PhaseSelector: React.FC<React.PropsWithChildren> = ({ children }) => {
 	const { contestId } = React.useContext(ContestContext);
 	const contest = useSelector((state: IState) => state.contestsById[contestId]);
 
@@ -226,7 +226,7 @@ const PhaseSelector: React.FC<React.PropsWithChildren> = ({children}) =>  {
 	const hasPhases = contest?.phases?.length > 1;
 
 	return <>
-		{ hasPhases &&
+		{hasPhases &&
 			<Row className="mt-3" >
 				<Col className="p-0 overflow-hidden rounded-top">
 					<TabNavigator
@@ -236,6 +236,7 @@ const PhaseSelector: React.FC<React.PropsWithChildren> = ({children}) =>  {
 						}))}
 						onTabChanged={(key) => {
 							history.push({
+								search: history.location.search,
 								hash: `#${key}`,
 							});
 						}}
@@ -267,6 +268,11 @@ const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
 }) => {
 	const { contestId } = React.useContext(ContestContext);
 	const teams = useSelector((state: IState) => state.contestsById[contestId]?.teams);
+	const groups = useSelector((state: IState) => state.contestsById[contestId]?.groups);
+
+	const { search } = useLocation();
+	const params = React.useMemo(() => new URLSearchParams(search), [search]);
+	const selectedGroup = groups?.find(group => group.name === params.get("group"));
 
 	const sessions = selectedPhase?.sessions ?? [];
 
@@ -299,9 +305,23 @@ const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
 				isLoading={phaseRequestState !== RequestState.Complete}
 			/>
 		</Row>
-		<Row className="mt-3">
-			<LeagueStandingChart phase={selectedPhase} teams={teams} onSessionSelect={onSessionSelect} />
-		</Row>
+		{!groups || selectedGroup &&
+			<Row className="mt-3">
+				<LeagueStandingChart
+					phase={selectedPhase}
+					teams={Object.values(teams).reduce(
+						(total, next) => {
+							if (!groups || !!selectedGroup.teams.find(t => t.id === next._id)) {
+								total[next._id] = next;
+							}
+							return total;
+						},
+						{}
+					)}
+					onSessionSelect={onSessionSelect}
+				/>
+			</Row>
+		}
 		<SessionSection session={sessions[selectedSessionIndex]} title={t("league.sessions.selected")} />
 		<SessionSection session={currentSessionComplete ? null : currentSession} title={t("league.sessions.current")} />
 		<SessionSection session={nextSession} title={t("league.sessions.next")} />

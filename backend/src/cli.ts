@@ -23,7 +23,7 @@ async function main() {
 	// return;
 
 	const id = await api.getAccountIdFromFriendId("");
-	const stats = await api.getAccountInformation(id);
+	const stats = await api.fetchAccountInfo(id);
 
 	const dataPath = path.join(process.cwd(), "data");
 	if (!fs.existsSync(dataPath)) {

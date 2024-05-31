@@ -112,7 +112,8 @@
 			"next": "Next Session",
 			"recent": "Recent Session",
 			"more": "View Schedule"
-		}
+		},
+		"allTeams": "All Teams"
 	},
 	"session": {
 		"matches": "Matches",

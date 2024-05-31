@@ -149,6 +149,7 @@ const ScoreRankingDisplay: React.FC<{
 							onTabChanged={(key) => {
 								setShowMore(false);
 								history.push({
+									search: history.location.search,
 									hash: `#${key}`,
 								});
 							}}

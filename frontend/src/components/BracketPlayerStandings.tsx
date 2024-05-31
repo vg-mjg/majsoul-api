@@ -39,6 +39,7 @@ export function BracketPlayerStandings(props: { contestId: string; }): JSX.Eleme
 			activeTab={activeSide}
 			onTabChanged={(key) => {
 				history.push({
+					search: history.location.search,
 					hash: `#${key}`,
 				});
 			}}
