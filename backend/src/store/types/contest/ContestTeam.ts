@@ -9,4 +9,5 @@ export interface ContestTeam<Id = any> {
 	color?: string;
 	contrastBadgeFont?: boolean;
 	anthem?: string;
+	hidePlayers?: boolean;
 }

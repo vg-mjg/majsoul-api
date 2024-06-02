@@ -196,7 +196,7 @@ function Team(props: {
 
 	const dispatch = useDispatch();
 
-	const players = editedPlayers ?? apiPlayers;
+	const players = editedPlayers ?? props.team.hidePlayers ? [] : apiPlayers;
 
 	return <Accordion
 		as={Container}

@@ -373,7 +373,7 @@ export const contestRoute: Route<RouteState> = {
 				if (contest.teams) {
 					const players = await state.mongoStore.playersCollection.find({
 						_id: {
-							$in: contest.teams.reduce((total, next) => (total.push(...next.players.map(player => player._id)), total), [] as ObjectId[]),
+							$in: contest.teams.reduce((total, next) => (total.push(...(next.players?.map(player => player._id) ?? [])), total), [] as ObjectId[]),
 						},
 					}).toArray();
 
@@ -386,7 +386,7 @@ export const contestRoute: Route<RouteState> = {
 
 					restContest.teams = contest.teams.map(team => ({
 						...team,
-						players: team.players.map(player => playerMap[player._id.toHexString()]),
+						players: team.players?.map(player => playerMap[player._id.toHexString()]) ?? [],
 					}));
 				}
 
@@ -2107,6 +2107,7 @@ export const contestRoute: Route<RouteState> = {
 			body(nameofTeam("anthem")).isString().optional({ nullable: true }),
 			body(nameofTeam("color")).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({ nullable: true }),
 			body(nameofTeam("contrastBadgeFont")).isBoolean().not().isString().optional({ nullable: true }),
+			body(nameofTeam("hidePlayers")).isBoolean().not().isString().optional({ nullable: true }),
 			withData<
 				{
 					id: string;
