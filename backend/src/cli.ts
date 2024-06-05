@@ -4,7 +4,9 @@ import { GameStepRecord } from "majsoul/dist/types/GameRecord.js";
 import * as path from "path";
 import * as util from "util";
 
+import { parseGameRecordResponse } from "./connector/parseGameRecordResponse.js";
 import { getSecrets } from "./secrets.js";
+
 
 async function main() {
 	const secrets = getSecrets();
@@ -38,11 +40,10 @@ async function main() {
 		},
 	);
 
-	// const paipu = Codec.decodePaipuId("jijpnt-q3r346x6-y108-64fk-hbbn-lkptsjjyoszx_a925250810_2").split("_")[0];
-
-
+	// const paipu = Codec.decodePaipuId("jmjqlq-1r5300x8-8638-67jb-ihma-hdfjkworksqr_a924986070_2").split("_")[0];
 	// const game = await api.getGame(paipu);
-	// delete game.data;
+	// const parsed = parseGameRecordResponse(game);
+
 	// game.records = game.records.map(record => ({
 	// 	...record,
 	// 	_type: record.constructor.name.toString(),

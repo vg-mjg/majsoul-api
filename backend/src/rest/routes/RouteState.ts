@@ -38,6 +38,7 @@ import { SharedGroupRankingData } from "../types/standings/SharedGroupRankingDat
 import { TourneyContestScoringDetailsWithId } from "../types/standings/TourneyContestScoringDetailsWithId";
 import { TourneyPhaseTeamTotalScore } from "../types/standings/TourneyPhaseTeamTotalScore";
 import { bilateralSort } from "../utils/bilateralSort";
+import { adjustTies } from "../utils/adjustTies";
 
 export class RouteState {
 	constructor(
@@ -139,6 +140,7 @@ export class RouteState {
 				eliminationBracketTargetPlayers: true,
 				showTeamTotals: true,
 				showPlayerCountries: true,
+				splitTies: true,
 				gacha: true,
 			},
 		});
@@ -1062,6 +1064,7 @@ export class RouteState {
 				{
 					projection: {
 						normaliseScores: true,
+						splitTies: true,
 					},
 				},
 			).toArray();
@@ -1079,6 +1082,12 @@ export class RouteState {
 				for (const score of game.finalScore) {
 					score.uma -= lowestScore;
 				}
+			}
+		}
+
+		if (contest.splitTies) {
+			for (const game of games) {
+				game.finalScore = adjustTies(game);
 			}
 		}
 

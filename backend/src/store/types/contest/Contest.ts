@@ -15,6 +15,7 @@ export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Omit<Om
 	showPlayerCountries?: boolean;
 	spreadsheetId?: string;
 	transitions?: ContestPhaseTransition<Id>[];
+	splitTies?: boolean;
 
 	nicknameOverrides?: {
 		_id: string;

@@ -639,6 +639,7 @@ export const contestRoute: Route<RouteState> = {
 						projection: {
 							_id: true,
 							normaliseScores: true,
+							splitTies: true,
 						},
 					},
 				).toArray();
@@ -889,6 +890,7 @@ export const contestRoute: Route<RouteState> = {
 						majsoulFriendlyId: true,
 						bonusPerGame: true,
 						normaliseScores: true,
+						splitTies: true,
 					},
 				});
 
@@ -1206,6 +1208,8 @@ export const contestRoute: Route<RouteState> = {
 			body(nameofContest("tagline")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
 			body(nameofContest("taglineAlternate")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
 			body(nameofContest("normaliseScores")).not().isString().bail().isBoolean().optional({ nullable: true }),
+			body(nameofContest("splitTies")).not().isString().bail().isBoolean().optional({ nullable: true }),
+
 
 			...eliminationBracketSettingsFilter(),
 
