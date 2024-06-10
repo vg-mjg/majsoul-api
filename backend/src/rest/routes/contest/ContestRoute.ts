@@ -2004,7 +2004,7 @@ export const contestRoute: Route<RouteState> = {
 			body(nameofSession("name")).isString().optional({ nullable: true }),
 			body(nameofSession("isCancelled")).not().isString().bail().isBoolean().optional({ nullable: true }),
 			body(nameofSession("plannedMatches")).not().isString().bail().isArray().optional(),
-			body(`${nameofSession("plannedMatches")}.*.teams`).not().isString().bail().isArray({ max: 4, min: 4 }),
+			body(`${nameofSession("plannedMatches")}.*.teams`).not().isString().bail().isArray({ max: 4, min: 3 }),
 			body(`${nameofSession("plannedMatches")}.*.teams.*._id`).isMongoId(),
 			withData<{
 				id: string;
