@@ -305,7 +305,7 @@ const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
 				isLoading={phaseRequestState !== RequestState.Complete}
 			/>
 		</Row>
-		{!groups || selectedGroup &&
+		{(!groups || selectedGroup) &&
 			<Row className="mt-3">
 				<LeagueStandingChart
 					phase={selectedPhase}
