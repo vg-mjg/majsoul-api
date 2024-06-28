@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { Root } from "protobufjs";
-import { from, interval, merge, Observable, of, using } from "rxjs";
-import { catchError, filter, map, mergeAll, timeout } from "rxjs/operators";
+import { defer, from, interval, merge, Observable, of, using } from "rxjs";
+import { catchError, filter, map, mergeAll, share, tap, timeout } from "rxjs/operators";
 import { v4 as uuidv4 } from "uuid";
 
 import { Codec } from "./Codec";
@@ -16,6 +16,7 @@ import { GameRecord } from "./types/GameRecord";
 import type { lq } from "./types/liqi";
 import { Passport } from "./types/Passport";
 import { Player } from "./types/Player";
+import { CustomLobbyConnection } from "./CustomLobbyConnection";
 
 export class MajsoulApi {
 	private static async getRes<T>(path: string): Promise<T> {
@@ -45,7 +46,11 @@ export class MajsoulApi {
 		};
 	}
 
-	private readonly contestSystemMessagesSubscriptions: Record<number, number> = {};
+	private readonly contestSystemMessagesSubscriptions: Record<number, {
+		connection?: CustomLobbyConnection,
+		messages$: Observable<string>,
+		links: number
+	}> = {};
 	private readonly protobufRoot: Root;
 	private readonly connection: Connection;
 	private readonly rpc: RpcImplementation;
@@ -245,11 +250,12 @@ export class MajsoulApi {
 		return using(
 			() => ({
 				unsubscribe: () => {
-					this.contestSystemMessagesSubscriptions[id]--;
-					if (this.contestSystemMessagesSubscriptions[id] > 0) {
+					this.contestSystemMessagesSubscriptions[id].links--;
+					if (this.contestSystemMessagesSubscriptions[id]?.links > 0) {
 						return;
 					}
 
+					this.contestSystemMessagesSubscriptions[id].connection.close();
 					delete this.contestSystemMessagesSubscriptions[id];
 					this.lobbyService.rpcCall("leaveCustomizedContestChatRoom", {});
 					for (const id of Object.keys(this.contestSystemMessagesSubscriptions)) {
@@ -261,24 +267,33 @@ export class MajsoulApi {
 				}
 			}),
 			() => {
-				if (this.contestSystemMessagesSubscriptions[id] == null) {
-					this.contestSystemMessagesSubscriptions[id] = 1;
-					this.lobbyService.rpcCall<lq.IReqJoinCustomizedContestChatRoom>(
-						"joinCustomizedContestChatRoom",
-						{ unique_id: id }
-					).then((resp) => {
-						console.log(`tracking room '${id}'`, resp);
-					});
-				} else {
-					this.contestSystemMessagesSubscriptions[id]++;
+				if (this.contestSystemMessagesSubscriptions[id] != null) {
+					this.contestSystemMessagesSubscriptions[id].links++;
+					return this.contestSystemMessagesSubscriptions[id].messages$;
 				}
 
-				return this.notifications.pipe(
-					filter(
-						message => message.unique_id === id
-						// && message.constructor.name === "NotifyCustomContestSystemMsg"
+				this.contestSystemMessagesSubscriptions[id] = {
+					links: 1,
+					messages$: defer(() =>
+						from(this.lobbyService.rpcCall<
+							lq.IReqJoinCustomizedContestChatRoom,
+							lq.IResJoinCustomizedContestChatRoom
+						>(
+							"joinCustomizedContestChatRoom",
+							{ unique_id: id }
+						))
+					).pipe(
+						map(r => {
+							this.contestSystemMessagesSubscriptions[id].connection = new CustomLobbyConnection(`wss://contesten.mahjongsoul.com:8200/client?stream=binary&token=${r.token}&support_id=true&message_id=0&system_id=0`);
+							this.contestSystemMessagesSubscriptions[id].connection.init();
+							return this.contestSystemMessagesSubscriptions[id].connection.messages;
+						}),
+						mergeAll(),
+						share()
 					)
-				);
+				};
+
+				return this.contestSystemMessagesSubscriptions[id].messages$;
 			}
 		);
 	}

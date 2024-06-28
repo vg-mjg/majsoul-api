@@ -1,10 +1,7 @@
 import * as fs from "fs";
-import { Codec, MajsoulApi } from "majsoul";
-import { GameStepRecord } from "majsoul/dist/types/GameRecord.js";
+import { MajsoulApi } from "majsoul";
 import * as path from "path";
-import * as util from "util";
 
-import { parseGameRecordResponse } from "./connector/parseGameRecordResponse.js";
 import { getSecrets } from "./secrets.js";
 
 
@@ -22,7 +19,6 @@ async function main() {
 	});
 	// console.log(util.inspect(loginData, false, null, true));
 
-	// return;
 
 	const id = await api.getAccountIdFromFriendId("");
 	const stats = await api.fetchAccountInfo(id);

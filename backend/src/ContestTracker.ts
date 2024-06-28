@@ -1,7 +1,7 @@
 import { MajsoulApi } from "majsoul";
-import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument,ObjectId } from "mongodb";
+import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
 import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, mergeMap, share, switchAll, takeUntil, throttleTime } from "rxjs/operators";
+import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, mergeMap, share, switchAll, takeUntil, tap, throttleTime } from "rxjs/operators";
 
 import { nameofContest } from "./connector";
 import { buildContestPhases } from "./store/buildContestPhases";
@@ -154,8 +154,15 @@ export class ContestTracker {
 			map(([majsoulId, notFoundOnMajsoul, track]) => (majsoulId == null || notFoundOnMajsoul || !track)
 				? EMPTY
 				: this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
-					filter(notification => notification.game_end && notification.game_end.constructor.name === "CustomizedContestGameEnd"),
-					map(notification => notification.uuid as string),
+					tap(a => console.log(a)),
+					map(notification => {
+						try {
+							return JSON.parse((notification.match(/=> system \d+ (.*)/)?.[1]))?.uuid;
+						} catch (e) {
+							return null;
+						}
+					}),
+					filter(n => !!n),
 					takeUntil(this.ContestDeleted$),
 				),
 			),
@@ -166,7 +173,7 @@ export class ContestTracker {
 
 	public get RecordedGames$() {
 		return merge(
-			defer(() => from(this.mongoStore.gamesCollection.find({ contestId: this.id }, {sort: { start_time: 1 }}).toArray()))
+			defer(() => from(this.mongoStore.gamesCollection.find({ contestId: this.id }, { sort: { start_time: 1 } }).toArray()))
 				.pipe(mergeAll()),
 			this.GamesCreated$.pipe(
 				map(event => event.fullDocument),

@@ -1,5 +1,6 @@
 export { MajsoulAdminApi } from "./admin/MajsoulAdminApi";
 export { Codec } from "./Codec";
+export { CustomLobbyConnection } from "./CustomLobbyConnection";
 export * from "./enums";
 export { MajsoulApi } from "./MajsoulApi";
 export { getPassport } from "./passport";
