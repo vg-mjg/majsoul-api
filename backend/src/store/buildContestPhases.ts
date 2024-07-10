@@ -18,20 +18,24 @@ export function buildContestPhases(contest: Contest<ObjectId>): PhaseInfo<Object
 	}];
 
 	const transitions = [
-			{
-				name: phases[0].name,
-				startTime: 0,
-				scoringTypes: phases[0].tourneyType,
-			} as ContestPhaseTransition<ObjectId>,
-			...(contest.transitions ?? []),
+		{
+			name: phases[0].name,
+			startTime: 0,
+			scoringTypes: phases[0].tourneyType,
+		} as ContestPhaseTransition<ObjectId>,
+		...(contest.transitions ?? []),
 	].sort((a, b) => a.startTime - b.startTime);
 
-	for(const transition of transitions.slice(1)) {
-		const nextPhase = {
+	for (const transition of transitions.slice(1)) {
+		const nextPhase: ContestPhase = {
 			...phases[phases.length - 1],
 			index: phases.length,
 			startTime: transition.startTime,
 		};
+
+		if (transition.showJointGraph) {
+			nextPhase.showJointGraph = true;
+		}
 
 		if (transition.name) {
 			nextPhase.name = transition.name;

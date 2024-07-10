@@ -12,5 +12,6 @@ export interface ContestPhaseTransition<Id = string> extends PhaseTransitionShar
 		half?: true;
 		nil?: true;
 	};
+	showJointGraph?: boolean;
 	scoringTypes?: TourneyContestScoringInfo;
 }

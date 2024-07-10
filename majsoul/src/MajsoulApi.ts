@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { Root } from "protobufjs";
-import { defer, from, interval, merge, Observable, of, using } from "rxjs";
-import { catchError, filter, map, mergeAll, share, tap, timeout } from "rxjs/operators";
+import { defer, from, interval, merge, Observable, of, Subject, using } from "rxjs";
+import { catchError, filter, map, mergeAll, share, shareReplay, tap, timeout } from "rxjs/operators";
 import { v4 as uuidv4 } from "uuid";
 
 import { Codec } from "./Codec";
@@ -46,15 +46,10 @@ export class MajsoulApi {
 		};
 	}
 
-	private readonly contestSystemMessagesSubscriptions: Record<number, {
-		connection?: CustomLobbyConnection,
-		messages$: Observable<string>,
-		links: number
-	}> = {};
 	private readonly protobufRoot: Root;
 	private readonly connection: Connection;
 	private readonly rpc: RpcImplementation;
-	private readonly lobbyService: RpcService;
+	public readonly lobbyService: RpcService;
 	private readonly codec: Codec;
 	private readonly clientVersion: string;
 	public readonly notifications: Observable<any>;
@@ -248,52 +243,27 @@ export class MajsoulApi {
 	public subscribeToContestChatSystemMessages(id: number): Observable<any> {
 		console.log("subscribeToContestChatSystemMessages", id);
 		return using(
-			() => ({
-				unsubscribe: () => {
-					this.contestSystemMessagesSubscriptions[id].links--;
-					if (this.contestSystemMessagesSubscriptions[id]?.links > 0) {
-						return;
-					}
-
-					this.contestSystemMessagesSubscriptions[id].connection.close();
-					delete this.contestSystemMessagesSubscriptions[id];
-					this.lobbyService.rpcCall("leaveCustomizedContestChatRoom", {});
-					for (const id of Object.keys(this.contestSystemMessagesSubscriptions)) {
-						this.lobbyService.rpcCall<lq.IReqJoinCustomizedContestChatRoom>(
-							"joinCustomizedContestChatRoom",
-							{ unique_id: parseInt(id) }
-						);
-					}
-				}
-			}),
 			() => {
-				if (this.contestSystemMessagesSubscriptions[id] != null) {
-					this.contestSystemMessagesSubscriptions[id].links++;
-					return this.contestSystemMessagesSubscriptions[id].messages$;
-				}
-
-				this.contestSystemMessagesSubscriptions[id] = {
-					links: 1,
-					messages$: defer(() =>
-						from(this.lobbyService.rpcCall<
-							lq.IReqJoinCustomizedContestChatRoom,
-							lq.IResJoinCustomizedContestChatRoom
-						>(
-							"joinCustomizedContestChatRoom",
-							{ unique_id: id }
-						))
-					).pipe(
-						map(r => {
-							this.contestSystemMessagesSubscriptions[id].connection = new CustomLobbyConnection(`wss://contesten.mahjongsoul.com:8200/client?stream=binary&token=${r.token}&support_id=true&message_id=0&system_id=0`);
-							this.contestSystemMessagesSubscriptions[id].connection.init();
-							return this.contestSystemMessagesSubscriptions[id].connection.messages;
-						}),
-						mergeAll(),
-						share()
-					)
+				return {
+					unsubscribe: function () {
+						this.connection?.close();
+					}
 				};
-
-				return this.contestSystemMessagesSubscriptions[id].messages$;
+			},
+			(resource: any) => {
+				return from(
+					this.lobbyService.rpcCall<
+						lq.IReqJoinCustomizedContestChatRoom,
+						lq.IResJoinCustomizedContestChatRoom
+					>(
+						"joinCustomizedContestChatRoom",
+						{ unique_id: id }
+					).then((resp) => {
+						resource.connection = new CustomLobbyConnection(`wss://contesten.mahjongsoul.com:8200/client?stream=binary&token=${resp.token}&support_id=true&message_id=0&system_id=0`);
+						resource.connection.init();
+						return resource.connection.messages;
+					})
+				).pipe(mergeAll());
 			}
 		);
 	}

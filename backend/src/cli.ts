@@ -1,7 +1,6 @@
 import * as fs from "fs";
-import { MajsoulApi } from "majsoul";
+import { CustomLobbyConnection, MajsoulApi } from "majsoul";
 import * as path from "path";
-
 import { getSecrets } from "./secrets.js";
 
 
@@ -18,7 +17,13 @@ async function main() {
 		uid: secrets.majsoul.uid,
 	});
 	// console.log(util.inspect(loginData, false, null, true));
-
+	return;
+	const ids = await Promise.all([988377, 176745].map(id => api.findContestByContestId(id)));
+	for (const id of ids) {
+		api.subscribeToContestChatSystemMessages(id.majsoulId).subscribe(m => console.log(m));
+		await new Promise<void>((resolve) => setTimeout(() => resolve(), 3000));
+	}
+	return
 
 	const id = await api.getAccountIdFromFriendId("");
 	const stats = await api.fetchAccountInfo(id);

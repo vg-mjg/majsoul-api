@@ -2275,6 +2275,7 @@ export const contestRoute: Route<RouteState> = {
 			body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
 			body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
 			body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
+			body(`${nameofTransition("showJointGraph")}`).isBoolean().not().isString().optional(),
 			...eliminationBracketSettingsFilter(),
 			...scoringTypeFilter(nameofTransition("scoringTypes")),
 			withData<
@@ -2309,6 +2310,10 @@ export const contestRoute: Route<RouteState> = {
 
 				if (data.scoringTypes != null) {
 					transition.scoringTypes = data.scoringTypes;
+				}
+
+				if (data.showJointGraph != null) {
+					transition.showJointGraph = true;
 				}
 
 				if (data.eliminationBracketSettings != null) {

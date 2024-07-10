@@ -2,7 +2,7 @@
 import { Credentials, OAuth2Client } from "google-auth-library";
 import { getPassport, MajsoulAdminApi, MajsoulApi, Passport } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
-import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of } from "rxjs";
+import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of, Subject } from "rxjs";
 import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll, takeUntil, withLatestFrom, zipWith } from "rxjs/operators";
 import seedrandom from "seedrandom";
 import * as UserAgent from "user-agents";
@@ -279,8 +279,40 @@ async function main() {
 		);
 	});
 
+	const activeTrackers = new Subject<[ObjectId, boolean]>();
+	const trackerCount = 1;
+	const activeTrackersShared = activeTrackers.pipe(
+		scan(
+			(total, [id, track]) => {
+				if (track) {
+					if (total.active.length < trackerCount) {
+						total.active.push(id);
+						return total;
+					}
+
+					total.pending.push(id);
+					return total;
+				}
+
+				total.active = total.active.filter(a => a != id);
+				total.pending = total.pending.filter(a => a != id);
+				while (total.active.length < trackerCount && total.pending.length > 0) {
+					total.active.push(total.pending.shift());
+				}
+				return total;
+			},
+			{ pending: [], active: [] },
+		),
+		map(({ active }) => active),
+		share(),
+	);
+
 	createContestIds$(mongoStore).subscribe((contestId) => {
-		const tracker = new ContestTracker(contestId, mongoStore, api);
+		const tracker = new ContestTracker(contestId, mongoStore, api, activeTrackersShared);
+
+		tracker.ShouldTrack$.subscribe((value) => {
+			activeTrackers.next([contestId, value]);
+		});
 
 		concat(
 			of(null),

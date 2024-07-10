@@ -305,13 +305,13 @@ const LeagueContestSummary: React.FC<PhaseSelectorChildProps> = ({
 				isLoading={phaseRequestState !== RequestState.Complete}
 			/>
 		</Row>
-		{(!groups || selectedGroup) &&
+		{(!groups || selectedPhase?.showJointGraph || selectedGroup) &&
 			<Row className="mt-3">
 				<LeagueStandingChart
 					phase={selectedPhase}
 					teams={Object.values(teams).reduce(
 						(total, next) => {
-							if (!groups || !!selectedGroup.teams.find(t => t.id === next._id)) {
+							if (!groups || selectedPhase?.showJointGraph || !!selectedGroup?.teams.find(t => t.id === next._id)) {
 								total[next._id] = next;
 							}
 							return total;

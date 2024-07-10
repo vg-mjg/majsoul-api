@@ -153,6 +153,7 @@ export class RouteState {
 			name: phase.name,
 			startTime: phase.startTime,
 			index: phase.index,
+			showJointGraph: phase.showJointGraph
 		})) ?? [];
 	}
 

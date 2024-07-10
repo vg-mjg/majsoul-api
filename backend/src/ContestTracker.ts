@@ -1,7 +1,7 @@
 import { MajsoulApi } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
-import { combineLatest, defer, EMPTY, from, merge, Observable, timer } from "rxjs";
-import { delay, distinctUntilChanged, filter, first, map, mapTo, mergeAll, mergeMap, share, switchAll, takeUntil, tap, throttleTime } from "rxjs/operators";
+import { combineLatest, defer, EMPTY, from, interval, merge, Observable, timer } from "rxjs";
+import { distinct, distinctUntilChanged, filter, first, map, mergeAll, mergeMap, share, switchAll, takeUntil, tap, throttleTime } from "rxjs/operators";
 
 import { nameofContest } from "./connector";
 import { buildContestPhases } from "./store/buildContestPhases";
@@ -18,6 +18,7 @@ export class ContestTracker {
 		public readonly id: ObjectId,
 		private readonly mongoStore: Store,
 		private readonly api: MajsoulApi,
+		private readonly trackedContests: Observable<ObjectId[]>,
 	) { }
 
 	public get ContestDeleted$(): Observable<any> {
@@ -56,7 +57,7 @@ export class ContestTracker {
 				.pipe(map(contest => contest.notFoundOnMajsoul ?? false)),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("notFoundOnMajsoul")) >= 0),
-				mapTo(false),
+				map(() => false),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.notFoundOnMajsoul !== undefined),
@@ -73,7 +74,7 @@ export class ContestTracker {
 				.pipe(map(contest => contest.majsoulId)),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulId")) >= 0),
-				mapTo(null as number),
+				map(() => null as number),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.majsoulId !== undefined),
@@ -91,7 +92,7 @@ export class ContestTracker {
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("majsoulFriendlyId")) >= 0
 					|| event.updateDescription.updatedFields?.notFoundOnMajsoul === true),
-				mapTo(null as number),
+				map(() => null as number),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.majsoulFriendlyId !== undefined),
@@ -107,7 +108,7 @@ export class ContestTracker {
 			map(majsoulFriendlyId => majsoulFriendlyId == null
 				? EMPTY
 				: timer(0, 86400000).pipe(
-					mapTo(majsoulFriendlyId),
+					map(() => majsoulFriendlyId),
 					takeUntil(this.ContestDeleted$),
 				),
 			),
@@ -121,7 +122,7 @@ export class ContestTracker {
 				.pipe(map(contest => contest.track ?? false)),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("track")) >= 0),
-				mapTo(false),
+				map(() => false),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.track !== undefined),
@@ -138,7 +139,7 @@ export class ContestTracker {
 				.pipe(map(contest => contest.adminPlayerFetchRequested ?? false)),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("adminPlayerFetchRequested")) >= 0),
-				mapTo(false),
+				map(() => false),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.adminPlayerFetchRequested !== undefined),
@@ -149,25 +150,48 @@ export class ContestTracker {
 		);
 	}
 
-	public get LiveGames$() {
+	public get ShouldTrack$() {
 		return combineLatest([this.MajsoulId$, this.NotFoundOnMajsoul$, this.Track$]).pipe(
-			map(([majsoulId, notFoundOnMajsoul, track]) => (majsoulId == null || notFoundOnMajsoul || !track)
-				? EMPTY
-				: this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
-					tap(a => console.log(a)),
-					map(notification => {
-						try {
-							return JSON.parse((notification.match(/=> system \d+ (.*)/)?.[1]))?.uuid;
-						} catch (e) {
-							return null;
-						}
-					}),
-					filter(n => !!n),
-					takeUntil(this.ContestDeleted$),
-				),
+			map(([majsoulId, notFoundOnMajsoul, track]) => !(majsoulId == null || notFoundOnMajsoul || !track)),
+		);
+	}
+
+	public get LiveGames$() {
+		return combineLatest([
+			this.MajsoulId$,
+			this.ShouldTrack$,
+			this.trackedContests.pipe(
+				map(contests => contests.indexOf(this.id) >= 0),
 			),
+		]).pipe(
+			distinctUntilChanged((a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2]),
+			map(([majsoulId, shouldTrack, canTrack]) => {
+				console.log(`${this.id}: ${majsoulId} shouldTrack=${shouldTrack} canTrack=${canTrack}`);
+				return shouldTrack
+					? canTrack
+						? this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
+							tap(a => console.log(a)),
+							map(notification => {
+								try {
+									const data = JSON.parse((notification.match(/=> system \d+ (.*)/)?.[1]));
+									return data?.game_end ? data?.uuid : null;
+								} catch (e) {
+									return null;
+								}
+							}),
+							filter(n => !!n),
+							takeUntil(this.ContestDeleted$),
+						)
+						: interval(1000 * 60 * 60).pipe(
+							takeUntil(this.ContestDeleted$),
+							map(() => from(this.api.getContestGamesIds(majsoulId))),
+							mergeAll(),
+							mergeAll(),
+						)
+					: EMPTY;
+			}),
 			switchAll(),
-			delay(2000),
+			distinct((game) => game._id),
 		);
 	}
 
@@ -189,7 +213,7 @@ export class ContestTracker {
 				.pipe(map(contest => contest.teams)),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("teams")) >= 0),
-				mapTo(null as ContestTeam<ObjectId>[]),
+				map(() => null as ContestTeam<ObjectId>[]),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.teams !== undefined),
@@ -207,7 +231,7 @@ export class ContestTracker {
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.removedFields.indexOf(nameofContest("spreadsheetId")) >= 0
 					|| event.updateDescription.updatedFields?.notFoundOnMajsoul === true),
-				mapTo(null as string),
+				map(() => null as string),
 			),
 			this.ContestUpdates$.pipe(
 				filter(event => event.updateDescription.updatedFields?.spreadsheetId !== undefined),
