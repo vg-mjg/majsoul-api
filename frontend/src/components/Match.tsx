@@ -40,7 +40,7 @@ const styles = stylesheet`
 	}
 `;
 
-function Team(props : {
+function Team(props: {
 	team: Store.ContestTeam,
 	score?: number,
 	totalScore?: number,
@@ -48,13 +48,13 @@ function Team(props : {
 	return <Container
 		className={"font-weight-bold p-0 rounded bg-primary text-dark border border-2"}
 	>
-		<Row className={"no-gutters"} style={{lineHeight: "40px", textAlign: "center"}}>
+		<Row className={"no-gutters"} style={{ lineHeight: "40px", textAlign: "center" }}>
 			<Col
 				md="auto"
 				className={"rounded-left"}
-				style={{minWidth: "40px", boxSizing: "content-box"}}
+				style={{ minWidth: "40px", boxSizing: "content-box" }}
 			>
-				<TeamImage team={props.team}/>
+				<TeamImage teamImage={props.team?.image} />
 			</Col>
 			<Col
 				className={clsx("px-2", styles.nameContainer)}
@@ -72,7 +72,7 @@ function Team(props : {
 					{props.team.name}
 				</div>
 			</Col>
-			{ props.totalScore != null &&
+			{props.totalScore != null &&
 				<Col md="auto" className={clsx("rounded-right text-right pr-1", props.score == null ? styles.teamScore : styles.teamScoreWide)}>
 					{`${props.totalScore / 1000}${props.score == null ? "" : `(${props.score > 0 ? "+" : ""}${props.score / 1000})`}`}
 				</Col>

@@ -9,6 +9,9 @@ export interface Contest<Id = any> extends Partial<MajsoulContest>, Omit<Omit<Om
 	track?: boolean;
 	adminPlayerFetchRequested?: boolean;
 
+	refresh?: boolean;
+	lastRefreshed?: number;
+
 	displayName?: string;
 	notFoundOnMajsoul?: boolean;
 	initialPhaseName?: string;

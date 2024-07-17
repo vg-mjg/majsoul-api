@@ -24,20 +24,16 @@ const styles = stylesheet`
 `;
 
 export function TeamImage(props: {
-	team: Store.ContestTeam;
+	teamImage: string;
 	className?: string;
 	imageClassName?: string;
 }) {
-	if (props.team == null) {
-		return null;
-	}
-
 	return <div
 		className={clsx(styles.container, props.className)}
 	>
-		{props.team.image === undefined
+		{props.teamImage === undefined
 			? <LoadingSpinner />
-			: <img src={props.team.image ?? defaultImage} className={clsx(props.imageClassName, styles.image)} />
+			: <img src={props.teamImage ?? defaultImage} className={clsx(props.imageClassName, styles.image)} />
 		}
 	</div>;
 }

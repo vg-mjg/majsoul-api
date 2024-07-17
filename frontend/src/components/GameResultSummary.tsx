@@ -87,7 +87,7 @@ function GameSeat(props: {
 					md="auto"
 					className="border-right border-2"
 				>
-					<TeamImage team={playerInformation?.team} />
+					<TeamImage teamImage={playerInformation?.team?.image} />
 				</Col>
 			}
 			<Col

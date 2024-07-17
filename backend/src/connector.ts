@@ -405,7 +405,7 @@ async function main() {
 			if (majsoulContest == null) {
 				mongoStore.contestCollection.findOneAndUpdate(
 					{ _id: contestId },
-					{ $set: { notFoundOnMajsoul: true } },
+					{ $set: { notFoundOnMajsoul: true, refresh: false, lastRefreshed: Date.now() } },
 				);
 
 				console.log(`contest ${majsoulFriendlyId} not found on majsoul`);
@@ -416,7 +416,7 @@ async function main() {
 
 			mongoStore.contestCollection.findOneAndUpdate(
 				{ _id: contestId },
-				{ $set: { ...majsoulContest } },
+				{ $set: { ...majsoulContest, refresh: false, lastRefreshed: Date.now() } },
 			);
 
 			console.log(`updating contest ${majsoulFriendlyId} games`);

@@ -28,7 +28,7 @@ export class RestApi {
 		return process.env.NODE_ENV === "production" ? "/run/secrets/" : path.dirname(process.argv[1]);
 	}
 
-	constructor(private readonly mongoStore: Store) {}
+	constructor(private readonly mongoStore: Store) { }
 
 	public async init(root: { username: string, password: string }) {
 		const app = express();
@@ -92,15 +92,13 @@ export class RestApi {
 					issuer: "riichi.moe",
 					algorithms: ["RS256"],
 					credentialsRequired: true,
-				}).unless({
-					method: "GET",
 				}),
 			).use(function (err, req, res, next) {
 				if (err.name === "UnauthorizedError") {
 					res.status(401).send("token invalid");
 					return;
 				}
-				next();
+				next(err);
 			}),
 		);
 	}

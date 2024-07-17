@@ -1,4 +1,4 @@
-import { Rest,Store } from "backend";
+import { Rest, Store } from "backend";
 
 import { authHeader, buildApiUrl, jsonHeader } from "./utils";
 
@@ -32,6 +32,20 @@ export function createContest(token: string): Promise<Pick<Store.Contest<string>
 			},
 		}
 	).then(response => response.json());
+}
+
+export async function refresh(token: string, contestId: string): Promise<Store.ContestTeam> {
+	const url = buildApiUrl(`contests/${contestId}/refresh`);
+	const response = await fetch(
+		url.toString(),
+		{
+			method: "PUT",
+			headers: {
+				...authHeader(token),
+			},
+		}
+	);
+	return await response.json();
 }
 
 export function patchContest(token: string, id: string, contest: Partial<Rest.Contest<string>>): Promise<Omit<Rest.Contest, "teams" | "session">> {

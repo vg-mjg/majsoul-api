@@ -16,7 +16,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { dispatchTeamCreatedAction } from "../actions/teams/TeamCreatedAction";
 import { dispatchTeamDeletedAction } from "../actions/teams/TeamDeletedAction";
 import { dispatchTeamPatchedAction } from "../actions/teams/TeamPatchedAction";
-import { StatsRequest } from "../api/Contests";
+import { refresh, StatsRequest } from "../api/Contests";
 import { fetchContestPlayers, fetchPlayers } from "../api/Players";
 import { createTeam, deleteTeam, patchTeam } from "../api/Teams";
 import { IState } from "../State";
@@ -249,7 +249,13 @@ function Team(props: {
 								}
 							}}
 						/>
-						<TeamImage className={clsx(styles.teamImage, "rounded")} team={props.team} />
+						<TeamImage
+							className={clsx(styles.teamImage, "rounded")}
+							teamImage={(viewDetails && props?.team?.altImage)
+								? props?.team?.altImage
+								: props.team?.image
+							}
+						/>
 					</label>
 				</Col>
 			}
@@ -257,7 +263,10 @@ function Team(props: {
 				<Container className="p-0">
 					<Row className="no-gutters">
 						<Col md="auto" className="font-weight-bold text-capitalize h5 text-truncate" style={{ borderBottom: `3px solid #${props.team.color}` }}>
-							{props.team.name ?? `#${props.team._id}`}
+							{(viewDetails && props?.team?.altName)
+								? props?.team?.altName
+								: (props.team.name ?? `#${props.team._id}`)
+							}
 						</Col>
 					</Row>
 				</Container>
@@ -618,6 +627,15 @@ export function Teams(props: {
 		createTeam(token, id).then(team => dispatchTeamCreatedAction(dispatch, id, team));
 	}, []);
 
+	const refreshContest = React.useCallback(() => {
+		const id = contestId;
+		if (id == null) {
+			return;
+		}
+
+		refresh(token, id);
+	}, []);
+
 	const [viewDetails, setViewDetails] = React.useState(false);
 
 	const onAccordionSelect = React.useCallback((accordionKey: string) => {
@@ -689,6 +707,7 @@ export function Teams(props: {
 		<GroupSelector groups={groups} bottom selectedGroup={selectedGroup} />
 		{token && <TeamRow>
 			<Button onClick={addTeamOnClick}>Add Team</Button>
+			<Button onClick={refreshContest}>Refresh</Button>
 		</TeamRow>}
 	</Container>;
 }

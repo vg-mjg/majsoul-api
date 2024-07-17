@@ -39,6 +39,7 @@ import { logError } from "../../utils/logError";
 import { withData } from "../../utils/withData";
 import { Route } from "../Route";
 import { RouteState } from "../RouteState";
+import { User } from "../../../store/types/User";
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {
@@ -315,6 +316,17 @@ const seededPlayerNames: Record<string, string[]> = {
 	],
 };
 
+const roles = (roles: string[]) => {
+	return (req, res, next) => {
+		if (roles.find(r => req?.auth?.roles?.indexOf(r) >= 0)) {
+			next();
+			return;
+		}
+
+		res.status(401).send("invalid roles");
+	};
+};
+
 export const contestRoute: Route<RouteState> = {
 	publicMethods: [
 		(app, state) => app.get<any, StoreContest<ObjectId>[]>("/contests", (req, res) => {
@@ -329,6 +341,46 @@ export const contestRoute: Route<RouteState> = {
 				.then(contests => res.send(contests))
 				.catch(error => res.status(500).send(error));
 		}),
+
+		(app, state) => app
+			.get("/rigging/token", async (req, res) => {
+				const user = await state.mongoStore.userCollection.findOne({
+					nickname: req.header("Username") as string,
+				});
+
+				if (!user) {
+					res.sendStatus(401);
+					return;
+				}
+
+				const sha = crypto.createHash("sha256");
+				if (user.password.hash !== sha.update(`${req.header("Password") as string}:${user.password.salt}`).digest("hex")) {
+					res.sendStatus(401);
+					return;
+				}
+
+				jwt.sign(
+					{
+						name: user.nickname,
+						roles: user.scopes,
+					},
+					state.privateKey,
+					{
+						algorithm: "RS256",
+						issuer: "riichi.moe",
+						audience: "riichi.moe",
+						expiresIn: "1d",
+						notBefore: 0,
+					},
+					(err, token) => {
+						if (err) {
+							console.log(err);
+							res.status(500).send(err);
+							return;
+						}
+						res.send(token);
+					});
+			}),
 
 		(app, state) => app.get<any, StoreContest<ObjectId>>("/contests/featured", logError(async (req, res) => {
 			const [config] = await state.mongoStore.configCollection.find()
@@ -1168,1293 +1220,1439 @@ export const contestRoute: Route<RouteState> = {
 			state.mongoStore.contestCollection.insertOne({}).then(result => res.send({ _id: result.insertedId.toHexString() }));
 		}),
 
-		(app, state) => app.get("/rigging/google",
-			query("state").optional(),
-			withData<{ state?: string }, any, { authUrl: string }>(async (data, req, res) => {
-				const authUrl = state.oauth2Client.generateAuthUrl({
-					access_type: "offline",
-					scope: [
-						"https://www.googleapis.com/auth/spreadsheets",
-					],
-					state: data.state,
-				});
-				res.send({
-					authUrl,
-				});
-			}),
-		),
+		(app, state) => app
+			.get("/rigging/google",
+				roles(["root"]),
+				query("state").optional(),
+				withData<{ state?: string }, any, { authUrl: string }>(async (data, req, res) => {
+					const authUrl = state.oauth2Client.generateAuthUrl({
+						access_type: "offline",
+						scope: [
+							"https://www.googleapis.com/auth/spreadsheets",
+						],
+						state: data.state,
+					});
+					res.send({
+						authUrl,
+					});
+				}),
+			),
 
-		(app, state) => app.patch("/rigging/google",
-			body("code").isString().isLength({ min: 1 }),
-			withData<{ code: string }, any, void>(async (data, req, res) => {
-				const { tokens } = await state.oauth2Client.getToken(data.code);
-				state.mongoStore.configCollection.updateMany({}, {
-					$set: {
-						googleRefreshToken: tokens.refresh_token,
-					},
-				});
-				res.send();
-			}),
-		),
+		(app, state) => app
+			.patch("/rigging/google",
+				roles(["root"]),
+				body("code").isString().isLength({ min: 1 }),
+				withData<{ code: string }, any, void>(async (data, req, res) => {
+					const { tokens } = await state.oauth2Client.getToken(data.code);
+					state.mongoStore.configCollection.updateMany({}, {
+						$set: {
+							googleRefreshToken: tokens.refresh_token,
+						},
+					});
+					res.send();
+				}),
+			),
 
-		(app, state) => app.patch<any, { id: string }, StoreContest<ObjectId>>("/contests/:id",
-			param("id").isMongoId(),
-			body(nameofContest("majsoulFriendlyId")).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
-			body(nameofContest("spreadsheetId")).isString().bail().optional({ nullable: true }),
+		(app, state) => app
+			.put("/users",
+				roles(["root"]),
+				withData<{}, any, ObjectId>(async (data, req, res) => {
+					const user = await state.mongoStore.userCollection.insertOne({});
+					res.send(user.insertedId);
+				}),
+			),
 
-			body(nameofContest("type")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(ContestType)).optional(),
-			body(nameofContest("subtype")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(TourneyContestPhaseSubtype)).optional(),
-			body(nameofContest("anthem")).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
-			body(nameofContest("tagline")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
-			body(nameofContest("taglineAlternate")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
-			body(nameofContest("normaliseScores")).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest("splitTies")).not().isString().bail().isBoolean().optional({ nullable: true }),
-
-
-			...eliminationBracketSettingsFilter(),
-
-			body(nameofContest("displayName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
-			body(nameofContest("initialPhaseName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
-			body(nameofContest("maxGames")).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
-			body(nameofContest("bonusPerGame")).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
-			body(nameofContest("track")).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest("showTeamTotals")).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest("showPlayerCountries")).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest("adminPlayerFetchRequested")).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofContest("nicknameOverrides")).not().isString().bail().isArray().optional({ nullable: true }),
-			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("_id")}`).isMongoId(),
-			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
-
-			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
-			body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
-
-			body(nameofContest("groups")).not().isString().bail().isArray().optional({ nullable: true }),
-			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("image")}`).isString().bail().optional(),
-			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("name")}`).isString().bail(),
-			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("teams")}`).not().isString().bail().isArray(),
-			body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("teams")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
-
-			body(nameofContest("gacha")).not().isString().bail().isObject().optional({ nullable: true }),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}`).not().isString().bail().isArray().optional(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("onePer")}`).not().isString().bail().isInt({ min: 1 }),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("name")}`).isString(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("priority")}`).not().isString().bail().isInt(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("unique")}`).not().isString().bail().isBoolean().optional(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}`).not().isString().bail().isArray({ min: 1 }),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("_id")}`).isMongoId().optional(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("icon")}`).isString().bail(),
-			body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("image")}`).isString().bail().optional(),
-
-			...scoringTypeFilter(nameofContest("tourneyType")),
-			async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					return res.status(400).json({ errors: errors.array() } as any);
-				}
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-				const data: Partial<StoreContest<string>> = matchedData(req, { includeOptionals: false });
-
-				if (data.majsoulFriendlyId != null) {
+		(app, state) => app
+			.delete("/users/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				withData<{ id: string }, any, void>(async (data, req, res) => {
+					console.log(data);
 					try {
-						const existingGame = await state.mongoStore.contestCollection.findOne({ majsoulFriendlyId: data.majsoulFriendlyId });
-						if (existingGame != null && !existingGame._id.equals(data._id)) {
-							res.status(400).send(`Contest #${existingGame._id.toHexString()} already subscribed to majsoul ID ${data.majsoulFriendlyId}` as any);
+						const user = await state.mongoStore.userCollection.findOne({ _id: new ObjectId(data.id) });
+						if (user?.nickname === (req as any).auth.name) {
+							res.sendStatus(400);
 							return;
 						}
 					} catch (e) {
-						res.status(500).send(e);
+						console.log(e);
+						res.sendStatus(500);
 						return;
 					}
-				}
-
-				for (const key in data) {
-					if (key === "id") {
-						continue;
-					}
-
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (key === nameofContest("majsoulFriendlyId")) {
-						update.$unset ??= {};
-						update.$unset[nameofContest("notFoundOnMajsoul")] = true;
-					}
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[key] = true;
-						continue;
-					}
-
-					if (key === nameofContest("gacha")) {
-						console.log(data[key]);
-						update.$set ??= {};
-						update.$set[key] ??= {
-							groups: data.gacha.groups.map(group => {
-								const groupDto = {
-									_id: group._id == null ? new ObjectId() : ObjectId.createFromHexString(group._id),
-									name: group.name,
-									priority: group.priority,
-									onePer: group.onePer,
-									cards: group.cards.map(card => {
-										const cardDto = {
-											_id: card._id == null ? new ObjectId() : ObjectId.createFromHexString(card._id),
-											icon: card.icon,
-										} as GachaCard<ObjectId>;
-
-										if (card.image != null) {
-											cardDto.image = card.image;
-										}
-										return cardDto;
-									}),
-								} as GachaGroup<ObjectId>;
-
-								if (group.unique != null) {
-									groupDto.unique = group.unique;
-								}
-								return groupDto;
-							}),
-						} as StoreContest<ObjectId>["gacha"];
-						continue;
-					}
-
-					update.$set ??= {};
-					update.$set[key] = data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				state.mongoStore.contestCollection.findOneAndUpdate(
-					{ _id: new ObjectId(req.params.id) },
-					update,
-					{
-						returnDocument: "after",
-						projection: {
-							teams: false,
-							sessions: false,
-						},
-					},
-				).then((contest) => {
-					if (contest.value === null) {
-						res.status(404).send();
-						return;
-					}
-					res.send(contest.value);
-				}).catch((err) => {
-					console.log(err);
-					res.status(500).send(err);
-				});
-			},
-		),
-
-		(app, state) => app.put<any, string>("/games",
-			body(nameofGameResult("contestId")).isMongoId().isString(),
-			body(nameofGameResult("majsoulId")).isString(),
-			logError<any, string>(
-				async (req, res) => {
-					const errors = validationResult(req);
-					if (!errors.isEmpty()) {
-						res.status(400).json({ errors: errors.array() } as any);
-						return;
-					}
-					const data: Partial<StoreGameResult<string>> = matchedData(req, { includeOptionals: true });
-					const contestId = new ObjectId(data.contestId);
-					const existingContest = await state.mongoStore.contestCollection.find({ _id: contestId }).toArray();
-					if (existingContest.length <= 0) {
-						res.status(400).send("Contest Id is invalid." as any);
-						return;
-					}
-
-					const existingGame = await state.mongoStore.gamesCollection.find({ majsoulId: data.majsoulId }).toArray();
-
-					if (existingGame.length > 0) {
-						res.status(400).send(`Game with id ${data.majsoulId} already exists.` as any);
-						return;
-					}
-
-					const gameResult = await state.mongoStore.gamesCollection.insertOne({
-						contestId,
-						majsoulId: data.majsoulId,
-					});
-
-					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
-				},
+					await state.mongoStore.userCollection.deleteOne({ _id: new ObjectId(data.id) });
+					res.send();
+				}),
 			),
-		),
 
-		(app, state) => app.patch("/games/:id",
-			param("id").isMongoId(),
-			body(nameofGameResult("hidden")).isBoolean().not().isString().optional({ nullable: true }),
-			withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
-				const gameId = new ObjectId(data.id);
-				const [game] = await state.mongoStore.gamesCollection.find({
-					_id: gameId,
-				}).toArray();
+		(app, state) => app
+			.patch("/users/:id",
+				param("id").isMongoId(),
+				body("nickname").isString().isLength({ min: 1, max: 64 }).optional(),
+				body("password").isString().isLength({ min: 8, max: 2000 }).optional(),
+				body("scopes").isArray().optional(),
+				body("scopes.*").isString().optional(),
+				withData<{ id: string, nickname: string, password: string, scopes: string[] }, any, Partial<User>>(async (data, req, res) => {
+					const auth = (req as any).auth;
+					const isRoot = auth.roles?.indexOf("root") >= 0;
 
-				if (!game) {
-					res.sendStatus(404);
-					return;
-				}
-
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-
-				for (const key in data) {
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[key] = true;
-						continue;
-					}
-
-					update.$set ??= {};
-					update.$set[key] = data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				const result = await state.mongoStore.gamesCollection.findOneAndUpdate(
-					{
-						_id: gameId,
-					},
-					update,
-					{
-						returnDocument: "after",
-						projection: {
-							rounds: false,
-						},
-					},
-				);
-
-				res.send(result.value);
-			}),
-		),
-
-		(app, state) => app.delete<any, void>("/games/:id",
-			param("id").isMongoId(),
-			logError(async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					res.status(400).json({ errors: errors.array() } as any);
-					return;
-				}
-				const data = matchedData(req, { includeOptionals: true }) as { id: string; };
-				const gameId = new ObjectId(data.id);
-
-				const result = await state.mongoStore.gamesCollection.deleteOne({
-					_id: gameId,
-				});
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.put<any, string>("/games/custom",
-			body(nameofGameResult("contestId")).isMongoId().isString(),
-			logError<any, string>(
-				async (req, res) => {
-					const errors = validationResult(req);
-					if (!errors.isEmpty()) {
-						res.status(400).json({ errors: errors.array() } as any);
-						return;
-					}
-					const data: Partial<StoreGameResult<string>> = matchedData(req, { includeOptionals: true });
-					const contestId = new ObjectId(data.contestId);
-					const existingContest = await state.mongoStore.contestCollection.find({ _id: contestId }).toArray();
-					if (existingContest.length <= 0) {
-						res.status(400).send("Contest Id is invalid." as any);
+					if (!auth) {
+						res.sendStatus(401);
 						return;
 					}
 
-					const now = Date.now();
-
-					const gameResult = await state.mongoStore.gamesCollection.insertOne({
-						contestId,
-						notFoundOnMajsoul: true,
-						start_time: now,
-						end_time: now,
-					});
-
-					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
-				},
-			),
-		),
-
-		(app, state) => app.patch("/games/custom/:id",
-			param("id").isMongoId(),
-			body(nameofGameResult("start_time")).not().isString().bail().isInt({ min: 0 }).optional(),
-			body(nameofGameResult("end_time")).not().isString().bail().isInt({ min: 0 }).optional(),
-			body(nameofGameResult("finalScore")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
-			body(`${nameofGameResult("finalScore")}.*.score`).isInt().not().isString(),
-			body(`${nameofGameResult("finalScore")}.*.uma`).isInt().not().isString(),
-			body(nameofGameResult("players")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
-			body(`${nameofGameResult("players")}.*._id`).isMongoId(),
-			withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
-				const gameId = new ObjectId(data.id);
-				const [game] = await state.mongoStore.gamesCollection.find({
-					_id: gameId,
-					majsoulId: {
-						$exists: false,
-					},
-				}).toArray();
-
-				if (!game) {
-					res.sendStatus(404);
-					return;
-				}
-
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-
-				for (const key in data) {
-					if (key === "id") {
-						continue;
-					}
-
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[key] = true;
-						continue;
-					}
-
-					update.$set ??= {};
-
-					if (key === "players") {
-						update.$set[key] = data[key].map(({ _id }) => ({
-							_id: ObjectId.createFromHexString(_id),
-						}));
-						continue;
-					}
-
-					update.$set[key] = data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				const result = await state.mongoStore.gamesCollection.findOneAndUpdate(
-					{
-						_id: gameId,
-					},
-					update,
-					{
-						returnDocument: "after",
-					},
-				);
-
-				res.send(result.value);
-			}),
-		),
-
-		(app, state) => app.put<any, string>("/corrections",
-			body(nameofGameCorrection("gameId")).isMongoId().isString(),
-			logError<any, string>(
-				async (req, res) => {
-					const errors = validationResult(req);
-					if (!errors.isEmpty()) {
-						res.status(400).json({ errors: errors.array() } as any);
-						return;
-					}
-					const data: Partial<GameCorrection<string>> = matchedData(req, { includeOptionals: true });
-					const gameId = new ObjectId(data.gameId);
-					const game = await state.mongoStore.gamesCollection.find({ _id: gameId }).toArray();
-					if (game.length <= 0) {
-						res.status(400).send("Game doesn't exist." as any);
-						return;
-					}
-
-					const existingCorrection = await state.mongoStore.gameCorrectionsCollection.find({ gameId: gameId }).toArray();
-
-					if (existingCorrection.length > 0) {
-						res.status(400).send("Correction for that game id already exists." as any);
-						return;
-					}
-
-					const gameResult = await state.mongoStore.gameCorrectionsCollection.insertOne({
-						gameId,
-					});
-
-					res.send(JSON.stringify(gameResult.insertedId.toHexString()));
-				},
-			),
-		),
-
-		(app, state) => app.put("/contests/:id/gacha/:groupId",
-			param("id").isMongoId(),
-			param("groupId").isMongoId(),
-			body("icon").isString(),
-			withData<{
-				id: string,
-				groupId: string,
-				icon: string
-			}, any, StoreContest<ObjectId>>(async (data, req, res) => {
-				const contest = await state.findContest(data.id, {
-					projection: {
-						gacha: true,
-					},
-				});
-
-				if (contest === null) {
-					res.status(404).send();
-					return;
-				}
-
-				if (!contest.gacha) {
-					res.status(400).send();
-				}
-
-				const groupId = ObjectId.createFromHexString(data.groupId);
-				const group = contest.gacha.groups.find(group => group._id.equals(groupId));
-
-				if (!group) {
-					res.status(400).send();
-				}
-
-				group.cards.push({
-					_id: new ObjectId(),
-					icon: data.icon,
-				});
-
-				const result = await state.mongoStore.contestCollection.updateOne(
-					{
-						_id: contest._id,
-					},
-					{ $set: { gacha: contest.gacha } },
-				);
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.patch("/contests/:id/gachaGroup/:groupId",
-			param("id").isMongoId(),
-			param("groupId").isMongoId(),
-			body("onePer").not().isString().bail().isInt({ min: 1 }).optional(),
-			withData<{
-				id: string,
-				groupId: string,
-				onePer: number,
-			}, any, StoreContest<ObjectId>>(async (data, req, res) => {
-				const contest = await state.findContest(data.id, {
-					projection: {
-						gacha: true,
-					},
-				});
-
-				if (contest === null) {
-					res.status(404).send();
-					return;
-				}
-
-				if (!contest.gacha) {
-					res.status(400).send();
-				}
-
-				const groupId = ObjectId.createFromHexString(data.groupId);
-				const group = contest.gacha.groups.find(group => group._id.equals(groupId));
-
-				if (!group) {
-					res.status(400).send();
-				}
-
-				if (data.onePer) {
-					group.onePer = data.onePer;
-				}
-				const result = await state.mongoStore.contestCollection.updateOne(
-					{
-						_id: contest._id,
-					},
-					{ $set: { gacha: contest.gacha } },
-				);
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.patch("/contests/:id/gacha/:gachaId",
-			param("id").isMongoId(),
-			param("gachaId").isMongoId(),
-			body("icon").isString().optional(),
-			body("image").isString().optional(),
-			withData<{
-				id: string,
-				gachaId: string,
-				icon?: string,
-				image?: string,
-			}, any, StoreContest<ObjectId>>(async (data, req, res) => {
-				const contest = await state.findContest(data.id, {
-					projection: {
-						gacha: true,
-					},
-				});
-
-				if (contest === null) {
-					res.status(404).send();
-					return;
-				}
-
-				if (!contest.gacha) {
-					res.status(400).send();
-				}
-
-				const cardId = ObjectId.createFromHexString(data.gachaId);
-				const card = contest.gacha.groups.map(group => group.cards).flat().find(card => card._id.equals(cardId));
-
-				if (!card) {
-					res.status(404).send();
-				}
-
-				if (data.icon) {
-					card.icon = data.icon;
-				}
-
-				if (data.image) {
-					card.image = data.image;
-				}
-
-				const result = await state.mongoStore.contestCollection.updateOne(
-					{
-						_id: contest._id,
-					},
-					{ $set: { gacha: contest.gacha } },
-				);
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.patch("/corrections/:id",
-			param("id").isMongoId(),
-			body(nameofGameCorrection("finalScore")).isArray().not().isString().optional({ nullable: true }),
-			body(`${nameofGameCorrection("finalScore")}.*.uma`).isInt().not().isString().optional({ nullable: true }),
-			body(`${nameofGameCorrection("finalScore")}.*.score`).isInt().not().isString().optional({ nullable: true }),
-			withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
-				const correctionId = new ObjectId(data.id);
-				const [game] = await state.mongoStore.gameCorrectionsCollection.find({
-					_id: correctionId,
-				}).toArray();
-
-				if (!game) {
-					res.sendStatus(404);
-					return;
-				}
-
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-
-				for (const key in data) {
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[key] = true;
-						continue;
-					}
-
-					update.$set ??= {};
-					update.$set[key] = data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				const result = await state.mongoStore.gameCorrectionsCollection.findOneAndUpdate(
-					{
-						_id: correctionId,
-					},
-					update,
-					{
-						returnDocument: "after",
-						projection: {
-							rounds: false,
-						},
-					},
-				);
-
-				res.send(result.value);
-			}),
-		),
-
-		(app, state) => app.delete<any, void>("/corrections/:id",
-			param("id").isMongoId(),
-			logError(async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					res.status(400).json({ errors: errors.array() } as any);
-					return;
-				}
-				const data = matchedData(req, { includeOptionals: true }) as { id: string; };
-				const correctionId = new ObjectId(data.id);
-
-				const result = await state.mongoStore.gameCorrectionsCollection.deleteOne({
-					_id: correctionId,
-				});
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.delete<any, void>("/contests/:id",
-			param("id").isMongoId(),
-			logError(async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					res.status(400).json({ errors: errors.array() } as any);
-					return;
-				}
-
-				const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
-				const contestId = ObjectId.createFromHexString(data.id);
-
-				await state.mongoStore.configCollection.findOneAndUpdate(
-					{ featuredContest: contestId },
-					{
-						$unset: { featuredContest: true },
-					});
-
-				const result = await state.mongoStore.contestCollection.deleteOne({
-					_id: contestId,
-				});
-
-				await state.mongoStore.configCollection.findOneAndUpdate({
-					trackedContest: contestId,
-				}, {
-					$unset: {
-						trackedContest: true,
-					},
-				});
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.delete<any, void>("/contests/:id/gacha",
-			param("id").isMongoId(),
-			logError(async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					res.status(400).json({ errors: errors.array() } as any);
-					return;
-				}
-
-				const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
-				const contestId = ObjectId.createFromHexString(data.id);
-
-				const games = await state.mongoStore.gamesCollection.find(
-					{ contestId },
-					{ projection: { _id: true } },
-				).toArray();
-
-				const result = await state.mongoStore.gachaCollection.deleteMany(
-					{ gameId: { $in: games.map(game => game._id) } },
-				);
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.delete<any, void>("/contests/:id/sss",
-			param("id").isMongoId(),
-			logError(async (req, res) => {
-				const errors = validationResult(req);
-				if (!errors.isEmpty()) {
-					res.status(400).json({ errors: errors.array() } as any);
-					return;
-				}
-
-				const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
-				const contestId = ObjectId.createFromHexString(data.id);
-
-				const games = await state.mongoStore.gamesCollection.find(
-					{ contestId },
-					{ projection: { _id: true } },
-				).toArray();
-
-				const result = await state.mongoStore.smokingSexyStyleCollection.deleteMany(
-					{ gameId: { $in: games.map(game => game._id) } },
-				);
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.patch<any, Config<ObjectId>>("/config",
-			body(nameofConfig("featuredContest")).isMongoId().optional({ nullable: true }),
-			withData<Partial<Config<string>>, any, Config<ObjectId>>(async (data, req, res) => {
-				if (data.featuredContest != null) {
-					const existingContest = await state.mongoStore.contestCollection.findOne({ _id: new ObjectId(data.featuredContest) });
-					if (existingContest == null) {
-						res.status(400).send(`Featured contest #${data._id} doesn't exist.` as any);
-						return;
-					}
-				}
-
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-
-				for (const key in data) {
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[key] = true;
-						continue;
-					}
-
-					update.$set ??= {};
-					update.$set[key] = key === nameofConfig("featuredContest") ? new ObjectId(data[key] as string) : data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				const [existingConfig] = await state.mongoStore.configCollection.find().toArray();
-				if (existingConfig == null) {
-					res.status(404).send();
-					return;
-				}
-
-				const updatedConfig = await state.mongoStore.configCollection.findOneAndUpdate(
-					{ _id: existingConfig._id },
-					update,
-					{
-						returnDocument: "after",
-						projection: {
-							googleRefreshToken: false,
-						},
-					},
-				);
-
-				if (updatedConfig.value === null) {
-					res.status(404).send();
-					return;
-				}
-				res.send(updatedConfig.value);
-			}),
-		),
-
-		(app, state) => app.put("/sessions",
-			body(nameofSession("contestId")).isMongoId(),
-			withData<Partial<StoreSession<string | ObjectId>>, any, Partial<StoreSession<ObjectId>>>(async (data, req, res) => {
-				const contestId = await state.contestExists(data.contestId as string);
-				if (!contestId) {
-					res.status(400).send(`contest #${data.contestId} not found` as any);
-					return;
-				}
-
-				const [lastSession] = await state.mongoStore.sessionsCollection
-					.find()
-					.sort(nameofSession("scheduledTime"), -1)
-					.limit(1)
-					.toArray();
-
-				const session = await state.mongoStore.sessionsCollection.insertOne(
-					{
-						scheduledTime: (lastSession?.scheduledTime ?? Date.now()) + (24 * 60 * 60 * 1000),
-						contestId,
-						plannedMatches: [],
-					},
-				);
-
-				res.send({
-					_id: session.insertedId,
-				});
-			}),
-		),
-
-		(app, state) => app.patch("/sessions/:id",
-			param("id").isMongoId(),
-			body(nameofSession("scheduledTime")).not().isString().bail().isInt({ min: 0 }).optional(),
-			body(nameofSession("name")).isString().optional({ nullable: true }),
-			body(nameofSession("isCancelled")).not().isString().bail().isBoolean().optional({ nullable: true }),
-			body(nameofSession("plannedMatches")).not().isString().bail().isArray().optional(),
-			body(`${nameofSession("plannedMatches")}.*.teams`).not().isString().bail().isArray({ max: 4, min: 3 }),
-			body(`${nameofSession("plannedMatches")}.*.teams.*._id`).isMongoId(),
-			withData<{
-				id: string;
-			} & Partial<StoreSession<string | ObjectId>>, any, StoreSession<ObjectId>>(async (data, req, res) => {
-				if (data.plannedMatches && data.plannedMatches.length > 0) {
-					const teamIds = data.plannedMatches.map(match => match.teams.map(team => team._id as string)).flat();
-					const uniqueTeams = new Set(teamIds.map(id => id));
-
-					const sessionId = new ObjectId(data.id);
-
-					const [session] = await state.mongoStore.sessionsCollection.find({
-						_id: sessionId,
-					}).toArray();
-
-					if (!session) {
-						res.status(404).send();
-						return;
-					}
-
-					const [contest] = await state.mongoStore.contestCollection.find({
-						_id: session.contestId,
-						"teams._id": {
-							$all: Array.from(uniqueTeams).map(id => new ObjectId(id)),
-						},
-					}).toArray();
-
-					if (!contest) {
-						res.status(400).send(`One of team ids ${teamIds.map(id => `#${id}`).join(", ")} doesn't exist.` as any);
-						return;
-					}
-				}
-
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-
-				for (const key in data) {
-					if (key === "id") {
-						continue;
-					}
-
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[key] = true;
-						continue;
-					}
-
-					update.$set ??= {};
-					update.$set[key] = data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				const session = await state.mongoStore.sessionsCollection.findOneAndUpdate(
-					{ _id: new ObjectId(data.id) },
-					update,
-					{
-						returnDocument: "after",
-
-					},
-				);
-
-				if (!session.value) {
-					res.status(404).send();
-					return;
-				}
-
-				res.send(session.value);
-			}),
-		),
-
-		(app, state) => app.delete("/sessions/:id",
-			param("id").isMongoId(),
-			withData<{ id: string }, any, StoreSession<ObjectId>>(async (data, req, res) => {
-				const result = await state.mongoStore.sessionsCollection.deleteOne(
-					{
-						_id: new ObjectId(data.id),
-					},
-				);
-
-				if (result.deletedCount <= 0) {
-					res.sendStatus(404);
-				}
-				res.send();
-			}),
-		),
-
-		(app, state) => app.patch("/contests/:id/teams/:teamId",
-			param("id").isMongoId(),
-			param("teamId").isMongoId(),
-			body(nameofTeam("image")).isString().optional({ nullable: true }),
-			body(nameofTeam("imageLarge")).isString().optional({ nullable: true }),
-			body(nameofTeam("name")).isString().optional({ nullable: true }),
-			body(nameofTeam("players")).isArray().optional(),
-			body(`${nameofTeam("players")}.*._id`).isMongoId(),
-			body(nameofTeam("anthem")).isString().optional({ nullable: true }),
-			body(nameofTeam("color")).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({ nullable: true }),
-			body(nameofTeam("contrastBadgeFont")).isBoolean().not().isString().optional({ nullable: true }),
-			body(nameofTeam("hidePlayers")).isBoolean().not().isString().optional({ nullable: true }),
-			withData<
-				{
-					id: string;
-					teamId: string;
-				} & Partial<ContestTeam<string>>,
-				any,
-				ContestTeam<ObjectId>
-			>(async (data, req, res) => {
-				const update: {
-					$set?: {},
-					$unset?: {},
-				} = {};
-
-				const id = new ObjectId(data.id);
-				const teamId = new ObjectId(data.teamId);
-
-				if (data.players) {
-					data.players = data.players.map(player => ({
-						_id: ObjectId.createFromHexString(player._id),
-					})) as any;
-
-					const players = await state.mongoStore.playersCollection.find({
-						_id: { $in: data.players.map(player => player._id as any as ObjectId) },
-					}).toArray();
-					if (players.length !== data.players.length) {
-						res.status(400).send(
-							`Players ${data.players
-								.filter(player => !players.find(p => p._id.equals(player._id)))
-								.map(player => `#${player._id}`)
-								.join(", ")
-							} not found.` as any,
-						);
-						return;
-					}
-				}
-
-				for (const key in data) {
-					if (data[key] === undefined) {
-						continue;
-					}
-
-					if (key === "id" || key === "teamId") {
-						continue;
-					}
-
-					const updateKey = `teams.$.${key}`;
-
-					if (data[key] === null) {
-						update.$unset ??= {};
-						update.$unset[updateKey] = true;
-						continue;
-					}
-
-					update.$set ??= {};
-					update.$set[updateKey] = data[key];
-				}
-
-				if (update.$set == null && update.$unset == null) {
-					res.status(400).send("No operations requested" as any);
-					return;
-				}
-
-				state.mongoStore.contestCollection.findOneAndUpdate(
-					{
-						_id: id,
-						teams: { $elemMatch: { _id: teamId } },
-					},
-					update,
-					{ returnDocument: "after", projection: { teams: true } },
-				).then((contest) => {
-					res.send(contest.value.teams.find(team => team._id.equals(teamId)));
-				}).catch((err) => {
-					console.log(err);
-					res.status(500).send(err);
-				});
-			},
-			)),
-
-		(app, state) => app.put("/contests/:id/teams/",
-			param("id").isMongoId(),
-			withData<
-				{
-					id: string;
-				},
-				any,
-				ContestTeam<ObjectId>
-			>(async (data, req, res) => {
-				const contestId = await state.contestExists(data.id);
-				if (!contestId) {
-					res.sendStatus(404);
-					return;
-				}
-
-				const team = {
-					_id: new ObjectId(),
-				};
-
-				await state.mongoStore.contestCollection.findOneAndUpdate(
-					{
-						_id: contestId,
-					},
-					{
-						$push: {
-							teams: team,
-						},
-					},
-					{ returnDocument: "after", projection: { teams: true } },
-				);
-
-				res.send(team);
-			},
-			)),
-
-		(app, state) => app.delete("/contests/:id/teams/:teamId",
-			param("id").isMongoId(),
-			param("teamId").isMongoId(),
-			withData<
-				{
-					id: string;
-					teamId: string;
-				},
-				any,
-				ContestTeam<ObjectId>
-			>(async (data, req, res) => {
-				const [contest] = await state.mongoStore.contestCollection.find(
-					{
-						_id: new ObjectId(data.id),
-						teams: { $elemMatch: { _id: new ObjectId(data.teamId) } },
-					},
-				).toArray();
-
-				if (contest == null) {
-					res.sendStatus(404);
-					return;
-				}
-
-				const teamId = new ObjectId(data.teamId);
-
-				await state.mongoStore.contestCollection.findOneAndUpdate(
-					{
-						_id: contest._id,
-					},
-					{
-						$pull: {
-							teams: {
-								_id: teamId,
-							},
-						},
-					},
-					{ returnDocument: "after", projection: { teams: true } },
-				);
-
-				res.send();
-			},
-			)),
-
-		(app, state) => app.put("/contests/:id/transitions",
-			param("id").isMongoId(),
-			body(nameofTransition("startTime")).isInt({ min: 0 }).not().isString(),
-			body(nameofTransition("name")).isString(),
-			body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
-			body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
-			body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
-			body(`${nameofTransition("showJointGraph")}`).isBoolean().not().isString().optional(),
-			...eliminationBracketSettingsFilter(),
-			...scoringTypeFilter(nameofTransition("scoringTypes")),
-			withData<
-				Partial<ContestPhaseTransition> & {
-					id: string,
-				},
-				any,
-				Pick<ContestPhaseTransition<ObjectId>, "_id">
-			>(async (data, req, res) => {
-				const contest = await state.findContest(data.id);
-				if (!contest) {
-					res.status(404).send();
-					return;
-				}
-
-				const transition: ContestPhaseTransition<ObjectId> = {
-					_id: new ObjectId(),
-					startTime: data.startTime,
-				};
-
-				if (data.name != null) {
-					transition.name = data.name;
-				}
-
-				if (data.score != null) {
-					transition.score = data.score;
-				}
-
-				if (data.teams != null) {
-					transition.teams = data.teams;
-				}
-
-				if (data.scoringTypes != null) {
-					transition.scoringTypes = data.scoringTypes;
-				}
-
-				if (data.showJointGraph != null) {
-					transition.showJointGraph = true;
-				}
-
-				if (data.eliminationBracketSettings != null) {
-					transition.eliminationBracketSettings = data.eliminationBracketSettings;
-				}
-
-				if (data.eliminationBracketTargetPlayers != null) {
-					transition.eliminationBracketTargetPlayers = data.eliminationBracketTargetPlayers;
-				}
-
-
-				if (contest.transitions) {
-					state.mongoStore.contestCollection.findOneAndUpdate(
-						{ _id: new ObjectId(data.id) },
-						{
-							$push: {
-								transitions: transition,
-							},
-						},
-					);
-				} else {
-					state.mongoStore.contestCollection.findOneAndUpdate(
-						{ _id: new ObjectId(data.id) },
-						{
-							$set: {
-								transitions: [transition],
-							},
-						},
-					);
-				}
-				res.send({ _id: transition._id });
-			}),
-		),
-
-		(app, state) => app.delete("/contests/:contestId/transitions/:id",
-			param("contestId").isMongoId(),
-			param("id").isMongoId(),
-			withData<{ contestId: string; id: string }, any, void>(async (data, req, res) => {
-				const contest = await state.findContest(data.contestId);
-				if (!contest) {
-					res.sendStatus(404);
-					return;
-				}
-
-				state.mongoStore.contestCollection.findOneAndUpdate({ _id: ObjectId.createFromHexString(data.contestId) },
-					{
-						$pull: {
-							transitions: {
-								_id: ObjectId.createFromHexString(data.id),
-							},
-						},
-					},
-				);
-
-				res.send();
-			}),
-		),
-
-		(app, state) => app.patch("/players/:id",
-			param("id").isMongoId(),
-			body(nameofPlayer("displayName")).isString().optional({ nullable: true }),
-			withData<Partial<Player<string | ObjectId> & { id: string }>, any, Player<ObjectId>>(async (data, req, res) => {
-				const player = await state.mongoStore.playersCollection.findOneAndUpdate(
-					{
-						_id: ObjectId.createFromHexString(data.id as string),
-					},
-					data.displayName == null
-						? {
-							$unset: {
-								displayName: true,
-							},
+					try {
+						const user = await state.mongoStore.userCollection.findOne({ _id: new ObjectId(data.id) });
+
+						if (!isRoot && auth.name !== user.nickname) {
+							res.sendStatus(401);
+							return;
 						}
-						: {
-							$set: {
-								displayName: data.displayName,
+					} catch (e) {
+						console.log(e);
+						res.sendStatus(404);
+						return;
+					}
+
+					const $set: any = {};
+					if (data.nickname) {
+						$set.nickname = data.nickname;
+					}
+
+					if (data.password) {
+						const salt = crypto.randomBytes(24).toString("hex");
+						const sha = crypto.createHash("sha256");
+						$set.password = {
+							salt,
+							hash: sha.update(`${data.password}:${salt}`).digest("hex"),
+						};
+					}
+
+					if (data.scopes) {
+						if (!isRoot) {
+							res.sendStatus(401);
+						}
+						$set.scopes = data.scopes;
+					}
+
+					if (!data.scopes && !data.nickname && !data.password) {
+						res.sendStatus(400);
+						return;
+					}
+
+					console.log(data, $set);
+
+					const result = await state.mongoStore.userCollection.findOneAndUpdate(
+						{
+							_id: new ObjectId(data.id),
+						},
+						{ $set },
+						{ upsert: false },
+					);
+
+					if (!result.ok) {
+						res.sendStatus(500);
+						return;
+					}
+
+					res.send(result.value);
+				}),
+			),
+
+		(app, state) => app
+			.get("/users",
+				roles(["root"]),
+				withData<{}, any, any[]>(async (data, req, res) => {
+					const users = await state.mongoStore.userCollection.find().project({ password: false }).toArray();
+					res.send(users);
+				}),
+			),
+
+		(app, state) => app
+			.put("/contests/:id/refresh",
+				param("id").isMongoId(),
+				roles(["root", "admin"]),
+				withData<{ id: string }, any, any[]>(async (data, req, res) => {
+					await state.mongoStore.contestCollection.findOneAndUpdate(
+						{ _id: new ObjectId(data.id) },
+						{ $set: { refresh: true } },
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch<any, { id: string }, StoreContest<ObjectId>>("/contests/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofContest("majsoulFriendlyId")).not().isString().bail().isInt({ min: 100000, lt: 1000000 }).optional({ nullable: true }),
+				body(nameofContest("spreadsheetId")).isString().bail().optional({ nullable: true }),
+
+				body(nameofContest("type")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(ContestType)).optional(),
+				body(nameofContest("subtype")).not().isString().bail().isNumeric().isWhitelisted(Object.keys(TourneyContestPhaseSubtype)).optional(),
+				body(nameofContest("anthem")).isString().bail().isLength({ max: 50 }).optional({ nullable: true }),
+				body(nameofContest("tagline")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
+				body(nameofContest("taglineAlternate")).isString().bail().isLength({ max: 200 }).optional({ nullable: true }),
+				body(nameofContest("normaliseScores")).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest("splitTies")).not().isString().bail().isBoolean().optional({ nullable: true }),
+
+
+				...eliminationBracketSettingsFilter(),
+
+				body(nameofContest("displayName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
+				body(nameofContest("initialPhaseName")).isString().bail().isLength({ max: 100 }).optional({ nullable: true }),
+				body(nameofContest("maxGames")).not().isString().bail().isInt({ gt: 0 }).optional({ nullable: true }),
+				body(nameofContest("bonusPerGame")).not().isString().bail().isInt({ min: 0 }).optional({ nullable: true }),
+				body(nameofContest("track")).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest("showTeamTotals")).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest("showPlayerCountries")).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest("adminPlayerFetchRequested")).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofContest("nicknameOverrides")).not().isString().bail().isArray().optional({ nullable: true }),
+				body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("_id")}`).isMongoId(),
+				body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
+
+				body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
+				body(`${nameofContest("nicknameOverrides")}.*.${nameofNicknameOverrides("nickname")}`),
+
+				body(nameofContest("groups")).not().isString().bail().isArray().optional({ nullable: true }),
+				body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("image")}`).isString().bail().optional(),
+				body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("name")}`).isString().bail(),
+				body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("teams")}`).not().isString().bail().isArray(),
+				body(`${nameofContest("groups")}.*.${nameofLeagueContestGroups("teams")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
+
+				body(nameofContest("gacha")).not().isString().bail().isObject().optional({ nullable: true }),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}`).not().isString().bail().isArray().optional(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("onePer")}`).not().isString().bail().isInt({ min: 1 }),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("_id")}`).isMongoId().optional(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("name")}`).isString(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("priority")}`).not().isString().bail().isInt(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("unique")}`).not().isString().bail().isBoolean().optional(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}`).not().isString().bail().isArray({ min: 1 }),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("_id")}`).isMongoId().optional(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("icon")}`).isString().bail(),
+				body(`${nameofContest("gacha")}.${nameofGacha("groups")}.*.${nameofGachaGroup("cards")}.*.${nameofGachaCard("image")}`).isString().bail().optional(),
+
+				...scoringTypeFilter(nameofContest("tourneyType")),
+				async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						return res.status(400).json({ errors: errors.array() } as any);
+					}
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+					const data: Partial<StoreContest<string>> = matchedData(req, { includeOptionals: false });
+
+					if (data.majsoulFriendlyId != null) {
+						try {
+							const existingGame = await state.mongoStore.contestCollection.findOne({ majsoulFriendlyId: data.majsoulFriendlyId });
+							if (existingGame != null && !existingGame._id.equals(data._id)) {
+								res.status(400).send(`Contest #${existingGame._id.toHexString()} already subscribed to majsoul ID ${data.majsoulFriendlyId}` as any);
+								return;
+							}
+						} catch (e) {
+							res.status(500).send(e);
+							return;
+						}
+					}
+
+					for (const key in data) {
+						if (key === "id") {
+							continue;
+						}
+
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (key === nameofContest("majsoulFriendlyId")) {
+							update.$unset ??= {};
+							update.$unset[nameofContest("notFoundOnMajsoul")] = true;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						if (key === nameofContest("gacha")) {
+							console.log(data[key]);
+							update.$set ??= {};
+							update.$set[key] ??= {
+								groups: data.gacha.groups.map(group => {
+									const groupDto = {
+										_id: group._id == null ? new ObjectId() : ObjectId.createFromHexString(group._id),
+										name: group.name,
+										priority: group.priority,
+										onePer: group.onePer,
+										cards: group.cards.map(card => {
+											const cardDto = {
+												_id: card._id == null ? new ObjectId() : ObjectId.createFromHexString(card._id),
+												icon: card.icon,
+											} as GachaCard<ObjectId>;
+
+											if (card.image != null) {
+												cardDto.image = card.image;
+											}
+											return cardDto;
+										}),
+									} as GachaGroup<ObjectId>;
+
+									if (group.unique != null) {
+										groupDto.unique = group.unique;
+									}
+									return groupDto;
+								}),
+							} as StoreContest<ObjectId>["gacha"];
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					state.mongoStore.contestCollection.findOneAndUpdate(
+						{ _id: new ObjectId(req.params.id) },
+						update,
+						{
+							returnDocument: "after",
+							projection: {
+								teams: false,
+								sessions: false,
 							},
 						},
-					{
-						returnDocument: "after",
-					},
-				);
-
-				if (!player.ok) {
-					res.status(404).send();
-				}
-
-				res.send(player.value);
-			}),
-		),
-
-		(app, state) => app.put("/players/",
-			body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
-			withData<Partial<Player<string | ObjectId>>, any, Player<ObjectId>>(async (data, req, res) => {
-				const result = await state.mongoStore.playersCollection.insertOne({
-					majsoulFriendlyId: data.majsoulFriendlyId,
-				});
-				res.send({
-					_id: result.insertedId,
-				});
-			}),
-		),
-
-		(app, state) => app.get("/rigging/token", async (req, res) => {
-			const user = await state.mongoStore.userCollection.findOne({
-				nickname: req.header("Username") as string,
-			});
-
-			if (!user) {
-				res.sendStatus(401);
-				return;
-			}
-
-			const sha = crypto.createHash("sha256");
-			if (user.password.hash !== sha.update(`${req.header("Password") as string}:${user.password.salt}`).digest("hex")) {
-				res.sendStatus(401);
-				return;
-			}
-
-			jwt.sign(
-				{
-					name: user.nickname,
-					roles: user.scopes,
-				},
-				state.privateKey,
-				{
-					algorithm: "RS256",
-					issuer: "riichi.moe",
-					audience: "riichi.moe",
-					expiresIn: "1d",
-					notBefore: 0,
-				},
-				(err, token) => {
-					if (err) {
+					).then((contest) => {
+						if (contest.value === null) {
+							res.status(404).send();
+							return;
+						}
+						res.send(contest.value);
+					}).catch((err) => {
 						console.log(err);
 						res.status(500).send(err);
+					});
+				},
+			),
+
+		(app, state) => app
+			.put<any, string>("/games",
+				roles(["root"]),
+				body(nameofGameResult("contestId")).isMongoId().isString(),
+				body(nameofGameResult("majsoulId")).isString(),
+				logError<any, string>(
+					async (req, res) => {
+						const errors = validationResult(req);
+						if (!errors.isEmpty()) {
+							res.status(400).json({ errors: errors.array() } as any);
+							return;
+						}
+						const data: Partial<StoreGameResult<string>> = matchedData(req, { includeOptionals: true });
+						const contestId = new ObjectId(data.contestId);
+						const existingContest = await state.mongoStore.contestCollection.find({ _id: contestId }).toArray();
+						if (existingContest.length <= 0) {
+							res.status(400).send("Contest Id is invalid." as any);
+							return;
+						}
+
+						const existingGame = await state.mongoStore.gamesCollection.find({ majsoulId: data.majsoulId }).toArray();
+
+						if (existingGame.length > 0) {
+							res.status(400).send(`Game with id ${data.majsoulId} already exists.` as any);
+							return;
+						}
+
+						const gameResult = await state.mongoStore.gamesCollection.insertOne({
+							contestId,
+							majsoulId: data.majsoulId,
+						});
+
+						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
+					},
+				),
+			),
+
+		(app, state) => app
+			.patch("/games/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofGameResult("hidden")).isBoolean().not().isString().optional({ nullable: true }),
+				withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
+					const gameId = new ObjectId(data.id);
+					const [game] = await state.mongoStore.gamesCollection.find({
+						_id: gameId,
+					}).toArray();
+
+					if (!game) {
+						res.sendStatus(404);
 						return;
 					}
-					res.send(token);
-				});
-		},
-		),
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const result = await state.mongoStore.gamesCollection.findOneAndUpdate(
+						{
+							_id: gameId,
+						},
+						update,
+						{
+							returnDocument: "after",
+							projection: {
+								rounds: false,
+							},
+						},
+					);
+
+					res.send(result.value);
+				}),
+			),
+
+		(app, state) => app
+			.delete<any, void>("/games/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+					const data = matchedData(req, { includeOptionals: true }) as { id: string; };
+					const gameId = new ObjectId(data.id);
+
+					const result = await state.mongoStore.gamesCollection.deleteOne({
+						_id: gameId,
+					});
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.put<any, string>("/games/custom",
+				roles(["root"]),
+				body(nameofGameResult("contestId")).isMongoId().isString(),
+				logError<any, string>(
+					async (req, res) => {
+						const errors = validationResult(req);
+						if (!errors.isEmpty()) {
+							res.status(400).json({ errors: errors.array() } as any);
+							return;
+						}
+						const data: Partial<StoreGameResult<string>> = matchedData(req, { includeOptionals: true });
+						const contestId = new ObjectId(data.contestId);
+						const existingContest = await state.mongoStore.contestCollection.find({ _id: contestId }).toArray();
+						if (existingContest.length <= 0) {
+							res.status(400).send("Contest Id is invalid." as any);
+							return;
+						}
+
+						const now = Date.now();
+
+						const gameResult = await state.mongoStore.gamesCollection.insertOne({
+							contestId,
+							notFoundOnMajsoul: true,
+							start_time: now,
+							end_time: now,
+						});
+
+						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
+					},
+				),
+			),
+
+		(app, state) => app
+			.patch("/games/custom/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofGameResult("start_time")).not().isString().bail().isInt({ min: 0 }).optional(),
+				body(nameofGameResult("end_time")).not().isString().bail().isInt({ min: 0 }).optional(),
+				body(nameofGameResult("finalScore")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
+				body(`${nameofGameResult("finalScore")}.*.score`).isInt().not().isString(),
+				body(`${nameofGameResult("finalScore")}.*.uma`).isInt().not().isString(),
+				body(nameofGameResult("players")).not().isString().bail().isArray({ max: 4, min: 4 }).optional(),
+				body(`${nameofGameResult("players")}.*._id`).isMongoId(),
+				withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
+					const gameId = new ObjectId(data.id);
+					const [game] = await state.mongoStore.gamesCollection.find({
+						_id: gameId,
+						majsoulId: {
+							$exists: false,
+						},
+					}).toArray();
+
+					if (!game) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (key === "id") {
+							continue;
+						}
+
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+
+						if (key === "players") {
+							update.$set[key] = data[key].map(({ _id }) => ({
+								_id: ObjectId.createFromHexString(_id),
+							}));
+							continue;
+						}
+
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const result = await state.mongoStore.gamesCollection.findOneAndUpdate(
+						{
+							_id: gameId,
+						},
+						update,
+						{
+							returnDocument: "after",
+						},
+					);
+
+					res.send(result.value);
+				}),
+			),
+
+		(app, state) => app
+			.put<any, string>("/corrections",
+				roles(["root"]),
+				body(nameofGameCorrection("gameId")).isMongoId().isString(),
+				logError<any, string>(
+					async (req, res) => {
+						const errors = validationResult(req);
+						if (!errors.isEmpty()) {
+							res.status(400).json({ errors: errors.array() } as any);
+							return;
+						}
+						const data: Partial<GameCorrection<string>> = matchedData(req, { includeOptionals: true });
+						const gameId = new ObjectId(data.gameId);
+						const game = await state.mongoStore.gamesCollection.find({ _id: gameId }).toArray();
+						if (game.length <= 0) {
+							res.status(400).send("Game doesn't exist." as any);
+							return;
+						}
+
+						const existingCorrection = await state.mongoStore.gameCorrectionsCollection.find({ gameId: gameId }).toArray();
+
+						if (existingCorrection.length > 0) {
+							res.status(400).send("Correction for that game id already exists." as any);
+							return;
+						}
+
+						const gameResult = await state.mongoStore.gameCorrectionsCollection.insertOne({
+							gameId,
+						});
+
+						res.send(JSON.stringify(gameResult.insertedId.toHexString()));
+					},
+				),
+			),
+
+		(app, state) => app
+			.put("/contests/:id/gacha/:groupId",
+				roles(["root"]),
+				param("id").isMongoId(),
+				param("groupId").isMongoId(),
+				body("icon").isString(),
+				withData<{
+					id: string,
+					groupId: string,
+					icon: string
+				}, any, StoreContest<ObjectId>>(async (data, req, res) => {
+					const contest = await state.findContest(data.id, {
+						projection: {
+							gacha: true,
+						},
+					});
+
+					if (contest === null) {
+						res.status(404).send();
+						return;
+					}
+
+					if (!contest.gacha) {
+						res.status(400).send();
+					}
+
+					const groupId = ObjectId.createFromHexString(data.groupId);
+					const group = contest.gacha.groups.find(group => group._id.equals(groupId));
+
+					if (!group) {
+						res.status(400).send();
+					}
+
+					group.cards.push({
+						_id: new ObjectId(),
+						icon: data.icon,
+					});
+
+					const result = await state.mongoStore.contestCollection.updateOne(
+						{
+							_id: contest._id,
+						},
+						{ $set: { gacha: contest.gacha } },
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch("/contests/:id/gachaGroup/:groupId",
+				roles(["root"]),
+				param("id").isMongoId(),
+				param("groupId").isMongoId(),
+				body("onePer").not().isString().bail().isInt({ min: 1 }).optional(),
+				withData<{
+					id: string,
+					groupId: string,
+					onePer: number,
+				}, any, StoreContest<ObjectId>>(async (data, req, res) => {
+					const contest = await state.findContest(data.id, {
+						projection: {
+							gacha: true,
+						},
+					});
+
+					if (contest === null) {
+						res.status(404).send();
+						return;
+					}
+
+					if (!contest.gacha) {
+						res.status(400).send();
+					}
+
+					const groupId = ObjectId.createFromHexString(data.groupId);
+					const group = contest.gacha.groups.find(group => group._id.equals(groupId));
+
+					if (!group) {
+						res.status(400).send();
+					}
+
+					if (data.onePer) {
+						group.onePer = data.onePer;
+					}
+					const result = await state.mongoStore.contestCollection.updateOne(
+						{
+							_id: contest._id,
+						},
+						{ $set: { gacha: contest.gacha } },
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch("/contests/:id/gacha/:gachaId",
+				roles(["root"]),
+				param("id").isMongoId(),
+				param("gachaId").isMongoId(),
+				body("icon").isString().optional(),
+				body("image").isString().optional(),
+				withData<{
+					id: string,
+					gachaId: string,
+					icon?: string,
+					image?: string,
+				}, any, StoreContest<ObjectId>>(async (data, req, res) => {
+					const contest = await state.findContest(data.id, {
+						projection: {
+							gacha: true,
+						},
+					});
+
+					if (contest === null) {
+						res.status(404).send();
+						return;
+					}
+
+					if (!contest.gacha) {
+						res.status(400).send();
+					}
+
+					const cardId = ObjectId.createFromHexString(data.gachaId);
+					const card = contest.gacha.groups.map(group => group.cards).flat().find(card => card._id.equals(cardId));
+
+					if (!card) {
+						res.status(404).send();
+					}
+
+					if (data.icon) {
+						card.icon = data.icon;
+					}
+
+					if (data.image) {
+						card.image = data.image;
+					}
+
+					const result = await state.mongoStore.contestCollection.updateOne(
+						{
+							_id: contest._id,
+						},
+						{ $set: { gacha: contest.gacha } },
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch("/corrections/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofGameCorrection("finalScore")).isArray().not().isString().optional({ nullable: true }),
+				body(`${nameofGameCorrection("finalScore")}.*.uma`).isInt().not().isString().optional({ nullable: true }),
+				body(`${nameofGameCorrection("finalScore")}.*.score`).isInt().not().isString().optional({ nullable: true }),
+				withData<{ id: string, hidden?: boolean }, any, Partial<GameResult>>(async (data, req, res) => {
+					const correctionId = new ObjectId(data.id);
+					const [game] = await state.mongoStore.gameCorrectionsCollection.find({
+						_id: correctionId,
+					}).toArray();
+
+					if (!game) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const result = await state.mongoStore.gameCorrectionsCollection.findOneAndUpdate(
+						{
+							_id: correctionId,
+						},
+						update,
+						{
+							returnDocument: "after",
+							projection: {
+								rounds: false,
+							},
+						},
+					);
+
+					res.send(result.value);
+				}),
+			),
+
+		(app, state) => app
+			.delete<any, void>("/corrections/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+					const data = matchedData(req, { includeOptionals: true }) as { id: string; };
+					const correctionId = new ObjectId(data.id);
+
+					const result = await state.mongoStore.gameCorrectionsCollection.deleteOne({
+						_id: correctionId,
+					});
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.delete<any, void>("/contests/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+
+					const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
+					const contestId = ObjectId.createFromHexString(data.id);
+
+					await state.mongoStore.configCollection.findOneAndUpdate(
+						{ featuredContest: contestId },
+						{
+							$unset: { featuredContest: true },
+						});
+
+					const result = await state.mongoStore.contestCollection.deleteOne({
+						_id: contestId,
+					});
+
+					await state.mongoStore.configCollection.findOneAndUpdate({
+						trackedContest: contestId,
+					}, {
+						$unset: {
+							trackedContest: true,
+						},
+					});
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.delete<any, void>("/contests/:id/gacha",
+				roles(["root"]),
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+
+					const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
+					const contestId = ObjectId.createFromHexString(data.id);
+
+					const games = await state.mongoStore.gamesCollection.find(
+						{ contestId },
+						{ projection: { _id: true } },
+					).toArray();
+
+					const result = await state.mongoStore.gachaCollection.deleteMany(
+						{ gameId: { $in: games.map(game => game._id) } },
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.delete<any, void>("/contests/:id/sss",
+				roles(["root"]),
+				param("id").isMongoId(),
+				logError(async (req, res) => {
+					const errors = validationResult(req);
+					if (!errors.isEmpty()) {
+						res.status(400).json({ errors: errors.array() } as any);
+						return;
+					}
+
+					const data: Partial<StoreContest<string> & { id: string }> = matchedData(req, { includeOptionals: true });
+					const contestId = ObjectId.createFromHexString(data.id);
+
+					const games = await state.mongoStore.gamesCollection.find(
+						{ contestId },
+						{ projection: { _id: true } },
+					).toArray();
+
+					const result = await state.mongoStore.smokingSexyStyleCollection.deleteMany(
+						{ gameId: { $in: games.map(game => game._id) } },
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch<any, Config<ObjectId>>("/config",
+				roles(["root"]),
+				body(nameofConfig("featuredContest")).isMongoId().optional({ nullable: true }),
+				withData<Partial<Config<string>>, any, Config<ObjectId>>(async (data, req, res) => {
+					if (data.featuredContest != null) {
+						const existingContest = await state.mongoStore.contestCollection.findOne({ _id: new ObjectId(data.featuredContest) });
+						if (existingContest == null) {
+							res.status(400).send(`Featured contest #${data._id} doesn't exist.` as any);
+							return;
+						}
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = key === nameofConfig("featuredContest") ? new ObjectId(data[key] as string) : data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const [existingConfig] = await state.mongoStore.configCollection.find().toArray();
+					if (existingConfig == null) {
+						res.status(404).send();
+						return;
+					}
+
+					const updatedConfig = await state.mongoStore.configCollection.findOneAndUpdate(
+						{ _id: existingConfig._id },
+						update,
+						{
+							returnDocument: "after",
+							projection: {
+								googleRefreshToken: false,
+							},
+						},
+					);
+
+					if (updatedConfig.value === null) {
+						res.status(404).send();
+						return;
+					}
+					res.send(updatedConfig.value);
+				}),
+			),
+
+		(app, state) => app
+			.put("/sessions",
+				roles(["root"]),
+				body(nameofSession("contestId")).isMongoId(),
+				withData<Partial<StoreSession<string | ObjectId>>, any, Partial<StoreSession<ObjectId>>>(async (data, req, res) => {
+					const contestId = await state.contestExists(data.contestId as string);
+					if (!contestId) {
+						res.status(400).send(`contest #${data.contestId} not found` as any);
+						return;
+					}
+
+					const [lastSession] = await state.mongoStore.sessionsCollection
+						.find()
+						.sort(nameofSession("scheduledTime"), -1)
+						.limit(1)
+						.toArray();
+
+					const session = await state.mongoStore.sessionsCollection.insertOne(
+						{
+							scheduledTime: (lastSession?.scheduledTime ?? Date.now()) + (24 * 60 * 60 * 1000),
+							contestId,
+							plannedMatches: [],
+						},
+					);
+
+					res.send({
+						_id: session.insertedId,
+					});
+				}),
+			),
+
+		(app, state) => app
+			.patch("/sessions/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofSession("scheduledTime")).not().isString().bail().isInt({ min: 0 }).optional(),
+				body(nameofSession("name")).isString().optional({ nullable: true }),
+				body(nameofSession("isCancelled")).not().isString().bail().isBoolean().optional({ nullable: true }),
+				body(nameofSession("plannedMatches")).not().isString().bail().isArray().optional(),
+				body(`${nameofSession("plannedMatches")}.*.teams`).not().isString().bail().isArray({ max: 4, min: 3 }),
+				body(`${nameofSession("plannedMatches")}.*.teams.*._id`).isMongoId(),
+				withData<{
+					id: string;
+				} & Partial<StoreSession<string | ObjectId>>, any, StoreSession<ObjectId>>(async (data, req, res) => {
+					if (data.plannedMatches && data.plannedMatches.length > 0) {
+						const teamIds = data.plannedMatches.map(match => match.teams.map(team => team._id as string)).flat();
+						const uniqueTeams = new Set(teamIds.map(id => id));
+
+						const sessionId = new ObjectId(data.id);
+
+						const [session] = await state.mongoStore.sessionsCollection.find({
+							_id: sessionId,
+						}).toArray();
+
+						if (!session) {
+							res.status(404).send();
+							return;
+						}
+
+						const [contest] = await state.mongoStore.contestCollection.find({
+							_id: session.contestId,
+							"teams._id": {
+								$all: Array.from(uniqueTeams).map(id => new ObjectId(id)),
+							},
+						}).toArray();
+
+						if (!contest) {
+							res.status(400).send(`One of team ids ${teamIds.map(id => `#${id}`).join(", ")} doesn't exist.` as any);
+							return;
+						}
+					}
+
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					for (const key in data) {
+						if (key === "id") {
+							continue;
+						}
+
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[key] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[key] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					const session = await state.mongoStore.sessionsCollection.findOneAndUpdate(
+						{ _id: new ObjectId(data.id) },
+						update,
+						{
+							returnDocument: "after",
+
+						},
+					);
+
+					if (!session.value) {
+						res.status(404).send();
+						return;
+					}
+
+					res.send(session.value);
+				}),
+			),
+
+		(app, state) => app
+			.delete("/sessions/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				withData<{ id: string }, any, StoreSession<ObjectId>>(async (data, req, res) => {
+					const result = await state.mongoStore.sessionsCollection.deleteOne(
+						{
+							_id: new ObjectId(data.id),
+						},
+					);
+
+					if (result.deletedCount <= 0) {
+						res.sendStatus(404);
+					}
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch("/contests/:id/teams/:teamId",
+				roles(["root"]),
+				param("id").isMongoId(),
+				param("teamId").isMongoId(),
+				body(nameofTeam("image")).isString().optional({ nullable: true }),
+				body(nameofTeam("imageLarge")).isString().optional({ nullable: true }),
+				body(nameofTeam("name")).isString().optional({ nullable: true }),
+				body(nameofTeam("altName")).isString().optional({ nullable: true }),
+				body(nameofTeam("altImage")).isString().optional({ nullable: true }),
+				body(nameofTeam("players")).isArray().optional(),
+				body(`${nameofTeam("players")}.*._id`).isMongoId(),
+				body(nameofTeam("anthem")).isString().optional({ nullable: true }),
+				body(nameofTeam("color")).isString().matches(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/).optional({ nullable: true }),
+				body(nameofTeam("contrastBadgeFont")).isBoolean().not().isString().optional({ nullable: true }),
+				body(nameofTeam("hidePlayers")).isBoolean().not().isString().optional({ nullable: true }),
+				withData<
+					{
+						id: string;
+						teamId: string;
+					} & Partial<ContestTeam<string>>,
+					any,
+					ContestTeam<ObjectId>
+				>(async (data, req, res) => {
+					const update: {
+						$set?: {},
+						$unset?: {},
+					} = {};
+
+					const id = new ObjectId(data.id);
+					const teamId = new ObjectId(data.teamId);
+
+					if (data.players) {
+						data.players = data.players.map(player => ({
+							_id: ObjectId.createFromHexString(player._id),
+						})) as any;
+
+						const players = await state.mongoStore.playersCollection.find({
+							_id: { $in: data.players.map(player => player._id as any as ObjectId) },
+						}).toArray();
+						if (players.length !== data.players.length) {
+							res.status(400).send(
+								`Players ${data.players
+									.filter(player => !players.find(p => p._id.equals(player._id)))
+									.map(player => `#${player._id}`)
+									.join(", ")
+								} not found.` as any,
+							);
+							return;
+						}
+					}
+
+					for (const key in data) {
+						if (data[key] === undefined) {
+							continue;
+						}
+
+						if (key === "id" || key === "teamId") {
+							continue;
+						}
+
+						const updateKey = `teams.$.${key}`;
+
+						if (data[key] === null) {
+							update.$unset ??= {};
+							update.$unset[updateKey] = true;
+							continue;
+						}
+
+						update.$set ??= {};
+						update.$set[updateKey] = data[key];
+					}
+
+					if (update.$set == null && update.$unset == null) {
+						res.status(400).send("No operations requested" as any);
+						return;
+					}
+
+					state.mongoStore.contestCollection.findOneAndUpdate(
+						{
+							_id: id,
+							teams: { $elemMatch: { _id: teamId } },
+						},
+						update,
+						{ returnDocument: "after", projection: { teams: true } },
+					).then((contest) => {
+						res.send(contest.value.teams.find(team => team._id.equals(teamId)));
+					}).catch((err) => {
+						console.log(err);
+						res.status(500).send(err);
+					});
+				},
+				)),
+
+		(app, state) => app
+			.put("/contests/:id/teams/",
+				roles(["root"]),
+				param("id").isMongoId(),
+				withData<
+					{
+						id: string;
+					},
+					any,
+					ContestTeam<ObjectId>
+				>(async (data, req, res) => {
+					const contestId = await state.contestExists(data.id);
+					if (!contestId) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const team = {
+						_id: new ObjectId(),
+					};
+
+					await state.mongoStore.contestCollection.findOneAndUpdate(
+						{
+							_id: contestId,
+						},
+						{
+							$push: {
+								teams: team,
+							},
+						},
+						{ returnDocument: "after", projection: { teams: true } },
+					);
+
+					res.send(team);
+				},
+				)),
+
+		(app, state) => app
+			.delete("/contests/:id/teams/:teamId",
+				roles(["root"]),
+				param("id").isMongoId(),
+				param("teamId").isMongoId(),
+				withData<
+					{
+						id: string;
+						teamId: string;
+					},
+					any,
+					ContestTeam<ObjectId>
+				>(async (data, req, res) => {
+					const [contest] = await state.mongoStore.contestCollection.find(
+						{
+							_id: new ObjectId(data.id),
+							teams: { $elemMatch: { _id: new ObjectId(data.teamId) } },
+						},
+					).toArray();
+
+					if (contest == null) {
+						res.sendStatus(404);
+						return;
+					}
+
+					const teamId = new ObjectId(data.teamId);
+
+					await state.mongoStore.contestCollection.findOneAndUpdate(
+						{
+							_id: contest._id,
+						},
+						{
+							$pull: {
+								teams: {
+									_id: teamId,
+								},
+							},
+						},
+						{ returnDocument: "after", projection: { teams: true } },
+					);
+
+					res.send();
+				},
+				)),
+
+		(app, state) => app
+			.put("/contests/:id/transitions",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofTransition("startTime")).isInt({ min: 0 }).not().isString(),
+				body(nameofTransition("name")).isString(),
+				body(`${nameofTransition("score")}.half`).isBoolean().not().isString().optional(),
+				body(`${nameofTransition("score")}.nil`).isBoolean().not().isString().optional(),
+				body(`${nameofTransition("teams")}.top`).isInt({ min: 4 }).not().isString().optional(),
+				body(`${nameofTransition("showJointGraph")}`).isBoolean().not().isString().optional(),
+				...eliminationBracketSettingsFilter(),
+				...scoringTypeFilter(nameofTransition("scoringTypes")),
+				withData<
+					Partial<ContestPhaseTransition> & {
+						id: string,
+					},
+					any,
+					Pick<ContestPhaseTransition<ObjectId>, "_id">
+				>(async (data, req, res) => {
+					const contest = await state.findContest(data.id);
+					if (!contest) {
+						res.status(404).send();
+						return;
+					}
+
+					const transition: ContestPhaseTransition<ObjectId> = {
+						_id: new ObjectId(),
+						startTime: data.startTime,
+					};
+
+					if (data.name != null) {
+						transition.name = data.name;
+					}
+
+					if (data.score != null) {
+						transition.score = data.score;
+					}
+
+					if (data.teams != null) {
+						transition.teams = data.teams;
+					}
+
+					if (data.scoringTypes != null) {
+						transition.scoringTypes = data.scoringTypes;
+					}
+
+					if (data.showJointGraph != null) {
+						transition.showJointGraph = true;
+					}
+
+					if (data.eliminationBracketSettings != null) {
+						transition.eliminationBracketSettings = data.eliminationBracketSettings;
+					}
+
+					if (data.eliminationBracketTargetPlayers != null) {
+						transition.eliminationBracketTargetPlayers = data.eliminationBracketTargetPlayers;
+					}
+
+
+					if (contest.transitions) {
+						state.mongoStore.contestCollection.findOneAndUpdate(
+							{ _id: new ObjectId(data.id) },
+							{
+								$push: {
+									transitions: transition,
+								},
+							},
+						);
+					} else {
+						state.mongoStore.contestCollection.findOneAndUpdate(
+							{ _id: new ObjectId(data.id) },
+							{
+								$set: {
+									transitions: [transition],
+								},
+							},
+						);
+					}
+					res.send({ _id: transition._id });
+				}),
+			),
+
+		(app, state) => app
+			.delete("/contests/:contestId/transitions/:id",
+				roles(["root"]),
+				param("contestId").isMongoId(),
+				param("id").isMongoId(),
+				withData<{ contestId: string; id: string }, any, void>(async (data, req, res) => {
+					const contest = await state.findContest(data.contestId);
+					if (!contest) {
+						res.sendStatus(404);
+						return;
+					}
+
+					state.mongoStore.contestCollection.findOneAndUpdate({ _id: ObjectId.createFromHexString(data.contestId) },
+						{
+							$pull: {
+								transitions: {
+									_id: ObjectId.createFromHexString(data.id),
+								},
+							},
+						},
+					);
+
+					res.send();
+				}),
+			),
+
+		(app, state) => app
+			.patch("/players/:id",
+				roles(["root"]),
+				param("id").isMongoId(),
+				body(nameofPlayer("displayName")).isString().optional({ nullable: true }),
+				withData<Partial<Player<string | ObjectId> & { id: string }>, any, Player<ObjectId>>(async (data, req, res) => {
+					const player = await state.mongoStore.playersCollection.findOneAndUpdate(
+						{
+							_id: ObjectId.createFromHexString(data.id as string),
+						},
+						data.displayName == null
+							? {
+								$unset: {
+									displayName: true,
+								},
+							}
+							: {
+								$set: {
+									displayName: data.displayName,
+								},
+							},
+						{
+							returnDocument: "after",
+						},
+					);
+
+					if (!player.ok) {
+						res.status(404).send();
+					}
+
+					res.send(player.value);
+				}),
+			),
+
+		(app, state) => app
+			.put("/players/",
+				roles(["root"]),
+				body(nameofPlayer("majsoulFriendlyId")).not().isString().bail().isNumeric(),
+				withData<Partial<Player<string | ObjectId>>, any, Player<ObjectId>>(async (data, req, res) => {
+					const result = await state.mongoStore.playersCollection.insertOne({
+						majsoulFriendlyId: data.majsoulFriendlyId,
+					});
+					res.send({
+						_id: result.insertedId,
+					});
+				}),
+			),
 	],
 };
 

@@ -1,6 +1,6 @@
 import { MajsoulApi } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
-import { combineLatest, defer, EMPTY, from, interval, merge, Observable, timer } from "rxjs";
+import { combineLatest, defer, EMPTY, from, interval, merge, Observable, timer, zip } from "rxjs";
 import { distinct, distinctUntilChanged, filter, first, map, mergeAll, mergeMap, share, switchAll, takeUntil, tap, throttleTime } from "rxjs/operators";
 
 import { nameofContest } from "./connector";
@@ -107,7 +107,15 @@ export class ContestTracker {
 		return this.MajsoulFriendlyId$.pipe(
 			map(majsoulFriendlyId => majsoulFriendlyId == null
 				? EMPTY
-				: timer(0, 86400000).pipe(
+				: merge(
+					this.mongoStore.ContestChanges.pipe(
+						filter(change => change.operationType === "update"
+							&& change.updateDescription.updatedFields.refresh === true
+							&& change.documentKey._id.equals(this.id),
+						),
+					),
+					timer(0, 86400000),
+				).pipe(
 					map(() => majsoulFriendlyId),
 					takeUntil(this.ContestDeleted$),
 				),
