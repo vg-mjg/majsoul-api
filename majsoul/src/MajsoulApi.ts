@@ -215,11 +215,11 @@ export class MajsoulApi {
 		};
 	}
 
-	public async getContestGamesIds(id: number): Promise<{
+	public async getContestGamesIds(id: number, target_game?: string): Promise<{
 		majsoulId: string;
 	}[]> {
+		const games = [] as lq.IRecordGame[];
 		let nextIndex = undefined;
-		const idLog = {};
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			const resp = await this.lobbyService.rpcCall<lq.IReqFetchCustomizedContestGameRecords, lq.IResFetchCustomizedContestGameRecords>(
@@ -229,15 +229,21 @@ export class MajsoulApi {
 					last_index: nextIndex,
 				}
 			);
-			for (const game of resp.record_list) {
-				idLog[game.uuid] = true;
-			}
-			if (!resp.next_index || !resp.record_list.length) {
+			games.push(...resp.record_list);
+			if (!resp.next_index || !resp.record_list.length || resp.record_list?.find(c => c.uuid === target_game)) {
 				break;
 			}
 			nextIndex = resp.next_index;
 		}
-		return Object.keys(idLog).map(id => { return { majsoulId: id }; }).reverse();
+
+		const data = games.map(g => ({ majsoulId: g.uuid }));
+
+		const target = games.findIndex(g => g.uuid === target_game) + 1;
+		if (target === 0) {
+			return data;
+		}
+
+		return data.slice(0, target);
 	}
 
 	public subscribeToContestChatSystemMessages(id: number): Observable<any> {
@@ -259,7 +265,9 @@ export class MajsoulApi {
 						"joinCustomizedContestChatRoom",
 						{ unique_id: id }
 					).then((resp) => {
-						resource.connection = new CustomLobbyConnection(`wss://contesten.mahjongsoul.com:8200/client?stream=binary&token=${resp.token}&support_id=true&message_id=0&system_id=0`);
+						resource.connection = new CustomLobbyConnection(`wss://contesten.mahjongsoul.com:8200/client?stream=binary&token=${resp.token}&supportid=true&message_id=0&system_id=0`);
+						console.log("subscribeToContestChatSystemMessages");
+
 						resource.connection.init();
 						return resource.connection.messages;
 					})

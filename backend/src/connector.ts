@@ -3,7 +3,7 @@ import { Credentials, OAuth2Client } from "google-auth-library";
 import { getPassport, MajsoulAdminApi, MajsoulApi, Passport } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
 import { combineLatest, concat, defer, from, fromEvent, merge, Observable, of, Subject } from "rxjs";
-import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll, takeUntil, withLatestFrom, zipWith } from "rxjs/operators";
+import { catchError, combineLatestWith, distinctUntilChanged, filter, map, mergeAll, pairwise, scan, share, shareReplay, switchAll, takeUntil, tap, withLatestFrom, zipWith } from "rxjs/operators";
 import seedrandom from "seedrandom";
 import * as UserAgent from "user-agents";
 
@@ -284,6 +284,7 @@ async function main() {
 	const activeTrackersShared = activeTrackers.pipe(
 		scan(
 			(total, [id, track]) => {
+				// console.log(id, track);
 				if (track) {
 					if (total.active.length < trackerCount) {
 						total.active.push(id);
@@ -303,6 +304,7 @@ async function main() {
 			},
 			{ pending: [], active: [] },
 		),
+		// tap(a => console.log(a)),
 		map(({ active }) => active),
 		share(),
 	);
@@ -579,7 +581,7 @@ async function recordGame(
 ): Promise<void> {
 	const isRecorded = await mongoStore.isGameRecorded(gameId);
 	if (isRecorded) {
-		console.log(`Game id ${gameId} already recorded`);
+		// console.log(`Game id ${gameId} already recorded`);
 		return;
 	}
 

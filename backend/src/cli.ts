@@ -3,13 +3,12 @@ import { CustomLobbyConnection, MajsoulApi } from "majsoul";
 import * as path from "path";
 import { getSecrets } from "./secrets.js";
 
-
 async function main() {
 	const secrets = getSecrets();
 	const apiResources = await MajsoulApi.retrieveApiResources();
 	const api = new MajsoulApi(apiResources);
 
-	// console.log(api.majsoulCodec.decodeMessage(Buffer.from("", "hex"), "lq.Lobby.fetchAccountChallengeRankInfo"));
+	// console.log(api.majsoulCodec.decodeMessage(Buffer.from("", "hex"), "lq.Lobby.fetchCustomizedContestGameRecords"));
 
 	await api.init();
 	const loginData = await api.logIn({
@@ -17,9 +16,12 @@ async function main() {
 		uid: secrets.majsoul.uid,
 	});
 	// console.log(util.inspect(loginData, false, null, true));
-	return;
-	const ids = await Promise.all([988377, 176745].map(id => api.findContestByContestId(id)));
+	// return;
+	const ids = await Promise.all([190550].map(id => api.findContestByContestId(id)));
+	// const ids = await Promise.all([176745].map(id => api.findContestByContestId(id)));
+
 	for (const id of ids) {
+		console.log(await api.getContestGamesIds(id.majsoulId));
 		api.subscribeToContestChatSystemMessages(id.majsoulId).subscribe(m => console.log(m));
 		await new Promise<void>((resolve) => setTimeout(() => resolve(), 3000));
 	}

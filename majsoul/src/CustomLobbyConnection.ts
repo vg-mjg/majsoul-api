@@ -4,6 +4,8 @@ import url from "url";
 import { TextEncoder } from "util";
 import { WebSocket } from "ws";
 
+let beatIndex = 0;
+
 export class CustomLobbyConnection {
 	private readonly messagesSubject = new Subject<any>();
 	private readonly errorSubject = new Subject<any>();
@@ -23,6 +25,7 @@ export class CustomLobbyConnection {
 	}
 
 	public init(): Promise<void> {
+		console.log("init")
 		return this.reconnect();
 	}
 
@@ -31,11 +34,14 @@ export class CustomLobbyConnection {
 	};
 
 	private startBeat(heartbeat: { cancelled: boolean }) {
+		console.log("startBeat");
 		setTimeout(() => {
 			if (heartbeat.cancelled || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
 				return;
 			}
+			console.log("heartbeat", beatIndex++);
 			this.send("<= heartbeat -");
+			console.log("success");
 			this.startBeat(heartbeat);
 		}, 50000);
 	}

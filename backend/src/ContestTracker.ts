@@ -1,7 +1,7 @@
 import { MajsoulApi } from "majsoul";
 import { ChangeStreamInsertDocument, ChangeStreamUpdateDocument, ObjectId } from "mongodb";
-import { combineLatest, defer, EMPTY, from, interval, merge, Observable, timer, zip } from "rxjs";
-import { distinct, distinctUntilChanged, filter, first, map, mergeAll, mergeMap, share, switchAll, takeUntil, tap, throttleTime } from "rxjs/operators";
+import { combineLatest, defer, EMPTY, from, interval, merge, Observable, onErrorResumeNext, timer } from "rxjs";
+import { catchError, distinct, distinctUntilChanged, filter, first, map, mergeAll, mergeMap, mergeWith, share, switchAll, switchScan, takeUntil, tap, throttleTime } from "rxjs/operators";
 
 import { nameofContest } from "./connector";
 import { buildContestPhases } from "./store/buildContestPhases";
@@ -175,31 +175,24 @@ export class ContestTracker {
 			distinctUntilChanged((a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2]),
 			map(([majsoulId, shouldTrack, canTrack]) => {
 				console.log(`${this.id}: ${majsoulId} shouldTrack=${shouldTrack} canTrack=${canTrack}`);
-				return shouldTrack
-					? canTrack
-						? this.api.subscribeToContestChatSystemMessages(majsoulId).pipe(
-							tap(a => console.log(a)),
-							map(notification => {
-								try {
-									const data = JSON.parse((notification.match(/=> system \d+ (.*)/)?.[1]));
-									return data?.game_end ? data?.uuid : null;
-								} catch (e) {
-									return null;
-								}
-							}),
-							filter(n => !!n),
-							takeUntil(this.ContestDeleted$),
-						)
-						: interval(1000 * 60 * 60).pipe(
-							takeUntil(this.ContestDeleted$),
-							map(() => from(this.api.getContestGamesIds(majsoulId))),
-							mergeAll(),
-							mergeAll(),
-						)
-					: EMPTY;
+				return shouldTrack && canTrack
+					? interval(1000 * 60 * 5).pipe(
+						mergeWith(from([null])),
+						takeUntil(this.ContestDeleted$),
+						switchScan(
+							(acc) => (
+								console.log(`fetching live games from ${acc?.majsoulId}`),
+								from(
+									this.api.getContestGamesIds(majsoulId, acc?.majsoulId),
+								).pipe(mergeAll())
+							),
+							null as { majsoulId: string },
+						),
+						map(g => g.majsoulId),
+					) : EMPTY;
 			}),
 			switchAll(),
-			distinct((game) => game._id),
+			distinct(),
 		);
 	}
 
