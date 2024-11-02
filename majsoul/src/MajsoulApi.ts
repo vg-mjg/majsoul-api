@@ -60,7 +60,7 @@ export class MajsoulApi {
 		console.log(`Client version: [${this.clientVersion}]`);
 		this.codec = new Codec(this.protobufRoot);
 		const serverIndex = Math.floor(Math.random() * apiResources.serverList.servers.length);
-		this.connection = new Connection(`wss://${apiResources.serverList.servers[serverIndex]}`);
+		this.connection = new Connection(`wss://${apiResources.serverList.servers[serverIndex]}/gateway`);
 		this.notifications = this.connection.messages.pipe(filter(message => message.type === MessageType.Notification), map(message => this.codec.decode(message.data)));
 		this.rpc = new RpcImplementation(this.connection, this.protobufRoot);
 		this.lobbyService = this.rpc.getService("Lobby");
