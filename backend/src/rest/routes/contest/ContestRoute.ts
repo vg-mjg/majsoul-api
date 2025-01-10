@@ -22,6 +22,7 @@ import { GameCorrection } from "../../../store/types/game/GameCorrection";
 import { GameResult as StoreGameResult } from "../../../store/types/game/GameResult";
 import { AgariInfo } from "../../../store/types/game/round/AgariInfo";
 import { Player } from "../../../store/types/Player";
+import { User } from "../../../store/types/User";
 import { collectStats } from "../../stats/collectStats";
 import { mergeStats } from "../../stats/mergeStats";
 import { minimumVersion } from "../../stats/minimumVersion";
@@ -39,7 +40,6 @@ import { logError } from "../../utils/logError";
 import { withData } from "../../utils/withData";
 import { Route } from "../Route";
 import { RouteState } from "../RouteState";
-import { User } from "../../../store/types/User";
 
 const sakiTeams: Record<string, Record<string, string[]>> = {
 	"236728": {

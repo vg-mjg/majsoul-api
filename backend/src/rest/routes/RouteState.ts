@@ -439,6 +439,9 @@ export class RouteState {
 				} case TourneyContestScoringType.SmokingSexyStyle: {
 					resultsByType[type.id] = await this.getSSSResults(games, maxGames);
 					break;
+				} case TourneyContestScoringType.Hunting: {
+					resultsByType[type.id] = await this.getHuntingResults(games, maxGames);
+					break;
 				}
 			}
 		}
@@ -841,6 +844,42 @@ export class RouteState {
 			}
 		});
 		return results;
+	}
+
+	public async getHuntingResults(games: StoreGameResult[], maxGames: number): Promise<Record<string, PlayerContestTypeResults>> {
+		const playerResults = games.reduce((total, game) => {
+			const ascendingPlayers = game.finalScore.map((score, index) => ({ score, id: game.players[index]._id })).sort((a, b) => a.score.uma - b.score.uma);
+			const preyId = game.players[game.players.length - 1]._id
+			let lead = 0;
+			for (const player of ascendingPlayers) {
+				total[player.id] ??= {
+					playerId: player.id,
+					rank: 0,
+					score: 0,
+					totalMatches: 0,
+					highlightedGameIds: [],
+				};
+				total[player.id].totalMatches++;
+				if (total[player.id].totalMatches < maxGames) {
+					total[player.id].highlightedGameIds.push(game._id);
+				}
+
+				if (player.id === preyId) {
+					lead = 1;
+					continue
+				}
+
+				if (lead === 0) {
+					continue;
+				}
+				total[player.id].score += lead;
+				lead++;
+			}
+			total[preyId].score += Math.max(0, (game.players.length - lead) * 2 - 1);
+			return total;
+		}, {} as Record<string, PlayerContestTypeResults>);
+		Object.values(playerResults).sort((a, b) => b.score - a.score).forEach((item, index) => item.rank = index + 1);
+		return Promise.resolve(playerResults);
 	}
 
 	public async getSSSResults(games: StoreGameResult[], maxGames: number): Promise<Record<string, PlayerContestTypeResults>> {
