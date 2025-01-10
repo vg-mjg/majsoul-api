@@ -866,7 +866,7 @@ export class RouteState {
 
 				if (player.id === preyId) {
 					lead = 1;
-					continue
+					continue;
 				}
 
 				if (lead === 0) {
@@ -875,7 +875,7 @@ export class RouteState {
 				total[player.id].score += lead;
 				lead++;
 			}
-			total[preyId].score += Math.max(0, (game.players.length - lead) * 2 - 1);
+			total[preyId].score += Math.max(0, (game.players.length - lead) * 2 - 1) * 1000;
 			return total;
 		}, {} as Record<string, PlayerContestTypeResults>);
 		Object.values(playerResults).sort((a, b) => b.score - a.score).forEach((item, index) => item.rank = index + 1);
