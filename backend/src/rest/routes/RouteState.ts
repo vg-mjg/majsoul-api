@@ -872,7 +872,7 @@ export class RouteState {
 				if (lead === 0) {
 					continue;
 				}
-				total[player.id].score += lead;
+				total[player.id].score += lead * 1000;
 				lead++;
 			}
 			total[preyId].score += Math.max(0, (game.players.length - lead) * 2 - 1) * 1000;
