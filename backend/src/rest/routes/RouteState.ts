@@ -859,23 +859,25 @@ export class RouteState {
 					totalMatches: 0,
 					highlightedGameIds: [],
 				};
+
 				total[player.id].totalMatches++;
+				if (total[player.id].totalMatches <= maxGames) {
+					total[player.id].highlightedGameIds.push(game._id);
+				}
+
 				if (player.id === preyId) {
 					lead = 1;
 					continue;
 				}
 
-				if (lead === 0) {
+				if (lead > 0) {
 					continue;
 				}
 
-				if (total[player.id].totalMatches >= maxGames) {
-					lead++;
+				if (total[player.id].totalMatches <= maxGames) {
+					total[player.id].score += lead * 1000;
 					continue;
 				}
-
-				total[player.id].score += lead * 1000;
-				total[player.id].highlightedGameIds.push(game._id);
 				lead++;
 			}
 			total[preyId].score += Math.max(0, (game.players.length - lead) * 2 - 1) * 1000;
