@@ -870,7 +870,7 @@ export class RouteState {
 					continue;
 				}
 
-				if (lead > 0) {
+				if (lead === 0) {
 					continue;
 				}
 
