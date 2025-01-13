@@ -849,7 +849,7 @@ export class RouteState {
 	public async getHuntingResults(games: StoreGameResult[], maxGames: number): Promise<Record<string, PlayerContestTypeResults>> {
 		const playerResults = games.reduce((total, game) => {
 			const ascendingPlayers = game.finalScore.map((score, index) => ({ score, id: game.players[index]._id })).sort((a, b) => a.score.uma - b.score.uma);
-			const preyId = game.players[game.players.length - 1]._id
+			const preyId = game.players[game.players.length - 1]._id;
 			let lead = 0;
 			for (const player of ascendingPlayers) {
 				total[player.id] ??= {
@@ -876,7 +876,6 @@ export class RouteState {
 
 				if (total[player.id].totalMatches <= maxGames) {
 					total[player.id].score += lead * 1000;
-					continue;
 				}
 				lead++;
 			}
